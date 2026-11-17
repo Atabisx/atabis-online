@@ -46,15 +46,15 @@ cd ~/atabis && git clone https://github.com/Atabisx/atabis-online.git && cd atab
 
 # 2) Veritabanı ve kullanıcı oluştur (rastgele şifreyle)
 PW=$(openssl rand -hex 16)
-su - postgres -c "psql -c \"CREATE USER atabis WITH PASSWORD '$PW';\""
-su - postgres -c "createdb -O atabis atabis"
+su - postgres -c "psql -c \"CREATE USER atabis_online WITH PASSWORD '$PW';\""
+su - postgres -c "createdb -O atabis_online atabis_online"
 
 # 3) Ayar dosyası
 echo "PORT=3100" > .env
-echo "DATABASE_URL=postgres://atabis:$PW@127.0.0.1:5432/atabis" >> .env
+echo "DATABASE_URL=postgres://atabis_online:$PW@127.0.0.1:5432/atabis_online" >> .env
 
-# 4) Eski deneme oyununu kapat (varsa) ve başlat
-pm2 delete metinio 2>/dev/null; bash scripts/update.sh
+# 4) Başlat (pm2'de 'atabis-online' adıyla çalışır)
+bash scripts/update.sh
 ```
 
 Tarayıcıda: `http://SUNUCU_IP:3100`
