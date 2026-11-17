@@ -1,0 +1,16 @@
+{
+  "name": "atabis-online",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ATABİS ONLINE – tarayıcıda çalışan 3D MMORPG",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "express": "^4.21.0",
+    "pg": "^8.13.0",
+    "socket.io": "^4.8.0"
+  }
+}

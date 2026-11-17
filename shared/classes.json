@@ -1,0 +1,55 @@
+{
+ "savasci": {
+  "name": "Savaşçı",
+  "desc": "Ön safta dövüşür. Yüksek can ve savunma, ağır kılıç darbeleri.",
+  "hp": 220,
+  "mp": 40,
+  "atk": 1.0,
+  "def": 6,
+  "color": "#c0392b",
+  "startWeapon": "w_wood"
+ },
+ "ninja": {
+  "name": "Ninja",
+  "desc": "Hızlı ve çevik. Kısa hançerlerle seri, kritik vuruşlar.",
+  "hp": 160,
+  "mp": 60,
+  "atk": 0.9,
+  "def": 3,
+  "crit": 0.25,
+  "speed": 1.12,
+  "color": "#2c3e50",
+  "startWeapon": "d_wood"
+ },
+ "sura": {
+  "name": "Sura",
+  "desc": "Kara büyüyü kılıçla birleştirir. Güçlü ama kırılgan.",
+  "hp": 180,
+  "mp": 90,
+  "atk": 1.15,
+  "def": 4,
+  "color": "#6c3483",
+  "startWeapon": "w_wood"
+ },
+ "saman": {
+  "name": "Şaman",
+  "desc": "İyileştirir ve büyü yapar. Grubun can damarı.",
+  "hp": 150,
+  "mp": 140,
+  "atk": 0.85,
+  "def": 3,
+  "color": "#d4a514",
+  "startWeapon": "s_wood"
+ },
+ "okcu": {
+  "name": "Okçu",
+  "desc": "Uzaktan ok yağdırır. Düşmanı yaklaşmadan indirir.",
+  "hp": 150,
+  "mp": 70,
+  "atk": 0.95,
+  "def": 3,
+  "range": 12,
+  "color": "#1e8449",
+  "startWeapon": "b_wood"
+ }
+}
