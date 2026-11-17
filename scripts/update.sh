@@ -24,10 +24,12 @@ if [ ! -f .env ]; then
 fi
 
 echo "==> Oyun yeniden başlatılıyor"
-if pm2 describe atabis >/dev/null 2>&1; then
-  pm2 restart atabis
+# Not: sunucuda "atabis" adında başka bir uygulama olabilir, ona dokunmamak için ayrı isim kullanıyoruz
+APP=atabis-online
+if pm2 describe "$APP" >/dev/null 2>&1; then
+  pm2 restart "$APP"
 else
-  pm2 start server/index.js --name atabis
+  pm2 start server/index.js --name "$APP" --cwd "$(pwd)"
 fi
 pm2 save
-echo "==> Tamam. Kayıtlar için: pm2 logs atabis --lines 30"
+echo "==> Tamam. Kayıtlar için: pm2 logs $APP --lines 30 --nostream"

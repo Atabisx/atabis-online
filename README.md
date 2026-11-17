@@ -67,6 +67,6 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 
 ## Sorun giderme
 
-- Kayıtlara bak: `pm2 logs atabis --lines 30`
+- Kayıtlara bak: `pm2 logs atabis-online --lines 30 --nostream`
 - Veritabanına bağlanamıyorsa `.env` içindeki `DATABASE_URL` değerini kontrol et.
 - Karakter modeli: `client/models/Soldier.glb` (three.js örnek modeli, ilk güncellemede otomatik iner).
