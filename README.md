@@ -4,7 +4,18 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 3.2 (bu sürüm): köy hayvanları, büyük haritalar, Metin2 tarzı beceri efektleri
+### Aşama 3.3 (bu sürüm): karakter puanları, 3D simgeler, Metin2 tarzı taşlar
+
+- **Durum puanları (K tuşu / sol üstteki kişi düğmesi):** GÜÇ, CANLILIK, ZEKA, ÇEVİKLİK. Her seviyede +3 puan, bir özellik en fazla 90. Ana saldırı özelliği sınıfa göre: savaşçı/sura GÜÇ, ninja/okçu ÇEVİKLİK, şaman ZEKA. Canlılık can ve savunma, Zeka mana ve beceri hasarı, Çeviklik kritik verir. Puanlar veritabanında `characters.stats` sütununda.
+- **Nefes:** karakter dururken göğsü kalkıp iner, omuzları hafifçe oynar.
+- **Seviye atlama:** ekranda "SEVİYE ATLADIN" yazısı; karakterin çevresinde iki altın sarmal, ışınlar, ışık sütunu ve yıldız patlaması.
+- **3D envanter simgeleri (`client/js/icons.js`):** her eşya kendi 3D modeliyle ışıklandırılıp resme çevrilir (kılıç, balta, zırhlar, kask, çizme, bilezik, küpe, iksir şişesi, kristal, balık, inci...).
+- **Yeni modeller:** Kızılçam Ormanı boss'ları Cehennem Şövalyesi, Kaplan Adam, Lav Canavarı. Kask modeli Sv. 36+ miğferlerde, demir zırh Sv. 1-8 zırhlarda. Önceki boss'lar Sisli Orman ve Taş Vadisi'ne taşındı. Köy boss'ları büyüdü (Dev Horoz 5 kat, Deli Boğa 3 kat).
+- **Beceri düğmeleri:** saldırı düğmesinin çevresinde altın çerçeveli, simgeli düğmeler; saat gibi kararan bekleme kadranı, kalan saniye, seviye ve mana rozeti.
+- **Sesler:** Metin2 gibi dolgun vuruş (kesik + et + metal çınlaması + gümleme), kritikte "şiing", beceride kısa "hah!".
+- **Metin taşları:** kırık yüzlü sivri taş, parlayan oyma rünler ve çatlaklar, moloz, dönen kristal kırıkları, ışık zerreleri; vuruldukça parlar, kırılınca parçaları saçılır.
+
+### Aşama 3.2: köy hayvanları, büyük haritalar, Metin2 tarzı beceri efektleri
 
 - **Atabis Köyü:** köpek ve kurtlar kalktı; yerine gerçek boylarında Tavuk, Horoz, Domuz ve İnek (uysal, sen vurmadan saldırmaz). Tavuk/horoz yürür, kanat çırpar, yere gagalar; inek/domuz başını eğip otlar. Köy boss'ları: Dev Horoz ve Deli Boğa.
 - **Kızılçam Ormanı:** Kurt Lideri Bozkurt, Kuduz Benekli ve Alaca Kaplan buraya taşındı; yeni boss Ateş Kertenkelesi (saldırırken ateş püskürtür). Haritada 6 boss var, birbirinden uzak yerlerde.

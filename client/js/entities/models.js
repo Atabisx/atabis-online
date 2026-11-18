@@ -23,6 +23,10 @@ export const MOB_MODELS = {
   horoz:       { kind: 'bird', size: 0.55, legTop: 0.22, armX: 9, armMin: 0.3, shoulder: 0.62, headY: 0.7, tail: 0.32, freq: 13, amp: 0.55, graze: 0.8, grazeRate: 1.3 },
   domuz:       { kind: 'quad', size: 0.75, legTop: 0.28, head: 0.24, tail: 0.08, freq: 11, amp: 0.45, graze: 0.45, grazeRate: 0.7 },
   inek:        { kind: 'quad', size: 1.45, legTop: 0.36, head: 0.25, tail: 0.12, freq: 7, amp: 0.38, graze: 0.75, grazeRate: 0.45 },
+  // ikinci harita canavarları
+  cehennem_sovalyesi: { kind: 'humanoid', size: 2.0, legTop: 0.45, armX: 0.17, armMin: 0.4, shoulder: 0.76, headY: 0.85, freq: 7, amp: 0.35 },
+  kaplan_adam: { kind: 'humanoid', size: 1.9, legTop: 0.4, armX: 0.21, armMin: 0.3, shoulder: 0.74, headY: 0.8, headFront: true, tail: 0.3, tailFirst: true, freq: 7, amp: 0.4 },
+  lav_canavari: { kind: 'quad', size: 1.3, legTop: 0.32, head: 0.26, tail: 0.25, freq: 8, amp: 0.45 },
   kertenkele:  { kind: 'quad', size: 1.0, legTop: 0.26, head: 0.28, tail: 0.3, tailFirst: true, freq: 10, amp: 0.5 },
 };
 const KIND = { quad: 0, sit: 0, humanoid: 1, robe: 2, snake: 3, bird: 4 };
@@ -99,8 +103,8 @@ export function rig(geo, spec) {
     const zc = (bb.min.z + bb.max.z) / 2, tailZ = bb.min.z + (spec.tail || 0) * L;
     for (let i = 0; i < n; i++) {
       const dx = x(i) - bx;
-      if (spec.kind === 'bird' && spec.tail && z(i) < tailZ && y(i) > legTopY) {
-        // kuyruk tüyleri
+      if (spec.tail && z(i) < tailZ && (spec.tailFirst || y(i) > legTopY)) {
+        // kuyruk (kuş tüyleri, kaplan adamın yere değen kuyruğu)
         part[i] = 8; w[i] = clamp01((tailZ - z(i)) / (0.1 * L));
         continue;
       }
@@ -109,7 +113,7 @@ export function rig(geo, spec) {
       } else if (Math.abs(dx) > armX && y(i) > armMin && y(i) < headY) {
         const p = dx < 0 ? 5 : 6;
         part[i] = p; w[i] = clamp01((Math.abs(dx) - armX) / (0.06 * H));
-      } else if (y(i) > headY && (spec.kind !== 'bird' || z(i) > zc - 0.1 * L)) {
+      } else if (y(i) > headY && ((spec.kind !== 'bird' && !spec.headFront) || z(i) > zc - 0.1 * L)) {
         part[i] = 7; w[i] = clamp01((y(i) - headY) / (0.05 * H));
       } else continue;
       sum[part[i]] += z(i); cnt[part[i]]++;
@@ -297,13 +301,18 @@ export const ITEM_MODELS = {
   yelek: { armor: true, height: 0.5, y: -0.05, pads: false },
   gogusluk: { armor: true, height: 0.48, y: -0.04, pads: true },
   celik_zirh: { armor: true, height: 0.5, y: -0.02, pads: false },
+  demir_zirh: { armor: true, height: 0.5, y: -0.03, pads: false },
+  // kask: başı saracak boy, dikey kaydırma
+  kask: { armor: true, height: 0.36, y: -0.06 },
 };
 // Modeli yüklenene kadar yedek mesh görünür; yüklenince yerine geçer
 export function itemModel(key, fallback) {
   const spec = ITEM_MODELS[key];
   const g = new THREE.Group();
   if (fallback) g.add(fallback);
-  if (!spec) return g;
+  if (!spec) { g.userData.ready = Promise.resolve(); return g; }
+  let done;
+  g.userData.ready = new Promise((r) => { done = r; });
   loadModel(`models/items/${key}.glb`).then((scene) => {
     if (fallback) g.remove(fallback);
     const m = scene.clone(true);
@@ -322,6 +331,7 @@ export function itemModel(key, fallback) {
       m.position.y = -(box.min.y + spec.grip * h) * k - 0.04;
     }
     g.add(m);
-  }).catch((e) => console.warn('Eşya modeli yüklenemedi:', key, e));
+    done();
+  }).catch((e) => { console.warn('Eşya modeli yüklenemedi:', key, e); done(); });
   return g;
 }

@@ -8,6 +8,7 @@ import { buildMob } from './entities/mobs.js';
 import { itemModel, ITEM_MODELS, attachMountModel, MOUNT } from './entities/models.js';
 import * as sfx from './audio.js';
 import * as fx from './fx.js';
+import * as icons from './icons.js';
 
 let FACE_OFFSET = Math.PI;     // model yüklenince otomatik hesaplanır
 const SPEED = 6;               // metre / saniye
@@ -90,24 +91,112 @@ function log(html) {
 
 // ---------- metin taşları ----------
 const stones = {};
+// ---------- metin taşları (Metin2 tarzı) ----------
+// Uzun, sivri, kırık yüzlü koyu bir taş; yüzeyinde parlayan oyma rünler ve çatlaklar,
+// dibinde moloz, çevresinde dönen kristal kırıkları ve yükselen ışık zerreleri.
+const stoneTexCache = {};
+function stoneTextures(color) {
+  if (stoneTexCache[color]) return stoneTexCache[color];
+  const W = 256, H = 512;
+  const base = document.createElement('canvas'); base.width = W; base.height = H;
+  const glowC = document.createElement('canvas'); glowC.width = W; glowC.height = H;
+  const g = base.getContext('2d'), e = glowC.getContext('2d');
+  const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#4a4e5a'); gr.addColorStop(0.6, '#2c2f38'); gr.addColorStop(1, '#1c1e25');
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 1400; i++) { const v = 30 + rnd() * 60; g.fillStyle = `rgba(${v},${v + 4},${v + 12},${0.25 + rnd() * 0.3})`; g.fillRect(rnd() * W, rnd() * H, 1 + rnd() * 3, 1 + rnd() * 3); }
+  e.fillStyle = '#000'; e.fillRect(0, 0, W, H);
+  // çatlaklar: kayada koyu, parıltıda renkli
+  for (let c = 0; c < 9; c++) {
+    let x = rnd() * W, y = rnd() * H;
+    g.strokeStyle = 'rgba(10,10,14,0.8)'; g.lineWidth = 2; e.strokeStyle = color; e.lineWidth = 1.5; e.shadowColor = color; e.shadowBlur = 6;
+    g.beginPath(); e.beginPath(); g.moveTo(x, y); e.moveTo(x, y);
+    for (let k = 0; k < 7; k++) { x += (rnd() - 0.5) * 40; y += 10 + rnd() * 30; g.lineTo(x, y); e.lineTo(x, y); }
+    g.stroke(); e.stroke();
+  }
+  // oyma rünler: her yüzde dikey bir sıra (kayada oyuk, parıltıda ışık)
+  const glyph = (ctx, cx, cy, sz, r) => {
+    ctx.beginPath();
+    for (let k = 0; k < 4; k++) {
+      const t = Math.floor(r() * 4);
+      if (t === 0) { ctx.moveTo(cx - sz, cy - sz + k * sz * 0.6); ctx.lineTo(cx + sz, cy - sz + k * sz * 0.6); }
+      else if (t === 1) { const ox = (r() - 0.5) * sz; ctx.moveTo(cx + ox, cy - sz); ctx.lineTo(cx + ox, cy + sz); }
+      else if (t === 2) { ctx.moveTo(cx - sz, cy + sz); ctx.lineTo(cx + sz, cy - sz); }
+      else { const a0 = r() * 3; ctx.moveTo(cx + Math.cos(a0) * sz * 0.55, cy + Math.sin(a0) * sz * 0.55); ctx.arc(cx, cy, sz * 0.55, a0, a0 + 3); }
+    }
+    ctx.stroke();
+  };
+  e.lineCap = g.lineCap = 'round';
+  for (let col = 0; col < 7; col++) {
+    const cx = (col + 0.5) * W / 7;
+    for (let row = 0; row < 4; row++) {
+      const s0 = seed;
+      g.strokeStyle = 'rgba(8,8,12,0.9)'; g.lineWidth = 5; g.shadowBlur = 0; glyph(g, cx, H * 0.38 + row * 44, 11, rnd);
+      seed = s0;
+      e.strokeStyle = color; e.lineWidth = 3.5; e.shadowColor = color; e.shadowBlur = 10; glyph(e, cx, H * 0.38 + row * 44, 11, rnd);
+    }
+  }
+  const mk = (c) => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+  return (stoneTexCache[color] = { map: mk(base), emissiveMap: mk(glowC) });
+}
 function createStone(s) {
   if (stones[s.id]) return;
-  const color = s.color === 'purple' ? '#8a7dff' : '#ff6a3d';
+  const color = s.color === 'purple' ? '#9a7dff' : '#ff4a2f';
+  const tex = stoneTextures(color);
   const g = new THREE.Group();
-  const geo = new THREE.OctahedronGeometry(1, 0);
-  const rock = new THREE.Mesh(geo, mat(s.color === 'purple' ? '#2f3446' : '#3a3f4b'));
-  rock.scale.set(1.3, 2.0, 1.3); rock.position.y = 1.9; rock.castShadow = true;
-  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color }));
-  edges.scale.copy(rock.scale).multiplyScalar(1.01); edges.position.copy(rock.position);
-  const glow = new THREE.Mesh(new THREE.CircleGeometry(2.6, 24), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.22 }));
+  const stoneMat = new THREE.MeshStandardMaterial({ map: tex.map, emissiveMap: tex.emissiveMap, emissive: new THREE.Color(color), emissiveIntensity: 1.3, roughness: 0.9, metalness: 0.05, flatShading: true });
+  // ana gövde: 7 köşeli, yukarı daralan, yüzeyi kırık
+  const geo = new THREE.CylinderGeometry(0.18, 1.0, 3.6, 7, 5);
+  const pos = geo.attributes.position;
+  let sd = (s.id * 9301 + 49297) % 233280; const rr = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280);
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i);
+    if (Math.abs(y) < 1.79) { pos.setX(i, pos.getX(i) * (0.85 + rr() * 0.3)); pos.setZ(i, pos.getZ(i) * (0.85 + rr() * 0.3)); }
+    pos.setY(i, y + (rr() - 0.5) * 0.15);
+  }
+  geo.computeVertexNormals();
+  const body = new THREE.Mesh(geo, stoneMat); body.position.y = 1.8; body.castShadow = true; body.rotation.y = rr() * 3;
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.7, 7), stoneMat); tip.position.y = 3.9; tip.castShadow = true;
+  const inner = new THREE.Group(); inner.add(body, tip);
+  // dipte moloz
+  const rubbleMat = new THREE.MeshStandardMaterial({ map: tex.map, roughness: 0.95, flatShading: true });
+  for (let i = 0; i < 7; i++) {
+    const a = i / 7 * Math.PI * 2 + rr(), r = 1.0 + rr() * 0.5;
+    const m = new THREE.Mesh(new THREE.DodecahedronGeometry(0.18 + rr() * 0.22, 0), rubbleMat);
+    m.position.set(Math.cos(a) * r, 0.12, Math.sin(a) * r); m.rotation.set(rr() * 3, rr() * 3, 0); m.castShadow = true;
+    g.add(m);
+  }
+  // çevresinde dönen parlayan kristal kırıkları
+  const shards = new THREE.Group(); shards.position.y = 2.2;
+  const shardMat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.6, roughness: 0.3 });
+  for (let i = 0; i < 4; i++) {
+    const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0), shardMat); m.scale.y = 2;
+    const a = i / 4 * Math.PI * 2; m.position.set(Math.cos(a) * 1.6, Math.sin(i * 2) * 0.5, Math.sin(a) * 1.6);
+    shards.add(m);
+  }
+  // yerde nabız gibi atan ışık
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(2.8, 32), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.25, depthWrite: false, blending: THREE.AdditiveBlending }));
   glow.rotation.x = -Math.PI / 2; glow.position.y = 0.06;
-  const inner = new THREE.Group(); inner.add(rock, edges);
-  g.add(inner, glow);
+  g.add(inner, shards, glow);
   g.position.set(s.x, 0, s.z);
   scene.add(g);
   const label = makeLabel(`${s.name} · Sv. ${s.lv}`, s.color === 'purple' ? '#c8d0ff' : '#ffb4a3', true);
   label.hp.style.width = (100 * s.hp / s.max) + '%';
-  stones[s.id] = { ...s, group: g, rock: inner, label, shake: 0 };
+  stones[s.id] = { ...s, group: g, rock: inner, label, shake: 0, mat: stoneMat, glow, shards, glowColor: color, flash: 0, wisp: 0, phase: rr() * 6 };
+}
+// her karede: rün nabzı, vurulunca parlama, dönen kırıklar, ışık zerreleri
+function updateStones(dt, t) {
+  for (const s of Object.values(stones)) {
+    if (s.shake > 0) { s.shake -= dt; s.rock.position.x = (Math.random() - 0.5) * 0.25; } else s.rock.position.x = 0;
+    if (!s.mat) continue;
+    s.flash = Math.max(0, s.flash - dt * 3);
+    const pulse = 1.1 + Math.sin(t * 2.2 + s.phase) * 0.35;
+    s.mat.emissiveIntensity = pulse + s.flash * 2.5;
+    s.glow.material.opacity = 0.18 + Math.sin(t * 2.2 + s.phase) * 0.07 + s.flash * 0.3;
+    s.shards.rotation.y += dt * 0.8;
+    s.wisp += dt;
+    if (s.wisp > 0.18) { s.wisp = 0; fx.stoneWisp(s, s.glowColor); }
+  }
 }
 function removeStone(id) {
   const s = stones[id]; if (!s) return;
@@ -350,7 +439,7 @@ function applyLook(p, look) {
     attach(p, calib.chest, spec ? itemModel(a.model, chestMesh(a)) : chestMesh(a));
     if (!spec || spec.pads) { attach(p, calib.padL, padMesh(a)); attach(p, calib.padR, padMesh(a)); }
   }
-  if (h) attach(p, calib.helmet, helmetMesh(h));
+  if (h) attach(p, calib.helmet, h.model && ITEM_MODELS[h.model] ? itemModel(h.model, helmetMesh(h)) : helmetMesh(h));
 }
 
 // ---------- oyuncular ----------
@@ -381,7 +470,8 @@ function createPlayer(p) {
     for (const clip of gltf.animations) obj.actions[clip.name] = obj.mixer.clipAction(clip);
     if (obj.actions.Idle) obj.actions.Idle.play();
     const find = (n) => Object.values(obj.boneMap).find((b) => b.name.replace(/^mixamorig[:_]?/i, '') === n);
-    obj.bones = { spine: find('Spine1') || find('Spine'), arm: find('RightArm'), fore: find('RightForeArm') };
+    obj.bones = { spine: find('Spine1') || find('Spine'), arm: find('RightArm'), fore: find('RightForeArm'),
+      chest: find('Spine2'), armL: find('LeftArm'), neck: find('Neck') };
     if (!obj.bones.spine || !obj.bones.arm) obj.bones = null;
   } else {
     const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 1.0, 4, 8), mat(p.id === myId ? '#c0392b' : '#2f6fd0'));
@@ -511,6 +601,22 @@ function rotWorld(bone, axis, angle) {
   bone.updateMatrixWorld(true);
 }
 const _f = new V3(), _u = new V3(0, 1, 0), _r = new V3();
+// nefes: dururken göğüs kalkar-iner, omuzlar hafif yükselir, baş çok az sallanır
+function applyBreath(p, t) {
+  if (!p.bones || p.dead || p.swingT > 0) return;
+  const still = p.moving ? 0.25 : 1;
+  const ph = t * 1.9 + (p.breathPh || (p.breathPh = Math.random() * 6));
+  const b = Math.sin(ph), b2 = Math.sin(ph * 0.5);
+  const a = p.group.rotation.y - FACE_OFFSET;
+  _f.set(Math.sin(a), 0, Math.cos(a));
+  _r.crossVectors(_f, _u);
+  p.model.updateMatrixWorld(true);
+  rotWorld(p.bones.chest || p.bones.spine, _r, -b * 0.045 * still);
+  rotWorld(p.bones.arm, _f, b * 0.035 * still);
+  rotWorld(p.bones.armL, _f, -b * 0.035 * still);
+  rotWorld(p.bones.neck, _r, b * 0.03 * still);
+  rotWorld(p.bones.spine, _u, b2 * 0.025 * still);
+}
 function applySwing(p) {
   if (p.swingT <= 0 || !p.bones) { if (p.model) p.model.parent.position.x = p.model.parent.position.z = 0; return; }
   const t = 1 - p.swingT / SWING_T;
@@ -677,6 +783,7 @@ function removeDrop(id) {
 // ---------- envanter arayüzü ----------
 const inv = { inventory: [], equip: {}, yang: 0, atk: 0, def: 0, maxHp: 0 };
 let myLevel = 1;
+let myName = '';
 let selected = null;   // {uid} veya {slot}
 const EQUIP = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring'];
 const BONUS_NAMES = { maxhp: ['Maks. Can', ''], maxmp: ['Maks. Mana', ''], atk: ['Saldırı', ''], def: ['Savunma', ''], crit: ['Kritik', '%'],
@@ -694,6 +801,46 @@ const ICONS = {
   fish: '<path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0z"/><path d="M18 12l3-3v6z"/>',
   gem: '<circle cx="12" cy="12" r="6"/><circle cx="10" cy="10" r="1.5"/>',
 };
+// ---------- gerçekçi 3D simgeler (icons.js) ----------
+function iconBuilder(key, def) {
+  const s = def.slot;
+  if (s === 'weapon') return () => weaponMesh(def);
+  if (s === 'armor') return () => {
+    if (def.model && ITEM_MODELS[def.model]) return itemModel(def.model, chestMesh(def));
+    const g = new THREE.Group(); g.add(chestMesh(def));
+    for (const sx of [-1, 1]) { const p = padMesh(def); p.position.set(sx * 0.2, 0.15, 0); g.add(p); }
+    return g;
+  };
+  if (s === 'helmet') return () => (def.model && ITEM_MODELS[def.model] ? itemModel(def.model, helmetMesh(def)) : helmetMesh(def));
+  if (s === 'shoes') return () => icons.bootsMesh(def);
+  if (s === 'bracelet') return () => icons.braceletMesh(def);
+  if (s === 'earring') return () => icons.earringMesh(def);
+  if (s === 'potion') return () => icons.potionMesh(def);
+  if (s === 'gem') return () => icons.pearlMesh(def.color);
+  if (s === 'fish') return () => (key === 'b_cizme' ? icons.bootsMesh({ color: '#5a4a3a' }) : icons.fishMesh(def.color));
+  if (key === 'efsun') return () => icons.crystalMesh('#c86bff');
+  if (key === 'efsun_degis') return () => icons.crystalMesh('#4fd1c5', true);
+  if (key === 'olta') return () => icons.rodMesh();
+  if (key === 'yem') return () => icons.wormMesh();
+  if (key === 'istiridye') return () => icons.shellMesh();
+  if (key === 'at_muhru') return () => icons.medalMesh();
+  return null;
+}
+const ICON_POSE = { weapon: { rz: -0.8, ry: 0.35 }, armor: { ry: 0.45, rx: 0.08 }, helmet: { ry: 0.65, rx: 0.1 }, shoes: { ry: 0.55, rx: 0.2 },
+  bracelet: { ry: 0.3 }, earring: { ry: 0.4 }, potion: { ry: 0.3, rx: 0.1 }, fish: { ry: 0.5 }, gem: { rx: 0.5 }, use: { ry: 0.5, rx: 0.15 } };
+function itemIcon(key, def, size = 26, slot) {
+  if (def && key) {
+    const b = iconBuilder(key, def);
+    const url = b && icons.iconURL(key, b, ICON_POSE[def.slot]);
+    if (url) return `<img class="ico3d" src="${url}" width="${size + 8}" height="${size + 8}" alt="" draggable="false">`;
+  }
+  return iconSvg(def, size, slot);
+}
+icons.onIconsReady(() => {
+  if (invEl.classList.contains('open')) renderInv();
+  if (document.getElementById('shop').classList.contains('open')) renderShop();
+});
+
 function iconSvg(def, size = 26, slot) {
   const c = def ? (def.color === '#ffffff' ? '#d9cfb8' : def.color) : '#5a5e55';
   const s = def ? def.slot : slot || 'weapon';
@@ -721,7 +868,7 @@ function renderInv() {
   const eqEl = document.getElementById('equipcol');
   eqEl.querySelectorAll('.eq').forEach((el) => {
     const slot = el.dataset.slot, it = inv.equip[slot], def = it ? ITEMS[it.key] : null;
-    el.innerHTML = `${iconSvg(def, 22, slot)}<span>${def ? `<span style="color:${RARITY[def.rarity]}">${esc(def.name)}</span>` : 'Boş'}<small>${SLOT_NAMES[slot]}</small></span>`;
+    el.innerHTML = `${itemIcon(it && it.key, def, 22, slot)}<span>${def ? `<span style="color:${RARITY[def.rarity]}">${esc(def.name)}</span>` : 'Boş'}<small>${SLOT_NAMES[slot]}</small></span>`;
     el.classList.toggle('sel', !!(selected && selected.slot === slot));
   });
   document.getElementById('stats').innerHTML = `Saldırı <b>${inv.atk}</b> · Savunma <b>${inv.def}</b> · Can <b>${inv.maxHp}</b>`;
@@ -731,7 +878,7 @@ function renderInv() {
     if (it) {
       const def = ITEMS[it.key] || { name: '?', rarity: 0 };
       const sel = selected && selected.uid === it.uid ? ' sel' : '';
-      html += `<button class="slot${sel}" data-uid="${it.uid}" aria-label="${esc(def.name)}" style="border-color:${sel ? '' : RARITY[def.rarity] + '66'}">${iconSvg(def)}${it.n > 1 ? `<i class="cnt">${it.n}</i>` : ''}</button>`;
+      html += `<button class="slot${sel}" data-uid="${it.uid}" aria-label="${esc(def.name)}" style="border-color:${sel ? '' : RARITY[def.rarity] + '66'}">${itemIcon(it.key, def)}${it.n > 1 ? `<i class="cnt">${it.n}</i>` : ''}</button>`;
     } else html += '<div class="slot" aria-hidden="true"></div>';
   }
   gridEl.innerHTML = html;
@@ -751,7 +898,7 @@ function renderDetail() {
   else if (def.slot === 'potion' || def.slot === 'use') buttons = '<button data-act="use">Kullan</button><button class="alt" data-act="drop">Yere at</button>';
   else if (def.slot === 'fish' || def.slot === 'gem') buttons = '<button class="alt" data-act="drop">Yere at</button>';
   else buttons = '<button data-act="equip">Giy</button><button class="alt" data-act="drop">Yere at</button>';
-  detailEl.innerHTML = `<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(def.name)}${it.n > 1 ? ' x' + it.n : ''}</b><br>` +
+  detailEl.innerHTML = `<span class="dico">${itemIcon(it.key, def, 48)}</span><span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(def.name)}${it.n > 1 ? ' x' + it.n : ''}</b><br>` +
     `<span style="color:#c9c4b6">${SLOT_NAMES[def.slot] || ''} · ${statText(def)}</span> ${reqText(def)}<span style="color:#8b877c">${esc(cls)}</span>` +
     (def.desc ? `<br><small style="color:#8b877c">${esc(def.desc)}</small>` : '') +
     (it.bon && it.bon.length ? '<br>' + it.bon.map(([t, v]) => `<small style="color:#c86bff">${BONUS_NAMES[t] ? BONUS_NAMES[t][0] : t} +${v}${BONUS_NAMES[t] ? BONUS_NAMES[t][1] : ''}</small>`).join(' · ') : '') +
@@ -822,7 +969,7 @@ function renderShop() {
     for (const it of inv.inventory) {
       const def = ITEMS[it.key]; if (!def) continue;
       const value = (def.price ? Math.floor(def.price * 0.25) : def.tier != null ? 100 * (def.tier + 1) * (def.tier + 1) : 10) * (it.n || 1);
-      html += `<div class="srow">${iconSvg(def, 22)}<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(def.name)}${it.n > 1 ? ' x' + it.n : ''}</b><br><small>${statText(def)}</small></span>` +
+      html += `<div class="srow">${itemIcon(it.key, def, 22)}<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(def.name)}${it.n > 1 ? ' x' + it.n : ''}</b><br><small>${statText(def)}</small></span>` +
         `<button class="alt" data-sell="${it.uid}">Sat ${value.toLocaleString('tr-TR')}</button></div>`;
     }
   } else {
@@ -833,7 +980,7 @@ function renderShop() {
       const afford = inv.yang >= def.price;
       let cls = '';
       if (def.classes) cls = ' · ' + def.classes.map((c) => (CLASSES[c] || {}).name || c).join(', ');
-      html += `<div class="srow">${iconSvg(def, 22)}<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(def.name)}</b> ${reqText(def)}<br><small>${statText(def)}${esc(cls)}</small></span>` +
+      html += `<div class="srow">${itemIcon(key, def, 22)}<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(def.name)}</b> ${reqText(def)}<br><small>${statText(def)}${esc(cls)}</small></span>` +
         `<button data-buy="${key}" ${afford ? '' : 'disabled'}>${def.price.toLocaleString('tr-TR')}</button>` +
         (def.stack ? `<button data-buy="${key}" data-n="10" ${inv.yang >= def.price * 10 ? '' : 'disabled'}>x10</button>` : '') + '</div>';
     }
@@ -901,16 +1048,84 @@ function renderBuffs() {
 setInterval(renderBuffs, 1000);
 
 // ---------- beceriler ----------
+// ---------- karakter penceresi: Metin2 tarzı durum puanları ----------
+const charwinEl = document.getElementById('charwin');
+let attrs = null;
+const STAT_INFO = {
+  str: { name: 'GÜÇ', short: 'STR', color: '#ff8a5a', desc: (m) => (m === 'str' ? 'Saldırı gücü (ana özellik)' : 'Biraz saldırı gücü') },
+  vit: { name: 'CANLILIK', short: 'VIT', color: '#ff5a6a', desc: () => 'Azami can ve biraz savunma' },
+  int: { name: 'ZEKA', short: 'INT', color: '#7fb3ff', desc: (m) => (m === 'int' ? 'Saldırı gücü, mana, beceri hasarı' : 'Azami mana ve beceri hasarı') },
+  dex: { name: 'ÇEVİKLİK', short: 'DEX', color: '#7be08f', desc: (m) => (m === 'dex' ? 'Saldırı gücü (ana özellik), kritik' : 'Kritik vuruş şansı, biraz savunma') },
+};
+function renderChar() {
+  const pts = document.getElementById('charPts');
+  if (!attrs) return;
+  pts.textContent = attrs.free; pts.style.display = attrs.free > 0 ? '' : 'none';
+  if (!charwinEl.classList.contains('open')) return;
+  document.getElementById('charFree').textContent = attrs.free > 0 ? `Boş puan: ${attrs.free}` : 'Boş puan yok';
+  const cls = (CLASSES[myClass] || {}).name || myClass;
+  document.getElementById('charHead').innerHTML = `<span><b>${esc(myName || '')}</b> · ${esc(cls)}</span><span>Seviye <b>${myLevel}</b></span>`;
+  document.getElementById('charStats').innerHTML = ['str', 'vit', 'int', 'dex'].map((k) => {
+    const st = STAT_INFO[k], v = attrs.values[k], can = attrs.free > 0 && v < attrs.max;
+    return `<div class="st-row${attrs.main === k ? ' main' : ''}"><span class="st-ico" style="background:linear-gradient(180deg,${st.color},${st.color}aa)">${st.short}</span>` +
+      `<span class="st-name"><b>${st.name}</b><small>${st.desc(attrs.main)}</small></span><span class="st-val">${v}</span>` +
+      `<button data-st="${k}" data-n="1" ${can ? '' : 'disabled'} aria-label="${st.name} +1">+</button><button class="five" data-st="${k}" data-n="5" ${attrs.free >= 2 && can ? '' : 'disabled'} aria-label="${st.name} +5">+5</button></div>`;
+  }).join('');
+  const row = (n, v) => `<span>${n}<b>${v}</b></span>`;
+  document.getElementById('charDerived').innerHTML = row('Saldırı', attrs.atk) + row('Savunma', attrs.def) + row('Azami can', attrs.maxHp) + row('Azami mana', attrs.maxMp) +
+    row('Kritik', attrs.crit + '%') + row('Beceri hasarı', '+' + (attrs.skill || 0) + '%') + row('Saldırı hızı', '+' + (attrs.atkspeed || 0) + '%') + row('Hareket hızı', '+' + (attrs.movespeed || 0) + '%');
+}
+document.getElementById('charBtn').addEventListener('click', () => { charwinEl.classList.add('open'); renderChar(); });
+document.getElementById('charClose').addEventListener('click', () => charwinEl.classList.remove('open'));
+document.getElementById('charStats').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-st]'); if (!b || !socket) return;
+  socket.emit('statUp', { stat: b.dataset.st, n: Number(b.dataset.n) });
+  sfx.click();
+});
+window.addEventListener('keydown', (e) => { if ((e.key === 'k' || e.key === 'K') && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { charwinEl.classList.toggle('open'); renderChar(); } });
+
 const skillbarEl = document.getElementById('skillbar'), skillwinEl = document.getElementById('skillwin');
 let skillState = { levels: {}, points: 0, unlock: 5 };
 const skillCdUntil = {};
 const skLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 function mySkills() { return SKILLS[myClass] || []; }
+// beceri simgeleri (24x24, beyaz çizgi)
+const SKILL_ICONS = {
+  s_ucluk: '<path d="M4 20 14 4"/><path d="M8 21 18 6"/><path d="M12 22 21 9"/>',
+  s_firtina: '<path d="M12 3a9 9 0 1 1-8.5 6"/><path d="M12 7a5 5 0 1 1-4.7 3.3"/><path d="m12 12 7-9"/><path d="m17 3 2 0 0 2"/>',
+  s_hamle: '<path d="M3 12h13"/><path d="m12 6 6 6-6 6"/><path d="M3 7h5"/><path d="M3 17h5"/><path d="M21 4v16"/>',
+  s_demir: '<path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z"/><path d="M12 7v10"/><path d="M8 11h8"/>',
+  n_golge: '<path d="M14 3a8 8 0 1 0 7 11 6 6 0 0 1-7-11z"/><path d="m3 21 7-7"/><path d="m8 14 2 2"/>',
+  n_zehir: '<path d="M12 3s5 6 5 10a5 5 0 0 1-10 0c0-4 5-10 5-10z"/><path d="m4 21 5-5"/><path d="m6 15 3 3"/>',
+  n_yagmur: '<path d="M6 3v9"/><path d="m4 10 2 3 2-3"/><path d="M12 5v11"/><path d="m10 14 2 3 2-3"/><path d="M18 3v9"/><path d="m16 10 2 3 2-3"/><path d="M4 21h16"/>',
+  n_adim: '<path d="M3 8h10a3 3 0 1 0-3-3"/><path d="M3 12h15a3 3 0 1 1-3 3"/><path d="M3 16h7"/>',
+  u_kara: '<path d="M14 3 5 12l2 2 9-9V3z"/><path d="m4 20 3-3"/><path d="M15 21c3 0 5-2 5-5-1 1-2 1-3 0 0-2 1-3 0-5-1 2-3 3-3 5-1-1-1-2-1-3-1 2-2 3-2 5 0 2 2 3 4 3z"/>',
+  u_emme: '<path d="M12 12m-2 0a2 2 0 1 0 4 0 4 4 0 1 0-8 0 6 6 0 1 0 12 0 8 8 0 1 0-16 0"/>',
+  u_alev: '<path d="M12 22c4 0 7-3 7-7 0-3-2-5-3-7 0 2-1 3-2 3 0-3-1-6-4-8 0 3-2 5-3 7-1 1-2 3-2 5 0 4 3 7 7 7z"/><path d="M12 22c-2 0-3-1.5-3-3.5 0-2 2-3 3-5 1 2 3 3 3 5S14 22 12 22z"/>',
+  u_kalkan: '<path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z"/><path d="M15 9a4 4 0 1 0 0 6 3 3 0 1 1 0-6z"/>',
+  m_sifa: '<path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-3 4.5 4.5 0 0 1 8 3c0 6-8 11-8 11z"/><path d="M12 9v6"/><path d="M9 12h6"/>',
+  m_simsek: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  m_kutsama: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/><path d="m5 5 2 2"/><path d="m17 17 2 2"/><path d="m5 19 2-2"/><path d="m17 7 2-2"/>',
+  m_kukreme: '<path d="M4 12c0-4 3-7 7-7l5 3-2 2 4 2-4 2 2 2-5 3c-4 0-7-3-7-7z"/><path d="M19 8c1 1 2 3 2 4s-1 3-2 4"/><circle cx="9" cy="10" r="1"/>',
+  o_coklu: '<path d="M3 21 18 6"/><path d="M3 15 15 3"/><path d="M9 21 21 9"/><path d="m15 3h3v3"/><path d="m18 6h3v3"/>',
+  o_zehirli: '<path d="M3 21 17 7"/><path d="M14 4h6v6"/><path d="M6 6s3 3 3 5a3 3 0 0 1-6 0c0-2 3-5 3-5z"/>',
+  o_ates: '<path d="M3 21 17 7"/><path d="M14 4h6v6"/><path d="M7 3c0 2-3 3-3 6a3 3 0 0 0 6 0c0-2-2-3-1-5-1 0-2 0-2-1z"/>',
+  o_hafif: '<path d="M20 4C10 4 4 10 4 20"/><path d="M20 4c0 8-6 13-12 13"/><path d="M14 10 8 16"/>',
+};
+function lighten(hex, k) {
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const f = (c) => Math.round(c + (255 - c) * k).toString(16).padStart(2, '0');
+  return '#' + f(r) + f(g) + f(b);
+}
 function renderSkillbar() {
-  skillbarEl.innerHTML = mySkills().map((sk, i) => {
+  skillbarEl.innerHTML = mySkills().map((sk) => {
     const lv = skillState.levels[sk.key] || 0;
-    const short = sk.name.split(' ').map((w) => w[0]).join('').slice(0, 2);
-    return `<button class="skb${lv ? '' : ' locked'}" data-sk="${sk.key}" aria-label="${esc(sk.name)}" style="border-color:${sk.color}"><span style="color:${sk.color}">${esc(short)}</span><span class="cd" id="cd_${sk.key}"></span><span class="lv">${lv ? skLabel(lv) : ''}</span></button>`;
+    const mp = sk.mp + sk.mpLv * Math.max(0, lv - 1);
+    const icon = SKILL_ICONS[sk.key] || '<circle cx="12" cy="12" r="6"/>';
+    return `<button class="skb${lv ? ' ready' : ' locked'}" data-sk="${sk.key}" aria-label="${esc(sk.name)}" style="--c:${sk.color};--c2:${lighten(sk.color, 0.45)}">` +
+      `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>` +
+      `<span class="cd" id="cd_${sk.key}"></span><span class="cdt" id="cdt_${sk.key}"></span>` +
+      (lv ? `<span class="lv">${skLabel(lv)}</span><span class="mp">${mp}</span>` : '') + '</button>';
   }).join('');
   const pts = document.getElementById('skillPts');
   pts.textContent = skillState.points; pts.style.display = skillState.points > 0 && myLevel >= skillState.unlock ? '' : 'none';
@@ -927,6 +1142,8 @@ function renderSkillWin() {
 skillbarEl.addEventListener('pointerdown', (e) => {
   const b = e.target.closest('[data-sk]'); if (!b) return;
   e.preventDefault();
+  b.classList.remove('press'); void b.offsetWidth; b.classList.add('press');
+  setTimeout(() => b.classList.remove('press'), 360);
   useSkill(b.dataset.sk);
 });
 document.getElementById('skillBtn').addEventListener('click', () => { renderSkillWin(); skillwinEl.classList.add('open'); });
@@ -938,8 +1155,19 @@ function updateSkillCooldowns() {
   const now = performance.now();
   for (const sk of mySkills()) {
     const el = document.getElementById('cd_' + sk.key); if (!el) continue;
+    const tEl = document.getElementById('cdt_' + sk.key);
     const c = skillCdUntil[sk.key];
-    el.style.height = c && c.until > now ? (100 * (c.until - now) / c.total) + '%' : '0';
+    if (c && c.until > now) {
+      // saat gibi kararan bekleme kadranı
+      const k = 100 * (c.until - now) / c.total;
+      el.style.background = `conic-gradient(rgba(0,0,0,0.72) ${k}%, rgba(0,0,0,0) ${k}%)`;
+      const sec = Math.ceil((c.until - now) / 1000);
+      if (tEl.textContent !== String(sec)) tEl.textContent = sec;
+      el.parentElement.classList.remove('ready');
+    } else if (el.style.background) {
+      el.style.background = ''; tEl.textContent = '';
+      if (skillState.levels[sk.key]) el.parentElement.classList.add('ready');
+    }
   }
 }
 
@@ -1120,6 +1348,12 @@ function updateEffects(dt) {
     if (k >= 1) { scene.remove(e.m); e.m.geometry.dispose(); e.m.material.dispose(); effects.splice(i, 1); }
   }
 }
+function showLevelBanner(level) {
+  const el = document.getElementById('levelBanner');
+  document.getElementById('lbLv').textContent = level;
+  document.getElementById('lbSub').textContent = '+3 durum puanı · Karakter penceresinden dağıt';
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+}
 function levelUpFx(p) {
   fx.levelUp(p);
   p.jumpT = p.jumpDur = 0.6;
@@ -1190,7 +1424,7 @@ export function startGame(sock, opts = {}) {
   if (opts.onKicked) alertBox = opts.onKicked;
 
   socket.on('welcome', (data) => {
-    myId = data.id; myClass = data.cls;
+    myId = data.id; myClass = data.cls; myName = data.name;
     document.getElementById('myname').textContent = data.name;
     document.getElementById('myclass').textContent = (CLASSES[myClass] || {}).name || '';
     setStats(data.stats.level, data.stats.exp, data.stats.need);
@@ -1202,7 +1436,7 @@ export function startGame(sock, opts = {}) {
   socket.on('stats', ({ level, exp, need, up }) => {
     setStats(level, exp, need);
     const me = players[myId];
-    if (up && me) { me.level = level; updateLabelText(me); log(`<b>Sistem:</b> Seviye atladın! Artık Sv. ${level}.`); floatText('SEVİYE ' + level, me.group.position.x, 3, me.group.position.z, true); sfx.levelUp(); }
+    if (up && me) { me.level = level; updateLabelText(me); log(`<b>Sistem:</b> Seviye atladın! Artık Sv. ${level}.`); showLevelBanner(level); sfx.levelUp(); }
   });
   socket.on('expGain', (n) => { const me = players[myId]; if (me) floatText(`+${n} TP`, me.group.position.x, 2.6, me.group.position.z, false); });
   socket.on('notice', (t) => toast(t));
@@ -1210,6 +1444,7 @@ export function startGame(sock, opts = {}) {
   socket.on('look', ({ id, look }) => { const p = players[id]; if (p) applyLook(p, look); });
   socket.on('mp', ({ mp, max }) => setMp(mp, max));
   socket.on('skills', (data) => { skillState = data; renderSkillbar(); if (skillwinEl.classList.contains('open')) renderSkillWin(); });
+  socket.on('attrs', (a) => { attrs = a; renderChar(); });
   socket.on('skillCd', ({ key, until }) => { skillCdUntil[key] = { until: performance.now() + until * 1000, total: until * 1000 }; });
   socket.on('buffs', (list) => { buffList = list; buffAt = performance.now(); renderBuffs(); });
   socket.on('quests', (q) => { quests = q; if (shopKind === 'stable') renderShop(); });
@@ -1226,6 +1461,7 @@ export function startGame(sock, opts = {}) {
     if (p && sk.combo != null) { p.swingT = SWING_T; p.combo = sk.combo; if (p.cls !== 'okcu') p.slashT = 0.3; }
     const from = p ? p.group.position : { x, z };
     sfx.skill(sk, from);
+    if (p && sk.target !== 'heal') sfx.grunt(from, p.cls === 'ninja' || p.cls === 'saman');
     // Metin2 tarzı beceri görüntüsü (fx.js) + karakterin dönmesi/sıçraması
     const tl = [];
     for (const t of targets) { const tp = targetPos(t); if (tp) tl.push({ x: tp.x, y: 0, z: tp.z, obj: players[t] || null }); }
@@ -1277,7 +1513,7 @@ export function startGame(sock, opts = {}) {
       fx.hitSpark(m.v.root.position, crit, 'mob');
     } else {
       const s = stones[id]; if (!s) return;
-      s.hp = hp; s.label.hp.style.width = (100 * hp / s.max) + '%'; s.shake = 0.2;
+      s.hp = hp; s.label.hp.style.width = (100 * hp / s.max) + '%'; s.shake = 0.2; s.flash = crit ? 1 : 0.6;
       sfx.hit('stone', crit, s);
       fx.hitSpark({ x: s.x, y: 0.6, z: s.z }, crit, 'stone');
       floatText((crit ? 'KRİTİK ' : '') + '-' + dmg, s.x, 4.4, s.z, crit);
@@ -1306,7 +1542,7 @@ export function startGame(sock, opts = {}) {
   socket.on('mobHeal', ({ id, hp }) => { const m = mobs[id]; if (m) { m.hp = hp; m.label.hp.style.width = '100%'; } });
   socket.on('stoneSpawn', (s) => createStone(s));
   socket.on('stoneDown', ({ id, by, name, stoneName }) => {
-    if (stones[id]) sfx.stoneBreak(stones[id]);
+    if (stones[id]) { sfx.stoneBreak(stones[id]); fx.stoneBreak(stones[id], stones[id].glowColor || '#ff4a2f'); }
     removeStone(id);
     log(by === myId ? `<b>Sistem:</b> ${esc(stoneName)}'ni kırdın! Ganimetleri topla.` : `<b>${esc(name)}</b> bir ${esc(stoneName)} kırdı.`);
   });
@@ -1506,6 +1742,7 @@ function loop() {
     if (p.mounted && p.horse) p.horse.update(clock.elapsedTime, p.moving, 0, dt);
     skillPoseUpdate(p, dt);
     if (p.swingT > 0) p.swingT = Math.max(0, p.swingT - dt);
+    applyBreath(p, clock.elapsedTime);
     applySwing(p);
     if (p.model) p.model.parent.rotation.x = (p.id === myId ? amDead : p.dead) ? -Math.PI / 2 : 0;
     if (p.spirit) {
@@ -1526,10 +1763,8 @@ function loop() {
     placeLabel(p.label, p.group.position.x, p.labelY || 2.4, p.group.position.z);
   }
   updateMobs(dt);
-  for (const s of Object.values(stones)) {
-    if (s.shake > 0) { s.shake -= dt; s.rock.position.x = (Math.random() - 0.5) * 0.25; } else s.rock.position.x = 0;
-    placeLabel(s.label, s.x, 4.6, s.z);
-  }
+  updateStones(dt, clock.elapsedTime);
+  for (const s of Object.values(stones)) placeLabel(s.label, s.x, 4.6, s.z);
   for (const d of Object.values(drops)) {
     d.t += dt;
     d.spin.rotation.y += dt * 1.5;
@@ -1542,6 +1777,7 @@ function loop() {
   }
   updateArrows(dt);
   updateEffects(dt);
+  icons.pumpIcons();
   fx.updateFx(dt, (o) => players[o.id] === o);
   updateWeather(dt);
   updateSkillCooldowns();

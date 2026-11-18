@@ -40,8 +40,17 @@ function createWorld(io) {
       atk: R.attackPower(p), def: R.defense(p), maxHp: p.maxHp, maxMp: p.maxMp,
       crit: Math.round(((R.classOf(p).crit || 0.12) * 100) + t.crit), atkspeed: t.atkspeed, movespeed: t.movespeed,
       speed: R.speedMul(p), atkCd: R.attackCooldown(p), mounted: !!p.mounted });
+    sendAttrs(p);
   }
   function sendMp(p) { p.socket.emit('mp', { mp: p.mp, max: p.maxMp }); }
+  // karakter penceresi: özellikler, boş puan ve hesaplanmış değerler
+  function sendAttrs(p) {
+    const t = R.totals(p);
+    p.socket.emit('attrs', { values: R.statValues(p), base: R.BASE_STATS[p.class], free: R.statPointsFree(p), max: R.STAT_MAX,
+      main: R.MAIN_STAT[p.class], bonus: R.statBonus(p),
+      atk: R.attackPower(p), def: R.defense(p), maxHp: p.maxHp, maxMp: p.maxMp,
+      crit: Math.round(((R.classOf(p).crit || 0.12) * 100) + t.crit), skill: t.skill, atkspeed: t.atkspeed, movespeed: t.movespeed });
+  }
   function sendSkills(p) {
     p.socket.emit('skills', { levels: p.skills, points: R.skillPoints(p), unlock: R.SKILL_UNLOCK });
   }
@@ -111,9 +120,9 @@ function createWorld(io) {
     try {
       await db.query(
         `UPDATE characters SET level=$2, exp=$3, yang=$4, kills=$5, pos_x=$6, pos_z=$7,
-         inventory=$8, equip=$9, next_uid=$10, map_id=$11, hp=$12, mp=$13, skills=$14, quests=$15, last_played=now() WHERE id=$1`,
+         inventory=$8, equip=$9, next_uid=$10, map_id=$11, hp=$12, mp=$13, skills=$14, quests=$15, stats=$16, last_played=now() WHERE id=$1`,
         [p.charId, p.level, p.exp, p.yang, p.kills, p.x, p.z, JSON.stringify(p.inventory), JSON.stringify(p.equip),
-         p.nextUid, p.zone ? p.zone.id : p.mapId, p.dead ? p.maxHp : p.hp, p.mp, JSON.stringify(p.skills), JSON.stringify(p.quests)]);
+         p.nextUid, p.zone ? p.zone.id : p.mapId, p.dead ? p.maxHp : p.hp, p.mp, JSON.stringify(p.skills), JSON.stringify(p.quests), JSON.stringify(p.stats || {})]);
     } catch (e) { console.error('Kayıt hatası', p.name, e.message); }
   }
 
@@ -130,6 +139,7 @@ function createWorld(io) {
       }
       if (up) {
         recalc(p); p.hp = p.maxHp; p.mp = p.maxMp; sendHp(p); sendMp(p); sendInv(p); sendSkills(p);
+        notice(p, `+${R.STAT_PER_LEVEL || 3} durum puanı kazandın. Karakter penceresinden (K) dağıt.`);
         levelRewards(p);
       }
       sendStats(p, up);
@@ -233,11 +243,11 @@ function createWorld(io) {
       level: row.level, exp: row.exp, yang: Number(row.yang), kills: row.kills,
       inventory: row.inventory || [], equip: row.equip || {}, nextUid: row.next_uid,
       mapId: R.MAPS[row.map_id] ? row.map_id : 0, hp: row.hp, dead: false, zone: null,
-      mp: row.mp, skills: row.skills || {}, quests: row.quests || {}, buffs: {}, skillCd: {}, mounted: false,
+      mp: row.mp, skills: row.skills || {}, quests: row.quests || {}, stats: row.stats || {}, buffs: {}, skillCd: {}, mounted: false,
       fish: null, facing: 0,
     };
     if (prev) {
-      for (const k of ['level', 'exp', 'yang', 'kills', 'inventory', 'equip', 'nextUid', 'hp', 'mp', 'skills', 'quests', 'buffs']) p[k] = prev[k];
+      for (const k of ['level', 'exp', 'yang', 'kills', 'inventory', 'equip', 'nextUid', 'hp', 'mp', 'skills', 'quests', 'stats', 'buffs']) p[k] = prev[k];
       if (prev.zone) p.mapId = prev.zone.id;
     }
     for (const s of R.EQUIP_SLOTS) if (p.equip[s] === undefined) p.equip[s] = null;
@@ -442,6 +452,21 @@ function createWorld(io) {
     });
 
     // ---------- beceriler ----------
+    // durum puanı ver: { stat: 'str'|'vit'|'int'|'dex', n }
+    socket.on('statUp', (data) => {
+      const stat = data && data.stat;
+      if (!R.STAT_KEYS.includes(stat)) return;
+      const want = Math.max(1, Math.min(10, Math.floor(Number(data.n) || 1)));
+      const free = R.statPointsFree(p), cur = R.statValues(p)[stat];
+      const n = Math.min(want, free, R.STAT_MAX - cur);
+      if (n <= 0) { notice(p, free <= 0 ? 'Boş durum puanın yok.' : `Bu özellik en fazla ${R.STAT_MAX} olabilir.`); return; }
+      p.stats = p.stats || {};
+      p.stats[stat] = (p.stats[stat] || 0) + n;
+      const hpFrac = p.hp / Math.max(1, p.maxHp), mpFrac = p.mp / Math.max(1, p.maxMp);
+      recalc(p);
+      p.hp = Math.max(1, Math.round(p.maxHp * hpFrac)); p.mp = Math.round(p.maxMp * mpFrac);
+      sendInv(p); sendHp(p); sendMp(p);
+    });
     socket.on('skillUp', (key) => {
       const sk = R.skillsOf(p).find((s) => s.key === key);
       if (!sk) return;

@@ -284,7 +284,7 @@ class Zone {
       targets = this.targetsAround(p.x, p.z, sk.radius);
     }
     for (const [kind, t] of targets) {
-      const { dmg, crit, steal } = R.playerDamage(p, kind === 'mob' ? t.d.def : 0, 0, mult, !!sk.crit);
+      const { dmg, crit, steal } = R.playerDamage(p, kind === 'mob' ? t.d.def : 0, 0, mult * R.skillMul(p), !!sk.crit);
       const heal = Math.round(dmg * ((sk.lifesteal || 0) + (steal || 0) / 100));
       if (heal) this.hooks.heal(p, heal);
       if (kind === 'mob') {

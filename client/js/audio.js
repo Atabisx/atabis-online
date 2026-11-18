@@ -75,39 +75,68 @@ function noise({ t = 0, dur = 0.2, vol = 0.3, type = 'bandpass', f0 = 1000, f1, 
 const NOTE = (n) => 440 * Math.pow(2, (n - 69) / 12);
 
 // ---------- oyun sesleri ----------
+// rastgele perde: aynı ses üst üste gelince makineli tüfek gibi olmasın
+const vary = (f, k = 0.08) => f * (1 + (Math.random() - 0.5) * 2 * k);
+// madeni çınlama: uyumsuz kısmi tonlar (gerçek metal gibi)
+function ring(base, vol, dur, t = 0) {
+  for (const [m, g] of [[1, 1], [2.76, 0.55], [5.4, 0.3], [8.93, 0.15]]) tone({ type: 'sine', f0: base * m, t, dur: dur * (1.2 - m * 0.08), vol: vol * g, a: 0.002 });
+}
 // kılıç/hançer savurma, yay gerilmesi, asa vuruşu
 export function swing(cls, pos, combo = 0) {
   if (!ready()) return;
   const v = near(pos); if (v <= 0) return;
   if (cls === 'okcu') {
-    tone({ type: 'triangle', f0: 180, f1: 120, dur: 0.18, vol: 0.25 * v });
-    noise({ dur: 0.12, vol: 0.18 * v, f0: 3000, f1: 1200, q: 2 });
+    tone({ type: 'triangle', f0: vary(190), f1: 110, dur: 0.16, vol: 0.28 * v });
+    noise({ dur: 0.1, vol: 0.22 * v, f0: 4200, f1: 1500, q: 2.5 });
+    noise({ t: 0.03, dur: 0.18, vol: 0.12 * v, f0: 2000, f1: 5000, q: 6 });   // ok uçuşu ıslığı
     return;
   }
   if (cls === 'saman') {
-    noise({ dur: 0.25, vol: 0.18 * v, f0: 600, f1: 2400, q: 3 });
-    tone({ type: 'sine', f0: 500, f1: 900, dur: 0.2, vol: 0.08 * v });
+    noise({ dur: 0.28, vol: 0.2 * v, f0: 500, f1: 2600, q: 3 });
+    tone({ type: 'sine', f0: vary(520), f1: 980, dur: 0.22, vol: 0.09 * v });
     return;
   }
+  // keskin "vuuş": hızlı süpürülen dar bant gürültü + hava basıncı
   const quick = cls === 'ninja';
-  noise({ dur: quick ? 0.12 : 0.2, vol: (0.32 + combo * 0.06) * v, f0: quick ? 4200 : 3000, f1: quick ? 1500 : 700, q: 1.4 });
+  const d = quick ? 0.11 : 0.17 + combo * 0.02;
+  noise({ dur: d, vol: (0.38 + combo * 0.06) * v, f0: vary(quick ? 5200 : 3800), f1: quick ? 1600 : 900, q: 2.2 });
+  noise({ dur: d * 1.2, vol: 0.16 * v, type: 'lowpass', f0: 700, f1: 200 });
 }
-// isabet: yaratığa ya da taşa
+// isabet: yaratığa ya da taşa (Metin2 gibi dolgun: kesik + et + metal + gümleme)
 export function hit(kind, crit, pos) {
   if (!ready()) return;
   const v = near(pos); if (v <= 0) return;
   if (kind === 'stone') {
-    tone({ type: 'square', f0: 620, f1: 560, dur: 0.12, vol: 0.09 * v, filter: 2500 });
-    tone({ type: 'square', f0: 870, f1: 800, dur: 0.1, vol: 0.06 * v, filter: 2500 });
-    noise({ dur: 0.08, vol: 0.25 * v, type: 'highpass', f0: 1500 });
+    ring(vary(620, 0.05), 0.09 * v, 0.35);
+    noise({ dur: 0.06, vol: 0.35 * v, type: 'highpass', f0: 1800 });
+    noise({ dur: 0.18, vol: 0.25 * v, type: 'lowpass', f0: 900, f1: 200 });
+    tone({ type: 'sine', f0: 90, f1: 45, dur: 0.18, vol: 0.3 * v });
   } else {
-    tone({ type: 'sine', f0: 160, f1: 55, dur: 0.14, vol: 0.45 * v });
-    noise({ dur: 0.07, vol: 0.3 * v, type: 'lowpass', f0: 1800 });
+    noise({ dur: 0.012, vol: 0.5 * v, type: 'highpass', f0: 3000 });                            // ilk temas çıtırtısı
+    noise({ dur: 0.13, vol: 0.42 * v, f0: vary(1500), f1: 380, q: 1.6 });                         // kesme/et sesi
+    tone({ type: 'sine', f0: vary(150), f1: 48, dur: 0.16, vol: 0.5 * v });                       // gövde gümlemesi
+    ring(vary(1900, 0.1), 0.035 * v, 0.16, 0.005);                                                 // kılıç parıltısı
   }
   if (crit) {
-    tone({ type: 'triangle', f0: 1400, f1: 1100, t: 0.01, dur: 0.22, vol: 0.12 * v });
-    tone({ type: 'sine', f0: 90, f1: 40, dur: 0.25, vol: 0.35 * v });
+    ring(vary(2600, 0.04), 0.09 * v, 0.45);                                                         // "şiing"
+    tone({ type: 'sine', f0: 80, f1: 34, dur: 0.35, vol: 0.45 * v });
+    noise({ dur: 0.25, vol: 0.22 * v, type: 'lowpass', f0: 1200, f1: 150 });
   }
+}
+// beceri kullanırken kısa "hah!" (tonlu, ağız boşluğu gibi süzülmüş)
+export function grunt(pos, female = false) {
+  if (!ready()) return;
+  const v = near(pos, 20); if (v <= 0) return;
+  const f0 = vary(female ? 260 : 150, 0.06);
+  const now = ctx.currentTime;
+  const o = ctx.createOscillator(); o.type = 'sawtooth';
+  o.frequency.setValueAtTime(f0 * 1.15, now); o.frequency.exponentialRampToValueAtTime(f0 * 0.8, now + 0.22);
+  const g = ctx.createGain(); env(g, now, 0.012, 0.22 * v, 0.24);
+  const f1 = ctx.createBiquadFilter(); f1.type = 'bandpass'; f1.frequency.value = female ? 900 : 700; f1.Q.value = 3;
+  const f2 = ctx.createBiquadFilter(); f2.type = 'bandpass'; f2.frequency.value = female ? 1900 : 1250; f2.Q.value = 4;
+  o.connect(f1); o.connect(f2); f1.connect(g); f2.connect(g); g.connect(master);
+  o.start(now); o.stop(now + 0.3);
+  noise({ dur: 0.18, vol: 0.08 * v, f0: 1400, q: 1.2 });   // nefes
 }
 // karakterin hasar alması
 export function hurt() {

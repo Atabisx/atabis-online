@@ -43,6 +43,8 @@ def weapon_model(wtype, i):
 
 
 def armor_model(i):
+    if i <= 1:
+        return 'demir_zirh'
     if 2 <= i <= 5:
         return 'yelek'
     if 6 <= i <= 10:
@@ -85,6 +87,8 @@ def build_items():
                         it['trim'] = '#e8b54a' if not legendary else '#fff1b8'
                     if armor_model(i):
                         it['model'] = armor_model(i)
+                if slot == 'helmet' and i >= 5:
+                    it['model'] = 'kask'      # Sv. 36 ve üstü: Spartalı kask modeli
                 elif slot == 'helmet':
                     it['def'] = round((3 + 6 * i + 0.4 * i * i) * 0.6 * m)
                     if i >= 4:
@@ -174,29 +178,32 @@ MAPS = [
               ('horoz', 'Horoz', 2, 'frog', '#c0392b', 1.0, 0, 3.8, {'model': 'horoz'}),
               ('domuz', 'Domuz', 3, 'boar', '#e8a0a0', 1.0, 0, 4.0, {'model': 'domuz'}),
               ('inek', 'İnek', 5, 'bear', '#a0522d', 1.0, 0, 3.2, {'model': 'inek'})],
-     'bosses': [('devhoroz', 'Dev Horoz', 8, 'frog', '#c0392b', 2.6, {'model': 'horoz', 'aura': '#ffb347'}),
-                ('deliboga', 'Deli Boğa', 12, 'bear', '#6b3a1e', 1.7, {'model': 'inek', 'aura': '#ff3b2f'})]},
+     'bosses': [('devhoroz', 'Dev Horoz', 8, 'frog', '#c0392b', 5.0, {'model': 'horoz', 'aura': '#ffb347'}),
+                ('deliboga', 'Deli Boğa', 12, 'bear', '#6b3a1e', 3.0, {'model': 'inek', 'aura': '#ff3b2f'})]},
     {'name': 'Kızılçam Ormanı', 'lv': 15, 'theme': 'pine_forest',
      'mobs': [('vkurt', 'Vahşi Kurt', 15, 'wolf', '#5a4a3a', 1.1, 10, 5.8),
               ('kdomuz', 'Kara Domuz', 17, 'boar', '#2a2522', 1.15, 8, 5.2),
               ('ayi', 'Orman Ayısı', 19, 'bear', '#4a3020', 1.3, 8, 4.6)],
-     'bosses': [('bozkurt', 'Kurt Lideri Bozkurt', 17, 'wolf', '#3a2f4a', 1.7, {'model': 'kurt', 'aura': '#b06bff'}),
-                ('kuduz', 'Kuduz Benekli', 18, 'dog', '#f4f1e8', 1.8, {'model': 'kopek', 'aura': '#ff6a3d'}),
-                ('kaplan', 'Alaca Kaplan', 20, 'wolf', '#e67e22', 1.9, {'model': 'kaplan', 'aura': '#ffb347'}),
-                ('atesker', 'Ateş Kertenkelesi', 21, 'frog', '#b0362b', 2.0, {'model': 'kertenkele', 'aura': '#ff6a3d', 'breath': '#ff6a3d'}),
-                ('kristalyilan', 'Kristal Yılan', 22, 'worm', '#b0362b', 1.9, {'model': 'yilan', 'aura': '#ff3b5c'}),
-                ('alpbey', 'Savaşçı Alp Bey', 24, 'humanoid', '#8a6a3a', 1.2, {'model': 'savasci', 'aura': '#e8b54a'})]},
+     'bosses': [('cehennemsov', 'Cehennem Şövalyesi', 20, 'humanoid', '#2a2522', 1.35, {'model': 'cehennem_sovalyesi', 'aura': '#ff6a3d'}),
+                ('kaplanadam', 'Kaplan Adam', 22, 'humanoid', '#e67e22', 1.4, {'model': 'kaplan_adam', 'aura': '#ffb347'}),
+                ('lavcanavari', 'Lav Canavarı', 24, 'frog', '#b0362b', 2.0, {'model': 'lav_canavari', 'aura': '#ff3b2f', 'breath': '#ff6a3d'})]},
     {'name': 'Sisli Orman', 'lv': 22, 'theme': 'forest_mist',
      'mobs': [('sisorumcek', 'Sis Örümceği', 22, 'spider', '#5a5e6a', 1.0, 9, 5.5),
               ('golgekurt', 'Gölge Kurdu', 24, 'wolf', '#2c2f3a', 1.15, 11, 6.0),
               ('agacruhu', 'Ağaç Ruhu', 26, 'golem', '#4a6a35', 1.1, 7, 3.8)],
      'bosses': [('suelementi', 'Su Elementali', 29, 'golem', '#4fa3ff', 1.6, {'model': 'su_elementi', 'aura': '#4fa3ff'}),
-                ('sisbuyucu', 'Sis Büyücüsü', 31, 'ghost', '#5a3a8a', 1.25, {'model': 'buyucu', 'aura': '#b06bff'})]},
+                ('sisbuyucu', 'Sis Büyücüsü', 31, 'ghost', '#5a3a8a', 1.25, {'model': 'buyucu', 'aura': '#b06bff'}),
+                ('bozkurt', 'Kurt Lideri Bozkurt', 26, 'wolf', '#3a2f4a', 1.8, {'model': 'kurt', 'aura': '#b06bff'}),
+                ('kaplan', 'Alaca Kaplan', 28, 'wolf', '#e67e22', 1.9, {'model': 'kaplan', 'aura': '#ffb347'})]},
     {'name': 'Taş Vadisi', 'lv': 29, 'theme': 'rocky',
      'mobs': [('tasgolem', 'Taş Golem', 29, 'golem', '#8d8a82', 1.15, 7, 3.6),
               ('kayaakrep', 'Kaya Akrebi', 31, 'scorpion', '#6a5a4a', 1.0, 9, 5.0),
               ('haydut', 'Vadi Haydudu', 33, 'humanoid', '#6b4a2e', 1.0, 11, 5.4)],
-     'bosses': [('kadimmumya', 'Kadim Mumya', 38, 'humanoid', '#d9cfb8', 1.3, {'model': 'mumya', 'aura': '#e8d5a8'})]},
+     'bosses': [('kadimmumya', 'Kadim Mumya', 38, 'humanoid', '#d9cfb8', 1.3, {'model': 'mumya', 'aura': '#e8d5a8'}),
+                ('kuduz', 'Kuduz Benekli', 32, 'dog', '#f4f1e8', 1.9, {'model': 'kopek', 'aura': '#ff6a3d'}),
+                ('atesker', 'Ateş Kertenkelesi', 34, 'frog', '#b0362b', 2.1, {'model': 'kertenkele', 'aura': '#ff6a3d', 'breath': '#ff6a3d'}),
+                ('kristalyilan', 'Kristal Yılan', 35, 'worm', '#b0362b', 2.0, {'model': 'yilan', 'aura': '#ff3b5c'}),
+                ('alpbey', 'Savaşçı Alp Bey', 37, 'humanoid', '#8a6a3a', 1.25, {'model': 'savasci', 'aura': '#e8b54a'})]},
     {'name': 'Kuru Çöl', 'lv': 36, 'theme': 'desert_dunes',
      'mobs': [('kumakrep', 'Kum Akrebi', 36, 'scorpion', '#c9a35a', 1.05, 9, 5.2),
               ('colkurt', 'Çöl Kurdu', 38, 'wolf', '#c9a36a', 1.1, 11, 6.2),
@@ -293,7 +300,7 @@ def build(items):
         for key, name, lv, shape, color, scale, style in m['bosses']:
             d = mob_stats(lv, boss=True)
             d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': 0,
-                      'speed': 5.2, 'range': 2.6 * scale, 'cd': 2000, 'boss': True, 'respawn': 120,
+                      'speed': 5.2, 'range': min(6.0, 2.6 * scale), 'cd': 2000, 'boss': True, 'respawn': 120,
                       'drops': [[k, 0.28] for k in own] + [[k, 0.12] for k in nxt] + [[k, 0.035] for k in leg],
                       'potions': [[('p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4'), 1.0],
                                   [('p_mp2' if lv < 40 else 'p_mp3' if lv < 75 else 'p_mp4'), 1.0],

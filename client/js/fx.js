@@ -376,12 +376,57 @@ export function hitSpark(pos, crit, kind) {
   else burst(pos.x, y, pos.z, crit ? ['#ffd23f', '#ff6a3d', '#ffffff'] : ['#ffffff', '#ffd9a0'], crit ? 22 : 8, crit ? 7 : 4.5, { size: crit ? 0.24 : 0.16, life: 0.35 });
   if (crit) shockwave(pos.x, pos.z, 1.6, '#ffb347', 0.35, { y: 0.9 });
 }
+// seviye atlama (Metin2 tarzı): yükselen iki altın sarmal, ışınlar, ışık sütunu ve yıldız patlaması
+function rays(follow, color, dur, n = 10) {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({ color, map: columnTex(), ...add() });
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 6), mat);
+    const a = i / n * Math.PI * 2;
+    m.position.set(Math.cos(a) * 0.9, 3, Math.sin(a) * 0.9); m.rotation.y = -a; m.rotation.z = Math.cos(a * 3) * 0.12;
+    g.add(m);
+  }
+  addFx(g, dur, (k, dt, e) => {
+    g.position.set(follow.x, 0, follow.z);
+    g.rotation.y += dt * 1.2;
+    const s = Math.min(1, k * 4); g.scale.set(1 + k * 0.6, s * (1 + k * 0.3), 1 + k * 0.6);
+    mat.opacity = 0.75 * (1 - k);
+  }, { onEnd: () => mat.dispose() });
+}
 export function levelUp(obj) {
   const p = obj.group.position;
-  pillar(p.x, p.z, '#ffd23f', 9, 1.8, { follow: p, r: 1.1 });
-  magicCircle(p.x, p.z, 2.6, '#ffd23f', 2.2, { follow: p, spin: 2.5 });
-  shockwave(p.x, p.z, 5, '#fff1b8', 0.9);
-  repeat(18, 0.06, () => burst(p.x, rnd(0.5, 3), p.z, ['#ffd23f', '#fff1b8', '#ffffff'], 6, 4, { up: 3, size: 0.22, life: 1.0, drag: 1.5 }));
+  pillar(p.x, p.z, '#ffd23f', 11, 2.2, { follow: p, r: 1.2 });
+  rays(p, '#fff1b8', 2.0);
+  magicCircle(p.x, p.z, 3, '#ffd23f', 2.6, { follow: p, spin: 2.5 });
+  magicCircle(p.x, p.z, 1.8, '#fff1b8', 2.6, { follow: p, spin: -3.5, y: 0.1 });
+  shockwave(p.x, p.z, 6, '#fff1b8', 0.9);
+  setTimeout(() => shockwave(p.x, p.z, 4, '#ffd23f', 0.7), 300);
+  // iki sarmal: altın ve beyaz, karakteri sararak yükselir
+  repeat(60, 0.025, (i) => {
+    for (const side of [0, Math.PI]) {
+      const a = i * 0.42 + side, r = 1.1 - i * 0.008;
+      emit(p.x + Math.cos(a) * r, 0.1 + i * 0.07, p.z + Math.sin(a) * r, { vx: -Math.sin(a) * 0.8, vy: 0.9, vz: Math.cos(a) * 0.8,
+        color: side ? '#fff1b8' : '#ffd23f', size: 0.34, life: 1.0, drag: 1 });
+    }
+  });
+  // tepede yıldız patlaması
+  setTimeout(() => {
+    burst(p.x, 4.6, p.z, ['#ffd23f', '#fff1b8', '#ffffff', '#ffb347'], 70, 7, { size: 0.3, life: 1.2, gravity: 2.5, drag: 1.2 });
+    shockwave(p.x, p.z, 2.5, '#ffffff', 0.5, { y: 4.6 });
+  }, 1500);
+  repeat(24, 0.07, () => burst(p.x, rnd(0.4, 3.5), p.z, ['#ffd23f', '#fff1b8'], 4, 3, { up: 2.5, size: 0.2, life: 1.0, drag: 1.2 }));
+}
+// metin taşı kırılması: taş parçaları saçılır, renkli patlama
+export function stoneBreak(pos, color) {
+  burst(pos.x, 1.8, pos.z, ['#3a3f4b', '#5a5e6a', '#2a2d36'], 46, 9, { size: 0.42, life: 1.1, gravity: 14, drag: 0.6 });
+  burst(pos.x, 1.8, pos.z, [color, '#ffffff'], 50, 7, { size: 0.32, life: 0.8, drag: 1.5 });
+  shockwave(pos.x, pos.z, 6, color, 0.8);
+  pillar(pos.x, pos.z, color, 8, 0.8, { r: 1.4 });
+}
+// metin taşı çevresinde yükselen ışık zerresi
+export function stoneWisp(pos, color) {
+  const a = Math.random() * Math.PI * 2, r = 1.2 + Math.random() * 0.8;
+  emit(pos.x + Math.cos(a) * r, 0.2, pos.z + Math.sin(a) * r, { vx: -Math.cos(a) * 0.3, vy: rnd(0.8, 1.6), vz: -Math.sin(a) * 0.3, color, size: 0.22, life: 1.8, drag: 0.3 });
 }
 // yaratık ateş püskürtmesi (ör. Ateş Kertenkelesi)
 export function breath(from, to, color) {

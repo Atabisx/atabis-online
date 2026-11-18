@@ -42,8 +42,43 @@ function rollBonus(type, tier) {
 }
 
 // ekipman + efsunlar + güçlendirmeler
+// ---------- durum puanları (Metin2 gibi): GÜÇ, CAN, ZEKA, ÇEV ----------
+// Her seviyede 3 puan; bir özellik en fazla 90 olur. Ana saldırı özelliği sınıfa göre değişir.
+const STAT_KEYS = ['str', 'vit', 'int', 'dex'];
+const STAT_MAX = 90;
+const STAT_PER_LEVEL = 3;
+const BASE_STATS = {
+  savasci: { str: 6, vit: 4, int: 3, dex: 3 }, ninja: { str: 4, vit: 3, int: 3, dex: 6 },
+  sura: { str: 5, vit: 3, int: 5, dex: 3 }, saman: { str: 3, vit: 4, int: 6, dex: 3 }, okcu: { str: 3, vit: 3, int: 3, dex: 7 },
+};
+const MAIN_STAT = { savasci: 'str', sura: 'str', ninja: 'dex', okcu: 'dex', saman: 'int' };
+function statValues(p) {
+  const base = BASE_STATS[p.class] || BASE_STATS.savasci, spent = p.stats || {}, out = {};
+  for (const k of STAT_KEYS) out[k] = Math.min(STAT_MAX, base[k] + (spent[k] || 0));
+  return out;
+}
+function statPointsFree(p) {
+  const spent = STAT_KEYS.reduce((a, k) => a + ((p.stats || {})[k] || 0), 0);
+  return Math.max(0, (p.level - 1) * STAT_PER_LEVEL - spent);
+}
+// özelliklerin etkisi
+function statBonus(p) {
+  const v = statValues(p), main = v[MAIN_STAT[p.class] || 'str'];
+  return {
+    atk: Math.round(main * 1.2 + (MAIN_STAT[p.class] === 'str' ? v.dex : v.str) * 0.25),
+    hp: Math.round(v.vit * (14 + p.level * 0.4)),
+    def: Math.round(v.vit * 0.6 + v.dex * 0.2),
+    mp: Math.round(v.int * (10 + p.level * 0.3)),
+    crit: +(v.dex * 0.15).toFixed(1),
+    skill: +(v.int * 0.8).toFixed(1),     // beceri hasarı %
+  };
+}
+function skillMul(p) { return 1 + (totals(p).skill || 0) / 100; }
+
 function totals(p) {
-  const s = { atk: 0, def: 0, hp: 0, mp: 0, crit: 0, atkspeed: 0, movespeed: 0, monster: 0, hpsteal: 0 };
+  const s = { atk: 0, def: 0, hp: 0, mp: 0, crit: 0, atkspeed: 0, movespeed: 0, monster: 0, hpsteal: 0, skill: 0 };
+  const sb = statBonus(p);
+  for (const k of Object.keys(sb)) s[k] += sb[k];
   for (const slot of EQUIP_SLOTS) {
     const it = p.equip[slot];
     const def = it && ITEMS[it.key];
@@ -99,6 +134,6 @@ const skillLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 
 module.exports = {
   ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, EQUIP_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
-  BONUS_TYPES, rollBonus, expForLevel, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
+  BONUS_TYPES, rollBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
   speedMul, attackCooldown, playerDamage, mobDamage, expGain, skillLabel,
 };

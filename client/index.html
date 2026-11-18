@@ -57,6 +57,10 @@
   <button id="mountBtn" style="display:none" aria-label="Ata bin">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20v-6l3-4h7l3-5 2 1-1 4 2 3v7"/><path d="M8 20v-5"/><path d="M15 20v-5"/></svg>
   </button>
+  <button id="charBtn" aria-label="Karakter (özellik puanları)">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg>
+    <i id="charPts" style="display:none">0</i>
+  </button>
   <button id="sndBtn" aria-label="Sesi kapat">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path class="wave" d="M15.5 8.5a5 5 0 0 1 0 7"/><path class="wave" d="M18.5 5.5a9 9 0 0 1 0 13"/><path class="mute" d="m16 9 6 6"/><path class="mute" d="m22 9-6 6"/></svg>
   </button>
@@ -97,6 +101,15 @@
       <div id="skillList" style="overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
     </div>
   </div>
+  <div id="charwin" class="modal" role="dialog" aria-label="Karakter">
+    <div class="modalbox charbox">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">KARAKTER</b><span id="charFree" class="charfree"></span><button id="charClose" class="xbtn" aria-label="Kapat">×</button></div>
+      <div id="charHead" class="charhead"></div>
+      <div id="charStats" class="charstats"></div>
+      <div id="charDerived" class="charderived"></div>
+    </div>
+  </div>
+  <div id="levelBanner" aria-live="polite"><div class="lb-glow"></div><div class="lb-title">SEVİYE ATLADIN</div><div class="lb-lv" id="lbLv">2</div><div class="lb-sub" id="lbSub">+3 durum puanı</div></div>
   <div id="dead" class="modal" role="dialog" aria-label="Öldün">
     <div class="modalbox" style="width:min(340px,92vw);text-align:center;align-items:center">
       <b style="font-size:24px;color:#ff6a5a;letter-spacing:.06em">ÖLDÜN</b>
