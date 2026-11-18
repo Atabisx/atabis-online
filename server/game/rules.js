@@ -35,6 +35,12 @@ const BONUS_TYPES = {
   monster:   { name: 'Canavarlara Karşı Güç', unit: '%', roll: () => 2 + Math.floor(Math.random() * 9) },
   hpsteal:   { name: 'Can Çalma', unit: '%', roll: () => 1 + Math.floor(Math.random() * 4) },
 };
+// efsunun alabileceği en yüksek değer (GM eşyaları için)
+const BONUS_MAX = { crit: 8, atkspeed: 8, movespeed: 6, monster: 10, hpsteal: 4 };
+function maxBonus(type, tier) {
+  if (BONUS_MAX[type] != null) return BONUS_MAX[type];
+  return Math.round(BONUS_TYPES[type].roll(tier || 0) * 1.2);
+}
 function rollBonus(type, tier) {
   const b = BONUS_TYPES[type];
   const base = b.roll(tier || 0);
@@ -134,6 +140,6 @@ const skillLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 
 module.exports = {
   ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, EQUIP_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
-  BONUS_TYPES, rollBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
+  BONUS_TYPES, rollBonus, maxBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
   speedMul, attackCooldown, playerDamage, mobDamage, expGain, skillLabel,
 };

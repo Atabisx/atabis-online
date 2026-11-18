@@ -277,7 +277,8 @@ export function attachMobModel(v, def) {
 }
 
 // ---------- binek atı ----------
-export const MOUNT = { name: 'at', riderY: 1.08, riderZ: -0.28 };
+// riderY: oturan binicinin modelinin yerden yüksekliği (kalça eyere gelir)
+export const MOUNT = { name: 'at', riderY: 0.5, riderZ: -0.28 };
 export function attachMountModel(v) {
   const spec = MOB_MODELS.at;
   loadModel('models/mobs/at.glb').then((scene) => {

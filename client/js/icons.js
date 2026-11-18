@@ -207,3 +207,14 @@ export function medalMesh() {
   g.add(disc, rim, horse);
   return g;
 }
+
+export function ringMesh(color = '#4fd1c5') {
+  const g = new THREE.Group();
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.06, 16, 40), std('#e8b54a', 1, 0.18));
+  const setting = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.13, 0.08, 8), std('#e8b54a', 1, 0.2)); setting.position.y = 0.3;
+  const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.13, 0), glow(color, 0.9)); gem.position.y = 0.4; gem.scale.y = 0.8;
+  const halo = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.012, 6, 30), glow(color, 1.2)); halo.position.y = 0.4; halo.rotation.x = Math.PI / 2;
+  g.add(band, setting, gem, halo);
+  g.rotation.x = 0.35;
+  return g;
+}

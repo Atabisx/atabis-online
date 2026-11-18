@@ -47,7 +47,8 @@ function makeLabel(text, color, withHp) {
   const el = document.createElement('div');
   el.className = 'label';
   el.style.color = color;
-  el.textContent = text;
+  const tn = document.createTextNode(text);
+  el.appendChild(tn);
   let hp = null;
   if (withHp) {
     const wrap = document.createElement('div'); wrap.className = 'hp';
@@ -55,7 +56,7 @@ function makeLabel(text, color, withHp) {
     wrap.appendChild(hp); el.appendChild(wrap);
   }
   labelsEl.appendChild(el);
-  return { el, hp };
+  return { el, hp, tn };
 }
 const tmpV = new THREE.Vector3();
 function placeLabel(label, x, y, z) {
@@ -302,6 +303,7 @@ function calibrate(root) {
   const hand = boneByName(root, 'RightHand'), finger = boneByName(root, 'RightHandMiddle1') || boneByName(root, 'RightHandIndex1');
   const spine = boneByName(root, 'Spine2') || boneByName(root, 'Spine1') || boneByName(root, 'Spine');
   const head = boneByName(root, 'Head');
+  const hips = boneByName(root, 'Hips');
   if (!L || !R || !hand || !spine || !head) throw new Error('kemikler bulunamadı');
   const pl = L.getWorldPosition(new V3()), pr = R.getWorldPosition(new V3());
   const up = new V3(0, 1, 0);
@@ -322,7 +324,103 @@ function calibrate(root) {
     helmet: { bone: head.name, ...localTransform(head, pHead.clone().addScaledVector(up, 0.1 * k).addScaledVector(fwd, 0.01 * k), qBody, k) },
     padL: { bone: L.name, ...localTransform(L, pl.clone().addScaledVector(up, 0.05 * k), qBody, k) },
     padR: { bone: R.name, ...localTransform(R, pr.clone().addScaledVector(up, 0.05 * k), qBody, k) },
+    // sınıf kostümleri için: sırt (pelerin/sadak), boyun ve kalça (cüppe/kemer)
+    back: { bone: spine.name, ...localTransform(spine, ps.clone().addScaledVector(fwd, -0.13 * k).addScaledVector(up, 0.12 * k), qBody, k) },
+    neck: { bone: spine.name, ...localTransform(spine, ps.clone().addScaledVector(up, 0.2 * k), qBody, k) },
+    hips: hips ? { bone: hips.name, ...localTransform(hips, hips.getWorldPosition(new V3()), qBody, k) } : null,
   };
+}
+
+// ---------- sınıf görünümleri: her sınıfın kendi silueti (Metin2'deki gibi ayırt edilsin) ----------
+// Gövde oranı (genişlik), temel renk tonu ve bedene takılan kostüm parçaları.
+const CLASS_LOOK = {
+  savasci: { bulk: 1.08, tint: '#9a4a36' },
+  ninja: { bulk: 0.92, tint: '#2c2f3c' },
+  sura: { bulk: 1.0, tint: '#3e2c4e' },
+  saman: { bulk: 0.97, tint: '#d8cfa8' },
+  okcu: { bulk: 0.93, tint: '#3f6a3a' },
+};
+const cm = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: o.rough ?? 0.8, metalness: o.metal ?? 0.05, side: o.side || THREE.FrontSide, emissive: o.emissive || '#000000', emissiveIntensity: o.ei || 0 });
+function capeMesh(color, inner, len = 1.05, w = 0.5) {
+  const g = new THREE.Group();
+  const outer = new THREE.Mesh(new THREE.PlaneGeometry(w, len, 1, 6), cm(color, { side: THREE.DoubleSide }));
+  outer.position.set(0, -len / 2, -0.01); outer.castShadow = true;
+  // hafif kıvrım
+  const pos = outer.geometry.attributes.position;
+  for (let i = 0; i < pos.count; i++) pos.setZ(i, -Math.abs(pos.getX(i)) * 0.25 - (pos.getY(i) < 0 ? 0.04 : 0));
+  outer.geometry.computeVertexNormals();
+  g.add(outer);
+  if (inner) { const inn = new THREE.Mesh(outer.geometry, cm(inner, { side: THREE.BackSide })); inn.position.copy(outer.position); inn.position.z += 0.012; g.add(inn); }
+  g.rotation.x = 0.12;
+  g.userData.cape = true;
+  return g;
+}
+function costumeParts(cls, hasHelmet) {
+  const parts = [];   // [bağlantı adı, mesh]
+  if (cls === 'savasci') {
+    const fur = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.075, 8, 18, Math.PI * 1.2), cm('#6b4a2e', { rough: 1 }));
+    fur.rotation.set(Math.PI / 2, 0, Math.PI * 1.4); fur.position.set(0, 0.0, -0.02); fur.scale.set(1.15, 1, 0.8);
+    parts.push(['neck', fur]);
+    const belt = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.028, 6, 22), cm('#3a2a1c'));
+    belt.rotation.x = Math.PI / 2; belt.scale.set(1, 0.75, 1);
+    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.02), cm('#e8b54a', { metal: 0.9, rough: 0.3 })); buckle.position.set(0, 0, 0.13);
+    const bg = new THREE.Group(); bg.add(belt, buckle); bg.position.y = 0.06;
+    parts.push(['hips', bg]);
+  } else if (cls === 'ninja') {
+    if (!hasHelmet) {
+      const hood = new THREE.Mesh(new THREE.SphereGeometry(0.135, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.62), cm('#1f2230'));
+      hood.scale.set(1.05, 1.1, 1.15); hood.position.set(0, -0.06, -0.01);
+      parts.push(['helmet', hood]);
+    }
+    const mask = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.1, 0.07, 14, 1, true), cm('#14161e', { side: THREE.DoubleSide }));
+    mask.position.set(0, -0.155, 0.015);
+    parts.push(['helmet', mask]);
+    const scarf = capeMesh('#b0362b', null, 0.6, 0.12); scarf.position.set(0.06, 0.02, -0.06); scarf.rotation.z = -0.25;
+    parts.push(['neck', scarf]);
+  } else if (cls === 'sura') {
+    parts.push(['back', capeMesh('#1a1424', '#8e1f2a', 1.1, 0.52)]);
+    for (const [pad, sx] of [['padL', 1], ['padR', -1]]) {
+      const horn = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.18, 6), cm('#d9cfb8', { rough: 0.5 }));
+      horn.position.set(sx * 0.02, 0.1, -0.02); horn.rotation.z = -sx * 0.5;
+      const sp = new THREE.Mesh(new THREE.SphereGeometry(0.085, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), cm('#2a1f30', { metal: 0.6, rough: 0.4 }));
+      const g = new THREE.Group(); g.add(sp, horn);
+      parts.push([pad, g]);
+    }
+  } else if (cls === 'saman') {
+    const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.34, 0.78, 18, 1, true), cm('#ece4cc', { side: THREE.DoubleSide }));
+    robe.position.y = -0.38;
+    const hem = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.018, 6, 26), cm('#e8b54a', { metal: 0.8, rough: 0.3 })); hem.rotation.x = Math.PI / 2; hem.position.y = -0.77;
+    const sash = new THREE.Mesh(new THREE.TorusGeometry(0.175, 0.03, 6, 22), cm('#2f6f8a')); sash.rotation.x = Math.PI / 2; sash.position.y = 0.02;
+    const rg = new THREE.Group(); rg.add(robe, hem, sash); rg.userData.robe = true;
+    parts.push(['hips', rg]);
+    const beads = new THREE.Group();
+    for (let i = 0; i < 12; i++) { const a = Math.PI * (0.15 + i / 11 * 0.7); const b = new THREE.Mesh(new THREE.SphereGeometry(0.018, 6, 5), cm(i % 3 ? '#b0362b' : '#e8b54a', { rough: 0.3 })); b.position.set(Math.cos(a) * 0.13, -Math.sin(a) * 0.12 + 0.02, 0.09); beads.add(b); }
+    parts.push(['neck', beads]);
+    if (!hasHelmet) {
+      const hat = new THREE.Group();
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.08, 16), cm('#2f6f8a')); band.position.y = -0.03;
+      hat.add(band);
+      for (let i = 0; i < 5; i++) { const f = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.24, 4), cm(i % 2 ? '#f4f1e8' : '#e8b54a')); f.position.set((i - 2) * 0.04, 0.1, -0.06); f.rotation.x = -0.35; f.rotation.z = (i - 2) * 0.15; hat.add(f); }
+      parts.push(['helmet', hat]);
+    }
+  } else if (cls === 'okcu') {
+    const quiver = new THREE.Group();
+    const q = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.045, 0.5, 10), cm('#6b4a2e')); quiver.add(q);
+    for (let i = 0; i < 5; i++) {
+      const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.22, 4), cm('#c9b48a')); sh.position.set((i - 2) * 0.016, 0.33, (i % 2) * 0.015);
+      const fl = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.06, 0.004), cm('#b0362b')); fl.position.set((i - 2) * 0.016, 0.42, (i % 2) * 0.015);
+      quiver.add(sh, fl);
+    }
+    quiver.rotation.z = 0.5; quiver.position.set(0, -0.08, -0.04);
+    parts.push(['back', quiver]);
+    parts.push(['back', capeMesh('#2f5a2a', '#1f3a1c', 0.55, 0.42)]);
+    if (!hasHelmet) {
+      const hood = new THREE.Mesh(new THREE.SphereGeometry(0.135, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), cm('#3f6a3a'));
+      hood.scale.set(1.05, 1.05, 1.15); hood.position.set(0, -0.07, -0.015);
+      parts.push(['helmet', hood]);
+    }
+  }
+  return parts;
 }
 
 // ---------- ekipman görselleri (metre cinsinden) ----------
@@ -432,8 +530,20 @@ function applyLook(p, look) {
   p.equipMeshes = [];
   const w = ITEMS[p.look.weapon], a = ITEMS[p.look.armor], h = ITEMS[p.look.helmet];
   if (w) attach(p, calib.sword, weaponMesh(w));
-  const tint = new THREE.Color(a && a.color ? a.color : '#ffffff');
-  for (const m of p.materials) m.color.copy(m.userData.base).lerp(tint, a && a.color !== '#ffffff' ? 0.55 : 0);
+  // sınıfa göre vücut oranı ve renk; zırh varsa onun rengi ağır basar
+  const cl = CLASS_LOOK[p.cls];
+  const armorTint = a && a.color && a.color !== '#ffffff';
+  const tint = new THREE.Color(armorTint ? a.color : cl ? cl.tint : '#ffffff');
+  for (const m of p.materials) m.color.copy(m.userData.base).lerp(tint, armorTint ? 0.55 : cl ? 0.42 : 0);
+  if (p.model && p.model.parent && cl) { const base = 1 / calib.k; p.model.parent.scale.set(base * cl.bulk, base, base * cl.bulk); }
+  p.capes = [];
+  p.robe = null;
+  if (cl) for (const [where, mesh] of costumeParts(p.cls, !!h)) {
+    if (!calib[where]) continue;
+    attach(p, calib[where], mesh);
+    if (mesh.userData.cape) p.capes.push(mesh);
+    if (mesh.userData.robe) p.robe = mesh;
+  }
   if (a && a.plate) {
     const spec = a.model && ITEM_MODELS[a.model];
     attach(p, calib.chest, spec ? itemModel(a.model, chestMesh(a)) : chestMesh(a));
@@ -471,7 +581,8 @@ function createPlayer(p) {
     if (obj.actions.Idle) obj.actions.Idle.play();
     const find = (n) => Object.values(obj.boneMap).find((b) => b.name.replace(/^mixamorig[:_]?/i, '') === n);
     obj.bones = { spine: find('Spine1') || find('Spine'), arm: find('RightArm'), fore: find('RightForeArm'),
-      chest: find('Spine2'), armL: find('LeftArm'), neck: find('Neck') };
+      chest: find('Spine2'), armL: find('LeftArm'), neck: find('Neck'), foreL: find('LeftForeArm'),
+      upL: find('LeftUpLeg'), upR: find('RightUpLeg'), legL: find('LeftLeg'), legR: find('RightLeg') };
     if (!obj.bones.spine || !obj.bones.arm) obj.bones = null;
   } else {
     const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 1.0, 4, 8), mat(p.id === myId ? '#c0392b' : '#2f6fd0'));
@@ -489,7 +600,13 @@ function createPlayer(p) {
   obj.slash = slash;
   group.position.set(p.x, 0, p.z);
   scene.add(group);
-  obj.label = makeLabel(p.npc ? p.name : `${p.name} · Sv. ${obj.level}`, p.npc ? '#7be08f' : p.id === myId ? '#e8b54a' : '#8ec5ff', !p.npc);
+  obj.label = makeLabel(p.npc ? p.name : `${p.name} · Sv. ${obj.level}`, p.npc ? '#7be08f' : p.gm ? '#ffe14a' : p.id === myId ? '#e8b54a' : '#8ec5ff', !p.npc);
+  if (p.gm) {
+    // Metin2 tarzı GM rozeti
+    const b = document.createElement('span'); b.className = 'gmtag'; b.textContent = 'GM';
+    obj.label.el.insertBefore(b, obj.label.tn);
+    obj.label.el.classList.add('gm');
+  }
   if (obj.label.hp) { obj.label.hp.parentNode.classList.add('player'); obj.label.hp.style.width = (p.maxHp ? 100 * p.hp / p.maxHp : 100) + '%'; }
   players[p.id] = obj;
   applyLook(obj, p.look);
@@ -555,7 +672,7 @@ function setAnim(p, name) {
   if (from) to.crossFadeFrom(from, 0.2, false);
   p.current = name;
 }
-function updateLabelText(p) { p.label.el.firstChild.textContent = `${p.name} · Sv. ${p.level}`; }
+function updateLabelText(p) { p.label.tn.textContent = `${p.name} · Sv. ${p.level}`; }
 
 // ---------- saldırı hareketleri (3'lü kombo) ----------
 const SWING_T = 0.45;
@@ -616,6 +733,30 @@ function applyBreath(p, t) {
   rotWorld(p.bones.armL, _f, -b * 0.035 * still);
   rotWorld(p.bones.neck, _r, b * 0.03 * still);
   rotWorld(p.bones.spine, _u, b2 * 0.025 * still);
+}
+// ata binince otur: uyluklar öne ve yana açılır (atın gövdesini sarar), baldırlar aşağı sarkar,
+// kollar dizgin tutar gibi öne uzanır; gövde dik
+function applyRide(p) {
+  if (!p.bones || !p.mounted || !p.bones.upL) return;
+  const a = p.group.rotation.y - FACE_OFFSET;
+  _f.set(Math.sin(a), 0, Math.cos(a));
+  _r.crossVectors(_f, _u);
+  p.model.updateMatrixWorld(true);
+  rotWorld(p.bones.upL, _r, 1.45); rotWorld(p.bones.upR, _r, 1.45);
+  rotWorld(p.bones.upL, _f, -0.42); rotWorld(p.bones.upR, _f, 0.42);
+  rotWorld(p.bones.legL, _r, -1.5); rotWorld(p.bones.legR, _r, -1.5);
+  if (p.swingT <= 0) {
+    rotWorld(p.bones.arm, _r, 0.55); rotWorld(p.bones.armL, _r, 0.55);
+    rotWorld(p.bones.fore, _r, 0.6); rotWorld(p.bones.foreL, _r, 0.6);
+  }
+}
+// pelerinler yürürken arkaya uçuşur
+function updateCapes(p, t) {
+  if (!p.capes || !p.capes.length) return;
+  const m = p.moving ? 1 : 0;
+  p.capeM = (p.capeM || 0) + (m - (p.capeM || 0)) * 0.1;
+  for (const c of p.capes) c.rotation.x = 0.12 + p.capeM * (0.55 + Math.sin(t * 9) * 0.08) + Math.sin(t * 1.4) * 0.03;
+  if (p.robe) p.robe.visible = !p.mounted;
 }
 function applySwing(p) {
   if (p.swingT <= 0 || !p.bones) { if (p.model) p.model.parent.position.x = p.model.parent.position.z = 0; return; }
@@ -784,6 +925,7 @@ function removeDrop(id) {
 const inv = { inventory: [], equip: {}, yang: 0, atk: 0, def: 0, maxHp: 0 };
 let myLevel = 1;
 let myName = '';
+let myGm = false;
 let selected = null;   // {uid} veya {slot}
 const EQUIP = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring'];
 const BONUS_NAMES = { maxhp: ['Maks. Can', ''], maxmp: ['Maks. Mana', ''], atk: ['Saldırı', ''], def: ['Savunma', ''], crit: ['Kritik', '%'],
@@ -824,6 +966,7 @@ function iconBuilder(key, def) {
   if (key === 'yem') return () => icons.wormMesh();
   if (key === 'istiridye') return () => icons.shellMesh();
   if (key === 'at_muhru') return () => icons.medalMesh();
+  if (key === 'isin_yuzugu') return () => icons.ringMesh();
   return null;
 }
 const ICON_POSE = { weapon: { rz: -0.8, ry: 0.35 }, armor: { ry: 0.45, rx: 0.08 }, helmet: { ry: 0.65, rx: 0.1 }, shoes: { ry: 0.55, rx: 0.2 },
@@ -960,7 +1103,7 @@ function renderShop() {
     html = `<div style="display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5">${body}</div>`;
   } else if (shopKind === 'teleport') {
     for (const m of MAPS) {
-      const here = m.id === currentMap.id, ok = myLevel >= m.minLevel;
+      const here = m.id === currentMap.id, ok = myGm || myLevel >= m.minLevel;
       html += `<div class="srow"><span class="grow"><b>${esc(m.name)}</b>${m.village ? ' <small>(köy)</small>' : ''}<br><small style="color:${ok ? '#8b877c' : '#ff6a5a'}">Sv. ${m.minLevel}+</small></span>` +
         (here ? '<small>Buradasın</small>' : `<button data-tp="${m.id}" ${ok ? '' : 'disabled'}>Git</button>`) + '</div>';
     }
@@ -1198,6 +1341,20 @@ let nearAction = null;
 talkBtn.addEventListener('click', () => { if (nearAction) nearAction.run(); });
 const deadEl = document.getElementById('dead');
 document.getElementById('respawnBtn').addEventListener('click', () => { if (socket) socket.emit('respawn'); });
+// Metin2 gibi: "Burada başla" 5 saniye sonra tıklanabilir
+const hereBtn = document.getElementById('respawnHereBtn');
+let deadTimer = null;
+hereBtn.addEventListener('click', () => { if (socket && !hereBtn.disabled) socket.emit('respawn', { here: true }); });
+function startDeadCountdown() {
+  let left = 5;
+  hereBtn.disabled = true; hereBtn.textContent = `Burada başla (${left})`;
+  clearInterval(deadTimer);
+  deadTimer = setInterval(() => {
+    left--;
+    if (left <= 0) { clearInterval(deadTimer); hereBtn.disabled = false; hereBtn.textContent = 'Burada başla'; }
+    else hereBtn.textContent = `Burada başla (${left})`;
+  }, 1000);
+}
 
 
 // ---------- kontroller ----------
@@ -1424,7 +1581,7 @@ export function startGame(sock, opts = {}) {
   if (opts.onKicked) alertBox = opts.onKicked;
 
   socket.on('welcome', (data) => {
-    myId = data.id; myClass = data.cls; myName = data.name;
+    myId = data.id; myClass = data.cls; myName = data.name; myGm = !!data.gm;
     document.getElementById('myname').textContent = data.name;
     document.getElementById('myclass').textContent = (CLASSES[myClass] || {}).name || '';
     setStats(data.stats.level, data.stats.exp, data.stats.need);
@@ -1479,8 +1636,9 @@ export function startGame(sock, opts = {}) {
   socket.on('playerDied', ({ id }) => { const p = players[id]; if (p) p.dead = true; });
   socket.on('died', ({ village }) => {
     amDead = true;
-    document.getElementById('deadText').textContent = `Yeniden doğma yeri: ${village}`;
+    document.getElementById('deadText').textContent = `Köyde başlarsan ${village} içinde tam canla, burada başlarsan yarım canla doğarsın.`;
     deadEl.classList.add('open');
+    startDeadCountdown();
   });
   socket.on('state', ({ p: list, m: mlist }) => {
     document.getElementById('count').textContent = list.length;
@@ -1553,7 +1711,13 @@ export function startGame(sock, opts = {}) {
     pendingPick.delete(id);
     removeDrop(id);
   });
-  socket.on('chat', ({ name, text }) => log(`<b>${esc(name)}:</b> ${esc(text)}`));
+  socket.on('chat', ({ name, text, gm }) => log(gm ? `<b class="gmchat">[GM] ${esc(name)}:</b> <span class="gmchat">${esc(text)}</span>` : `<b>${esc(name)}:</b> ${esc(text)}`));
+  socket.on('openTeleport', () => openShop('teleport', 'IŞINLANMA YÜZÜĞÜ'));
+  socket.on('revived', ({ x, z }) => {
+    amDead = false; deadEl.classList.remove('open'); clearInterval(deadTimer);
+    const me = players[myId]; if (me) { me.dead = false; me.group.position.set(x, 0, z); fx.levelUp && fx.hitSpark(me.group.position, true, 'mob'); }
+  });
+  socket.on('playerRevive', ({ id }) => { const p = players[id]; if (p) p.dead = false; });
   socket.on('disconnect', (reason) => { if (reason !== 'io client disconnect') log('<b>Sistem:</b> Sunucu bağlantısı koptu, yeniden bağlanılıyor…'); });
   socket.on('connect', () => { if (myId) location.reload(); });
   socket.on('kicked', (msg) => { alertBox(msg); });
@@ -1737,13 +1901,15 @@ function loop() {
   for (const p of Object.values(players)) {
     if (p.id !== myId && !p.npc) p.group.position.lerp(p.target, 1 - Math.exp(-10 * dt));
     p.group.rotation.y = angleLerp(p.group.rotation.y, p.ry, 1 - Math.exp(-14 * dt));
-    setAnim(p, p.moving && p.swingT <= 0 ? 'Run' : 'Idle');
+    setAnim(p, p.moving && p.swingT <= 0 && !p.mounted ? 'Run' : 'Idle');
     if (p.mixer) p.mixer.update(dt);
     if (p.mounted && p.horse) p.horse.update(clock.elapsedTime, p.moving, 0, dt);
     skillPoseUpdate(p, dt);
     if (p.swingT > 0) p.swingT = Math.max(0, p.swingT - dt);
     applyBreath(p, clock.elapsedTime);
+    applyRide(p);
     applySwing(p);
+    updateCapes(p, clock.elapsedTime);
     if (p.model) p.model.parent.rotation.x = (p.id === myId ? amDead : p.dead) ? -Math.PI / 2 : 0;
     if (p.spirit) {
       // ruh: havada süzülür, hafifçe sallanır, yakına gelen oyuncuya döner

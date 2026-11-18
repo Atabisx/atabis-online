@@ -4,7 +4,18 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 3.3 (bu sürüm): karakter puanları, 3D simgeler, Metin2 tarzı taşlar
+### Aşama 3.4 (bu sürüm): büyük köy, GM, ışınlanma yüzüğü, telefona yükleme
+
+- **Atabis Köyü haritası 270×270 m:** köyün çevresinde ikinci ev halkası, dört kapılı ahşap çit, doğusunda buzlu nehir ve köprü. Boss'lar köprünün ötesinde (Metin2 gibi); hayvanlar suya girmez. Köy boss'ları daha da büyüdü (Dev Horoz 9 kat, Deli Boğa 4,8 kat).
+- **Kızılçam Ormanı:** sadece kullanıcının modelleri: Vahşi Kurt, Benekli Kaplan, Ateş Kertenkelesi Yavrusu, boss'lar ve metin taşları.
+- **Ölünce:** "Köyde başla" (tam can) ve 5 saniye sonra açılan "Burada başla" (yarım can).
+- **Işınlanma Yüzüğü:** markette 2.500.000 Yang; her yerden ışınlanma penceresini açar, bitmez.
+- **GM:** `.env` içindeki `GM_NAMES` (varsayılan `Atabis`) adlı karakterler GM'dir: başında altın GM rozeti, son seviye, her haritaya girer, her eşyayı giyer; ilk girişte en üst kademe efsanevi eşyalar (5 en yüksek efsun), yüzük, at, iksirler. Sohbet komutları: `/git <harita>`, `/seviye <n>`, `/yang <n>`, `/esya <anahtar> [adet]`, `/iyiles`.
+- **Ata binme:** karakter eyere oturur (bacaklar atın iki yanında), dik durur, dizgin tutar gibi.
+- **Sınıflar farklı görünür:** savaşçı iri ve kürk yakalı, ninja ince ve maskeli/atkılı, sura pelerinli ve boynuzlu omuzluklu, şaman cüppeli ve tüylü başlıklı, okçu sadaklı ve başlıklı.
+- **Telefona yükleme (PWA):** giriş ekranında "Telefona yükle"; ana ekran simgesi, tam ekran, yatay. Oyun içinde tam ekran düğmesi. Gerçek uygulama kurulumu için sunucuda HTTPS gerekir (HTTP'de simge eklenir ama tarayıcıda açılır).
+
+### Aşama 3.3: karakter puanları, 3D simgeler, Metin2 tarzı taşlar
 
 - **Durum puanları (K tuşu / sol üstteki kişi düğmesi):** GÜÇ, CANLILIK, ZEKA, ÇEVİKLİK. Her seviyede +3 puan, bir özellik en fazla 90. Ana saldırı özelliği sınıfa göre: savaşçı/sura GÜÇ, ninja/okçu ÇEVİKLİK, şaman ZEKA. Canlılık can ve savunma, Zeka mana ve beceri hasarı, Çeviklik kritik verir. Puanlar veritabanında `characters.stats` sütununda.
 - **Nefes:** karakter dururken göğsü kalkıp iner, omuzları hafifçe oynar.

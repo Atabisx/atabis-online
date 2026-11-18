@@ -146,6 +146,80 @@ function buildVillage(th, rnd) {
   }
 }
 
+// ---------- büyük köy: dış ev halkası ve dört kapılı ahşap çit (Metin2 köyleri gibi geniş) ----------
+const VC = 25;   // köy merkezi
+function buildOuterVillage(th, rnd, R) {
+  const v = th.village;
+  const roof = (i) => v.roofs[i % v.roofs.length];
+  // dış halka evleri: yollara (doğu-batı, kuzey-güney) denk gelmeyen açılarda
+  const ring = [[28, 36], [52, 40], [75, 44], [118, 38], [145, 42], [205, 40], [232, 44], [256, 38], [300, 42], [328, 38]];
+  ring.forEach(([deg, rad], i) => {
+    const a = deg * Math.PI / 180, cx = VC + Math.cos(a) * rad, cz = VC + Math.sin(a) * rad;
+    const w = 2.6 + rnd() * 0.8, d = 2.0 + rnd() * 0.4;
+    house(cx / S - w / 2, cz / S - d / 2, w, d, 1.2 + rnd() * 0.3, 1.0, roof(i), v.wall);
+  });
+  // tarlalar ve çit içi süsler
+  for (const [deg, rad] of [[10, 50], [170, 52], [260, 50], [350, 52]]) {
+    const a = deg * Math.PI / 180;
+    for (let k = 0; k < 2; k++) logPile(VC + Math.cos(a) * rad + k * 3, VC + Math.sin(a) * rad);
+  }
+  for (const [deg, rad] of [[60, 28], [120, 30], [240, 28], [300, 30], [9, 33], [189, 33]]) {
+    const a = deg * Math.PI / 180; lantern(VC + Math.cos(a) * rad, VC + Math.sin(a) * rad);
+  }
+  // ahşap çit: dört yolda kapı boşluğu, kapılarda kule
+  const n = 64, gate = 0.12, wood = '#6b4a2e', dark = '#4a3220';
+  const gates = [0, Math.PI / 2, Math.PI, Math.PI * 1.5];
+  const nearGate = (a) => gates.some((g) => Math.abs(Math.atan2(Math.sin(a - g), Math.cos(a - g))) < gate);
+  for (let i = 0; i < n; i++) {
+    const a0 = i / n * Math.PI * 2, a1 = (i + 1) / n * Math.PI * 2, am = (a0 + a1) / 2;
+    if (nearGate(am)) continue;
+    const x0 = VC + Math.cos(a0) * R, z0 = VC + Math.sin(a0) * R, x1 = VC + Math.cos(a1) * R, z1 = VC + Math.sin(a1) * R;
+    const len = Math.hypot(x1 - x0, z1 - z0) + 0.2;
+    const seg = box(len, 2.6, 0.45, i % 2 ? wood : dark, (x0 + x1) / 2, 1.3, (z0 + z1) / 2);
+    seg.rotation.y = -Math.atan2(z1 - z0, x1 - x0);
+    const post = add(new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 3.4, 6), mat(dark)), x0, 1.7, z0);
+    if (th.snow) { const cap = box(len, 0.18, 0.6, '#f4f8fb', (x0 + x1) / 2, 2.68, (z0 + z1) / 2, false); cap.rotation.y = seg.rotation.y; }
+    for (let k = 0; k <= 3; k++) { const t = k / 3; circles.push({ x: x0 + (x1 - x0) * t, z: z0 + (z1 - z0) * t, r: 0.9 }); }
+    void post;
+  }
+  for (const g of gates) for (const s of [-1, 1]) {
+    const a = g + s * gate;
+    const tx = VC + Math.cos(a) * R, tz = VC + Math.sin(a) * R;
+    box(2.2, 6, 2.2, dark, tx, 3, tz);
+    add(roofPrism(3, 3, 1.4, v.roofs[0]), tx - 1.5, 6, tz - 1.5);
+    const fl = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.6), new THREE.MeshLambertMaterial({ color: '#8e2a21', side: THREE.DoubleSide }));
+    fl.position.set(tx, 4.2, tz); fl.rotation.y = -a; group.add(fl);
+    circles.push({ x: tx, z: tz, r: 1.6 });
+  }
+}
+// köprülü nehir (kışın buzlu): köprü ana yolun üstünde
+function buildRiver(rv, th, bmin, bmax) {
+  const x0 = rv.x - rv.w / 2, x1 = rv.x + rv.w / 2, [b0, b1] = rv.bridge;
+  const len = bmax - bmin + 40;
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(rv.w, len), new THREE.MeshStandardMaterial({ color: th.snow ? '#4f7f9f' : '#3d7fa8', roughness: 0.15, metalness: 0.2 }));
+  water.rotation.x = -Math.PI / 2; water.position.set(rv.x, 0.04, (bmin + bmax) / 2); group.add(water);
+  // kıyılar
+  for (const x of [x0 - 0.6, x1 + 0.6]) box(1.4, 0.5, len, th.snow ? '#dfe8ee' : '#7a6a52', x, 0.22, (bmin + bmax) / 2, false);
+  // buz parçaları
+  if (th.snow) for (let i = 0; i < 40; i++) {
+    const z = bmin + Math.random() * (bmax - bmin);
+    if (z > b0 - 3 && z < b1 + 3) continue;
+    const ice = box(1 + Math.random() * 2, 0.12, 0.8 + Math.random() * 1.5, '#e8f4ff', rv.x + (Math.random() - 0.5) * (rv.w - 3), 0.08, z, false);
+    ice.rotation.y = Math.random() * 3;
+  }
+  // köprü: tahta döşeme, korkuluk, direkler
+  const deckW = b1 - b0, deckL = rv.w + 4;
+  box(deckL, 0.4, deckW, '#7a5634', rv.x, 0.45, (b0 + b1) / 2);
+  for (let k = 0; k < 8; k++) box(0.15, 0.06, deckW - 0.2, '#5a3d24', rv.x - deckL / 2 + 0.8 + k * (deckL - 1.6) / 7, 0.68, (b0 + b1) / 2, false);
+  for (const z of [b0 + 0.3, b1 - 0.3]) {
+    box(deckL, 0.18, 0.18, '#5a3d24', rv.x, 1.5, z);
+    for (let k = 0; k <= 4; k++) box(0.25, 1.3, 0.25, '#4a3220', rv.x - deckL / 2 + k * deckL / 4, 0.95, z);
+  }
+  // suya girilmez (köprü hariç)
+  colliders.push({ x0, z0: bmin - 30, x1, z1: b0 });
+  colliders.push({ x0, z0: b1, x1, z1: bmax + 30 });
+}
+
 // ---------- doğa ----------
 function tree(X, Z, c1 = '#2f5a2a', c2 = '#3f7535') {
   box(0.5, 2.4, 0.5, '#5a3d24', X, 1.2, Z);
@@ -383,8 +457,10 @@ export function loadMap(scene, def) {
   const npcs = [];
   if (def.village && th.village) {
     buildVillage(th, rnd);
+    if (def.villageR) buildOuterVillage(th, rnd, def.villageR);
     for (const n of Object.values(NPC_SPOTS)) npcs.push({ ...n });
   }
+  if (def.river) buildRiver(def.river, th, bmin, bmax);
   if (def.lake) {
     const L = def.lake;
     const sand = new THREE.Mesh(new THREE.CircleGeometry(L.r + 3, 40), mat('#d9c08a'));
@@ -400,7 +476,8 @@ export function loadMap(scene, def) {
   // doğa: köy merkezinden, yoldan ve geçitlerden uzak
   const blocked = (x, z) => {
     if (z > 20 && z < 30) return true;
-    if (def.village && Math.hypot(x - 25, z - 25) < 21) return true;
+    if (def.village && Math.hypot(x - 25, z - 25) < (def.villageR ? def.villageR + 3 : 21)) return true;
+    if (def.river && Math.abs(x - def.river.x) < def.river.w / 2 + 4) return true;
     if (def.lake && Math.hypot(x - def.lake.x, z - def.lake.z) < def.lake.r + 4) return true;
     if (Math.hypot(x - def.spawn[0], z - def.spawn[1]) < 6) return true;
     for (const p of def.portals) if (Math.hypot(x - p.x, z - p.z) < 7) return true;

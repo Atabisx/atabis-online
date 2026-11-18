@@ -139,6 +139,9 @@ def build_items():
     for key, name, value, color in [('inci_beyaz', 'Beyaz İnci', 3000, '#f4f1e8'), ('inci_mavi', 'Mavi İnci', 9000, '#7fb3ff'), ('inci_kirmizi', 'Kırmızı İnci', 30000, '#ff6a5a')]:
         items[key] = {'name': name, 'slot': 'gem', 'lv': 1, 'price': value * 4, 'rarity': 2, 'color': color, 'stack': 200}
     # at
+    # Işınlanma Yüzüğü: her yerden ışınlanma penceresi; kullanınca bitmez, pahalı
+    items['isin_yuzugu'] = {'name': 'Işınlanma Yüzüğü', 'slot': 'use', 'desc': 'Her yerden ışınlanma penceresini açar. Kullanınca bitmez.',
+                            'lv': 1, 'price': 2500000, 'rarity': 3, 'color': '#4fd1c5'}
     items['at_muhru'] = {'name': 'At Mührü', 'slot': 'use', 'desc': 'Kullanınca atına biner ya da iner. Atlıyken %60 daha hızlısın.',
                          'lv': 25, 'price': 0, 'rarity': 2, 'color': '#c9a35a'}
 
@@ -178,12 +181,13 @@ MAPS = [
               ('horoz', 'Horoz', 2, 'frog', '#c0392b', 1.0, 0, 3.8, {'model': 'horoz'}),
               ('domuz', 'Domuz', 3, 'boar', '#e8a0a0', 1.0, 0, 4.0, {'model': 'domuz'}),
               ('inek', 'İnek', 5, 'bear', '#a0522d', 1.0, 0, 3.2, {'model': 'inek'})],
-     'bosses': [('devhoroz', 'Dev Horoz', 8, 'frog', '#c0392b', 5.0, {'model': 'horoz', 'aura': '#ffb347'}),
-                ('deliboga', 'Deli Boğa', 12, 'bear', '#6b3a1e', 3.0, {'model': 'inek', 'aura': '#ff3b2f'})]},
+     'bosses': [('devhoroz', 'Dev Horoz', 8, 'frog', '#c0392b', 9.0, {'model': 'horoz', 'aura': '#ffb347'}),
+                ('deliboga', 'Deli Boğa', 12, 'bear', '#6b3a1e', 4.8, {'model': 'inek', 'aura': '#ff3b2f'})]},
     {'name': 'Kızılçam Ormanı', 'lv': 15, 'theme': 'pine_forest',
-     'mobs': [('vkurt', 'Vahşi Kurt', 15, 'wolf', '#5a4a3a', 1.1, 10, 5.8),
-              ('kdomuz', 'Kara Domuz', 17, 'boar', '#2a2522', 1.15, 8, 5.2),
-              ('ayi', 'Orman Ayısı', 19, 'bear', '#4a3020', 1.3, 8, 4.6)],
+     # sadece kullanıcının modelleri (kodla çizilen yaratık yok)
+     'mobs': [('vkurt', 'Vahşi Kurt', 15, 'wolf', '#5a4a3a', 1.15, 10, 5.8, {'model': 'kurt'}),
+              ('kkaplan', 'Benekli Kaplan', 17, 'wolf', '#e67e22', 1.1, 8, 5.2, {'model': 'kaplan'}),
+              ('kertyavru', 'Ateş Kertenkelesi Yavrusu', 19, 'frog', '#b0362b', 1.0, 8, 4.6, {'model': 'kertenkele'})],
      'bosses': [('cehennemsov', 'Cehennem Şövalyesi', 20, 'humanoid', '#2a2522', 1.35, {'model': 'cehennem_sovalyesi', 'aura': '#ff6a3d'}),
                 ('kaplanadam', 'Kaplan Adam', 22, 'humanoid', '#e67e22', 1.4, {'model': 'kaplan_adam', 'aura': '#ffb347'}),
                 ('lavcanavari', 'Lav Canavarı', 24, 'frog', '#b0362b', 2.0, {'model': 'lav_canavari', 'aura': '#ff3b2f', 'breath': '#ff6a3d'})]},
@@ -264,11 +268,14 @@ MAPS = [
 
 # tek köy var: bütün alışveriş Atabis Köyü'nde (harita sırası -> (iksirler, satılan kademeler))
 SHOPS = {
-    0: (['p_hp1', 'p_hp2', 'p_hp3', 'p_hp4', 'p_mp1', 'p_mp2', 'p_mp3', 'p_mp4', 'p_green', 'p_speed'], list(range(0, 11))),
+    0: (['p_hp1', 'p_hp2', 'p_hp3', 'p_hp4', 'p_mp1', 'p_mp2', 'p_mp3', 'p_mp4', 'p_green', 'p_speed', 'isin_yuzugu'], list(range(0, 11))),
 }
 
 # harita sınırları: köy haritası orta boy, vahşi haritalar büyük
-VILLAGE_BOUNDS = [-40, 90]
+VILLAGE_BOUNDS = [-110, 160]
+# köy haritası: köyün doğusunda köprülü nehir; boss'lar köprünün ötesinde
+VILLAGE_RIVER = {'x': 100, 'w': 12, 'bridge': [20, 30]}
+VILLAGE_RADIUS = 62
 WILD_BOUNDS = [-65, 115]
 
 
@@ -296,7 +303,7 @@ def build(items):
                       'potions': [[('p_hp1' if lv < 15 else 'p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4'), 0.08],
                                   [('p_mp1' if lv < 15 else 'p_mp2' if lv < 40 else 'p_mp3' if lv < 75 else 'p_mp4'), 0.05]]})
             mobs[key] = d
-            spawns.append({'mob': key, 'count': 9 if i == 0 else 20})
+            spawns.append({'mob': key, 'count': 16 if i == 0 else 20})
         for key, name, lv, shape, color, scale, style in m['bosses']:
             d = mob_stats(lv, boss=True)
             d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': 0,
@@ -314,11 +321,14 @@ def build(items):
             'village': bool(m.get('village')), 'tier': tier, 'seed': 1000 + i * 97,
             'bounds': [lo, hi],
             'spawns': spawns, 'bosses': bosses,
-            'stoneDrops': own, 'stones': 5,
+            'stoneDrops': own, 'stones': 6 if m.get('village') else 5,
             'spawn': [25, 29] if m.get('village') else [lo + 8, 25],
             'portals': ([{'to': i - 1, 'x': lo + 3, 'z': 25}] if i > 0 else []) +
                        ([{'to': i + 1, 'x': hi - 3, 'z': 25}] if i < len(MAPS) - 1 else []),
         }
+        if m.get('village'):
+            entry['river'] = VILLAGE_RIVER
+            entry['villageR'] = VILLAGE_RADIUS
         if i in SHOPS:
             potions, tiers = SHOPS[i]
             entry['shop'] = {

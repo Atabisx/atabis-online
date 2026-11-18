@@ -1,5 +1,6 @@
 // Ekran akışı: giriş/kayıt → karakter seçimi/oluşturma → oyun
 import { ready, startGame, modelLoaded } from './game.js';
+import './install.js';
 
 const $ = (id) => document.getElementById(id);
 const screens = ['authScreen', 'charScreen', 'createScreen'];

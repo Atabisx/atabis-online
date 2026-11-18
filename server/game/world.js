@@ -2,6 +2,7 @@
 const db = require('../db');
 const { accountFromToken } = require('../auth');
 const R = require('./rules');
+const config = require('../config');
 const { Zone, boundsOf } = require('./zone');
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -27,7 +28,7 @@ function createWorld(io) {
     return l;
   }
   const publicPlayer = (p) => ({ id: p.id, name: p.name, cls: p.class, x: p.x, z: p.z, ry: p.ry, level: p.level,
-    look: looks(p), hp: p.hp, maxHp: p.maxHp, dead: !!p.dead, mounted: !!p.mounted });
+    look: looks(p), hp: p.hp, maxHp: p.maxHp, dead: !!p.dead, mounted: !!p.mounted, gm: !!p.gm });
   function recalc(p) {
     p.maxHp = R.maxHp(p);
     p.maxMp = R.maxMp(p);
@@ -116,6 +117,68 @@ function createWorld(io) {
     return 10;
   }
 
+  // ---------- GM (oyun yöneticisi) ----------
+  // Son seviye; ilk girişte en üst kademe efsanevi eşyalar (5 en yüksek efsunla), ışınlanma yüzüğü ve bolca iksir.
+  function maxedItem(key) {
+    const def = R.ITEMS[key];
+    const it = { uid: p_nextUid(), key };
+    if (def && R.EQUIP_SLOTS.includes(def.slot)) {
+      const types = Object.keys(R.BONUS_TYPES).filter((t) => t !== 'movespeed').slice(0, 5);
+      it.bon = types.map((t) => [t, R.maxBonus(t, def.tier)]);
+    }
+    return it;
+  }
+  let gmTarget = null;
+  function p_nextUid() { return gmTarget.nextUid++; }
+  function setupGm(p) {
+    p.level = R.MAX_LEVEL; p.exp = 0;
+    p.quests = p.quests || {};
+    if (p.quests.gmKit === 1) return;
+    gmTarget = p;
+    const cls = R.CLASSES[p.class] || {};
+    const wtype = String(cls.startWeapon || 'sword0').replace(/\d+$/, '');
+    const top = (base) => (R.ITEMS[base + '15_L'] ? base + '15_L' : base + '15');
+    // eski kuşanılanlar çantaya
+    for (const slot of R.EQUIP_SLOTS) if (p.equip[slot] && p.inventory.length < R.INV_SIZE) p.inventory.push(p.equip[slot]);
+    p.equip = { weapon: maxedItem(top(wtype)), armor: maxedItem(top('armor')), helmet: maxedItem(top('helmet')),
+      shoes: maxedItem(top('shoes')), bracelet: maxedItem(top('bracelet')), earring: maxedItem(top('earring')) };
+    const give = [['isin_yuzugu', 1], ['at_muhru', 1], ['olta', 1], ['yem', 200], ['p_hp4', 200], ['p_mp4', 200], ['p_green', 50], ['p_speed', 50], ['efsun', 100], ['efsun_degis', 100]];
+    for (const [key, n] of give) {
+      if (!R.ITEMS[key] || p.inventory.some((i) => i.key === key)) continue;
+      if (p.inventory.length >= R.INV_SIZE) break;
+      p.inventory.push({ uid: p.nextUid++, key, n });
+    }
+    // diğer silah türlerinin en üst kademeleri de (yer varsa)
+    for (const t of ['sword', 'dagger', 'bow', 'staff']) {
+      if (t === wtype || p.inventory.length >= R.INV_SIZE) continue;
+      p.inventory.push(maxedItem(top(t)));
+    }
+    p.yang = Math.max(p.yang, 999999999);
+    p.quests.horse = 'done';
+    p.quests.rod = true; p.quests.skillHint = true;
+    p.quests.gmKit = 1;
+    gmTarget = null;
+  }
+  function gmCommand(p, text) {
+    const [cmd, ...args] = text.slice(1).split(/\s+/);
+    const a0 = args[0];
+    if (cmd === 'git' || cmd === 'tp') {
+      const id = Number(a0); if (!R.MAPS[id]) { notice(p, 'Harita: 0-' + (R.MAPS.length - 1)); return; }
+      moveToZone(p, id); return;
+    }
+    if (cmd === 'seviye') { p.level = Math.max(1, Math.min(R.MAX_LEVEL, Number(a0) || R.MAX_LEVEL)); p.exp = 0; recalc(p); sendInv(p); sendHp(p); sendSkills(p); sendStats(p, true); return; }
+    if (cmd === 'yang') { p.yang = Math.max(0, Number(a0) || 0); sendInv(p); return; }
+    if (cmd === 'esya' || cmd === 'item') {
+      if (!R.ITEMS[a0]) { notice(p, 'Böyle bir eşya yok: ' + a0); return; }
+      gmTarget = p; const it = maxedItem(a0); gmTarget = null;
+      if (R.ITEMS[a0].stack) it.n = Math.max(1, Math.min(200, Number(args[1]) || 1));
+      if (p.inventory.length >= R.INV_SIZE) { notice(p, 'Çanta dolu.'); return; }
+      p.inventory.push(it); sendInv(p); notice(p, R.ITEMS[a0].name + ' verildi.'); return;
+    }
+    if (cmd === 'iyiles') { p.hp = p.maxHp; p.mp = p.maxMp; sendHp(p); sendMp(p); return; }
+    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /iyiles');
+  }
+
   async function save(p) {
     try {
       await db.query(
@@ -151,7 +214,7 @@ function createWorld(io) {
       p.lastHurt = Date.now();
       sendHp(p);
       if (p.hp <= 0) {
-        p.dead = true;
+        p.dead = true; p.diedAt = Date.now();
         p.moving = false;
         p.mounted = false; p.fish = null;
         p.zone.emit('playerDied', { id: p.id });
@@ -251,6 +314,8 @@ function createWorld(io) {
       if (prev.zone) p.mapId = prev.zone.id;
     }
     for (const s of R.EQUIP_SLOTS) if (p.equip[s] === undefined) p.equip[s] = null;
+    p.gm = config.gmNames.includes(String(p.name).toLocaleLowerCase('tr-TR'));
+    if (p.gm) setupGm(p);
     recalc(p);
     if (!p.hp || p.hp <= 0) p.hp = p.maxHp;
     if (p.mp == null) p.mp = p.maxMp;
@@ -258,7 +323,7 @@ function createWorld(io) {
     levelRewards(p);
 
     const startPos = prev ? [prev.x, prev.z] : (row.pos_x != null ? [row.pos_x, row.pos_z] : null);
-    socket.emit('welcome', {
+    socket.emit('welcome', { gm: !!p.gm,
       id: socket.id, cls: p.class, name: p.name,
       stats: { level: p.level, exp: p.exp, need: R.expForLevel(p.level) },
       villages: VILLAGES,
@@ -324,8 +389,8 @@ function createWorld(io) {
       const item = p.inventory[idx];
       const def = R.ITEMS[item.key];
       if (!def || !R.EQUIP_SLOTS.includes(def.slot)) return;
-      if (def.classes && !def.classes.includes(p.class)) { notice(p, `${def.name} senin sınıfına uygun değil.`); return; }
-      if (p.level < (def.lv || 1)) { notice(p, `${def.name} için en az ${def.lv}. seviye olmalısın.`); return; }
+      if (!p.gm && def.classes && !def.classes.includes(p.class)) { notice(p, `${def.name} senin sınıfına uygun değil.`); return; }
+      if (!p.gm && p.level < (def.lv || 1)) { notice(p, `${def.name} için en az ${def.lv}. seviye olmalısın.`); return; }
       const old = p.equip[def.slot];
       p.inventory.splice(idx, 1);
       if (old) p.inventory.push(old);
@@ -403,6 +468,7 @@ function createWorld(io) {
       }
       if (it.key === 'olta' || it.key === 'yem') { notice(p, 'Balık tutmak için Gümüş Göl kıyısına git.'); return; }
       if (it.key === 'efsun') { notice(p, 'Efsunlamak istediğin ekipmana dokun ve "Efsunla"ya bas.'); return; }
+      if (it.key === 'isin_yuzugu') { socket.emit('openTeleport'); return; }
       if (it.key === 'efsun_degis') { notice(p, 'Efsunlu bir ekipmana dokun ve "Efsun Değiştir"e bas.'); return; }
     }
 
@@ -595,7 +661,7 @@ function createWorld(io) {
       const portal = z.def.portals.find((pt) => pt.to === Number(to));
       if (!portal || Math.hypot(portal.x - p.x, portal.z - p.z) > 5) return;
       const target = R.MAPS[portal.to];
-      if (p.level < target.minLevel) { notice(p, `${target.name} için en az ${target.minLevel}. seviye olmalısın.`); return; }
+      if (!p.gm && p.level < target.minLevel) { notice(p, `${target.name} için en az ${target.minLevel}. seviye olmalısın.`); return; }
       const forward = portal.to > z.id;
       const b = boundsOf(target);
       moveToZone(p, portal.to, forward ? [b.min + 8, 25] : [b.max - 8, 25]);
@@ -604,24 +670,36 @@ function createWorld(io) {
     // köylerdeki ışınlayıcı
     socket.on('teleport', (to) => {
       const z = p.zone; if (!z || p.dead) return;
-      if (!z.def.village && !z.def.fishing) { notice(p, 'Işınlayıcı sadece köyde var.'); return; }
+      const ring = p.gm || p.inventory.some((i) => i.key === 'isin_yuzugu');
+      if (!z.def.village && !z.def.fishing && !ring) { notice(p, 'Işınlayıcı sadece köyde var. Işınlanma Yüzüğü ile her yerden ışınlanabilirsin.'); return; }
       const target = R.MAPS[Number(to)];
       if (!target || target.id === z.id) return;
-      if (p.level < target.minLevel) { notice(p, `${target.name} için en az ${target.minLevel}. seviye olmalısın.`); return; }
+      if (!p.gm && p.level < target.minLevel) { notice(p, `${target.name} için en az ${target.minLevel}. seviye olmalısın.`); return; }
       moveToZone(p, target.id);
     });
 
-    socket.on('respawn', () => {
+    // yeniden doğ: köyde (hemen) ya da burada (Metin2 gibi 5 saniye sonra, yarım canla)
+    socket.on('respawn', (opt) => {
       if (!p.dead) return;
-      p.dead = false;
-      p.hp = p.maxHp; p.mp = p.maxMp; p.mounted = false; sendMp(p);
+      const here = opt && opt.here;
+      if (here && Date.now() - (p.diedAt || 0) < 5000) { notice(p, 'Burada başlamak için biraz bekle.'); return; }
+      p.dead = false; p.mounted = false;
+      if (here && p.zone) {
+        p.hp = Math.round(p.maxHp * 0.5); p.mp = Math.round(p.maxMp * 0.5);
+        sendHp(p); sendMp(p);
+        p.zone.emit('playerRevive', { id: p.id, x: p.x, z: p.z });
+        socket.emit('revived', { x: p.x, z: p.z });
+        return;
+      }
+      p.hp = p.maxHp; p.mp = p.maxMp; sendMp(p);
       moveToZone(p, villageFor(p.zone ? p.zone.id : 0));
       sendHp(p);
     });
 
     socket.on('chat', (text) => {
       const t = String(text || '').replace(/[<>&"'\\]/g, '').trim().slice(0, 80);
-      if (t && p.zone) p.zone.emit('chat', { name: p.name, text: t });
+      if (p.gm && t.startsWith('/')) { gmCommand(p, t); return; }
+      if (t && p.zone) p.zone.emit('chat', { name: p.name, text: t, gm: !!p.gm });
     });
 
     socket.on('disconnect', () => {

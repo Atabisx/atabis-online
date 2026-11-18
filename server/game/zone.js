@@ -12,7 +12,20 @@ function boundsOf(def) {
   return { min, max };
 }
 // boss'lar haritanın uzak (doğu) yarısında, girişten ve köyden uzakta
-function bossSpots(b, n = 3) {
+function bossSpots(b, n = 3, river = null) {
+  // köy haritası: hepsi köprünün ötesinde (Metin2 gibi), birbirinden uzak
+  if (river) {
+    const x0 = river.x + river.w / 2 + 18, spots = [];
+    const cands = [];
+    for (let x = x0; x <= b.max - 12; x += 4) for (let z = b.min + 12; z <= b.max - 12; z += 4) if (Math.abs(z - 25) > 10) cands.push([x, z]);
+    spots.push([Math.min(b.max - 15, x0 + 20), b.max - 25]);
+    while (spots.length < n) {
+      let best = null, bd = -1;
+      for (const c of cands) { const d = Math.min(...spots.map((s) => Math.hypot(s[0] - c[0], s[1] - c[1]))); if (d > bd) { bd = d; best = c; } }
+      spots.push(best);
+    }
+    return spots;
+  }
   // ilk ikisi doğu köşelerinde; üçüncüsü karşı köşede (köy haritasında köyden uzak)
   const spots = [[b.max - 12, b.max - 12], [b.max - 12, b.min + 12], [b.min + 12, b.max - 12]];
   // daha fazla boss varsa haritanın doğu yarısında birbirinden en uzak noktalara dağıt
@@ -53,7 +66,9 @@ class Zone {
     this.nextId = 1;
     this.alive = true;
     this.bounds = boundsOf(def);
-    this.bossSpots = bossSpots(this.bounds, Math.max(3, def.bosses.length));
+    this.river = def.river || null;
+    this.villageR = def.villageR || 22;
+    this.bossSpots = bossSpots(this.bounds, Math.max(3, def.bosses.length), this.river);
     this.stoneSpots = this.makeStoneSpots((def.stones ?? 5) + 3);
     for (const sp of def.spawns) for (let i = 0; i < sp.count; i++) this.spawnMob(sp.mob, null);
     def.bosses.forEach((key, i) => this.spawnMob(key, this.bossSpots[i % this.bossSpots.length]));
@@ -61,6 +76,12 @@ class Zone {
   }
 
   clampX(v) { return Math.max(this.bounds.min, Math.min(this.bounds.max, v)); }
+  // nehir bandı (köprü hariç)
+  inRiver(x, z, pad = 0) {
+    const r = this.river; if (!r) return false;
+    if (Math.abs(x - r.x) > r.w / 2 + pad) return false;
+    return !(z > r.bridge[0] + 1 && z < r.bridge[1] - 1);
+  }
 
   // metin taşı yerleri: haritaya yayılmış, birbirinden uzak, yollardan ve girişlerden uzak
   makeStoneSpots(n) {
@@ -81,7 +102,8 @@ class Zone {
 
   // ---------- konum seçimi ----------
   safeFrom(x, z) {
-    if (this.def.village && Math.hypot(x - VILLAGE_CENTER.x, z - VILLAGE_CENTER.z) < 22) return false;
+    if (this.def.village && Math.hypot(x - VILLAGE_CENTER.x, z - VILLAGE_CENTER.z) < this.villageR) return false;
+    if (this.inRiver(x, z, 3)) return false;
     if (Math.hypot(x - this.def.spawn[0], z - this.def.spawn[1]) < 12) return false;
     for (const b of this.bossSpots) if (Math.hypot(x - b[0], z - b[1]) < 8) return false;
     for (const p of this.def.portals) if (Math.hypot(x - p.x, z - p.z) < 8) return false;
@@ -362,8 +384,9 @@ class Zone {
         const dx = tx - m.x, dz = tz - m.z, len = Math.hypot(dx, dz);
         if (len > 0.05) {
           const step = Math.min(len, speed * dt);
-          m.x = this.clampX(m.x + dx / len * step);
-          m.z = this.clampX(m.z + dz / len * step);
+          const nx = this.clampX(m.x + dx / len * step), nz = this.clampX(m.z + dz / len * step);
+          if (this.inRiver(nx, nz) && !this.inRiver(m.x, m.z)) { if (m.state === 'chase') m.state = 'return'; m.wx = m.x; m.wz = m.z; }
+          else { m.x = nx; m.z = nz; }
           m.ry = Math.atan2(dx, dz);
           m.moving = true;
         }

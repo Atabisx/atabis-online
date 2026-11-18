@@ -16,4 +16,6 @@ module.exports = {
   databaseUrl: process.env.DATABASE_URL,
   sessionDays: 30,
   maxCharactersPerAccount: 4,
+  // GM (oyun yöneticisi) karakter adları, virgülle: GM_NAMES=Atabis,Baska
+  gmNames: (process.env.GM_NAMES || 'Atabis').split(',').map((s) => s.trim().toLocaleLowerCase('tr-TR')).filter(Boolean),
 };
