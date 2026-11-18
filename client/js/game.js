@@ -136,6 +136,51 @@ const modelReady = new Promise((resolve) => {
   }, undefined, (e) => { console.warn('Model yüklenemedi, basit karakter kullanılacak', e); resolve(); });
 });
 
+// ---------- özel NPC modelleri ----------
+// Işınlayıcı: kullanıcının eklediği ruh modeli (iskeletsiz, tek parça). Yüklenene kadar yer tutucu görünür.
+const NPC_MODELS = { teleport: { url: 'models/npc/isinlayici.glb', height: 2.35, hover: 0.25, glow: '#9b6bff' } };
+const npcModel = {};          // kind -> yüklenen sahne
+const npcWaiting = {};        // kind -> modeli bekleyen NPC'ler
+for (const [kind, cfg] of Object.entries(NPC_MODELS)) {
+  loader.load(cfg.url, (g) => {
+    g.scene.traverse((o) => {
+      if (o.isMesh && o.material && o.material.map) {
+        // hafif kendi ışığıyla parlasın, karlı köyde de seçilsin
+        o.material.emissive = new THREE.Color('#ffffff');
+        o.material.emissiveMap = o.material.map;
+        o.material.emissiveIntensity = 0.45;
+        o.material.roughness = 0.6;
+      }
+    });
+    npcModel[kind] = g.scene;
+    for (const obj of npcWaiting[kind] || []) if (players[obj.id] === obj) dressNpc(obj, kind);
+    npcWaiting[kind] = [];
+  }, undefined, (e) => console.warn('NPC modeli yüklenemedi:', cfg.url, e));
+}
+function dressNpc(obj, kind) {
+  const cfg = NPC_MODELS[kind], src = npcModel[kind];
+  if (!src) { (npcWaiting[kind] = npcWaiting[kind] || []).push(obj); return false; }
+  // eski görünümü kaldır (asker modeli ya da kapsül), halkayı ve savurma izini bırak
+  for (const c of [...obj.group.children]) if (c !== obj.slash && !c.userData.keep) obj.group.remove(c);
+  const model = src.clone(true);
+  const box = new THREE.Box3().setFromObject(model);
+  const k = cfg.height / Math.max(0.01, box.max.y - box.min.y);
+  model.scale.setScalar(k);
+  model.position.y = -box.min.y * k;
+  model.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  const holder = new THREE.Group();
+  holder.add(model);
+  obj.group.add(holder);
+  // yerde parlayan mor ışık halkası
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(1.3, 32), new THREE.MeshBasicMaterial({ color: cfg.glow, transparent: true, opacity: 0.35, depthWrite: false }));
+  glow.rotation.x = -Math.PI / 2; glow.position.y = 0.06;
+  obj.group.add(glow);
+  obj.model = null; obj.mixer = null; obj.bones = null; obj.materials = [];
+  obj.spirit = { holder, glow, hover: cfg.hover, phase: Math.random() * 6 };
+  obj.labelY = cfg.height + cfg.hover + 0.45;
+  return true;
+}
+
 function boneByName(root, name) {
   let found = null;
   root.traverse((o) => {
@@ -340,6 +385,7 @@ function createPlayer(p) {
   const ring = new THREE.Mesh(new THREE.RingGeometry(0.75, 0.95, 28), new THREE.MeshBasicMaterial({
     color: p.npc ? '#7be08f' : p.id === myId ? '#e8b54a' : '#8ec5ff', transparent: true, opacity: 0.85 }));
   ring.rotation.x = -Math.PI / 2; ring.position.y = 0.07;
+  ring.userData.keep = true;
   group.add(ring);
   const slash = new THREE.Mesh(new THREE.RingGeometry(1.0, 2.3, 24, 1, Math.PI * 0.15, Math.PI * 0.7),
     new THREE.MeshBasicMaterial({ color: '#fff4d0', transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
@@ -1080,6 +1126,11 @@ function enterMap(data) {
     const npc = createPlayer({ id: 'npc:' + n.kind, name: n.name, cls: 'savasci', x: n.x, z: n.z, ry: 0, level: 0, npc: true,
       look: { weapon: null, armor: n.kind === 'armor' ? 'armor3' : n.kind === 'weapons' ? 'armor1' : null, helmet: null } });
     npc.ry = FACE_OFFSET; npc.group.rotation.y = FACE_OFFSET; npc.npcKind = n.kind;
+    if (NPC_MODELS[n.kind]) {
+      dressNpc(npc, n.kind);
+      // özel modeller düz +Z'ye bakar: köy meydanına dönük başlasın
+      npc.ry = npc.group.rotation.y = Math.atan2(25 - n.x, 25 - n.z);
+    }
   }
   for (const p of Object.values(data.players)) { const o = createPlayer(p); if (p.mounted) setMount(o, true); }
   for (const m of data.mobs) createMob(m);
@@ -1411,11 +1462,22 @@ function loop() {
     if (p.swingT > 0) p.swingT = Math.max(0, p.swingT - dt);
     applySwing(p);
     if (p.model) p.model.parent.rotation.x = (p.id === myId ? amDead : p.dead) ? -Math.PI / 2 : 0;
+    if (p.spirit) {
+      // ruh: havada süzülür, hafifçe sallanır, yakına gelen oyuncuya döner
+      const sp = p.spirit, t = clock.elapsedTime + sp.phase;
+      sp.holder.position.y = sp.hover + Math.sin(t * 1.6) * 0.12;
+      sp.holder.rotation.z = Math.sin(t * 0.9) * 0.04;
+      sp.glow.material.opacity = 0.28 + Math.sin(t * 1.6) * 0.08;
+      const me = players[myId];
+      if (me && Math.hypot(me.group.position.x - p.group.position.x, me.group.position.z - p.group.position.z) < 9) {
+        p.ry = Math.atan2(me.group.position.x - p.group.position.x, me.group.position.z - p.group.position.z);
+      }
+    }
     if (p.slashT > 0) {
       p.slashT -= dt;
       p.slash.material.opacity = Math.max(0, p.slashT / 0.3) * 0.7;
     } else p.slash.material.opacity = 0;
-    placeLabel(p.label, p.group.position.x, 2.4, p.group.position.z);
+    placeLabel(p.label, p.group.position.x, p.labelY || 2.4, p.group.position.z);
   }
   updateMobs(dt);
   for (const s of Object.values(stones)) {

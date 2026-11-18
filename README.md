@@ -11,6 +11,7 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 - **İki farklı çöl:** Kuru Çöl (sarı kum tepeleri, kaktüs, kemik) ve Kızıl Kanyon (kızıl kaya kuleleri, kuru çalı, turuncu gökyüzü).
 - **Her boss farklı görünür:** 17 boss'un her birinin kendi süsü var (boynuz, taç, pelerin, kanat, alev, kristal, diken, yele, cadı şapkası, etrafında dönen küreler, renkli aura).
 - **Efsun Değiştirme Nesnesi:** sadece boss'lardan %20 düşer; eşyadaki efsunların hepsini yeniden belirler. Efsun Nesnesi artık sadece ekler (en fazla 5).
+- **Işınlayıcı NPC'si** artık mor bir ruh modeli (`client/models/npc/isinlayici.glb`): havada süzülür, yerde mor ışık halkası var, yaklaşınca sana döner.
 - **Sesler:** kılıç savurma, ok, büyü, isabet, kritik, hasar alma, yaratık ölümü, boss düşüşü, metin taşı kırılması, ganimet ve para, iksir, beceriler, balık, efsun ve **seviye atlama melodisi**. Ses dosyası yok, tarayıcıda üretilir. Sol üstteki hoparlör butonu sesi kapatır/açar.
 
 ### Aşama 2
