@@ -2,7 +2,7 @@
 const db = require('../db');
 const { accountFromToken } = require('../auth');
 const R = require('./rules');
-const { Zone } = require('./zone');
+const { Zone, boundsOf } = require('./zone');
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const VILLAGES = R.MAPS.filter((m) => m.village).map((m) => m.id);
@@ -195,7 +195,7 @@ function createWorld(io) {
     if (target.def.safe) p.mounted = false;
     const [sx, sz] = pos || target.def.spawn;
     const jitter = pos ? 0 : 3;
-    p.x = sx + (Math.random() - 0.5) * jitter; p.z = sz + (Math.random() - 0.5) * jitter;
+    p.x = target.clampX(sx + (Math.random() - 0.5) * jitter); p.z = target.clampX(sz + (Math.random() - 0.5) * jitter);
     p.lastMove = Date.now();
     target.addPlayer(p);
     p.socket.emit('mapChange', { ...target.snapshot(), you: { x: p.x, z: p.z } });
@@ -270,7 +270,7 @@ function createWorld(io) {
         p.x += (nx - p.x) * k; p.z += (nz - p.z) * k;
         socket.emit('correct', { x: p.x, z: p.z });
       } else { p.x = nx; p.z = nz; }
-      p.x = clamp(p.x, Zone.BOUNDS.min, Zone.BOUNDS.max); p.z = clamp(p.z, Zone.BOUNDS.min, Zone.BOUNDS.max);
+      if (p.zone) { p.x = p.zone.clampX(p.x); p.z = p.zone.clampX(p.z); }
       p.ry = Number(m.ry) || 0;
       if (isFinite(Number(m.f))) p.facing = Number(m.f);
       p.moving = !!m.moving;
@@ -393,33 +393,52 @@ function createWorld(io) {
       }
       if (it.key === 'olta' || it.key === 'yem') { notice(p, 'Balık tutmak için Gümüş Göl kıyısına git.'); return; }
       if (it.key === 'efsun') { notice(p, 'Efsunlamak istediğin ekipmana dokun ve "Efsunla"ya bas.'); return; }
+      if (it.key === 'efsun_degis') { notice(p, 'Efsunlu bir ekipmana dokun ve "Efsun Değiştir"e bas.'); return; }
     }
 
-    // efsun nesnesi: ekipmana efsun ekle (5 doluysa hepsini yeniden belirle)
-    socket.on('enchant', (data) => {
-      const ef = p.inventory.find((i) => i.key === 'efsun');
-      if (!ef) { notice(p, 'Efsun nesnen yok.'); return; }
+    function gearTarget(data) {
       let target = null;
       if (data && data.slot && R.EQUIP_SLOTS.includes(data.slot)) target = p.equip[data.slot];
       else if (data && data.uid != null) target = p.inventory.find((i) => i.uid === Number(data.uid));
       const def = target && R.ITEMS[target.key];
-      if (!def || !R.EQUIP_SLOTS.includes(def.slot)) { notice(p, 'Sadece ekipmanlar efsunlanabilir.'); return; }
-      const types = Object.keys(R.BONUS_TYPES);
+      if (!def || !R.EQUIP_SLOTS.includes(def.slot)) return null;
       target.bon = target.bon || [];
-      if (target.bon.length >= 5) {
-        const pick = types.sort(() => Math.random() - 0.5).slice(0, 5);
-        target.bon = pick.map((t) => [t, R.rollBonus(t, def.tier)]);
-        notice(p, `${def.name} efsunları yeniden belirlendi.`);
-      } else {
-        const free = types.filter((t) => !target.bon.some((b) => b[0] === t));
-        const t = free[Math.floor(Math.random() * free.length)];
-        const v = R.rollBonus(t, def.tier);
-        target.bon.push([t, v]);
-        const b = R.BONUS_TYPES[t];
-        notice(p, `Yeni efsun: ${b.name} +${v}${b.unit}`);
-      }
+      return { target, def };
+    }
+    // efsun nesnesi (metin taşlarından): ekipmana yeni bir efsun ekler, en fazla 5
+    socket.on('enchant', (data) => {
+      const ef = p.inventory.find((i) => i.key === 'efsun');
+      if (!ef) { notice(p, 'Efsun nesnen yok.'); return; }
+      const g = gearTarget(data);
+      if (!g) { notice(p, 'Sadece ekipmanlar efsunlanabilir.'); return; }
+      const { target, def } = g;
+      if (target.bon.length >= 5) { notice(p, 'Bu eşyada 5 efsun var. Değiştirmek için Efsun Değiştirme Nesnesi gerekir (boss\'lardan düşer).'); return; }
+      const types = Object.keys(R.BONUS_TYPES);
+      const free = types.filter((t) => !target.bon.some((b) => b[0] === t));
+      const t = free[Math.floor(Math.random() * free.length)];
+      const v = R.rollBonus(t, def.tier);
+      target.bon.push([t, v]);
+      const b = R.BONUS_TYPES[t];
+      notice(p, `Yeni efsun: ${b.name} +${v}${b.unit}`);
       consume(ef);
       recalc(p); sendInv(p); sendHp(p); sendMp(p);
+      socket.emit('enchanted', { kind: 'add' });
+    });
+    // efsun değiştirme nesnesi (boss'lardan): var olan efsunların hepsini yeniden belirler
+    socket.on('reroll', (data) => {
+      const ef = p.inventory.find((i) => i.key === 'efsun_degis');
+      if (!ef) { notice(p, 'Efsun Değiştirme Nesnen yok. Boss\'lardan düşer.'); return; }
+      const g = gearTarget(data);
+      if (!g) { notice(p, 'Sadece ekipmanların efsunu değiştirilebilir.'); return; }
+      const { target, def } = g;
+      if (!target.bon.length) { notice(p, 'Bu eşyada değiştirilecek efsun yok. Önce Efsun Nesnesi ile efsunla.'); return; }
+      const n = target.bon.length;
+      const pick = Object.keys(R.BONUS_TYPES).sort(() => Math.random() - 0.5).slice(0, n);
+      target.bon = pick.map((t) => [t, R.rollBonus(t, def.tier)]);
+      notice(p, `${def.name}: ${n} efsun yeniden belirlendi.`);
+      consume(ef);
+      recalc(p); sendInv(p); sendHp(p); sendMp(p);
+      socket.emit('enchanted', { kind: 'reroll' });
     });
 
     // ---------- beceriler ----------
@@ -505,7 +524,7 @@ function createWorld(io) {
       if (!p.zone || !p.zone.def.village) return;
       if (act === 'accept' && q.horse === 'available') {
         q.horse = 'active'; q.horseKills = 0;
-        notice(p, `Görev: Kızılçam Köyü çevresindeki ${HORSE_QUEST.count} Vahşi Kurt'u yen.`);
+        notice(p, `Görev: Kızılçam Ormanı'ndaki ${HORSE_QUEST.count} Vahşi Kurt'u yen.`);
       } else if (act === 'claim' && q.horse === 'ready') {
         if (!addItem(p, 'at_muhru', 1)) { notice(p, 'Envanterinde yer aç.'); return; }
         q.horse = 'done';
@@ -553,13 +572,14 @@ function createWorld(io) {
       const target = R.MAPS[portal.to];
       if (p.level < target.minLevel) { notice(p, `${target.name} için en az ${target.minLevel}. seviye olmalısın.`); return; }
       const forward = portal.to > z.id;
-      moveToZone(p, portal.to, forward ? [-6, 25] : [56, 25]);
+      const b = boundsOf(target);
+      moveToZone(p, portal.to, forward ? [b.min + 8, 25] : [b.max - 8, 25]);
     });
 
     // köylerdeki ışınlayıcı
     socket.on('teleport', (to) => {
       const z = p.zone; if (!z || p.dead) return;
-      if (!z.def.village && !z.def.fishing) { notice(p, 'Işınlayıcı sadece köylerde var.'); return; }
+      if (!z.def.village && !z.def.fishing) { notice(p, 'Işınlayıcı sadece köyde var.'); return; }
       const target = R.MAPS[Number(to)];
       if (!target || target.id === z.id) return;
       if (p.level < target.minLevel) { notice(p, `${target.name} için en az ${target.minLevel}. seviye olmalısın.`); return; }

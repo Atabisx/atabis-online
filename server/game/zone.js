@@ -2,12 +2,24 @@
 // Her bölge kendi Socket.io odasına yayın yapar.
 const R = require('./rules');
 
-const BOUNDS = { min: -15, max: 65 };
+const DEFAULT_BOUNDS = [-15, 65];
 const VILLAGE_CENTER = { x: 25, z: 25 };
 const LEASH = 28;                 // yaratık evinden bu kadar uzaklaşınca geri döner
-// boss'lar köprünün ötesinde, köyden uzakta
-const BOSS_SPOTS = [[57, 52], [58, -4], [60, 38]];
-const STONE_SPOTS = [[40.5, 8], [55, 22.5], [52.5, 40], [7.5, 55], [-5, 10], [37.5, 52.5], [60, 5], [-7.5, 37.5]];
+
+// haritanın sınırları (gen_data.py: köy orta boy, vahşi haritalar büyük)
+function boundsOf(def) {
+  const [min, max] = def.bounds || DEFAULT_BOUNDS;
+  return { min, max };
+}
+// boss'lar haritanın uzak (doğu) yarısında, girişten ve köyden uzakta
+function bossSpots(b) {
+  return [[b.max - 12, b.max - 12], [b.max - 12, b.min + 12], [b.max - 24, 25 + (b.max - b.min) * 0.22]];
+}
+// harita tohumundan, her açılışta aynı çıkan sabit rastgele sayı
+function seeded(seed) {
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -25,9 +37,29 @@ class Zone {
     this.drops = new Map();
     this.nextId = 1;
     this.alive = true;
+    this.bounds = boundsOf(def);
+    this.bossSpots = bossSpots(this.bounds);
+    this.stoneSpots = this.makeStoneSpots((def.stones ?? 5) + 3);
     for (const sp of def.spawns) for (let i = 0; i < sp.count; i++) this.spawnMob(sp.mob, null);
-    def.bosses.forEach((key, i) => this.spawnMob(key, BOSS_SPOTS[i % BOSS_SPOTS.length]));
+    def.bosses.forEach((key, i) => this.spawnMob(key, this.bossSpots[i % this.bossSpots.length]));
     for (let i = 0; i < (def.stones ?? 5); i++) this.spawnStone();
+  }
+
+  clampX(v) { return Math.max(this.bounds.min, Math.min(this.bounds.max, v)); }
+
+  // metin taşı yerleri: haritaya yayılmış, birbirinden uzak, yollardan ve girişlerden uzak
+  makeStoneSpots(n) {
+    const rnd = seeded((this.def.seed || 1) * 31 + 7);
+    const b = this.bounds, spots = [];
+    const gap = (b.max - b.min) * 0.2;
+    for (let tries = 0; spots.length < n && tries < 2000; tries++) {
+      const x = b.min + 8 + rnd() * (b.max - b.min - 16), z = b.min + 8 + rnd() * (b.max - b.min - 16);
+      if (Math.abs(z - 25) < 6) continue;   // ana yolun üstüne değil
+      if (!this.safeFrom(x, z)) continue;
+      if (spots.some((s) => Math.hypot(s[0] - x, s[1] - z) < (tries < 1500 ? gap : 10))) continue;
+      spots.push([+x.toFixed(1), +z.toFixed(1)]);
+    }
+    return spots;
   }
 
   emit(ev, data) { this.io.to(this.room).emit(ev, data); }
@@ -36,16 +68,16 @@ class Zone {
   safeFrom(x, z) {
     if (this.def.village && Math.hypot(x - VILLAGE_CENTER.x, z - VILLAGE_CENTER.z) < 22) return false;
     if (Math.hypot(x - this.def.spawn[0], z - this.def.spawn[1]) < 12) return false;
-    for (const b of BOSS_SPOTS) if (Math.hypot(x - b[0], z - b[1]) < 8) return false;
+    for (const b of this.bossSpots) if (Math.hypot(x - b[0], z - b[1]) < 8) return false;
     for (const p of this.def.portals) if (Math.hypot(x - p.x, z - p.z) < 8) return false;
     return true;
   }
   randomSpot() {
     for (let i = 0; i < 60; i++) {
-      const x = rand(BOUNDS.min + 5, BOUNDS.max - 5), z = rand(BOUNDS.min + 5, BOUNDS.max - 5);
+      const x = rand(this.bounds.min + 5, this.bounds.max - 5), z = rand(this.bounds.min + 5, this.bounds.max - 5);
       if (this.safeFrom(x, z)) return [x, z];
     }
-    return [50, 50];
+    return [this.bounds.max - 15, this.bounds.max - 15];
   }
 
   // ---------- yaratıklar ----------
@@ -67,14 +99,14 @@ class Zone {
   // ---------- metin taşları ----------
   spawnStone() {
     const used = new Set([...this.stones.values()].map((s) => s.spot));
-    const free = STONE_SPOTS.map((_, i) => i).filter((i) => !used.has(i) && this.safeFrom(...STONE_SPOTS[i]));
+    const free = this.stoneSpots.map((_, i) => i).filter((i) => !used.has(i));
     if (!free.length) return;
     const spot = free[Math.floor(Math.random() * free.length)];
     const lv = this.def.minLevel + 4;
     const purple = Math.random() < 0.3;
     const hp = Math.round((100 + lv * lv * 2.5 + lv * 20) * (purple ? 7 : 5));
     const id = this.nextId++;
-    const s = { id, spot, x: STONE_SPOTS[spot][0], z: STONE_SPOTS[spot][1], lv, hp, max: hp,
+    const s = { id, spot, x: this.stoneSpots[spot][0], z: this.stoneSpots[spot][1], lv, hp, max: hp,
                 name: purple ? 'Gölge Metini' : 'Ölüm Metini', color: purple ? 'purple' : 'red' };
     this.stones.set(id, s);
     this.emit('stoneSpawn', s);
@@ -231,8 +263,8 @@ class Zone {
       }
     } else if (sk.target === 'dash') {
       const fx = Math.sin(p.facing || 0), fz = Math.cos(p.facing || 0);
-      p.x = Math.max(BOUNDS.min, Math.min(BOUNDS.max, p.x + fx * sk.dist));
-      p.z = Math.max(BOUNDS.min, Math.min(BOUNDS.max, p.z + fz * sk.dist));
+      p.x = this.clampX(p.x + fx * sk.dist);
+      p.z = this.clampX(p.z + fz * sk.dist);
       p.socket.emit('correct', { x: p.x, z: p.z });
       targets = this.targetsAround(p.x, p.z, sk.radius);
     }
@@ -315,8 +347,8 @@ class Zone {
         const dx = tx - m.x, dz = tz - m.z, len = Math.hypot(dx, dz);
         if (len > 0.05) {
           const step = Math.min(len, speed * dt);
-          m.x = Math.max(BOUNDS.min, Math.min(BOUNDS.max, m.x + dx / len * step));
-          m.z = Math.max(BOUNDS.min, Math.min(BOUNDS.max, m.z + dz / len * step));
+          m.x = this.clampX(m.x + dx / len * step);
+          m.z = this.clampX(m.z + dz / len * step);
           m.ry = Math.atan2(dx, dz);
           m.moving = true;
         }
@@ -341,5 +373,4 @@ class Zone {
   }
 }
 
-Zone.BOUNDS = BOUNDS;
-module.exports = { Zone };
+module.exports = { Zone, boundsOf };

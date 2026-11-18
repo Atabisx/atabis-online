@@ -90,8 +90,12 @@ def build_items():
                         'desc': '5 dakika hareket hızı +%25', 'lv': 1, 'price': 150, 'rarity': 1, 'color': '#f2c94c', 'stack': 200}
 
     # efsun nesnesi: sadece metin taşlarından düşer
-    items['efsun'] = {'name': 'Efsun Nesnesi', 'slot': 'use', 'desc': 'Bir ekipmana rastgele bir efsun ekler (en fazla 5). 5 efsunlu eşyada tüm efsunları yeniden belirler.',
+    items['efsun'] = {'name': 'Efsun Nesnesi', 'slot': 'use', 'desc': 'Bir ekipmana rastgele bir efsun ekler (en fazla 5).',
                       'lv': 1, 'price': 0, 'rarity': 2, 'color': '#c86bff', 'stack': 200}
+    # efsun değiştirme: sadece boss'lardan düşer
+    items['efsun_degis'] = {'name': 'Efsun Değiştirme Nesnesi', 'slot': 'use',
+                            'desc': 'Efsunlu bir ekipmanın tüm efsunlarını yeniden belirler (efsun sayısı aynı kalır).',
+                            'lv': 1, 'price': 0, 'rarity': 2, 'color': '#4fd1c5', 'stack': 200}
     # balıkçılık
     items['olta'] = {'name': 'Olta', 'slot': 'use', 'desc': 'Gümüş Göl kıyısında balık tutmak için.', 'lv': 30, 'price': 0, 'rarity': 1, 'color': '#8a6440'}
     items['yem'] = {'name': 'Solucan Yem', 'slot': 'use', 'desc': 'Her atışta bir yem harcanır.', 'lv': 1, 'price': 8, 'rarity': 0, 'color': '#b0726a', 'stack': 200}
@@ -136,91 +140,93 @@ def mob_stats(lv, boss=False):
 
 # (anahtar, ad, seviye, şekil, renk, ölçek, saldırganlık yarıçapı, hız, menzil)
 MAPS = [
-    {'name': 'Atabis Köyü', 'lv': 1, 'theme': 'village_green', 'village': True,
+    {'name': 'Atabis Köyü', 'lv': 1, 'theme': 'village_winter', 'village': True,
      'mobs': [('kopek', 'Sokak Köpeği', 1, 'dog', '#8a6a4a', 0.8, 0, 4.5),
               ('kurt', 'Gri Kurt', 3, 'wolf', '#7d7f86', 1.0, 9, 5.5),
               ('domuz', 'Yaban Domuzu', 5, 'boar', '#5a4535', 1.05, 7, 5.0)],
-     'bosses': [('bozkurt', 'Kurt Lideri Bozkurt', 10, 'wolf', '#d9d4c7', 1.9),
-                ('tonguz', 'Dev Domuz Tonguz', 13, 'boar', '#3a2a1c', 2.1)]},
-    {'name': 'Kızılçam Köyü', 'lv': 15, 'theme': 'village_pine', 'village': True,
+     'bosses': [('bozkurt', 'Kurt Lideri Bozkurt', 10, 'wolf', '#d9d4c7', 1.9, {'mane': '#f4f1e8', 'eyes': '#7fd4ff', 'aura': '#9fd8ff'}),
+                ('tonguz', 'Dev Domuz Tonguz', 13, 'boar', '#3a2a1c', 2.1, {'tusks': '#f4efe4', 'spikes': '#1e140c', 'eyes': '#ff3b2f'})]},
+    {'name': 'Kızılçam Ormanı', 'lv': 15, 'theme': 'pine_forest',
      'mobs': [('vkurt', 'Vahşi Kurt', 15, 'wolf', '#5a4a3a', 1.1, 10, 5.8),
               ('kdomuz', 'Kara Domuz', 17, 'boar', '#2a2522', 1.15, 8, 5.2),
               ('ayi', 'Orman Ayısı', 19, 'bear', '#4a3020', 1.3, 8, 4.6)],
-     'bosses': [('kizilayi', 'Kızıl Ayı', 24, 'bear', '#8e2a21', 2.2)]},
+     'bosses': [('kizilayi', 'Kızıl Ayı', 24, 'bear', '#8e2a21', 2.2, {'plates': '#4a2418', 'horns': '#d9cfb8', 'eyes': '#ff6a3d', 'aura': '#ff6a3d'})]},
     {'name': 'Sisli Orman', 'lv': 22, 'theme': 'forest_mist',
      'mobs': [('sisorumcek', 'Sis Örümceği', 22, 'spider', '#5a5e6a', 1.0, 9, 5.5),
               ('golgekurt', 'Gölge Kurdu', 24, 'wolf', '#2c2f3a', 1.15, 11, 6.0),
               ('agacruhu', 'Ağaç Ruhu', 26, 'golem', '#4a6a35', 1.1, 7, 3.8)],
-     'bosses': [('orumcekkr', 'Örümcek Kraliçesi', 31, 'spider', '#6c3483', 2.4)]},
+     'bosses': [('orumcekkr', 'Örümcek Kraliçesi', 31, 'spider', '#6c3483', 2.4, {'crown': '#ffd700', 'eyes': '#d07bff', 'spikes': '#2a0f3a', 'aura': '#b06bff'})]},
     {'name': 'Taş Vadisi', 'lv': 29, 'theme': 'rocky',
      'mobs': [('tasgolem', 'Taş Golem', 29, 'golem', '#8d8a82', 1.15, 7, 3.6),
               ('kayaakrep', 'Kaya Akrebi', 31, 'scorpion', '#6a5a4a', 1.0, 9, 5.0),
               ('haydut', 'Vadi Haydudu', 33, 'humanoid', '#6b4a2e', 1.0, 11, 5.4)],
-     'bosses': [('karatug', 'Haydut Reisi Kara Tuğ', 38, 'humanoid', '#2a2522', 1.5)]},
-    {'name': 'Kuru Çöl', 'lv': 36, 'theme': 'desert',
+     'bosses': [('karatug', 'Haydut Reisi Kara Tuğ', 38, 'humanoid', '#2a2522', 1.5, {'plume': '#c0392b', 'cape': '#7d1f16', 'weapon': '#d9d4c7'})]},
+    {'name': 'Kuru Çöl', 'lv': 36, 'theme': 'desert_dunes',
      'mobs': [('kumakrep', 'Kum Akrebi', 36, 'scorpion', '#c9a35a', 1.05, 9, 5.2),
               ('colkurt', 'Çöl Kurdu', 38, 'wolf', '#c9a36a', 1.1, 11, 6.2),
               ('solucan', 'Kum Solucanı', 40, 'worm', '#b08a5a', 1.1, 8, 4.4)],
-     'bosses': [('devsolucan', 'Dev Kum Solucanı', 45, 'worm', '#8a6440', 2.6)]},
-    {'name': 'Çöl Kervansarayı', 'lv': 43, 'theme': 'desert_village', 'village': True,
+     'bosses': [('devsolucan', 'Dev Kum Solucanı', 45, 'worm', '#8a6440', 2.6, {'spikes': '#e8d5a8', 'crystals': '#ffb347', 'eyes': '#ff3b2f'})]},
+    {'name': 'Kızıl Kanyon', 'lv': 43, 'theme': 'desert_canyon',
      'mobs': [('colhaydut', 'Çöl Haydudu', 43, 'humanoid', '#c9a35a', 1.0, 11, 5.6),
               ('mumya', 'Mumya', 45, 'humanoid', '#d9cfb8', 1.05, 8, 3.8),
               ('akbaba', 'Akbaba', 47, 'flyer', '#3a2a1c', 1.1, 12, 6.5)],
-     'bosses': [('yagmaci', 'Kervan Yağmacısı', 52, 'humanoid', '#8e2a21', 1.6)]},
+     'bosses': [('yagmaci', 'Kervan Yağmacısı', 52, 'humanoid', '#8e2a21', 1.6, {'cape': '#c9a35a', 'eyes': '#ffd23f', 'orbs': '#ffb347', 'weapon': '#ffd700'})]},
     {'name': 'Kara Bataklık', 'lv': 50, 'theme': 'swamp',
      'mobs': [('kurbaga', 'Bataklık Kurbağası', 50, 'frog', '#4a6a35', 1.0, 8, 5.0),
               ('yilan', 'Zehirli Yılan', 52, 'worm', '#3f7535', 0.9, 10, 5.6),
               ('camur', 'Çamur Canavarı', 54, 'golem', '#4a3a2a', 1.2, 7, 3.8)],
-     'bosses': [('cadi', 'Bataklık Cadısı', 59, 'ghost', '#6fd36f', 1.8)]},
+     'bosses': [('cadi', 'Bataklık Cadısı', 59, 'ghost', '#6fd36f', 1.8, {'hat': '#1a2a1a', 'flames': '#6fd36f', 'orbs': '#9fff7f', 'aura': '#6fd36f'})]},
     {'name': 'Karlı Dağlar', 'lv': 57, 'theme': 'snow',
      'mobs': [('karkurt', 'Kar Kurdu', 57, 'wolf', '#e8eef2', 1.15, 12, 6.2),
               ('buzayi', 'Buz Ayısı', 59, 'bear', '#dfe8ee', 1.35, 9, 4.8),
               ('yeti', 'Yeti', 61, 'humanoid', '#f4f6f8', 1.4, 9, 4.6)],
-     'bosses': [('buzdevi', 'Buz Devi', 66, 'golem', '#9fd8ff', 2.6)]},
+     'bosses': [('buzdevi', 'Buz Devi', 66, 'golem', '#9fd8ff', 2.6, {'crystals': '#9fd8ff', 'spikes': '#e8f4ff', 'eyes': '#7fd4ff', 'aura': '#9fd8ff'})]},
     {'name': 'Buz Mağarası', 'lv': 64, 'theme': 'ice_cave',
      'mobs': [('buzorumcek', 'Buz Örümceği', 64, 'spider', '#9fd8ff', 1.05, 10, 5.6),
               ('kristalgolem', 'Kristal Golem', 66, 'golem', '#c8d0ff', 1.2, 7, 3.8),
               ('ayazruhu', 'Ayaz Ruhu', 68, 'ghost', '#e8f4ff', 1.0, 12, 5.8)],
-     'bosses': [('ayazkralice', 'Ayaz Kraliçesi', 73, 'ghost', '#7fb3ff', 2.0)]},
+     'bosses': [('ayazkralice', 'Ayaz Kraliçesi', 73, 'ghost', '#7fb3ff', 2.0, {'crown': '#e8f4ff', 'crystals': '#7fb3ff', 'orbs': '#c8e8ff', 'aura': '#7fb3ff'})]},
     {'name': 'Volkan Eteği', 'lv': 71, 'theme': 'volcanic',
      'mobs': [('atesbocek', 'Ateş Böceği', 71, 'spider', '#ff6a3d', 0.95, 10, 6.0),
               ('lavgolem', 'Lav Golemi', 73, 'golem', '#5a2a1c', 1.25, 7, 3.6),
               ('korkurt', 'Kor Kurdu', 75, 'wolf', '#c0392b', 1.2, 12, 6.4)],
-     'bosses': [('ejderyavru', 'Ateş Ejderhası Yavrusu', 80, 'dragon', '#c0392b', 1.8)]},
-    {'name': 'Ejder Kalesi Kasabası', 'lv': 78, 'theme': 'castle_town', 'village': True,
+     'bosses': [('ejderyavru', 'Ateş Ejderhası Yavrusu', 80, 'dragon', '#c0392b', 1.8, {'flames': '#ff6a3d', 'horns': '#2a1a14', 'eyes': '#ffd23f'})]},
+    {'name': 'Ejder Kalesi', 'lv': 78, 'theme': 'castle',
      'mobs': [('muhafiz', 'Kale Muhafızı', 78, 'humanoid', '#7d7f86', 1.05, 10, 5.2),
               ('karasovalye', 'Kara Şövalye', 80, 'humanoid', '#2a2a2a', 1.1, 11, 5.4),
               ('gargoyl', 'Gargoyl', 82, 'flyer', '#5a5e6a', 1.25, 12, 6.2)],
-     'bosses': [('sovalyelord', 'Kara Şövalye Lordu', 87, 'humanoid', '#1a1a1a', 1.7)]},
+     'bosses': [('sovalyelord', 'Kara Şövalye Lordu', 87, 'humanoid', '#1a1a1a', 1.7, {'cape': '#1a1a1a', 'horns': '#2a2a2a', 'eyes': '#ff3b2f', 'plates': '#3a3a40', 'weapon': '#8a7dff'})]},
     {'name': 'Lanetli Harabeler', 'lv': 85, 'theme': 'ruins',
      'mobs': [('iskelet', 'İskelet Savaşçı', 85, 'skeleton', '#e8e2d0', 1.0, 11, 5.4),
               ('hayalet', 'Hayalet', 87, 'ghost', '#c8d0ff', 1.0, 12, 5.8),
               ('buyucu', 'Lanetli Büyücü', 89, 'humanoid', '#6c3483', 1.0, 13, 5.0)],
-     'bosses': [('lichkral', 'Lich Kral', 94, 'skeleton', '#8a7dff', 1.9)]},
+     'bosses': [('lichkral', 'Lich Kral', 94, 'skeleton', '#8a7dff', 1.9, {'crown': '#8a7dff', 'cape': '#2a1a3a', 'orbs': '#8a7dff', 'aura': '#8a7dff', 'eyes': '#b0a8ff'})]},
     {'name': 'İblis Kulesi', 'lv': 92, 'theme': 'demon',
      'mobs': [('iblismuhafiz', 'İblis Muhafız', 92, 'humanoid', '#8e2a21', 1.15, 11, 5.4),
               ('alevib', 'Alev İblisi', 94, 'ghost', '#ff6a3d', 1.1, 12, 6.0),
               ('suikastci', 'Gölge Suikastçı', 96, 'humanoid', '#1a1a1a', 1.0, 14, 7.0)],
-     'bosses': [('kuleefendisi', 'Kule Efendisi', 101, 'humanoid', '#b0362b', 1.9)]},
+     'bosses': [('kuleefendisi', 'Kule Efendisi', 101, 'humanoid', '#b0362b', 1.9, {'horns': '#1a0a0a', 'wings': '#5a1010', 'flames': '#ff6a3d', 'eyes': '#ffd23f', 'weapon': '#ff6a3d'})]},
     {'name': 'Ejder Vadisi', 'lv': 99, 'theme': 'dragon_valley',
      'mobs': [('gencejder', 'Genç Ejder', 99, 'dragon', '#3f7535', 1.0, 12, 6.0),
               ('ejdermuhafiz', 'Ejder Muhafızı', 101, 'humanoid', '#ffb347', 1.15, 11, 5.4),
               ('ejderbuyucu', 'Ejder Büyücüsü', 103, 'ghost', '#ffb347', 1.1, 13, 5.6)],
-     'bosses': [('gokejder', 'Gök Ejderi', 108, 'dragon', '#7fb3ff', 2.3)]},
+     'bosses': [('gokejder', 'Gök Ejderi', 108, 'dragon', '#7fb3ff', 2.3, {'horns': '#e8f4ff', 'crystals': '#9fd8ff', 'spikes': '#c8e8ff', 'aura': '#7fb3ff'})]},
     {'name': 'Kara Taht', 'lv': 106, 'theme': 'dark_throne',
      'mobs': [('karaasker', 'Kara Ordu Askeri', 106, 'humanoid', '#2a2a2a', 1.05, 12, 5.6),
               ('karakomutan', 'Kara Ordu Komutanı', 108, 'humanoid', '#4a1a1a', 1.2, 12, 5.6),
               ('hiclik', 'Hiçlik Yaratığı', 110, 'ghost', '#3a1a4a', 1.2, 14, 6.0)],
-     'bosses': [('karaimparator', 'Kara İmparator', 115, 'humanoid', '#ffd700', 2.0),
-                ('hiclikejder', 'Hiçlik Ejderi', 120, 'dragon', '#3a1a4a', 2.6)]},
+     'bosses': [('karaimparator', 'Kara İmparator', 115, 'humanoid', '#ffd700', 2.0, {'crown': '#ffd700', 'cape': '#4a1a6a', 'plates': '#c9a35a', 'aura': '#ffd700', 'weapon': '#ffd700'}),
+                ('hiclikejder', 'Hiçlik Ejderi', 120, 'dragon', '#3a1a4a', 2.6, {'horns': '#0a0010', 'spikes': '#8a5aff', 'flames': '#8a5aff', 'eyes': '#d07bff', 'aura': '#5a2a8a'})]},
 ]
 
-SHOPS = {  # harita sırası -> (iksirler, satılan kademeler)
-    0: (['p_hp1', 'p_hp2', 'p_mp1', 'p_mp2', 'p_green', 'p_speed'], [0, 1]),
-    1: (['p_hp1', 'p_hp2', 'p_mp1', 'p_mp2', 'p_green', 'p_speed'], [1, 2, 3]),
-    5: (['p_hp2', 'p_hp3', 'p_mp2', 'p_mp3', 'p_green', 'p_speed'], [4, 5, 6]),
-    10: (['p_hp3', 'p_hp4', 'p_mp3', 'p_mp4', 'p_green', 'p_speed'], [8, 9, 10]),
+# tek köy var: bütün alışveriş Atabis Köyü'nde (harita sırası -> (iksirler, satılan kademeler))
+SHOPS = {
+    0: (['p_hp1', 'p_hp2', 'p_hp3', 'p_hp4', 'p_mp1', 'p_mp2', 'p_mp3', 'p_mp4', 'p_green', 'p_speed'], list(range(0, 11))),
 }
+
+# harita sınırları: köy haritası orta boy, vahşi haritalar büyük
+VILLAGE_BOUNDS = [-25, 75]
+WILD_BOUNDS = [-45, 95]
 
 
 def tier_for_map(i):
@@ -244,25 +250,28 @@ def build(items):
                       'potions': [[('p_hp1' if lv < 15 else 'p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4'), 0.08],
                                   [('p_mp1' if lv < 15 else 'p_mp2' if lv < 40 else 'p_mp3' if lv < 75 else 'p_mp4'), 0.05]]})
             mobs[key] = d
-            spawns.append({'mob': key, 'count': 8 if i == 0 else 7})
-        for key, name, lv, shape, color, scale in m['bosses']:
+            spawns.append({'mob': key, 'count': 10 if i == 0 else 14})
+        for key, name, lv, shape, color, scale, style in m['bosses']:
             d = mob_stats(lv, boss=True)
             d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': 0,
                       'speed': 5.2, 'range': 2.6 * scale, 'cd': 2000, 'boss': True, 'respawn': 120,
                       'drops': [[k, 0.28] for k in own] + [[k, 0.12] for k in nxt] + [[k, 0.035] for k in leg],
                       'potions': [[('p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4'), 1.0],
                                   [('p_mp2' if lv < 40 else 'p_mp3' if lv < 75 else 'p_mp4'), 1.0],
-                                  ['p_green', 0.3], ['p_speed', 0.3]]})
+                                  ['p_green', 0.3], ['p_speed', 0.3], ['efsun_degis', 0.2]],
+                      'style': style})
             mobs[key] = d
             bosses.append(key)
+        lo, hi = VILLAGE_BOUNDS if m.get('village') else WILD_BOUNDS
         entry = {
             'id': i, 'name': m['name'], 'minLevel': m['lv'], 'theme': m['theme'],
             'village': bool(m.get('village')), 'tier': tier, 'seed': 1000 + i * 97,
+            'bounds': [lo, hi],
             'spawns': spawns, 'bosses': bosses,
             'stoneDrops': own, 'stones': 5,
-            'spawn': [25, 29] if m.get('village') else [-4, 25],
-            'portals': ([{'to': i - 1, 'x': -12, 'z': 25}] if i > 0 else []) +
-                       ([{'to': i + 1, 'x': 62, 'z': 25}] if i < len(MAPS) - 1 else []),
+            'spawn': [25, 29] if m.get('village') else [lo + 8, 25],
+            'portals': ([{'to': i - 1, 'x': lo + 3, 'z': 25}] if i > 0 else []) +
+                       ([{'to': i + 1, 'x': hi - 3, 'z': 25}] if i < len(MAPS) - 1 else []),
         }
         if i in SHOPS:
             potions, tiers = SHOPS[i]
@@ -275,7 +284,7 @@ def build(items):
         maps.append(entry)
     # balık tutma haritası: yaratık yok, sadece ışınlayıcıyla gelinir
     maps.append({'id': len(maps), 'name': 'Gümüş Göl', 'minLevel': 30, 'theme': 'lake', 'village': False, 'fishing': True,
-                 'safe': True, 'tier': 0, 'seed': 4242, 'spawns': [], 'bosses': [], 'stoneDrops': [], 'stones': 0,
+                 'safe': True, 'tier': 0, 'seed': 4242, 'bounds': [-15, 65], 'spawns': [], 'bosses': [], 'stoneDrops': [], 'stones': 0,
                  'spawn': [25, 22], 'portals': [], 'lake': {'x': 25, 'z': 44, 'r': 15},
                  'shop': {'potions': ['yem', 'p_hp1', 'p_mp1'], 'weapons': [], 'armor': []}})
     return mobs, maps

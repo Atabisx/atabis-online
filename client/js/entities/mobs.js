@@ -51,6 +51,7 @@ function quad(color, o = {}) {
   if (o.neck) { head.position.z += 0.35; head.position.y += 0.35; body.add(mesh(B(W * 0.5, 0.5, 0.5), c, 0, legH + H, L / 2)); }
   return {
     root,
+    anchors: { head, hp: new THREE.Vector3(0, 0, 0.15), hr: Math.max(W * 0.42, H * 0.4), hf: 0.23, back: body, bp: new THREE.Vector3(0, legH + H, 0), bl: L, bw: W },
     update(t, moving, atk) {
       const sp = moving ? 10 : 0;
       legs.forEach((l, i) => { l.rotation.x = Math.sin(t * sp + (i % 3 ? Math.PI : 0)) * 0.6 * (moving ? 1 : 0); });
@@ -98,6 +99,7 @@ function spider(color, scorpion) {
       if (tail) tail.rotation.x = -atk * 0.9;
       claws.forEach((cl, i) => { cl.rotation.y = (i ? -1 : 1) * atk * 0.6; });
     },
+    anchors: { head: body, hp: new THREE.Vector3(0, 0.6, 0.25), hr: 0.3, hf: 0.3, back: body, bp: new THREE.Vector3(0, scorpion ? 0.9 : 1.08, -0.35), bl: 0.8, bw: scorpion ? 0.6 : 0.9 },
   };
 }
 
@@ -120,6 +122,7 @@ function golem(color, glowColor) {
       arms.forEach((a, i) => { a.rotation.x = (moving ? Math.sin(t * 6 + i * Math.PI) * 0.3 : 0) - atk * 1.6; });
       body.rotation.y = moving ? Math.sin(t * 6) * 0.05 : 0;
     },
+    anchors: { head: body, hp: new THREE.Vector3(0, 2.35, 0.05), hr: 0.26, hf: 0.24, back: body, bp: new THREE.Vector3(0, 2.1, -0.1), bl: 0.7, bw: 1.0, shoulders: 0.7 },
   };
 }
 
@@ -142,6 +145,7 @@ function worm(color) {
       head.position.y = 0.38 + atk * 0.9 + (moving ? 0 : Math.sin(t * 2) * 0.05);
       head.position.z = atk * 0.3;
     },
+    anchors: { head, hp: new THREE.Vector3(0, 0, 0), hr: 0.38, hf: 0.36, back: root, bp: new THREE.Vector3(0, 0.62, -1.05), bl: 2.1, bw: 0.6 },
   };
 }
 
@@ -165,6 +169,7 @@ function flyer(color) {
       wings.forEach(({ w, s }) => { w.rotation.z = s * Math.sin(t * (moving ? 14 : 8)) * 0.7; });
       body.rotation.x = atk * 0.6;
     },
+    anchors: { head: body, hp: new THREE.Vector3(0, 0.1, 0.55), hr: 0.16, hf: 0.15, back: body, bp: new THREE.Vector3(0, 0.2, -0.05), bl: 0.9, bw: 0.5 },
   };
 }
 
@@ -184,6 +189,7 @@ function ghost(color) {
       arms.forEach((a, i) => { a.rotation.x = -0.5 - atk * 1.3 + Math.sin(t * 3 + i) * 0.1; });
       body.rotation.y = Math.sin(t * 1.3) * 0.15;
     },
+    anchors: { head: body, hp: new THREE.Vector3(0, 2.05, 0), hr: 0.38, hf: 0.33, back: body, bp: new THREE.Vector3(0, 1.75, -0.12), bl: 0.6, bw: 0.85, shoulders: 0.45 },
   };
 }
 
@@ -204,7 +210,148 @@ function frog(color) {
       body.scale.y = 1 - atk * 0.2;
       body.position.z = atk * 0.4;
     },
+    anchors: { head: body, hp: new THREE.Vector3(0, 0.82, 0.3), hr: 0.36, hf: 0.3, back: body, bp: new THREE.Vector3(0, 0.88, -0.15), bl: 1.2, bw: 1.2 },
   };
+}
+
+// ---------- boss süslemeleri ----------
+// Her boss'un maps/mobs verisinde kendine has bir 'style' tanımı vardır: boynuz, taç, pelerin, kanat,
+// alev, kristal, diken, yele... Bunlar yaratığın baş ve sırt noktalarına takılır, böylece aynı
+// türden iki boss bile birbirine benzemez.
+const HUMANOID_ANCHORS = { hp: new THREE.Vector3(0, 1.66, 0.02), hr: 0.15, hf: 0.13, bp: new THREE.Vector3(0, 1.42, -0.16), bl: 0.3, bw: 0.48, shoulders: 0.24, standing: true };
+function decorate(v, style) {
+  const a = v.anchors;
+  const head = a.head, back = a.back;
+  const hp = a.hp, hr = a.hr, bp = a.bp;
+  const anim = [];
+  const add = (parent, m) => { parent.add(m); return m; };
+  if (style.horns) {
+    for (const s of [-1, 1]) {
+      const g = new THREE.Group(); g.position.set(hp.x + s * hr * 0.55, hp.y + hr * 0.65, hp.z - hr * 0.1);
+      const m1 = mesh(new THREE.ConeGeometry(hr * 0.24, hr * 1.1, 6), mat(style.horns), 0, hr * 0.5, 0);
+      g.add(m1);
+      const tip = new THREE.Group(); tip.position.y = hr * 1.0; tip.rotation.z = -s * 0.7;
+      tip.add(mesh(new THREE.ConeGeometry(hr * 0.16, hr * 0.9, 6), mat(style.horns), 0, hr * 0.4, 0));
+      g.add(tip);
+      g.rotation.z = -s * 0.55; g.rotation.x = -0.35;
+      add(head, g);
+    }
+  }
+  if (style.crown) {
+    const g = new THREE.Group(); g.position.set(hp.x, hp.y + hr * 0.95, hp.z);
+    g.add(mesh(new THREE.CylinderGeometry(hr * 0.72, hr * 0.8, hr * 0.3, 10, 1, true), glowMat(style.crown, 0.4), 0, 0, 0));
+    for (let i = 0; i < 6; i++) {
+      const ang = i / 6 * Math.PI * 2;
+      g.add(mesh(new THREE.ConeGeometry(hr * 0.13, hr * 0.5, 4), glowMat(style.crown, 0.5), Math.sin(ang) * hr * 0.74, hr * 0.38, Math.cos(ang) * hr * 0.74));
+    }
+    g.add(mesh(new THREE.OctahedronGeometry(hr * 0.16, 0), glowMat('#ff3b5c', 1), 0, hr * 0.05, hr * 0.8));
+    add(head, g);
+  }
+  if (style.hat) {
+    const g = new THREE.Group(); g.position.set(hp.x, hp.y + hr * 0.75, hp.z);
+    g.add(mesh(new THREE.CylinderGeometry(hr * 1.7, hr * 1.7, hr * 0.08, 16), mat(style.hat), 0, 0, 0));
+    const cone = mesh(new THREE.ConeGeometry(hr * 0.85, hr * 2.6, 12), mat(style.hat), 0, hr * 1.25, 0); cone.rotation.z = 0.25; g.add(cone);
+    g.add(mesh(new THREE.CylinderGeometry(hr * 0.88, hr * 0.88, hr * 0.2, 12), glowMat('#6fd36f', 0.6), 0, hr * 0.12, 0));
+    add(head, g);
+  }
+  if (style.plume) {
+    const g = new THREE.Group(); g.position.set(hp.x, hp.y + hr * 0.9, hp.z - hr * 0.2);
+    g.add(mesh(new THREE.CylinderGeometry(hr * 0.12, hr * 0.12, hr * 0.8, 6), mat('#c9a35a'), 0, hr * 0.4, 0));
+    for (let i = 0; i < 5; i++) {
+      const strand = mesh(B(hr * 0.12, hr * 0.12, hr * 2.4), mat(style.plume), (i - 2) * hr * 0.1, hr * 0.7 - i * 0.02, -hr * 1.1);
+      strand.rotation.x = 0.5 + i * 0.05; g.add(strand);
+    }
+    add(head, g); anim.push((t) => { g.rotation.x = Math.sin(t * 3) * 0.12; });
+  }
+  if (style.tusks) {
+    for (const s of [-1, 1]) {
+      const t = mesh(new THREE.ConeGeometry(hr * 0.16, hr * 1.5, 6), mat(style.tusks), hp.x + s * hr * 0.55, hp.y - hr * 0.35, hp.z + a.hf + hr * 0.5);
+      t.rotation.x = -1.0; t.rotation.z = s * 0.35; add(head, t);
+    }
+  }
+  if (style.eyes) {
+    for (const s of [-1, 1]) add(head, mesh(new THREE.SphereGeometry(hr * 0.17, 6, 5), glowMat(style.eyes, 1), hp.x + s * hr * 0.42, hp.y + hr * 0.18, hp.z + a.hf));
+  }
+  if (style.mane) {
+    const g = new THREE.Group(); g.position.set(hp.x, hp.y, hp.z - hr * 0.7);
+    for (let i = 0; i < 9; i++) {
+      const ang = i / 9 * Math.PI * 2;
+      g.add(mesh(new THREE.IcosahedronGeometry(hr * 0.5, 0), mat(style.mane), Math.cos(ang) * hr * 1.0, Math.sin(ang) * hr * 0.9 + hr * 0.1, 0));
+    }
+    add(head, g);
+  }
+  if (style.spikes) {
+    const n = 5;
+    for (let i = 0; i < n; i++) {
+      const k = i / (n - 1);
+      const sp = mesh(new THREE.ConeGeometry(a.bw * 0.12, a.bw * (0.55 - Math.abs(k - 0.4) * 0.4), 5), mat(style.spikes), bp.x, bp.y + a.bw * 0.15, bp.z + a.bl * (0.4 - k * 0.8));
+      sp.rotation.x = -0.35; add(back, sp);
+    }
+  }
+  if (style.plates) {
+    for (let i = 0; i < 3; i++) {
+      const pl = mesh(B(a.bw * 1.12, a.bw * 0.14, a.bl * 0.3), mat(style.plates), bp.x, bp.y + 0.02, bp.z + a.bl * (0.25 - i * 0.25));
+      pl.rotation.x = -0.12; add(back, pl);
+    }
+    if (a.shoulders) for (const s of [-1, 1]) add(back, mesh(new THREE.SphereGeometry(a.bw * 0.3, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat(style.plates), s * a.shoulders, bp.y + 0.02, bp.z + 0.1));
+  }
+  if (style.cape) {
+    const len = a.standing ? 1.15 : bp.y * 0.7;
+    const g = new THREE.Group(); g.position.set(bp.x, bp.y + 0.02, bp.z - 0.06);
+    const cl = new THREE.Mesh(new THREE.PlaneGeometry(a.bw * 1.25, len), new THREE.MeshLambertMaterial({ color: style.cape, side: THREE.DoubleSide }));
+    cl.position.y = -len / 2; cl.castShadow = true; g.add(cl);
+    g.rotation.x = 0.12; add(back, g);
+    anim.push((t, moving) => { g.rotation.x = 0.12 + (moving ? 0.35 + Math.sin(t * 9) * 0.08 : Math.sin(t * 1.5) * 0.04); });
+  }
+  if (style.wings) {
+    const wings = [];
+    for (const s of [-1, 1]) {
+      const g = new THREE.Group(); g.position.set(bp.x + s * a.bw * 0.3, bp.y, bp.z - 0.05);
+      const sh = new THREE.Shape();
+      sh.moveTo(0, 0); sh.lineTo(1.6, 0.9); sh.lineTo(1.3, 0.2); sh.lineTo(1.0, 0.45); sh.lineTo(0.7, -0.1); sh.lineTo(0.35, 0.15); sh.lineTo(0, -0.4);
+      const wm = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshLambertMaterial({ color: style.wings, side: THREE.DoubleSide }));
+      wm.scale.set(s, 1, 1); wm.rotation.y = s * 0.3; wm.castShadow = true;
+      g.add(wm); add(back, g); wings.push({ g, s });
+    }
+    anim.push((t) => wings.forEach(({ g, s }) => { g.rotation.y = s * (0.5 + Math.sin(t * 3) * 0.35); }));
+  }
+  if (style.flames) {
+    const fl = [];
+    const spots = [[0, 0.1, 0.2], [-0.35, 0.05, 0], [0.35, 0.05, 0], [0, 0.05, -0.3], [0, 0.08, -0.5]];
+    spots.forEach(([x, y, z], i) => {
+      const f = mesh(new THREE.ConeGeometry(a.bw * 0.13, a.bw * 0.6, 6), glowMat(style.flames, 1).clone(), bp.x + x * a.bw, bp.y + y + a.bw * 0.25, bp.z + z * a.bl);
+      f.material.transparent = true; f.material.opacity = 0.85; add(back, f); fl.push([f, i]);
+    });
+    anim.push((t) => fl.forEach(([f, i]) => { const k = 0.75 + Math.abs(Math.sin(t * 9 + i * 1.7)) * 0.5; f.scale.set(1, k, 1); }));
+  }
+  if (style.crystals) {
+    const spots = a.shoulders ? [[-a.shoulders, 0.15, 0], [a.shoulders, 0.15, 0], [0, 0.2, -0.25]] : [[-0.3, 0.1, 0.2], [0.3, 0.1, -0.1], [0, 0.15, -0.35], [0, 0.1, 0.4]];
+    for (const [x, y, z] of spots) {
+      const c = mesh(new THREE.OctahedronGeometry(a.bw * 0.16, 0), glowMat(style.crystals, 0.6), bp.x + (a.shoulders ? x : x * a.bw), bp.y + y + a.bw * 0.15, bp.z + z * a.bl);
+      c.scale.y = 2.2; add(back, c);
+    }
+  }
+  if (style.orbs) {
+    const g = new THREE.Group(); g.position.y = (a.standing ? 1.1 : bp.y);
+    const n = 3;
+    for (let i = 0; i < n; i++) {
+      const o = mesh(new THREE.SphereGeometry(0.12, 8, 6), glowMat(style.orbs, 1), Math.cos(i / n * Math.PI * 2) * 0.95, 0, Math.sin(i / n * Math.PI * 2) * 0.95);
+      g.add(o);
+    }
+    v.root.add(g);
+    anim.push((t) => { g.rotation.y = t * 1.6; g.position.y = (a.standing ? 1.1 : bp.y) + Math.sin(t * 2) * 0.12; });
+  }
+  if (style.aura) {
+    const ringMat = new THREE.MeshBasicMaterial({ color: style.aura, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false });
+    const glow = new THREE.Mesh(new THREE.CircleGeometry(1.7, 32), ringMat);
+    glow.rotation.x = -Math.PI / 2; glow.position.y = 0.05;
+    v.root.add(glow);
+    anim.push((t) => { const k = 1 + Math.sin(t * 2.5) * 0.12; glow.scale.set(k, k, k); ringMat.opacity = 0.25 + Math.sin(t * 2.5) * 0.1; });
+  }
+  if (anim.length) {
+    const base = v.update;
+    v.update = (t, moving, atk, dt) => { base(t, moving, atk, dt); for (const f of anim) f(t, moving); };
+  }
 }
 
 // ---------- dışa açık: yaratık modeli seç ----------
@@ -227,9 +374,13 @@ export function buildMob(def, humanoidFactory) {
     case 'frog': v = frog(col); break;
     default: v = humanoidFactory ? humanoidFactory(def) : golem(col); break;
   }
+  if (def.style) {
+    if (!v.anchors) v.anchors = { head: v.root, back: v.root, ...HUMANOID_ANCHORS };
+    try { decorate(v, def.style); } catch (e) { console.warn('Boss süsü eklenemedi', def.name, e); }
+  }
   v.root.scale.multiplyScalar(def.scale || 1);
   if (def.boss) {
-    const ring = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.5, 32), new THREE.MeshBasicMaterial({ color: '#ff3b2f', transparent: true, opacity: 0.6, side: THREE.DoubleSide }));
+    const ring = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.5, 32), new THREE.MeshBasicMaterial({ color: (def.style && def.style.aura) || '#ff3b2f', transparent: true, opacity: 0.6, side: THREE.DoubleSide }));
     ring.rotation.x = -Math.PI / 2; ring.position.y = 0.06 / (def.scale || 1);
     v.root.add(ring);
   }

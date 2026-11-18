@@ -4,12 +4,21 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 2 (bu sürüm)
+### Aşama 3 (bu sürüm)
+
+- **Tek köy:** sadece Atabis Köyü köy. Kış teması: karlı zemin, karlı çatılar, kardan adamlar ve sürekli kar yağışı. Bütün dükkânlar (iksir, kendi sınıfına göre silah, zırh/takı) ve ışınlayıcı burada. Ölünce burada doğarsın.
+- **Büyük haritalar:** köy dışındaki 14 harita 140×140 metre (eskiden 80×80), her birinde 42 yaratık. Eski köyler vahşi bölge oldu: Kızılçam Ormanı, Kızıl Kanyon, Ejder Kalesi.
+- **İki farklı çöl:** Kuru Çöl (sarı kum tepeleri, kaktüs, kemik) ve Kızıl Kanyon (kızıl kaya kuleleri, kuru çalı, turuncu gökyüzü).
+- **Her boss farklı görünür:** 17 boss'un her birinin kendi süsü var (boynuz, taç, pelerin, kanat, alev, kristal, diken, yele, cadı şapkası, etrafında dönen küreler, renkli aura).
+- **Efsun Değiştirme Nesnesi:** sadece boss'lardan %20 düşer; eşyadaki efsunların hepsini yeniden belirler. Efsun Nesnesi artık sadece ekler (en fazla 5).
+- **Sesler:** kılıç savurma, ok, büyü, isabet, kritik, hasar alma, yaratık ölümü, boss düşüşü, metin taşı kırılması, ganimet ve para, iksir, beceriler, balık, efsun ve **seviye atlama melodisi**. Ses dosyası yok, tarayıcıda üretilir. Sol üstteki hoparlör butonu sesi kapatır/açar.
+
+### Aşama 2
 
 - **Beceriler:** her sınıfın 4 kendi becerisi var, 5. seviyede açılır. Her seviyede 1 beceri puanı; beceriler 1-17, sonra M1-M3'e kadar yükselir. Sol üstteki şimşek simgesi beceri penceresini açar; beceri butonları saldırı butonunun solunda.
 - **Mana (MP):** beceriler mana harcar; mana kendiliğinden dolar.
 - **İksirler:** kırmızı (can), mavi (mana), yeşil (5 dk saldırı hızı +%20), hız iksiri (5 dk hareket hızı +%25). Hepsi markette ucuz fiyata; boss'lardan da düşer.
-- **Efsun Nesnesi:** sadece metin taşlarından %15 ihtimalle düşer. Ekipmana rastgele efsun ekler (en fazla 5): maks. can/mana, saldırı, savunma, kritik, saldırı ve hareket hızı, canavarlara karşı güç, can çalma. 5 efsunlu eşyada hepsini yeniden belirler.
+- **Efsun Nesnesi:** sadece metin taşlarından %15 ihtimalle düşer. Ekipmana rastgele efsun ekler (en fazla 5): maks. can/mana, saldırı, savunma, kritik, saldırı ve hareket hızı, canavarlara karşı güç, can çalma. 
 - **At:** 25. seviyede köydeki Seyis'ten görev al (20 Vahşi Kurt), ödül At Mührü. Atlıyken %60 daha hızlısın.
 - **Balık tutma:** 30. seviyede olta ve 20 yem otomatik verilir. Işınlayıcıdan Gümüş Göl'e git, kıyıda "Olta at"a bas, buton "ÇEK!" olunca dokun. İstiridyeden nadiren inci çıkar.
 - Boss'lar köprünün ötesinde ve önce sen saldırmadıkça saldırmaz. Her haritada 5 metin taşı var.

@@ -127,6 +127,11 @@ body.hurt canvas { filter: saturate(1.4) brightness(0.85) sepia(0.3) hue-rotate(
 #skillBtn i { background: #b23a24; }
 #mountBtn { position: fixed; left: 64px; top: 130px; width: 46px; height: 46px; border-radius: 12px; border: 2px solid #c9a35a; background: rgba(14,16,13,0.78); color: #c9a35a; display: flex; align-items: center; justify-content: center; }
 #mountBtn.on { background: #c9a35a; color: #2a1f08; }
+#sndBtn { position: fixed; left: 12px; top: 182px; width: 46px; height: 46px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.3); background: rgba(14,16,13,0.78); color: #f4f1e8; display: flex; align-items: center; justify-content: center; }
+#sndBtn .mute { display: none; }
+#sndBtn.off { color: #8b877c; }
+#sndBtn.off .mute { display: inline; }
+#sndBtn.off .wave { display: none; }
 #fishBtn { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); min-width: 140px; min-height: 52px; border-radius: 26px; border: 2px solid #9fd8ff; background: rgba(14,16,13,0.85); color: #9fd8ff; font: inherit; font-weight: 800; font-size: 16px; }
 #fishBtn.bite { background: #e5533d; border-color: #ffe08a; color: #fff; animation: pulse .35s infinite alternate; }
 @keyframes pulse { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.12); } }
