@@ -4,7 +4,16 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 3 (bu sürüm)
+### Aşama 3.1 (bu sürüm): eklenen 3D modeller
+
+- **Yeni boss'lar (hazır modeller):** Atabis Köyü: Kurt Lideri Bozkurt, Kuduz Benekli (köpek), Alaca Kaplan. Kızılçam Ormanı: Kristal Yılan, Savaşçı Alp Bey. Sisli Orman: Su Elementali, Sis Büyücüsü. Taş Vadisi: Kadim Mumya.
+- **Hareket:** modellerin iskeleti yok; `client/js/entities/models.js` bacak, kol, baş ve kuyruğu modelin şeklinden ayırıp ekran kartında döndürür: yürürken çapraz adım, kol sallama, kuyruk sallama; saldırıda ısırma, kılıç indirme, kollarını kaldırma; büyücü süzülür, yılan kıvrılır.
+- **At:** binek atı artık heybeli at modeli, yürürken adım atar.
+- **Silahlar:** savaşçı/sura kılıçları Sv. 29-64 arası Lav Kılıcı görünümünde; Sv. 71 ve üstü Buz Baltası (bu kademelerin adı artık "Balta").
+- **Zırhlar:** Sv. 15-36 Yelek, Sv. 43-71 Bronz Göğüslük, Sv. 78 ve üstü Çelik Zırh görünümünde.
+- Model dosyaları `client/models/mobs` ve `client/models/items` altında; telefon için sıkıştırıldı (kaplama JPEG, geometri KHR_mesh_quantization). Model yüklenemezse eski kodla çizilmiş görünüm kalır.
+
+### Aşama 3
 
 - **Tek köy:** sadece Atabis Köyü köy. Kış teması: karlı zemin, karlı çatılar, kardan adamlar ve sürekli kar yağışı. Bütün dükkânlar (iksir, kendi sınıfına göre silah, zırh/takı) ve ışınlayıcı burada. Ölünce burada doğarsın.
 - **Büyük haritalar:** köy dışındaki 14 harita 140×140 metre (eskiden 80×80), her birinde 42 yaratık. Eski köyler vahşi bölge oldu: Kızılçam Ormanı, Kızıl Kanyon, Ejder Kalesi.

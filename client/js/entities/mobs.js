@@ -2,6 +2,7 @@
 // Her yaratık +Z yönüne bakar; update() yürüme, nefes ve saldırı hareketini oynatır.
 import * as THREE from 'three';
 import { mat, glowMat } from '../util.js';
+import { attachMobModel } from './models.js';
 
 const shade = (hex, k) => '#' + new THREE.Color(hex).multiplyScalar(k).getHexString();
 function mesh(geo, material, x, y, z) {
@@ -345,9 +346,11 @@ function decorate(v, style) {
     const ringMat = new THREE.MeshBasicMaterial({ color: style.aura, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false });
     const glow = new THREE.Mesh(new THREE.CircleGeometry(1.7, 32), ringMat);
     glow.rotation.x = -Math.PI / 2; glow.position.y = 0.05;
+    glow.userData.keep = true;
     v.root.add(glow);
     anim.push((t) => { const k = 1 + Math.sin(t * 2.5) * 0.12; glow.scale.set(k, k, k); ringMat.opacity = 0.25 + Math.sin(t * 2.5) * 0.1; });
   }
+  v.extraAnim = anim;
   if (anim.length) {
     const base = v.update;
     v.update = (t, moving, atk, dt) => { base(t, moving, atk, dt); for (const f of anim) f(t, moving); };
@@ -376,13 +379,17 @@ export function buildMob(def, humanoidFactory) {
   }
   if (def.style) {
     if (!v.anchors) v.anchors = { head: v.root, back: v.root, ...HUMANOID_ANCHORS };
-    try { decorate(v, def.style); } catch (e) { console.warn('Boss süsü eklenemedi', def.name, e); }
+    // hazır 3D modeli olan boss'lara sadece aura eklenir, model kendisi yeterince farklı
+    const style = def.style.model ? { aura: def.style.aura } : def.style;
+    try { decorate(v, style); } catch (e) { console.warn('Boss süsü eklenemedi', def.name, e); }
   }
   v.root.scale.multiplyScalar(def.scale || 1);
   if (def.boss) {
     const ring = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.5, 32), new THREE.MeshBasicMaterial({ color: (def.style && def.style.aura) || '#ff3b2f', transparent: true, opacity: 0.6, side: THREE.DoubleSide }));
     ring.rotation.x = -Math.PI / 2; ring.position.y = 0.06 / (def.scale || 1);
+    ring.userData.keep = true;
     v.root.add(ring);
   }
+  if (def.style && def.style.model) attachMobModel(v, def);
   return v;
 }

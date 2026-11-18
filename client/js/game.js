@@ -5,6 +5,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { mat, esc } from './util.js';
 import { loadMap, colliders, circles, BOUNDS } from './world/map.js';
 import { buildMob } from './entities/mobs.js';
+import { itemModel, ITEM_MODELS, attachMountModel, MOUNT } from './entities/models.js';
 import * as sfx from './audio.js';
 
 let FACE_OFFSET = Math.PI;     // model yüklenince otomatik hesaplanır
@@ -282,6 +283,7 @@ function bowMesh(def) {
   return g;
 }
 function weaponMesh(def) {
+  if (def.model && ITEM_MODELS[def.model]) return itemModel(def.model, swordMesh(def));   // kullanıcının modeli
   if (def.type === 'dagger') return daggerMesh(def);
   if (def.type === 'staff') return staffMesh(def);
   if (def.type === 'bow') return bowMesh(def);
@@ -342,8 +344,9 @@ function applyLook(p, look) {
   const tint = new THREE.Color(a && a.color ? a.color : '#ffffff');
   for (const m of p.materials) m.color.copy(m.userData.base).lerp(tint, a && a.color !== '#ffffff' ? 0.55 : 0);
   if (a && a.plate) {
-    attach(p, calib.chest, chestMesh(a));
-    attach(p, calib.padL, padMesh(a)); attach(p, calib.padR, padMesh(a));
+    const spec = a.model && ITEM_MODELS[a.model];
+    attach(p, calib.chest, spec ? itemModel(a.model, chestMesh(a)) : chestMesh(a));
+    if (!spec || spec.pads) { attach(p, calib.padL, padMesh(a)); attach(p, calib.padR, padMesh(a)); }
   }
   if (h) attach(p, calib.helmet, helmetMesh(h));
 }
@@ -404,11 +407,18 @@ function createPlayer(p) {
 function setMount(p, on) {
   p.mounted = on;
   if (on && !p.horse) {
+    // önce kodla çizilmiş at görünür, heybeli at modeli yüklenince onunla değişir
     p.horse = buildMob({ shape: 'horse', color: '#6b4a2e', scale: 1 }, null);
     p.group.add(p.horse.root);
+    p.horse.onModel = () => { if (p.mounted) seatRider(p); };
+    attachMountModel(p.horse);
   }
   if (p.horse) p.horse.root.visible = on;
-  if (p.model) p.model.parent.position.y = (calib ? -calib.minY / calib.k : 0) + (on ? 1.0 : 0);
+  seatRider(p);
+}
+function seatRider(p) {
+  const lift = p.mounted ? (p.horse && p.horse.modelLoaded ? MOUNT.riderY : 1.0) : 0;
+  if (p.model) p.model.parent.position.y = (calib ? -calib.minY / calib.k : 0) + lift;
 }
 // balık tutarken elde olta
 function setRod(p, on) {
@@ -566,7 +576,7 @@ function createMob(m) {
   if (def.boss) label.el.classList.add('boss');
   label.hp.style.width = (100 * m.hp / m.max) + '%';
   mobs[m.id] = { id: m.id, key: m.key, def, v, label, hp: m.hp, max: m.max, target: new THREE.Vector3(m.x, 0, m.z),
-                 ry: m.ry || 0, moving: false, atkT: 0, t: Math.random() * 10, height: (def.shape === 'flyer' ? 3.2 : 2.2) * (def.scale || 1) };
+                 ry: m.ry || 0, moving: false, atkT: 0, t: Math.random() * 10, height: v.height ? v.height + 0.25 : (def.shape === 'flyer' ? 3.2 : 2.2) * (def.scale || 1) };
 }
 function removeMob(id) {
   const m = mobs[id]; if (!m) return;
@@ -1459,6 +1469,7 @@ function loop() {
     p.group.rotation.y = angleLerp(p.group.rotation.y, p.ry, 1 - Math.exp(-14 * dt));
     setAnim(p, p.moving && p.swingT <= 0 ? 'Run' : 'Idle');
     if (p.mixer) p.mixer.update(dt);
+    if (p.mounted && p.horse) p.horse.update(clock.elapsedTime, p.moving, 0, dt);
     if (p.swingT > 0) p.swingT = Math.max(0, p.swingT - dt);
     applySwing(p);
     if (p.model) p.model.parent.rotation.x = (p.id === myId ? amDead : p.dead) ? -Math.PI / 2 : 0;

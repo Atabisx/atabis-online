@@ -31,6 +31,27 @@ GEAR = [  # (yuva, ad, fiyat çarpanı)
 ]
 
 
+# Kullanıcının eklediği 3D modeller (client/models/items/*.glb): hangi kademede hangisi görünür
+def weapon_model(wtype, i):
+    if wtype != 'sword':
+        return None
+    if 4 <= i <= 9:
+        return 'lav_kilic'
+    if i >= 10:
+        return 'buz_balta'
+    return None
+
+
+def armor_model(i):
+    if 2 <= i <= 5:
+        return 'yelek'
+    if 6 <= i <= 10:
+        return 'gogusluk'
+    if i >= 11:
+        return 'celik_zirh'
+    return None
+
+
 def price(i, factor):
     return int(round(50 * (i + 1) ** 2.2 * factor / 10.0)) * 10
 
@@ -44,12 +65,16 @@ def build_items():
             suf = '_L' if legendary else ''
             rarity = 2 if legendary else (1 if i >= 11 else 0)
             for wtype, wname, classes, length in WEAPONS:
+                if wtype == 'sword' and i >= 10:
+                    wname = 'Balta'          # üst kademelerde savaşçı ve sura balta taşır
                 items[f'{wtype}{i}{suf}'] = {
                     'name': f'{pre}{tname} {wname}', 'slot': 'weapon', 'type': wtype, 'classes': classes,
                     'lv': lv, 'tier': i, 'atk': round((6 + 9 * i + 0.6 * i * i) * m), 'rarity': rarity,
                     'color': color, 'len': length, 'glow': legendary or i >= 10,
                     'price': 0 if legendary else price(i, 1.0),
                 }
+                if weapon_model(wtype, i):
+                    items[f'{wtype}{i}{suf}']['model'] = weapon_model(wtype, i)
             for slot, gname, factor in GEAR:
                 it = {'name': f'{pre}{tname} {gname}', 'slot': slot, 'lv': lv, 'tier': i, 'rarity': rarity,
                       'color': color, 'price': 0 if legendary else price(i, factor)}
@@ -58,6 +83,8 @@ def build_items():
                     it['plate'] = color
                     if i >= 4:
                         it['trim'] = '#e8b54a' if not legendary else '#fff1b8'
+                    if armor_model(i):
+                        it['model'] = armor_model(i)
                 elif slot == 'helmet':
                     it['def'] = round((3 + 6 * i + 0.4 * i * i) * 0.6 * m)
                     if i >= 4:
@@ -144,23 +171,27 @@ MAPS = [
      'mobs': [('kopek', 'Sokak Köpeği', 1, 'dog', '#8a6a4a', 0.8, 0, 4.5),
               ('kurt', 'Gri Kurt', 3, 'wolf', '#7d7f86', 1.0, 9, 5.5),
               ('domuz', 'Yaban Domuzu', 5, 'boar', '#5a4535', 1.05, 7, 5.0)],
-     'bosses': [('bozkurt', 'Kurt Lideri Bozkurt', 10, 'wolf', '#d9d4c7', 1.9, {'mane': '#f4f1e8', 'eyes': '#7fd4ff', 'aura': '#9fd8ff'}),
-                ('tonguz', 'Dev Domuz Tonguz', 13, 'boar', '#3a2a1c', 2.1, {'tusks': '#f4efe4', 'spikes': '#1e140c', 'eyes': '#ff3b2f'})]},
+     # 'model': client/models/mobs/<ad>.glb – kullanıcının eklediği modeller
+     'bosses': [('bozkurt', 'Kurt Lideri Bozkurt', 10, 'wolf', '#3a2f4a', 1.7, {'model': 'kurt', 'aura': '#b06bff'}),
+                ('kuduz', 'Kuduz Benekli', 12, 'dog', '#f4f1e8', 1.8, {'model': 'kopek', 'aura': '#ff6a3d'}),
+                ('kaplan', 'Alaca Kaplan', 14, 'wolf', '#e67e22', 1.9, {'model': 'kaplan', 'aura': '#ffb347'})]},
     {'name': 'Kızılçam Ormanı', 'lv': 15, 'theme': 'pine_forest',
      'mobs': [('vkurt', 'Vahşi Kurt', 15, 'wolf', '#5a4a3a', 1.1, 10, 5.8),
               ('kdomuz', 'Kara Domuz', 17, 'boar', '#2a2522', 1.15, 8, 5.2),
               ('ayi', 'Orman Ayısı', 19, 'bear', '#4a3020', 1.3, 8, 4.6)],
-     'bosses': [('kizilayi', 'Kızıl Ayı', 24, 'bear', '#8e2a21', 2.2, {'plates': '#4a2418', 'horns': '#d9cfb8', 'eyes': '#ff6a3d', 'aura': '#ff6a3d'})]},
+     'bosses': [('kristalyilan', 'Kristal Yılan', 22, 'worm', '#b0362b', 1.9, {'model': 'yilan', 'aura': '#ff3b5c'}),
+                ('alpbey', 'Savaşçı Alp Bey', 24, 'humanoid', '#8a6a3a', 1.2, {'model': 'savasci', 'aura': '#e8b54a'})]},
     {'name': 'Sisli Orman', 'lv': 22, 'theme': 'forest_mist',
      'mobs': [('sisorumcek', 'Sis Örümceği', 22, 'spider', '#5a5e6a', 1.0, 9, 5.5),
               ('golgekurt', 'Gölge Kurdu', 24, 'wolf', '#2c2f3a', 1.15, 11, 6.0),
               ('agacruhu', 'Ağaç Ruhu', 26, 'golem', '#4a6a35', 1.1, 7, 3.8)],
-     'bosses': [('orumcekkr', 'Örümcek Kraliçesi', 31, 'spider', '#6c3483', 2.4, {'crown': '#ffd700', 'eyes': '#d07bff', 'spikes': '#2a0f3a', 'aura': '#b06bff'})]},
+     'bosses': [('suelementi', 'Su Elementali', 29, 'golem', '#4fa3ff', 1.6, {'model': 'su_elementi', 'aura': '#4fa3ff'}),
+                ('sisbuyucu', 'Sis Büyücüsü', 31, 'ghost', '#5a3a8a', 1.25, {'model': 'buyucu', 'aura': '#b06bff'})]},
     {'name': 'Taş Vadisi', 'lv': 29, 'theme': 'rocky',
      'mobs': [('tasgolem', 'Taş Golem', 29, 'golem', '#8d8a82', 1.15, 7, 3.6),
               ('kayaakrep', 'Kaya Akrebi', 31, 'scorpion', '#6a5a4a', 1.0, 9, 5.0),
               ('haydut', 'Vadi Haydudu', 33, 'humanoid', '#6b4a2e', 1.0, 11, 5.4)],
-     'bosses': [('karatug', 'Haydut Reisi Kara Tuğ', 38, 'humanoid', '#2a2522', 1.5, {'plume': '#c0392b', 'cape': '#7d1f16', 'weapon': '#d9d4c7'})]},
+     'bosses': [('kadimmumya', 'Kadim Mumya', 38, 'humanoid', '#d9cfb8', 1.3, {'model': 'mumya', 'aura': '#e8d5a8'})]},
     {'name': 'Kuru Çöl', 'lv': 36, 'theme': 'desert_dunes',
      'mobs': [('kumakrep', 'Kum Akrebi', 36, 'scorpion', '#c9a35a', 1.05, 9, 5.2),
               ('colkurt', 'Çöl Kurdu', 38, 'wolf', '#c9a36a', 1.1, 11, 6.2),

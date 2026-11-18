@@ -13,7 +13,8 @@ function boundsOf(def) {
 }
 // boss'lar haritanın uzak (doğu) yarısında, girişten ve köyden uzakta
 function bossSpots(b) {
-  return [[b.max - 12, b.max - 12], [b.max - 12, b.min + 12], [b.max - 24, 25 + (b.max - b.min) * 0.22]];
+  // üçüncü yer (sadece 3 boss'lu köy haritasında kullanılır) karşı köşede, köyden uzakta
+  return [[b.max - 12, b.max - 12], [b.max - 12, b.min + 12], [b.min + 12, b.max - 12]];
 }
 // harita tohumundan, her açılışta aynı çıkan sabit rastgele sayı
 function seeded(seed) {
