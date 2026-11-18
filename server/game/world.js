@@ -577,7 +577,7 @@ function createWorld(io) {
       } else {
         targets = p.zone.useSkill(p, sk, lv);
       }
-      p.zone.emit('skillFx', { id: p.id, key, targets, x: p.x, z: p.z });
+      p.zone.emit('skillFx', { id: p.id, key, targets, x: p.x, z: p.z, lv });
       socket.emit('skillCd', { key, until: sk.cd });
     });
 

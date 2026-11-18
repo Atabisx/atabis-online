@@ -198,7 +198,7 @@ class Zone {
     const range = R.classOf(p).range || R.MELEE_RANGE;
     let best = null, bestD = Infinity, kind = null;
     for (const m of this.mobs.values()) {
-      const d = dist(m, p) - m.d.scale * 0.6;
+      const d = dist(m, p) - (m.d.hitR || m.d.scale * 0.6);
       if (d < range && d < bestD) { best = m; bestD = d; kind = 'mob'; }
     }
     for (const s of this.stones.values()) {
@@ -257,7 +257,7 @@ class Zone {
   // ---------- beceriler ----------
   targetsAround(x, z, r) {
     const list = [];
-    for (const m of this.mobs.values()) if (Math.hypot(m.x - x, m.z - z) - m.d.scale * 0.6 < r) list.push(['mob', m]);
+    for (const m of this.mobs.values()) if (Math.hypot(m.x - x, m.z - z) - (m.d.hitR || m.d.scale * 0.6) < r) list.push(['mob', m]);
     for (const s of this.stones.values()) if (Math.hypot(s.x - x, s.z - z) - 1.2 < r) list.push(['stone', s]);
     return list;
   }

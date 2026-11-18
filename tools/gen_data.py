@@ -177,12 +177,12 @@ MAPS = [
     {'name': 'Atabis Köyü', 'lv': 1, 'theme': 'village_winter', 'village': True,
      # köy hayvanları: gerçek boylarında, uysal (sen vurmadan saldırmazlar)
      # 9. alan: {'model': client/models/mobs/<ad>.glb} – kullanıcının eklediği modeller
-     'mobs': [('tavuk', 'Tavuk', 1, 'frog', '#f4f1e8', 1.0, 0, 3.4, {'model': 'tavuk'}),
-              ('horoz', 'Horoz', 2, 'frog', '#c0392b', 1.0, 0, 3.8, {'model': 'horoz'}),
+     'mobs': [('tavuk', 'Tavuk', 1, 'frog', '#f4f1e8', 1.5, 0, 3.4, {'model': 'tavuk'}),
+              ('horoz', 'Horoz', 2, 'frog', '#c0392b', 2.0, 0, 3.8, {'model': 'horoz'}),
               ('domuz', 'Domuz', 3, 'boar', '#e8a0a0', 1.0, 0, 4.0, {'model': 'domuz'}),
               ('inek', 'İnek', 5, 'bear', '#a0522d', 1.0, 0, 3.2, {'model': 'inek'})],
-     'bosses': [('devhoroz', 'Dev Horoz', 8, 'frog', '#c0392b', 9.0, {'model': 'horoz', 'aura': '#ffb347'}),
-                ('deliboga', 'Deli Boğa', 12, 'bear', '#6b3a1e', 4.8, {'model': 'inek', 'aura': '#ff3b2f'})]},
+     'bosses': [('devhoroz', 'Dev Horoz', 8, 'frog', '#c0392b', 18.0, {'model': 'horoz', 'aura': '#ffb347', 'hitR': 4.5}),
+                ('deliboga', 'Deli Boğa', 12, 'bear', '#6b3a1e', 8.0, {'model': 'inek', 'aura': '#ff3b2f', 'hitR': 6.5})]},
     {'name': 'Kızılçam Ormanı', 'lv': 15, 'theme': 'pine_forest',
      # sadece kullanıcının modelleri (kodla çizilen yaratık yok)
      'mobs': [('vkurt', 'Vahşi Kurt', 15, 'wolf', '#5a4a3a', 1.15, 10, 5.8, {'model': 'kurt'}),
@@ -306,6 +306,7 @@ def build(items):
             spawns.append({'mob': key, 'count': 16 if i == 0 else 20})
         for key, name, lv, shape, color, scale, style in m['bosses']:
             d = mob_stats(lv, boss=True)
+            style = dict(style); hit_r = style.pop('hitR', None)   # çok büyük boss'larda gövde yarıçapı
             d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': 0,
                       'speed': 5.2, 'range': min(6.0, 2.6 * scale), 'cd': 2000, 'boss': True, 'respawn': 120,
                       'drops': [[k, 0.28] for k in own] + [[k, 0.12] for k in nxt] + [[k, 0.035] for k in leg],
@@ -313,6 +314,9 @@ def build(items):
                                   [('p_mp2' if lv < 40 else 'p_mp3' if lv < 75 else 'p_mp4'), 1.0],
                                   ['p_green', 0.3], ['p_speed', 0.3], ['efsun_degis', 0.2]],
                       'style': style})
+            if hit_r:
+                d['hitR'] = hit_r
+                d['range'] = hit_r + 3.0
             mobs[key] = d
             bosses.append(key)
         lo, hi = VILLAGE_BOUNDS if m.get('village') else WILD_BOUNDS

@@ -796,6 +796,28 @@ function applySwing(p) {
   wrap.position.z = Math.cos(-FACE_OFFSET) * o.lunge;
 }
 
+// büyü pozu: 'raise' iki kol başın üstüne kalkar, 'push' sağ kol öne uzanır, gövde hafif geriye
+function applyCast(p, dt) {
+  if (!(p.castT > 0) || !p.bones) return;
+  p.castT = Math.max(0, p.castT - dt);
+  const t = 1 - p.castT / p.castDur;
+  const k = seg(t, 0, 0.3) * (1 - seg(t, 0.7, 1));
+  const a = p.group.rotation.y - FACE_OFFSET;
+  _f.set(Math.sin(a), 0, Math.cos(a));
+  _r.crossVectors(_f, _u);
+  p.model.updateMatrixWorld(true);
+  if (p.castKind === 'raise') {
+    rotWorld(p.bones.arm, _r, 2.5 * k); rotWorld(p.bones.armL, _r, 2.5 * k);
+    rotWorld(p.bones.arm, _f, -0.35 * k); rotWorld(p.bones.armL, _f, 0.35 * k);
+    rotWorld(p.bones.spine, _r, 0.18 * k);
+    rotWorld(p.bones.neck, _r, 0.25 * k);
+  } else {
+    rotWorld(p.bones.arm, _r, 1.5 * k); rotWorld(p.bones.fore, _r, 0.2 * k);
+    rotWorld(p.bones.armL, _r, 0.6 * k);
+    rotWorld(p.bones.spine, _u, -0.35 * k);
+    rotWorld(p.bones.spine, _r, -0.12 * k);
+  }
+}
 
 // ---------- yaratıklar ----------
 const mobs = {};
@@ -1279,12 +1301,15 @@ function lighten(hex, k) {
   const f = (c) => Math.round(c + (255 - c) * k).toString(16).padStart(2, '0');
   return '#' + f(r) + f(g) + f(b);
 }
+// M1/M2/M3'te beceri düğmesi de ustalık rengini alır
+const skColor = (sk, lv) => { const m = fx.MASTERY[fx.masteryOf(lv)]; return m ? m.color : sk.color; };
 function renderSkillbar() {
   skillbarEl.innerHTML = mySkills().map((sk) => {
     const lv = skillState.levels[sk.key] || 0;
     const mp = sk.mp + sk.mpLv * Math.max(0, lv - 1);
     const icon = SKILL_ICONS[sk.key] || '<circle cx="12" cy="12" r="6"/>';
-    return `<button class="skb${lv ? ' ready' : ' locked'}" data-sk="${sk.key}" aria-label="${esc(sk.name)}" style="--c:${sk.color};--c2:${lighten(sk.color, 0.45)}">` +
+    const col = skColor(sk, lv);
+    return `<button class="skb${lv ? ' ready' : ' locked'}${fx.masteryOf(lv) ? ' m' + fx.masteryOf(lv) : ''}" data-sk="${sk.key}" aria-label="${esc(sk.name)}" style="--c:${col};--c2:${lighten(col, 0.45)}">` +
       `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>` +
       `<span class="cd" id="cd_${sk.key}"></span><span class="cdt" id="cdt_${sk.key}"></span>` +
       (lv ? `<span class="lv">${skLabel(lv)}</span><span class="mp">${mp}</span>` : '') + '</button>';
@@ -1298,7 +1323,7 @@ function renderSkillWin() {
     const lv = skillState.levels[sk.key] || 0;
     const mp = sk.mp + sk.mpLv * Math.max(0, lv - 1);
     const can = myLevel >= skillState.unlock && skillState.points > 0 && lv < 20;
-    return `<div class="sk-row"><span class="badge" style="color:${sk.color}">${lv ? skLabel(lv) : '–'}</span><span class="grow"><b>${esc(sk.name)}</b><br><small>${esc(sk.desc)}</small><br><small>Mana ${mp} · Bekleme ${sk.cd} sn</small></span><button data-up="${sk.key}" ${can ? '' : 'disabled'} aria-label="${esc(sk.name)} seviyesini artır">+</button></div>`;
+    return `<div class="sk-row"><span class="badge" style="color:${skColor(sk, lv)}">${lv ? skLabel(lv) : '–'}</span><span class="grow"><b>${esc(sk.name)}</b><br><small>${esc(sk.desc)}</small><br><small>Mana ${mp} · Bekleme ${sk.cd} sn</small></span><button data-up="${sk.key}" ${can ? '' : 'disabled'} aria-label="${esc(sk.name)} seviyesini artır">+</button></div>`;
   }).join('');
 }
 skillbarEl.addEventListener('pointerdown', (e) => {
@@ -1631,10 +1656,11 @@ export function startGame(sock, opts = {}) {
   socket.on('enchanted', () => sfx.enchant());
   socket.on('fishEnd', ({ ok, msg }) => { setFishState('idle'); toast(msg); });
   socket.on('playerHp', ({ id, hp, max }) => { const p = players[id]; if (p && p.label.hp) p.label.hp.style.width = Math.max(0, 100 * hp / max) + '%'; });
-  socket.on('skillFx', ({ id, key, targets, x, z }) => {
+  socket.on('skillFx', ({ id, key, targets, x, z, lv }) => {
     const sk = skillDef(key); if (!sk) return;
     const p = players[id];
-    if (p && sk.combo != null) { p.swingT = SWING_T; p.combo = sk.combo; if (p.cls !== 'okcu') p.slashT = 0.3; }
+    const pose = fx.skillPose(sk);
+    if (p && (sk.combo != null || pose.bow)) { p.swingT = SWING_T; p.combo = sk.combo || 0; if (p.cls !== 'okcu') p.slashT = 0.3; }
     const from = p ? p.group.position : { x, z };
     sfx.skill(sk, from);
     if (p && sk.target !== 'heal') sfx.grunt(from, p.cls === 'ninja' || p.cls === 'saman');
@@ -1642,11 +1668,11 @@ export function startGame(sock, opts = {}) {
     const tl = [];
     for (const t of targets) { const tp = targetPos(t); if (tp) tl.push({ x: tp.x, y: 0, z: tp.z, obj: players[t] || null }); }
     const facing = p ? p.group.rotation.y - FACE_OFFSET : 0;
-    try { fx.playSkill(sk, { caster: p || null, from: { x: from.x, z: from.z }, facing, targets: tl }); } catch (e) { console.warn('Beceri efekti', key, e); }
+    try { fx.playSkill(sk, { caster: p || null, from: { x: from.x, z: from.z }, facing, targets: tl, lv: lv || 0 }); } catch (e) { console.warn('Beceri efekti', key, e); }
     if (p) {
-      const pose = fx.skillPose(sk);
       if (pose.spin) { p.spinT = p.spinDur = pose.spin; }
       if (pose.jump) { p.jumpT = p.jumpDur = pose.jump; }
+      if (pose.cast) { p.castT = p.castDur = 0.8; p.castKind = pose.cast; }
     }
   });
   socket.on('playerJoin', (p) => { const o = createPlayer(p); if (p.mounted) setMount(o, true); log(`<b>${esc(p.name)}</b> haritaya geldi.`); });
@@ -1928,6 +1954,7 @@ function loop() {
     applyBreath(p, clock.elapsedTime);
     applyRide(p);
     applySwing(p);
+    applyCast(p, dt);
     updateCapes(p, clock.elapsedTime);
     updateAuras(p, dt, clock.elapsedTime);
     if (p.model) p.model.parent.rotation.x = (p.id === myId ? amDead : p.dead) ? -Math.PI / 2 : 0;

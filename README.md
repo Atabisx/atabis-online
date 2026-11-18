@@ -4,7 +4,14 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 3.6 (bu sürüm): sınıflara özel Uzak Doğu zırh takımları
+### Aşama 3.7 (bu sürüm): ustalık renkleri, tam hareketli beceriler, dev köy boss'ları
+
+- **Ustalık renkleri:** beceri M1'de mavi, M2'de mor, M3'te kızıl olur. Bütün parçacıklar, halkalar ve ışıklar o renge boyanır; düğme de aynı renkte parlar. M seviyelerinde efekt büyür: M1 çift büyü çemberi ve sarmal, M2 ışık sütunu ve dönen küreler, M3 gökten inen kızıl yıldırımlar ve alev halkası.
+- **Her beceri tam hareketli:** her beceriden önce karakterin çevresinde büyü toplanır, hedefte çarpma ışığı ve şok dalgası çıkar. Demir Beden, Gölge Kalkanı, Karanlık Kılıç ve Kaçış/Hafif Adım'da dönen rün halkaları ve küreler; Hamle'de hız izi ve taş parçaları; Zehirli Hançer'de dönen hançer ve damlayan zehir; Ruh Emme'de hedefte girdap.
+- **Karakter pozları:** buff ve şifada iki kol havaya kalkar, şimşekte sağ kol öne uzanır, okçunun bütün oklu becerilerinde yay gerilir.
+- **Atabis Köyü:** Dev Horoz yaklaşık 10 m, Deli Boğa yaklaşık 11 m boyunda; vuruş mesafeleri gövde büyüklüğüne göre ayarlandı. Tavuk 1,5, horoz 2 kat büyüdü.
+
+### Aşama 3.6: sınıflara özel Uzak Doğu zırh takımları
 
 - **Her sınıfın kendi takımı (`client/js/entities/outfits.js`):** plaka sıralı lamel göğüslük, katlı omuzluklar, kol ve baldır zırhları, bel kuşağı, uyluk plakaları ve sınıf başlığı. Tasarımlar projeye özgüdür; Metin2 dosyası kullanılmaz.
   - **Savaşçı:** gümüş-çelik ağır lamel, kırmızı ön/arka etek, tüylü miğfer.
