@@ -523,13 +523,91 @@ function attach(p, info, mesh) {
   bone.add(mesh);
   p.equipMeshes.push(mesh);
 }
+// ---------- silah ve zırh aurası (Metin2'deki +9 parıltısı gibi) ----------
+// Kademe yükseldikçe renk ve yoğunluk artar; efsanevi eşyalar altın parlar.
+function auraOf(def) {
+  if (!def || def.tier == null) return null;
+  const leg = def.rarity >= 2;
+  if (def.tier >= 15 || leg) return { color: '#ffd23f', k: leg ? 1.3 : 1.1 };
+  if (def.tier >= 12) return { color: '#ff5a3a', k: 0.95 };
+  if (def.tier >= 9) return { color: '#b06bff', k: 0.8 };
+  if (def.tier >= 6) return { color: '#6fa8ff', k: 0.6 };
+  return null;
+}
+const _av = new THREE.Vector3();
+// eşyanın üstüne hafif büyütülmüş, eklemeli parlayan bir kabuk
+function addGlowShell(root, color, list) {
+  const meshes = [];
+  root.traverse((o) => { if (o.isMesh && !o.userData.shell) meshes.push(o); });
+  for (const o of meshes) {
+    const m = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide });
+    const sh = new THREE.Mesh(o.geometry, m);
+    sh.userData.shell = true; sh.scale.setScalar(1.12); sh.renderOrder = 5;
+    o.add(sh);
+    list.push(m);
+  }
+}
+function setupAuras(p, wMesh, w, a) {
+  p.auraMats = [];
+  p.weaponAura = null; p.armorAura = null;
+  const wa = auraOf(w), aa = auraOf(a);
+  if (wa && wMesh) {
+    p.weaponAura = { ...wa, mesh: wMesh, len: (w.len || 1.0) + 0.1, acc: 0 };
+    const go = () => addGlowShell(wMesh, wa.color, p.auraMats);
+    let ready = null;
+    wMesh.traverse((o) => { if (o.userData && o.userData.ready) ready = o.userData.ready; });
+    if (ready) ready.then(go); else go();
+  }
+  if (aa) {
+    p.armorAura = { ...aa, acc: 0, ph: Math.random() * 6 };
+    // ayak altında hafif halka
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.95, 40), new THREE.MeshBasicMaterial({ color: aa.color, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    ring.rotation.x = -Math.PI / 2; ring.position.y = 0.05;
+    p.group.add(ring); p.equipMeshes.push(ring);
+    p.auraMats.push(ring.material);
+    p.armorAura.ring = ring;
+  }
+}
+function updateAuras(p, dt, t) {
+  if (!p.weaponAura && !p.armorAura) return;
+  const me = players[myId];
+  const near = !me || p === me || Math.hypot(me.group.position.x - p.group.position.x, me.group.position.z - p.group.position.z) < 45;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 3.2 + (p.armorAura ? p.armorAura.ph : 0));
+  for (const m of p.auraMats || []) m.opacity = (m.type === 'MeshBasicMaterial' && m.side === THREE.BackSide ? 0.22 : 0.18) + pulse * 0.22;
+  if (!near || p.dead) return;
+  const wa = p.weaponAura;
+  if (wa && wa.mesh.parent) {
+    // bıçak boyunca kıvılcımlar
+    wa.acc += dt * 22 * wa.k;
+    while (wa.acc > 1) {
+      wa.acc -= 1;
+      _av.set((Math.random() - 0.5) * 0.04, 0.1 + Math.random() * wa.len, 0);
+      wa.mesh.localToWorld(_av);
+      fx.emit(_av.x, _av.y, _av.z, { vx: (Math.random() - 0.5) * 0.4, vy: 0.3 + Math.random() * 0.5, vz: (Math.random() - 0.5) * 0.4, color: wa.color, size: 0.13 * wa.k + 0.05, life: 0.5, drag: 1.5 });
+    }
+  }
+  const aa = p.armorAura;
+  if (aa) {
+    // gövdeyi saran yükselen ışık sarmalı
+    aa.acc += dt * 14 * aa.k;
+    const g = p.group.position;
+    while (aa.acc > 1) {
+      aa.acc -= 1;
+      const ang = t * 3 + Math.random() * Math.PI * 2, r = 0.45 + Math.random() * 0.15;
+      fx.emit(g.x + Math.cos(ang) * r, 0.15 + Math.random() * 0.4, g.z + Math.sin(ang) * r, { vx: -Math.sin(ang) * 0.6, vy: 1.1 + Math.random() * 0.8, vz: Math.cos(ang) * 0.6, color: aa.color, size: 0.16 * aa.k, life: 1.1, drag: 0.6 });
+    }
+    if (aa.ring) aa.ring.rotation.z += dt * 0.8;
+  }
+}
+
 function applyLook(p, look) {
   p.look = look || {};
   if (!p.model || !calib) return;
   for (const m of p.equipMeshes) m.parent && m.parent.remove(m);
   p.equipMeshes = [];
   const w = ITEMS[p.look.weapon], a = ITEMS[p.look.armor], h = ITEMS[p.look.helmet];
-  if (w) attach(p, calib.sword, weaponMesh(w));
+  let wMesh = null;
+  if (w) { wMesh = weaponMesh(w); attach(p, calib.sword, wMesh); }
   // sınıfa göre vücut oranı ve renk; zırh varsa onun rengi ağır basar
   const cl = CLASS_LOOK[p.cls];
   const armorTint = a && a.color && a.color !== '#ffffff';
@@ -550,6 +628,7 @@ function applyLook(p, look) {
     if (!spec || spec.pads) { attach(p, calib.padL, padMesh(a)); attach(p, calib.padR, padMesh(a)); }
   }
   if (h) attach(p, calib.helmet, h.model && ITEM_MODELS[h.model] ? itemModel(h.model, helmetMesh(h)) : helmetMesh(h));
+  setupAuras(p, wMesh, w, a);
 }
 
 // ---------- oyuncular ----------
@@ -1910,6 +1989,7 @@ function loop() {
     applyRide(p);
     applySwing(p);
     updateCapes(p, clock.elapsedTime);
+    updateAuras(p, dt, clock.elapsedTime);
     if (p.model) p.model.parent.rotation.x = (p.id === myId ? amDead : p.dead) ? -Math.PI / 2 : 0;
     if (p.spirit) {
       // ruh: havada süzülür, hafifçe sallanır, yakına gelen oyuncuya döner

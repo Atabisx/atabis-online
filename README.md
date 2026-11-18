@@ -4,7 +4,11 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 3.4 (bu sürüm): büyük köy, GM, ışınlanma yüzüğü, telefona yükleme
+### Aşama 3.5 (bu sürüm): silah ve zırh aurası
+
+- Sv. 43+ eşyalar parlar: mavi (Sv. 43+), mor (Sv. 64+), kızıl (Sv. 85+), altın (son kademe ve efsanevi). Silahın üstünde parlayan kabuk ve bıçak boyunca kıvılcımlar; zırhta gövdeyi saran yükselen ışık sarmalı ve ayak altında dönen halka.
+
+### Aşama 3.4: büyük köy, GM, ışınlanma yüzüğü, telefona yükleme
 
 - **Atabis Köyü haritası 270×270 m:** köyün çevresinde ikinci ev halkası, dört kapılı ahşap çit, doğusunda buzlu nehir ve köprü. Boss'lar köprünün ötesinde (Metin2 gibi); hayvanlar suya girmez. Köy boss'ları daha da büyüdü (Dev Horoz 9 kat, Deli Boğa 4,8 kat).
 - **Kızılçam Ormanı:** sadece kullanıcının modelleri: Vahşi Kurt, Benekli Kaplan, Ateş Kertenkelesi Yavrusu, boss'lar ve metin taşları.
