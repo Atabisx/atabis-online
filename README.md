@@ -4,7 +4,14 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 3.7 (bu sürüm): ustalık renkleri, tam hareketli beceriler, dev köy boss'ları
+### Aşama 3.8 (bu sürüm): Şaman için kendi karakter modeli
+
+- **Ateş Büyücüsü (`client/models/chars/saman.glb`):** Şaman sınıfı artık kullanıcının eklediği, alev işlemeli kırmızı cüppeli karakterle görünür (mixamo iskeleti, yaklaşık 14 bin nokta, dokular dosyanın içinde).
+- **Animasyon aktarma (`client/js/entities/retarget.js`):** Bekleme, yürüme ve koşma Soldier modelinden dünya uzayında aktarılır. Kemiklerin dinlenme pozu farklı olsa bile duruş korunur. Silah tutuşu ve kask yeri de aynı düzeltmeyle hesaplanır; saldırı, beceri, nefes ve at pozları aynen çalışır.
+- Silah takılıyken modelin kendi asası gizlenir. Bu karaktere zırh takımı ve renk boyası uygulanmaz (kendi kıyafeti var), auralar çalışır.
+- Başka sınıflar için yeni model eklemek: `CHAR_MODELS` listesine `{ url, hide, skip }` satırı eklenir.
+
+### Aşama 3.7: ustalık renkleri, tam hareketli beceriler, dev köy boss'ları
 
 - **Ustalık renkleri:** beceri M1'de mavi, M2'de mor, M3'te kızıl olur. Bütün parçacıklar, halkalar ve ışıklar o renge boyanır; düğme de aynı renkte parlar. M seviyelerinde efekt büyür: M1 çift büyü çemberi ve sarmal, M2 ışık sütunu ve dönen küreler, M3 gökten inen kızıl yıldırımlar ve alev halkası.
 - **Her beceri tam hareketli:** her beceriden önce karakterin çevresinde büyü toplanır, hedefte çarpma ışığı ve şok dalgası çıkar. Demir Beden, Gölge Kalkanı, Karanlık Kılıç ve Kaçış/Hafif Adım'da dönen rün halkaları ve küreler; Hamle'de hız izi ve taş parçaları; Zehirli Hançer'de dönen hançer ve damlayan zehir; Ruh Emme'de hedefte girdap.

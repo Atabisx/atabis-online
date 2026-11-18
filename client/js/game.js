@@ -7,6 +7,7 @@ import { loadMap, colliders, circles, BOUNDS } from './world/map.js';
 import { buildMob } from './entities/mobs.js';
 import { itemModel, ITEM_MODELS, attachMountModel, MOUNT } from './entities/models.js';
 import { buildOutfit, undersuitColor } from './entities/outfits.js';
+import { retargetClips, correctFrame } from './entities/retarget.js';
 import * as sfx from './audio.js';
 import * as fx from './fx.js';
 import * as icons from './icons.js';
@@ -222,13 +223,39 @@ const RARITY = ['#f4f1e8', '#7fb3ff', '#ffb347'];
 const V3 = THREE.Vector3;
 let gltf = null, calib = null;
 const loader = new GLTFLoader();
-const modelReady = new Promise((resolve) => {
-  loader.load('models/Soldier.glb', (g) => {
-    gltf = g;
-    try { calib = calibrate(g.scene); FACE_OFFSET = calib.faceOffset; } catch (e) { console.warn('Kalibrasyon başarısız', e); calib = null; }
-    resolve();
-  }, undefined, (e) => { console.warn('Model yüklenemedi, basit karakter kullanılacak', e); resolve(); });
-});
+// Sınıfa özel karakter modelleri (mixamo iskeletli, kendi kıyafeti ve dokusuyla).
+// Bekleme/yürüme/koşma Soldier'dan aktarılır, böylece silah tutuşu ve saldırı pozları aynı kalır.
+// hide: silah takılıyken gizlenen parçalar (modelin kendi asası gibi); skip: ölçüde sayılmayan parçalar.
+const CHAR_MODELS = {
+  saman: { url: 'models/chars/saman.glb', hide: ['prop'], skip: ['prop', 'outline'] },
+};
+const charModels = {};   // cls -> { scene, calib, clips }
+function loadGlb(url) { return new Promise((res) => loader.load(url, res, undefined, (e) => { console.warn('Model yüklenemedi:', url, e); res(null); })); }
+const modelReady = (async () => {
+  const g = await loadGlb('models/Soldier.glb');
+  if (!g) { console.warn('Model yüklenemedi, basit karakter kullanılacak'); return; }
+  gltf = g;
+  try { calib = calibrate(g.scene); FACE_OFFSET = calib.faceOffset; } catch (e) { console.warn('Kalibrasyon başarısız', e); calib = null; return; }
+  await Promise.all(Object.entries(CHAR_MODELS).map(async ([cls, cfg]) => {
+    const c = await loadGlb(cfg.url); if (!c) return;
+    try {
+      const sc = c.scene;
+      // parça adı nesnede ya da üst gruplarında geçebilir (çok parçalı asa gibi)
+      const part = (o, list) => { for (let q = o; q && q !== sc; q = q.parent) if (list.some((k) => q.name.toLowerCase().includes(k))) return true; return false; };
+      // ölçüm sırasında asa ve dış çizgiyi gizle (boyu ve zemini yanlış hesaplamasın)
+      const hidden = [];
+      sc.traverse((o) => { if (o.isMesh && part(o, cfg.skip || [])) { hidden.push(o); o.visible = false; } });
+      const c0 = calibrate(sc);
+      sc.rotation.y = c0.faceOffset - calib.faceOffset;          // Soldier ile aynı yöne baksın
+      const cc = calibrate(sc);
+      for (const o of hidden) o.visible = true;
+      sc.traverse((o) => { if (o.isMesh && part(o, cfg.hide || [])) o.userData.hideWithWeapon = true; if (o.isMesh && part(o, ['outline'])) o.userData.outline = true; });
+      const moves = retargetClips(g.scene, sc, g.animations.filter((a) => a.name !== 'TPose'));
+      for (const k of Object.keys(cc)) if (cc[k] && cc[k].bone) cc[k] = correctFrame(cc[k], moves);
+      charModels[cls] = { scene: sc, calib: cc, clips: moves };
+    } catch (e) { console.warn('Karakter modeli hazırlanamadı', cls, e); }
+  }));
+})();
 
 // ---------- özel NPC modelleri ----------
 // Işınlayıcı: kullanıcının eklediği ruh modeli (iskeletsiz, tek parça). Yüklenene kadar yer tutucu görünür.
@@ -297,7 +324,9 @@ function localTransform(bone, wPos, wQuat, wScale) {
 // modelin baktığı yönü, boyunu ve kılıç/zırh yerlerini dinlenme pozundan hesapla
 function calibrate(root) {
   root.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(root);
+  const box = new THREE.Box3();
+  root.traverse((o) => { if (o.isMesh && o.visible) box.expandByObject(o); });
+  if (box.isEmpty()) box.setFromObject(root);
   const height = box.max.y - box.min.y;
   const k = height / 1.8;                         // modelin 1 metresi
   const L = boneByName(root, 'LeftArm'), R = boneByName(root, 'RightArm');
@@ -541,12 +570,21 @@ function updateAuras(p, dt, t) {
 
 function applyLook(p, look) {
   p.look = look || {};
+  const calib = p.calib || calibBase();
   if (!p.model || !calib) return;
   for (const m of p.equipMeshes) m.parent && m.parent.remove(m);
   p.equipMeshes = [];
   const w = ITEMS[p.look.weapon], a = ITEMS[p.look.armor], h = ITEMS[p.look.helmet];
   let wMesh = null;
   if (w) { wMesh = weaponMesh(w); attach(p, calib.sword, wMesh); }
+  if (p.custom) {
+    // kendi kıyafeti olan karakter: kostüm parçası ve renk boyası yok; silah takılıysa kendi asası gizlenir
+    p.model.traverse((o) => { if (o.userData.hideWithWeapon) o.visible = !w; });
+    p.capes = []; p.robe = null;
+    if (h) attach(p, calib.helmet, h.model && ITEM_MODELS[h.model] ? itemModel(h.model, helmetMesh(h)) : helmetMesh(h));
+    setupAuras(p, wMesh, w, a);
+    return;
+  }
   // sınıfa göre vücut oranı ve renk; zırh varsa onun rengi ağır basar
   const cl = CLASS_LOOK[p.cls];
   // alttaki modeli sınıfın koyu iç giysisine doğru karart; metal parçalar zırhın rengini alır
@@ -571,6 +609,7 @@ function applyLook(p, look) {
   setupAuras(p, wMesh, w, a);
 }
 
+const calibBase = () => calib;
 // ---------- oyuncular ----------
 const players = {};
 let myId = null;
@@ -581,22 +620,26 @@ function createPlayer(p) {
     target: new V3(p.x, 0, p.z), ry: p.ry || 0, moving: false, model: null, boneMap: {}, bones: null,
     materials: [], equipMeshes: [], look: {}, swingT: 0, combo: 0 };
   if (gltf) {
-    const model = SkeletonUtils.clone(gltf.scene);
+    const cm = !p.npc && charModels[p.cls];
+    const model = SkeletonUtils.clone(cm ? cm.scene : gltf.scene);
+    obj.calib = cm ? cm.calib : calib;
+    obj.custom = !!cm;
     model.traverse((o) => {
       if (o.isBone) obj.boneMap[o.name] = o;
       if (o.isMesh) {
-        o.castShadow = true;
+        o.castShadow = !o.userData.outline;
+        o.frustumCulled = false;   // derili model: animasyonda sınır kutusu dışına taşabilir
         o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone();
-        for (const m of [].concat(o.material)) { m.userData.base = m.color.clone(); obj.materials.push(m); }
+        for (const m of [].concat(o.material)) { m.userData.base = m.color.clone(); if (!cm) obj.materials.push(m); }
       }
     });
     const wrap = new THREE.Group();
     wrap.add(model);
-    if (calib) { wrap.scale.setScalar(1 / calib.k); wrap.position.y = -calib.minY / calib.k; }
+    if (obj.calib) { wrap.scale.setScalar(1 / obj.calib.k); wrap.position.y = -obj.calib.minY / obj.calib.k; }
     group.add(wrap);
     obj.model = model;
     obj.mixer = new THREE.AnimationMixer(model);
-    for (const clip of gltf.animations) obj.actions[clip.name] = obj.mixer.clipAction(clip);
+    for (const clip of cm ? cm.clips : gltf.animations) obj.actions[clip.name] = obj.mixer.clipAction(clip);
     if (obj.actions.Idle) obj.actions.Idle.play();
     const find = (n) => Object.values(obj.boneMap).find((b) => b.name.replace(/^mixamorig[:_]?/i, '') === n);
     obj.bones = { spine: find('Spine1') || find('Spine'), arm: find('RightArm'), fore: find('RightForeArm'),
@@ -646,6 +689,7 @@ function setMount(p, on) {
 }
 function riderBaseY(p) {
   const lift = p.mounted ? (p.horse && p.horse.modelLoaded ? MOUNT.riderY : 1.0) : 0;
+  const calib = p.calib || calibBase();
   return (calib ? -calib.minY / calib.k : 0) + lift;
 }
 function seatRider(p) {
@@ -672,6 +716,7 @@ function skillPoseUpdate(p, dt) {
 // balık tutarken elde olta
 function setRod(p, on) {
   if (p.rod) { p.rod.parent && p.rod.parent.remove(p.rod); p.rod = null; }
+  const calib = p.calib || calibBase();
   if (!on || !calib || !p.boneMap) return;
   const bone = p.boneMap[calib.sword.bone]; if (!bone) return;
   const g = new THREE.Group();
