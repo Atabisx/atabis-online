@@ -29,10 +29,12 @@ function routes(app) {
       }
       const taken = await db.query('SELECT 1 FROM characters WHERE lower(name) = lower($1)', [name]);
       if (taken.rowCount) return res.status(409).json({ error: 'Bu karakter adı alınmış.' });
-      const equip = { weapon: { uid: 1, key: CLASSES[cls].startWeapon }, armor: { uid: 2, key: 'a_cloth' }, helmet: null };
+      const equip = { weapon: { uid: 1, key: CLASSES[cls].startWeapon }, armor: { uid: 2, key: 'armor0' },
+                      helmet: null, shoes: null, bracelet: null, earring: null };
+      const inventory = [{ uid: 3, key: 'p_hp1', n: 10 }];   // başlangıç iksirleri
       const r = await db.query(
-        'INSERT INTO characters (account_id, name, class, equip) VALUES ($1, $2, $3, $4) RETURNING *',
-        [req.account.id, name, cls, JSON.stringify(equip)]);
+        'INSERT INTO characters (account_id, name, class, equip, inventory) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [req.account.id, name, cls, JSON.stringify(equip), JSON.stringify(inventory)]);
       res.json({ character: publicChar(r.rows[0]) });
     } catch (e) {
       if (e.code === '23505') return res.status(409).json({ error: 'Bu karakter adı alınmış.' });

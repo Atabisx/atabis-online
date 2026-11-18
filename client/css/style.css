@@ -32,7 +32,7 @@ canvas { display: block; }
 #invbody { display: flex; gap: 12px; min-height: 0; }
 #equipcol { display: flex; flex-direction: column; gap: 8px; width: 150px; flex-shrink: 0; }
 #stats { font-size: 12px; color: #c9c4b6; line-height: 1.6; }
-#grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; flex: 1; }
+#grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; flex: 1; align-content: start; }
 .slot { position: relative; aspect-ratio: 1; min-height: 44px; border-radius: 10px; border: 2px solid #3a3f35; background: #1a1d17; color: #f4f1e8; display: flex; align-items: center; justify-content: center; padding: 0; }
 .slot.sel { border-color: #e8b54a; }
 .eq { display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 8px; border-radius: 10px; border: 2px solid #3a3f35; background: #1a1d17; color: #f4f1e8; font: inherit; font-size: 11px; text-align: left; }
@@ -78,3 +78,34 @@ canvas { display: block; }
 .classbtn i { width: 22px; height: 6px; border-radius: 3px; display: block; }
 #classdesc { font-size: 13px; color: #c9c4b6; min-height: 2.6em; line-height: 1.4; }
 #logout { position: fixed; right: 12px; bottom: 12px; z-index: 11; }
+
+/* ---------- Aşama 1: can, iksir, dükkân, ölüm ---------- */
+.hpwrap { position: relative; height: 12px !important; }
+#hptext { position: absolute; inset: 0; font-size: 9px; line-height: 12px; text-align: center; color: #fff; text-shadow: 0 1px 1px #000; }
+#invbox { overflow-y: auto; }
+#invbody { flex-wrap: wrap; }
+#equipcol { width: 170px; }
+.eq { height: 42px; }
+.slot { position: relative; }
+.slot .cnt { position: absolute; right: 3px; bottom: 1px; font-style: normal; font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 1px 1px #000; }
+.label.boss { font-size: 13px; }
+.label.boss .hp { width: 90px; height: 7px; }
+#potBtn { position: fixed; right: 118px; bottom: 26px; width: 58px; height: 58px; border-radius: 50%; border: 2px solid #ff8a7a; background: rgba(14,16,13,0.82); display: flex; align-items: center; justify-content: center; }
+#potBtn i { position: absolute; right: -2px; bottom: -2px; min-width: 22px; height: 20px; padding: 0 4px; border-radius: 10px; background: #b23a24; color: #fff; font-style: normal; font-size: 11px; font-weight: 800; line-height: 20px; }
+#potBtn.empty { opacity: .45; }
+#talkBtn { position: fixed; right: 22px; bottom: 120px; min-height: 48px; padding: 0 18px; border-radius: 24px; border: 2px solid #7be08f; background: rgba(14,16,13,0.85); color: #7be08f; font: inherit; font-weight: 800; font-size: 14px; align-items: center; }
+.modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); z-index: 16; }
+.modal.open { display: flex; }
+.modalbox { width: min(640px, 96vw); max-height: 92vh; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: rgba(20,22,18,0.97); border: 2px solid #5a4a2a; border-radius: 16px; }
+.xbtn { width: 44px; height: 44px; border-radius: 10px; border: 0; background: #3a3f35; color: #f4f1e8; font-size: 20px; }
+#shop #invhead { gap: 10px; }
+#shopList { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+.srow { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; background: #1a1d17; font-size: 12px; }
+.srow .grow { flex: 1; min-width: 0; }
+.srow small { color: #8b877c; }
+.srow button { font: inherit; font-weight: 700; min-width: 64px; height: 40px; padding: 0 10px; border-radius: 10px; border: 0; background: #e8b54a; color: #2a1f08; }
+.srow button.alt { background: #3a3f35; color: #f4f1e8; }
+.srow button:disabled { opacity: .4; }
+.muted { color: #8b877c; font-size: 13px; }
+body.hurt canvas { filter: saturate(1.4) brightness(0.85) sepia(0.3) hue-rotate(-20deg); }
+.mhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; }

@@ -1,14 +1,14 @@
-// Metin.io – 3D istemci (Three.js)
+// ATABİS ONLINE – 3D istemci (Three.js)
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { mat, esc } from './util.js';
+import { loadMap, colliders, circles, BOUNDS } from './world/map.js';
+import { buildMob } from './entities/mobs.js';
 
-const S = 2.5;                 // taslak haritadaki 1 birim = 2.5 metre
-const u = (v) => v * S;
 let FACE_OFFSET = Math.PI;     // model yüklenince otomatik hesaplanır
 const SPEED = 6;               // metre / saniye
 const ATTACK_RANGE = 4.4;
-const CAM_OFFSET = new THREE.Vector3(9, 12, 9);
 
 // ---------- sahne ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -19,148 +19,21 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#9cc6e4');
-scene.fog = new THREE.Fog('#9cc6e4', 45, 95);
-
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 200);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 220);
 
 scene.add(new THREE.HemisphereLight('#dfefff', '#4a6a35', 1.1));
 const sun = new THREE.DirectionalLight('#fff3dc', 2.0);
 sun.castShadow = true;
 sun.shadow.mapSize.set(1024, 1024);
-sun.shadow.camera.left = -22; sun.shadow.camera.right = 22;
-sun.shadow.camera.top = 22; sun.shadow.camera.bottom = -22;
-sun.shadow.camera.near = 1; sun.shadow.camera.far = 80;
+sun.shadow.camera.left = -24; sun.shadow.camera.right = 24;
+sun.shadow.camera.top = 24; sun.shadow.camera.bottom = -24;
+sun.shadow.camera.near = 1; sun.shadow.camera.far = 90;
 scene.add(sun, sun.target);
 
-const matCache = {};
-function mat(color, opts = {}) {
-  const key = color + JSON.stringify(opts);
-  if (!matCache[key]) matCache[key] = new THREE.MeshLambertMaterial({ color, flatShading: true, ...opts });
-  return matCache[key];
-}
-function add(mesh, x, y, z, cast = true) {
-  mesh.position.set(x, y, z);
-  mesh.castShadow = cast; mesh.receiveShadow = true;
-  scene.add(mesh);
-  return mesh;
-}
-function box(w, h, d, color, x, y, z, cast = true) {
-  return add(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color)), x, y, z, cast);
-}
+// harita verisi (sunucuyla aynı dosya)
+let MAPS = [];
+let currentMap = null, mapInfo = { portals: [], npcs: [] };
 
-// ---------- harita ----------
-const colliders = [];   // {x0,z0,x1,z1}
-const circles = [];     // {x,z,r}
-
-function area(x0, z0, x1, z1, color, y) {
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(u(x1 - x0), u(z1 - z0)), mat(color));
-  m.rotation.x = -Math.PI / 2;
-  add(m, u((x0 + x1) / 2), y, u((z0 + z1) / 2), false);
-}
-area(-12, -12, 32, 32, '#6c9b4b', 0);
-area(9.2, 13, 10.8, 32, '#b8996a', 0.02); area(9.2, -12, 10.8, 7, '#b8996a', 0.02);
-area(-12, 9.2, 7, 10.8, '#b8996a', 0.02); area(13, 9.2, 32, 10.8, '#b8996a', 0.02);
-area(6.5, 6.5, 13.5, 13.5, '#c7aa78', 0.03);
-area(17.2, -12, 18.8, 32, '#4f8fa6', 0.04);
-area(17.5, -12, 17.9, 32, '#6fb0c4', 0.05);
-
-function roofPrism(len, depth, rh, color) {
-  const sh = new THREE.Shape();
-  sh.moveTo(-depth / 2, 0); sh.lineTo(depth / 2, 0); sh.lineTo(0, rh); sh.lineTo(-depth / 2, 0);
-  const g = new THREE.ExtrudeGeometry(sh, { depth: len, bevelEnabled: false });
-  g.rotateY(Math.PI / 2);
-  return new THREE.Mesh(g, mat(color));
-}
-
-function house(x, z, w, d, h, rh, roof) {
-  const X = u(x), Z = u(z), W = u(w), D = u(d), H = u(h), RH = u(rh), o = 0.8;
-  box(W + 0.4, 0.6, D + 0.4, '#8d8a82', X + W / 2, 0.3, Z + D / 2);
-  box(W, H, D, '#e6d7b6', X + W / 2, 0.6 + H / 2, Z + D / 2);
-  for (const [cx, cz] of [[X, Z], [X + W, Z], [X, Z + D], [X + W, Z + D], [X + W / 2, Z + D]]) {
-    box(0.3, H, 0.3, '#6b4a2e', cx, 0.6 + H / 2, cz);
-  }
-  box(W + 0.1, 0.3, D + 0.1, '#6b4a2e', X + W / 2, 0.6 + H - 0.15, Z + D / 2);
-  box(1.4, 2.4, 0.08, '#4a3221', X + W * 0.25, 0.6 + 1.2, Z + D + 0.05, false);       // kapı
-  box(1.3, 1.0, 0.08, '#2d2a26', X + W * 0.72, 0.6 + H * 0.6, Z + D + 0.05, false);   // pencere
-  box(0.08, 1.0, 1.3, '#2d2a26', X + W + 0.05, 0.6 + H * 0.6, Z + D / 2, false);
-  const r = roofPrism(W + 2 * o, D + 2 * o, RH, roof);
-  add(r, X - o, 0.6 + H - 0.1, Z + D / 2);
-  const ridge = box(W + 2 * o + 0.2, 0.35, 0.35, '#2a2a2a', X + W / 2, 0.6 + H - 0.1 + RH, Z + D / 2);
-  ridge.material = mat(roof === '#3d5a80' ? '#2f4766' : '#7d2f20');
-  // kıvrık saçak uçları
-  for (const [cx, cz] of [[X - o, Z - o], [X + W + o, Z - o], [X - o, Z + D + o], [X + W + o, Z + D + o]]) {
-    const c = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.9, 5), mat(roof === '#3d5a80' ? '#2f4766' : '#7d2f20'));
-    add(c, cx, 0.6 + H + 0.25, cz);
-  }
-  colliders.push({ x0: X - 0.5, z0: Z - 0.5, x1: X + W + 0.5, z1: Z + D + 0.5 });
-}
-house(7, 2.8, 3.2, 2.2, 1.4, 1.1, '#3d5a80');
-house(11.8, 3.2, 2.6, 2.0, 1.2, 1.0, '#a8452f');
-house(2.6, 11.6, 2.6, 2.2, 1.3, 1.0, '#a8452f');
-house(12.6, 13.6, 3.0, 2.2, 1.3, 1.1, '#3d5a80');
-house(4.0, 15.4, 2.4, 1.9, 1.1, 0.9, '#3d5a80');
-
-// kuyu
-(function well() {
-  const X = u(10), Z = u(10);
-  add(new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.85, 1.5, 12), mat('#85827a')), X, 0.75, Z);
-  add(new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.1, 12), mat('#2e5f73')), X, 1.45, Z, false);
-  box(0.3, 4, 0.3, '#6b4a2e', X - 1.5, 2, Z); box(0.3, 4, 0.3, '#6b4a2e', X + 1.5, 2, Z);
-  add(roofPrism(4.4, 2.8, 1.2, '#3d5a80'), X - 2.2, 4, Z);
-  circles.push({ x: X, z: Z, r: 2.3 });
-})();
-
-// tezgâhlar
-function stall(x, z, c1, c2) {
-  const X = u(x), Z = u(z);
-  box(3.5, 1.75, 2.2, '#8a6440', X + 1.75, 0.875, Z + 1.1);
-  for (const [dx, dz] of [[0.1, 0.1], [3.4, 0.1], [0.1, 2.1], [3.4, 2.1]]) box(0.22, 4, 0.22, '#5a3d24', X + dx, 2, Z + dz);
-  for (let k = 0; k < 5; k++) {
-    const s = box(0.8, 0.12, 3.2, k % 2 ? c2 : c1, X - 0.15 + 0.4 + k * 0.85, 4.05, Z + 1.1);
-    s.rotation.x = -0.25;
-  }
-  ['#e5533d', '#f2c94c', '#7bc96f'].forEach((c, i) =>
-    add(new THREE.Mesh(new THREE.SphereGeometry(0.28, 6, 5), mat(c)), X + 0.8 + i * 0.95, 1.95, Z + 1.1));
-  colliders.push({ x0: X - 0.3, z0: Z - 0.3, x1: X + 3.8, z1: Z + 2.5 });
-}
-stall(7.2, 12.6, '#d9534f', '#f4efe4');
-stall(13.8, 7.3, '#3d7fc4', '#f4efe4');
-
-// fenerler
-for (const [x, z] of [[6.7, 6.7], [13.3, 6.7], [6.7, 13.3], [13.3, 13.3]]) {
-  box(0.2, 3.4, 0.2, '#3a2a1c', u(x), 1.7, u(z));
-  const l = box(0.55, 0.7, 0.55, '#ff9b3d', u(x), 3.6, u(z));
-  l.material = new THREE.MeshLambertMaterial({ color: '#ff9b3d', emissive: '#ff7a1a', emissiveIntensity: 0.8 });
-}
-
-// tarla ve çit
-area(3, 2, 6, 5, '#7a5a3a', 0.04);
-for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) {
-  add(new THREE.Mesh(new THREE.SphereGeometry(0.42, 6, 4), mat('#8fc45a')), u(3.3 + i * 0.6), 0.3, u(2.3 + j * 0.6));
-}
-for (let k = 0; k <= 10; k++) box(0.22, 1.6, 0.22, '#6b4a2e', u(3) + k * 0.75, 0.8, u(5.2));
-box(7.6, 0.18, 0.12, '#7a5636', u(4.5), 1.25, u(5.2)); box(7.6, 0.18, 0.12, '#7a5636', u(4.5), 0.6, u(5.2));
-
-// köprü
-box(u(2.2), 0.4, u(1.4), '#8a6440', u(18), 0.3, u(10));
-box(u(2.2), 0.8, 0.2, '#5a3d24', u(18), 0.9, u(9.3)); box(u(2.2), 0.8, 0.2, '#5a3d24', u(18), 0.9, u(10.7));
-
-// ağaçlar
-function tree(x, z) {
-  box(0.5, 2.4, 0.5, '#5a3d24', u(x), 1.2, u(z));
-  add(new THREE.Mesh(new THREE.IcosahedronGeometry(1.9, 0), mat('#2f5a2a')), u(x), 3.6, u(z));
-  add(new THREE.Mesh(new THREE.IcosahedronGeometry(1.2, 0), mat('#3f7535')), u(x) - 0.5, 4.4, u(z) + 0.4);
-  circles.push({ x: u(x), z: u(z), r: 0.9 });
-}
-function pine(x, z) {
-  box(0.4, 1.2, 0.4, '#5a3d24', u(x), 0.6, u(z));
-  [[1.9, 1.0], [1.45, 2.4], [1.0, 3.7]].forEach(([r, y]) =>
-    add(new THREE.Mesh(new THREE.ConeGeometry(r, 2.4, 7), mat('#264b2a')), u(x), y + 1.2, u(z)));
-  circles.push({ x: u(x), z: u(z), r: 0.8 });
-}
-[[1, 7], [16, 5.5], [1.5, 16.5], [20.5, 6], [5.5, 0.5], [11, 18.5], [20, 17], [-3, 2], [23, 12], [-2, 20], [14, -2]].forEach(([x, z]) => tree(x, z));
-[[0, 3], [15.5, 16], [7, 18], [19.8, 12], [-1, 12], [3, -2], [24, 20], [9, -4], [-4, 8]].forEach(([x, z]) => pine(x, z));
 
 // ---------- yazılar (isim, can barı) ----------
 const labelsEl = document.getElementById('labels');
@@ -206,9 +79,9 @@ const logEl = document.getElementById('log');
 function log(html) {
   const d = document.createElement('div'); d.innerHTML = html;
   logEl.appendChild(d);
-  while (logEl.children.length > 4) logEl.firstChild.remove();
+  while (logEl.children.length > 5) logEl.firstChild.remove();
 }
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 
 // ---------- metin taşları ----------
 const stones = {};
@@ -236,12 +109,15 @@ function removeStone(id) {
   scene.remove(s.group); s.label.el.remove(); delete stones[id];
 }
 
+
 // ---------- eşya tanımları ----------
 let ITEMS = {};
 let CLASSES = {};
 const itemsReady = Promise.all([
   fetch('/shared/items.json').then((r) => r.json()).then((j) => { ITEMS = j; }),
   fetch('/shared/classes.json').then((r) => r.json()).then((j) => { CLASSES = j; }),
+  fetch('/shared/maps.json').then((r) => r.json()).then((j) => { MAPS = j; }),
+  fetch('/shared/mobs.json').then((r) => r.json()).then((j) => { MOBS = j; }),
 ]).catch((e) => console.warn('Veri dosyaları yüklenemedi', e));
 const RARITY = ['#f4f1e8', '#7fb3ff', '#ffb347'];
 
@@ -430,7 +306,7 @@ let myId = null;
 function createPlayer(p) {
   if (players[p.id]) return players[p.id];
   const group = new THREE.Group();
-  const obj = { id: p.id, name: p.name, cls: p.cls, level: p.level || 1, group, mixer: null, actions: {}, current: 'Idle',
+  const obj = { id: p.id, name: p.name, cls: p.cls, level: p.level || 1, npc: !!p.npc, dead: !!p.dead, group, mixer: null, actions: {}, current: 'Idle',
     target: new V3(p.x, 0, p.z), ry: p.ry || 0, moving: false, model: null, boneMap: {}, bones: null,
     materials: [], equipMeshes: [], look: {}, swingT: 0, combo: 0 };
   if (gltf) {
@@ -459,7 +335,7 @@ function createPlayer(p) {
     body.position.y = 0.9; body.castShadow = true; group.add(body);
   }
   const ring = new THREE.Mesh(new THREE.RingGeometry(0.75, 0.95, 28), new THREE.MeshBasicMaterial({
-    color: p.id === myId ? '#e8b54a' : '#8ec5ff', transparent: true, opacity: 0.85 }));
+    color: p.npc ? '#7be08f' : p.id === myId ? '#e8b54a' : '#8ec5ff', transparent: true, opacity: 0.85 }));
   ring.rotation.x = -Math.PI / 2; ring.position.y = 0.07;
   group.add(ring);
   const slash = new THREE.Mesh(new THREE.RingGeometry(1.0, 2.3, 24, 1, Math.PI * 0.15, Math.PI * 0.7),
@@ -469,7 +345,7 @@ function createPlayer(p) {
   obj.slash = slash;
   group.position.set(p.x, 0, p.z);
   scene.add(group);
-  obj.label = makeLabel(`${p.name} · Sv. ${obj.level}`, p.id === myId ? '#e8b54a' : '#8ec5ff', false);
+  obj.label = makeLabel(p.npc ? p.name : `${p.name} · Sv. ${obj.level}`, p.npc ? '#7be08f' : p.id === myId ? '#e8b54a' : '#8ec5ff', false);
   players[p.id] = obj;
   applyLook(obj, p.look);
   return obj;
@@ -550,6 +426,94 @@ function applySwing(p) {
   wrap.position.z = Math.cos(-FACE_OFFSET) * o.lunge;
 }
 
+
+// ---------- yaratıklar ----------
+const mobs = {};
+let MOBS = {};
+
+// insansı yaratıklar (haydut, şövalye, iskelet...) asker modelinin boyanmış kopyasıdır
+function humanoidMob(def) {
+  const root = new THREE.Group();
+  if (!gltf) {
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 1.0, 4, 8), mat(def.color));
+    body.position.y = 0.9; body.castShadow = true; root.add(body);
+    return { root, update() {} };
+  }
+  const model = SkeletonUtils.clone(gltf.scene);
+  const tint = new THREE.Color(def.shape === 'skeleton' ? '#e8e2d0' : def.color);
+  const boneMap = {};
+  model.traverse((o) => {
+    if (o.isBone) boneMap[o.name] = o;
+    if (o.isMesh) {
+      o.castShadow = true;
+      o.material = [].concat(o.material).map((m) => { const c = m.clone(); c.color.lerp(tint, def.shape === 'skeleton' ? 0.85 : 0.65); return c; });
+      if (o.material.length === 1) o.material = o.material[0];
+    }
+  });
+  const wrap = new THREE.Group();
+  wrap.add(model);
+  if (calib) {
+    wrap.scale.setScalar(1 / calib.k); wrap.position.y = -calib.minY / calib.k;
+    const bone = boneMap[calib.sword.bone];
+    if (bone) {
+      const w = swordMesh({ color: def.boss ? '#ffb347' : '#9aa3ad', len: 0.9, glow: def.boss });
+      w.position.copy(calib.sword.p); w.quaternion.copy(calib.sword.q); w.scale.multiply(calib.sword.s);
+      bone.add(w);
+    }
+  }
+  const turn = new THREE.Group(); turn.rotation.y = FACE_OFFSET; turn.add(wrap);
+  root.add(turn);
+  const mixer = new THREE.AnimationMixer(model);
+  const actions = {};
+  for (const clip of gltf.animations) actions[clip.name] = mixer.clipAction(clip);
+  let current = 'Idle';
+  if (actions.Idle) actions.Idle.play();
+  return {
+    root,
+    update(t, moving, atk, dt) {
+      const want = moving ? 'Run' : 'Idle';
+      if (want !== current && actions[want]) {
+        actions[want].reset().play();
+        if (actions[current]) actions[want].crossFadeFrom(actions[current], 0.2, false);
+        current = want;
+      }
+      mixer.update(dt);
+      wrap.rotation.x = atk * 0.35;
+    },
+  };
+}
+
+function createMob(m) {
+  if (mobs[m.id]) return;
+  const def = MOBS[m.key];
+  if (!def) return;
+  const v = buildMob(def, humanoidMob);
+  v.root.position.set(m.x, 0, m.z);
+  v.root.rotation.y = m.ry || 0;
+  scene.add(v.root);
+  const label = makeLabel(`${def.name} · Sv. ${def.lv}`, def.boss ? '#ff6a3d' : (def.aggro ? '#ffb4a3' : '#f4f1e8'), true);
+  if (def.boss) label.el.classList.add('boss');
+  label.hp.style.width = (100 * m.hp / m.max) + '%';
+  mobs[m.id] = { id: m.id, key: m.key, def, v, label, hp: m.hp, max: m.max, target: new THREE.Vector3(m.x, 0, m.z),
+                 ry: m.ry || 0, moving: false, atkT: 0, t: Math.random() * 10, height: (def.shape === 'flyer' ? 3.2 : 2.2) * (def.scale || 1) };
+}
+function removeMob(id) {
+  const m = mobs[id]; if (!m) return;
+  scene.remove(m.v.root); m.label.el.remove(); delete mobs[id];
+}
+function updateMobs(dt) {
+  for (const m of Object.values(mobs)) {
+    m.t += dt;
+    m.v.root.position.lerp(m.target, 1 - Math.exp(-10 * dt));
+    m.v.root.rotation.y = angleLerp(m.v.root.rotation.y, m.ry, 1 - Math.exp(-10 * dt));
+    if (m.atkT > 0) m.atkT = Math.max(0, m.atkT - dt);
+    const atk = m.atkT > 0 ? Math.sin((1 - m.atkT / 0.4) * Math.PI) : 0;
+    m.v.update(m.t, m.moving, atk, dt);
+    placeLabel(m.label, m.v.root.position.x, m.height + 0.4, m.v.root.position.z);
+  }
+}
+
+
 // ---------- yerdeki ganimet ----------
 const drops = {};
 function dropMesh(d) {
@@ -570,8 +534,16 @@ function dropMesh(d) {
   } else if (def.slot === 'armor') {
     shape = def.plate ? chestMesh(def) : new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.34, 0.2), mat('#d9cfb8'));
     shape.position.y = 0.3;
-  } else {
+  } else if (def.slot === 'helmet') {
     shape = helmetMesh(def); shape.position.y = 0.2; shape.scale.setScalar(1.4);
+  } else if (def.slot === 'potion') {
+    shape = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.3, 8), new THREE.MeshLambertMaterial({ color: def.color, emissive: def.color, emissiveIntensity: 0.4 }));
+    shape.position.y = 0.2;
+  } else if (def.slot === 'shoes') {
+    shape = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.36), mat(def.color)); shape.position.y = 0.15;
+  } else {
+    shape = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.05, 6, 14), new THREE.MeshStandardMaterial({ color: def.color, metalness: 0.8, roughness: 0.25 }));
+    shape.position.y = 0.3;
   }
   g.add(shape);
   if (def) {
@@ -588,7 +560,7 @@ function createDrop(d) {
   const m = dropMesh(d);
   scene.add(m.group);
   const def = d.key ? ITEMS[d.key] : null;
-  const label = makeLabel(def ? def.name : `${d.yang} Yang`, def ? RARITY[def.rarity] : '#ffe08a', false);
+  const label = makeLabel(def ? def.name + (d.n > 1 ? ' x' + d.n : '') : `${d.yang} Yang`, def ? RARITY[def.rarity] : '#ffe08a', false);
   label.el.style.fontSize = '10px';
   drops[d.id] = { ...d, ...m, label, lastTry: 0, t: Math.random() * 6, born: performance.now() };
 }
@@ -597,43 +569,61 @@ function removeDrop(id) {
   scene.remove(d.group); d.label.el.remove(); delete drops[id];
 }
 
+
 // ---------- envanter arayüzü ----------
-const inv = { inventory: [], equip: {}, yang: 0, atk: 0, def: 0 };
+const inv = { inventory: [], equip: {}, yang: 0, atk: 0, def: 0, maxHp: 0 };
+let myLevel = 1;
 let selected = null;   // {uid} veya {slot}
-const SLOT_NAMES = { weapon: 'Silah', armor: 'Zırh', helmet: 'Kask' };
-function iconSvg(def, size = 26) {
-  const c = def ? def.color === '#ffffff' ? '#d9cfb8' : def.color : '#5a5e55';
-  const slot = def ? def.slot : 'weapon';
-  const paths = {
-    weapon: '<path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/>',
-    armor: '<path d="M8 3 4 6v5l3 1v9h10v-9l3-1V6l-4-3-2 2h-4z"/>',
-    helmet: '<path d="M4 15a8 8 0 0 1 16 0v3H4z"/><path d="M12 7v-3"/>',
-  };
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[slot]}</svg>`;
+const SLOT_NAMES = { weapon: 'Silah', armor: 'Zırh', helmet: 'Miğfer', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', potion: 'İksir' };
+const ICONS = {
+  weapon: '<path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/>',
+  armor: '<path d="M8 3 4 6v5l3 1v9h10v-9l3-1V6l-4-3-2 2h-4z"/>',
+  helmet: '<path d="M4 15a8 8 0 0 1 16 0v3H4z"/><path d="M12 7v-3"/>',
+  shoes: '<path d="M4 4h6v9l9 3v4H4z"/>',
+  bracelet: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="4"/>',
+  earring: '<path d="M12 3v5"/><circle cx="12" cy="14" r="5"/>',
+  potion: '<path d="M9 3h6"/><path d="M10 3v5L6 15a5 5 0 0 0 4.5 6h3A5 5 0 0 0 18 15l-4-7V3"/>',
+};
+function iconSvg(def, size = 26, slot) {
+  const c = def ? (def.color === '#ffffff' ? '#d9cfb8' : def.color) : '#5a5e55';
+  const s = def ? def.slot : slot || 'weapon';
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[s] || ICONS.weapon}</svg>`;
+}
+function statText(def) {
+  const parts = [];
+  if (def.heal) parts.push(`+${def.heal} can`);
+  if (def.atk) parts.push(`Saldırı +${def.atk}`);
+  if (def.def) parts.push(`Savunma +${def.def}`);
+  if (def.hp) parts.push(`Can +${def.hp}`);
+  return parts.join(' · ');
+}
+function reqText(def) {
+  if (!def.lv || def.slot === 'potion') return '';
+  const ok = myLevel >= def.lv;
+  return `<span style="color:${ok ? '#8b877c' : '#ff6a5a'}">Sv. ${def.lv}</span>`;
 }
 const invEl = document.getElementById('inv'), gridEl = document.getElementById('grid'), detailEl = document.getElementById('detail');
-function statText(def) {
-  return def.slot === 'weapon' ? `Saldırı +${def.atk}` : `Savunma +${def.def}`;
-}
 function renderInv() {
   document.getElementById('yang').textContent = `${inv.yang.toLocaleString('tr-TR')} Yang`;
-  for (const el of document.querySelectorAll('.eq')) {
+  const eqEl = document.getElementById('equipcol');
+  eqEl.querySelectorAll('.eq').forEach((el) => {
     const slot = el.dataset.slot, it = inv.equip[slot], def = it ? ITEMS[it.key] : null;
-    el.innerHTML = `${iconSvg(def)}<span>${def ? `<span style="color:${RARITY[def.rarity]}">${esc(def.name)}</span>` : 'Boş'}<small>${SLOT_NAMES[slot]}</small></span>`;
+    el.innerHTML = `${iconSvg(def, 22, slot)}<span>${def ? `<span style="color:${RARITY[def.rarity]}">${esc(def.name)}</span>` : 'Boş'}<small>${SLOT_NAMES[slot]}</small></span>`;
     el.classList.toggle('sel', !!(selected && selected.slot === slot));
-  }
-  document.getElementById('stats').innerHTML = `Saldırı: <b>${inv.atk}</b><br>Savunma: <b>${inv.def}</b>`;
+  });
+  document.getElementById('stats').innerHTML = `Saldırı <b>${inv.atk}</b> · Savunma <b>${inv.def}</b> · Can <b>${inv.maxHp}</b>`;
   let html = '';
-  for (let i = 0; i < 24; i++) {
+  for (let i = 0; i < 32; i++) {
     const it = inv.inventory[i];
     if (it) {
-      const def = ITEMS[it.key];
+      const def = ITEMS[it.key] || { name: '?', rarity: 0 };
       const sel = selected && selected.uid === it.uid ? ' sel' : '';
-      html += `<button class="slot${sel}" data-uid="${it.uid}" aria-label="${esc(def ? def.name : '?')}" style="border-color:${sel ? '' : (def ? RARITY[def.rarity] + '66' : '')}">${iconSvg(def)}</button>`;
+      html += `<button class="slot${sel}" data-uid="${it.uid}" aria-label="${esc(def.name)}" style="border-color:${sel ? '' : RARITY[def.rarity] + '66'}">${iconSvg(def)}${it.n > 1 ? `<i class="cnt">${it.n}</i>` : ''}</button>`;
     } else html += '<div class="slot" aria-hidden="true"></div>';
   }
   gridEl.innerHTML = html;
   renderDetail();
+  updatePotionButton();
 }
 function renderDetail() {
   let it = null, equipped = false;
@@ -641,8 +631,14 @@ function renderDetail() {
   if (selected && selected.slot) { it = inv.equip[selected.slot]; equipped = true; }
   if (!it) { detailEl.innerHTML = '<span class="grow" style="color:#8b877c">Bir eşyaya dokun.</span>'; return; }
   const def = ITEMS[it.key];
-  detailEl.innerHTML = `<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(def.name)}</b><br><span style="color:#c9c4b6">${SLOT_NAMES[def.slot]} · ${statText(def)}</span></span>` +
-    (equipped ? '<button data-act="unequip">Çıkar</button>' : '<button data-act="equip">Giy</button><button class="alt" data-act="drop">Yere at</button>');
+  let cls = '';
+  if (def.classes) cls = ' · ' + def.classes.map((c) => (CLASSES[c] || {}).name || c).join(', ');
+  let buttons;
+  if (equipped) buttons = '<button data-act="unequip">Çıkar</button>';
+  else if (def.slot === 'potion') buttons = '<button data-act="use">Kullan</button><button class="alt" data-act="drop">Yere at</button>';
+  else buttons = '<button data-act="equip">Giy</button><button class="alt" data-act="drop">Yere at</button>';
+  detailEl.innerHTML = `<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(def.name)}${it.n > 1 ? ' x' + it.n : ''}</b><br>` +
+    `<span style="color:#c9c4b6">${SLOT_NAMES[def.slot] || ''} · ${statText(def)}</span> ${reqText(def)}<span style="color:#8b877c">${esc(cls)}</span></span>` + buttons;
 }
 document.getElementById('invbtn').addEventListener('click', () => { selected = null; renderInv(); invEl.classList.add('open'); });
 document.getElementById('invclose').addEventListener('click', () => invEl.classList.remove('open'));
@@ -656,18 +652,96 @@ document.getElementById('equipcol').addEventListener('click', (e) => {
   selected = inv.equip[b.dataset.slot] ? { slot: b.dataset.slot } : null; renderInv();
 });
 detailEl.addEventListener('click', (e) => {
-  const b = e.target.closest('[data-act]'); if (!b || !selected) return;
+  const b = e.target.closest('[data-act]'); if (!b || !selected || !socket) return;
+  const it = selected.uid != null ? inv.inventory.find((x) => x.uid === selected.uid) : null;
   if (b.dataset.act === 'equip') socket.emit('equip', selected.uid);
   if (b.dataset.act === 'unequip') socket.emit('unequip', selected.slot);
   if (b.dataset.act === 'drop') socket.emit('dropItem', selected.uid);
+  if (b.dataset.act === 'use' && it) { socket.emit('usePotion', it.key); return; }
   selected = null;
 });
 const toastEl = document.getElementById('toast');
 let toastTimer = null;
 function toast(text) {
   toastEl.textContent = text; toastEl.style.opacity = '1';
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => { toastEl.style.opacity = '0'; }, 2200);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { toastEl.style.opacity = '0'; }, 2400);
 }
+
+// ---------- dükkân ve ışınlayıcı ----------
+const shopEl = document.getElementById('shop'), shopList = document.getElementById('shopList'), shopTitle = document.getElementById('shopTitle');
+let shopKind = null;
+function openShop(kind, title) {
+  shopKind = kind;
+  shopTitle.textContent = title;
+  renderShop();
+  shopEl.classList.add('open');
+}
+function renderShop() {
+  if (!shopKind || !currentMap) return;
+  const shop = currentMap.shop;
+  let html = '';
+  if (shopKind === 'teleport') {
+    for (const m of MAPS) {
+      const here = m.id === currentMap.id, ok = myLevel >= m.minLevel;
+      html += `<div class="srow"><span class="grow"><b>${esc(m.name)}</b>${m.village ? ' <small>(köy)</small>' : ''}<br><small style="color:${ok ? '#8b877c' : '#ff6a5a'}">Sv. ${m.minLevel}+</small></span>` +
+        (here ? '<small>Buradasın</small>' : `<button data-tp="${m.id}" ${ok ? '' : 'disabled'}>Git</button>`) + '</div>';
+    }
+  } else if (shopKind === 'sell') {
+    if (!inv.inventory.length) html = '<p class="muted">Satacak eşyan yok.</p>';
+    for (const it of inv.inventory) {
+      const def = ITEMS[it.key]; if (!def) continue;
+      const value = (def.price ? Math.floor(def.price * 0.25) : def.tier != null ? 100 * (def.tier + 1) * (def.tier + 1) : 10) * (it.n || 1);
+      html += `<div class="srow">${iconSvg(def, 22)}<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(def.name)}${it.n > 1 ? ' x' + it.n : ''}</b><br><small>${statText(def)}</small></span>` +
+        `<button class="alt" data-sell="${it.uid}">Sat ${value.toLocaleString('tr-TR')}</button></div>`;
+    }
+  } else {
+    const keys = shop ? shop[shopKind] || [] : [];
+    for (const key of keys) {
+      const def = ITEMS[key]; if (!def) continue;
+      const afford = inv.yang >= def.price;
+      let cls = '';
+      if (def.classes) cls = ' · ' + def.classes.map((c) => (CLASSES[c] || {}).name || c).join(', ');
+      html += `<div class="srow">${iconSvg(def, 22)}<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(def.name)}</b> ${reqText(def)}<br><small>${statText(def)}${esc(cls)}</small></span>` +
+        `<button data-buy="${key}" ${afford ? '' : 'disabled'}>${def.price.toLocaleString('tr-TR')}</button>` +
+        (def.stack ? `<button data-buy="${key}" data-n="10" ${inv.yang >= def.price * 10 ? '' : 'disabled'}>x10</button>` : '') + '</div>';
+    }
+  }
+  shopList.innerHTML = html;
+  document.getElementById('shopYang').textContent = `${inv.yang.toLocaleString('tr-TR')} Yang`;
+  document.getElementById('shopTabs').style.display = shopKind === 'teleport' ? 'none' : 'flex';
+  document.querySelectorAll('#shopTabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === shopKind));
+}
+shopList.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b || !socket) return;
+  if (b.dataset.buy) socket.emit('buy', { key: b.dataset.buy, n: Number(b.dataset.n || 1) });
+  if (b.dataset.sell) socket.emit('sell', Number(b.dataset.sell));
+  if (b.dataset.tp) { socket.emit('teleport', Number(b.dataset.tp)); shopEl.classList.remove('open'); }
+});
+document.getElementById('shopTabs').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-tab]'); if (!b) return;
+  shopKind = b.dataset.tab; renderShop();
+});
+document.getElementById('shopClose').addEventListener('click', () => { shopEl.classList.remove('open'); shopKind = null; });
+
+// ---------- can barı, iksir, konuşma, ölüm ----------
+const hpBar = document.getElementById('hpbar'), hpText = document.getElementById('hptext');
+function setHp(hp, max) {
+  hpBar.style.width = Math.max(0, Math.min(100, 100 * hp / max)) + '%';
+  hpText.textContent = `${hp} / ${max}`;
+}
+const potBtn = document.getElementById('potBtn');
+function updatePotionButton() {
+  const n = inv.inventory.filter((i) => i.key && i.key.startsWith('p_hp')).reduce((a, i) => a + (i.n || 1), 0);
+  document.getElementById('potCount').textContent = n;
+  potBtn.classList.toggle('empty', n === 0);
+}
+potBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); if (socket) socket.emit('usePotion'); });
+const talkBtn = document.getElementById('talkBtn');
+let nearAction = null;
+talkBtn.addEventListener('click', () => { if (nearAction) nearAction.run(); });
+const deadEl = document.getElementById('dead');
+document.getElementById('respawnBtn').addEventListener('click', () => { if (socket) socket.emit('respawn'); });
+
 
 // ---------- kontroller ----------
 const input = { x: 0, y: 0 };
@@ -701,27 +775,106 @@ atkBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); atkHeld = tr
 const atkUp = () => { atkHeld = false; };
 atkBtn.addEventListener('pointerup', atkUp); atkBtn.addEventListener('pointercancel', atkUp); atkBtn.addEventListener('pointerleave', atkUp);
 
+
+// ---------- kamera: tek parmakla döndür, iki parmakla yakınlaştır ----------
+let camYaw = Math.PI / 4, camZoom = 1;
+const CAM_H = 12, CAM_D = 12.7;
+const camTouches = new Map();
+let pinchStart = null;
+renderer.domElement.addEventListener('pointerdown', (e) => {
+  camTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  renderer.domElement.setPointerCapture(e.pointerId);
+  if (camTouches.size === 2) {
+    const [a, b] = [...camTouches.values()];
+    pinchStart = { d: Math.hypot(a.x - b.x, a.y - b.y), zoom: camZoom };
+  }
+});
+renderer.domElement.addEventListener('pointermove', (e) => {
+  const prev = camTouches.get(e.pointerId); if (!prev) return;
+  const cur = { x: e.clientX, y: e.clientY };
+  camTouches.set(e.pointerId, cur);
+  if (camTouches.size === 1) camYaw -= (cur.x - prev.x) * 0.008;
+  else if (camTouches.size === 2 && pinchStart) {
+    const [a, b] = [...camTouches.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    camZoom = Math.max(0.55, Math.min(1.7, pinchStart.zoom * pinchStart.d / Math.max(20, d)));
+  }
+});
+const camEnd = (e) => { camTouches.delete(e.pointerId); if (camTouches.size < 2) pinchStart = null; };
+renderer.domElement.addEventListener('pointerup', camEnd);
+renderer.domElement.addEventListener('pointercancel', camEnd);
+renderer.domElement.addEventListener('wheel', (e) => { camZoom = Math.max(0.55, Math.min(1.7, camZoom * (e.deltaY > 0 ? 1.1 : 0.9))); }, { passive: true });
+const camRight = new THREE.Vector3(), camFwd = new THREE.Vector3(), camOffset = new THREE.Vector3();
+function updateCamVectors() {
+  camFwd.set(-Math.sin(camYaw), 0, -Math.cos(camYaw));
+  camRight.set(Math.cos(camYaw), 0, -Math.sin(camYaw));
+  camOffset.set(Math.sin(camYaw) * CAM_D * camZoom, CAM_H * camZoom, Math.cos(camYaw) * CAM_D * camZoom);
+}
+
+
 // ---------- ağ ----------
 let socket = null;
 let lastSent = 0, lastMoving = false, lastAttackSent = 0;
-let myClass = 'savasci';
+let myClass = 'savasci', amDead = false;
 const CLASS_RANGE = () => (CLASSES[myClass] && CLASSES[myClass].range) || ATTACK_RANGE;
 const CLASS_SPEED = () => (CLASSES[myClass] && CLASSES[myClass].speed) || 1;
 
 function attack() {
-  const me = players[myId]; if (!me || !socket) return;
+  const me = players[myId]; if (!me || !socket || amDead) return;
   const now = performance.now();
   if (now - lastAttackSent < (myClass === 'ninja' ? 420 : 500)) return;
   lastAttackSent = now;
-  let best = null, bestD = CLASS_RANGE() + 1;
-  for (const s of Object.values(stones)) {
-    const d = Math.hypot(s.x - me.group.position.x, s.z - me.group.position.z);
-    if (d < bestD) { best = s; bestD = d; }
+  // en yakın hedefe dön (yaratık ya da taş)
+  let best = null, bestD = CLASS_RANGE() + 1.5;
+  const pos = me.group.position;
+  for (const m of Object.values(mobs)) {
+    const p = m.v.root.position, d = Math.hypot(p.x - pos.x, p.z - pos.z);
+    if (d < bestD) { best = p; bestD = d; }
   }
-  if (best) me.ry = Math.atan2(best.x - me.group.position.x, best.z - me.group.position.z) + FACE_OFFSET;
+  for (const s of Object.values(stones)) {
+    const d = Math.hypot(s.x - pos.x, s.z - pos.z);
+    if (d < bestD) { best = { x: s.x, z: s.z }; bestD = d; }
+  }
+  if (best) me.ry = Math.atan2(best.x - pos.x, best.z - pos.z) + FACE_OFFSET;
   socket.emit('attack');
 }
 let alertBox = (msg) => toast(msg);
+
+function clearWorld() {
+  for (const id of Object.keys(players)) removePlayer(id);
+  for (const id of Object.keys(mobs)) removeMob(id);
+  for (const id of Object.keys(stones)) removeStone(id);
+  for (const id of Object.keys(drops)) removeDrop(id);
+  for (const p of mapInfo.portals) if (p.label) p.label.el.remove();
+}
+function enterMap(data) {
+  clearWorld();
+  currentMap = MAPS[data.map];
+  mapInfo = loadMap(scene, currentMap);
+  for (const p of mapInfo.portals) {
+    const target = MAPS[p.to];
+    p.label = makeLabel(`${target.name} · Sv. ${target.minLevel}+`, '#9fd8ff', false);
+  }
+  for (const n of mapInfo.npcs) {
+    const npc = createPlayer({ id: 'npc:' + n.kind, name: n.name, cls: 'savasci', x: n.x, z: n.z, ry: 0, level: 0, npc: true,
+      look: { weapon: null, armor: n.kind === 'armor' ? 'armor3' : n.kind === 'weapons' ? 'armor1' : null, helmet: null } });
+    npc.ry = FACE_OFFSET; npc.group.rotation.y = FACE_OFFSET; npc.npcKind = n.kind;
+  }
+  for (const p of Object.values(data.players)) createPlayer(p);
+  for (const m of data.mobs) createMob(m);
+  for (const s of data.stones) createStone(s);
+  for (const d of data.drops) createDrop(d);
+  const me = players[myId];
+  if (me) {
+    me.group.position.set(data.you.x, 0, data.you.z);
+    updateCamVectors();
+    camera.position.copy(me.group.position).add(camOffset);
+  }
+  document.getElementById('mapName').textContent = currentMap.name.toLocaleUpperCase('tr-TR');
+  document.getElementById('mapSub').textContent = currentMap.village ? 'Köy · güvenli bölge' : `Seviye ${currentMap.minLevel}+ bölgesi`;
+  shopEl.classList.remove('open');
+  log(`<b>Sistem:</b> ${esc(currentMap.name)} haritasına geldin.`);
+}
 
 // giriş ekranı oyun yüklenene kadar bekler
 export const ready = Promise.all([modelReady, itemsReady]);
@@ -731,62 +884,87 @@ export const modelLoaded = () => !!gltf;
 export function startGame(sock, opts = {}) {
   socket = sock;
   if (opts.onKicked) alertBox = opts.onKicked;
+
   socket.on('welcome', (data) => {
-    myClass = data.me.cls || 'savasci';
+    myId = data.id; myClass = data.cls;
+    document.getElementById('myname').textContent = data.name;
     document.getElementById('myclass').textContent = (CLASSES[myClass] || {}).name || '';
+    setStats(data.stats.level, data.stats.exp, data.stats.need);
     if (opts.onWelcome) opts.onWelcome();
   });
-  socket.on('welcome', (data) => {
-    myId = data.id;
-    for (const p of Object.values(data.players)) createPlayer(p);
-    for (const s of Object.values(data.stones)) createStone(s);
-    for (const d of data.drops) createDrop(d);
+  socket.on('mapChange', (data) => { amDead = false; deadEl.classList.remove('open'); enterMap(data); });
+  socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (shopKind) renderShop(); });
+  socket.on('hp', ({ hp, max }) => setHp(hp, max));
+  socket.on('stats', ({ level, exp, need, up }) => {
+    setStats(level, exp, need);
     const me = players[myId];
-    document.getElementById('myname').textContent = me.name;
-    setStats(data.me.level, data.me.exp, data.me.need);
-    log('<b>Sistem:</b> Atabis Köyü\'ne hoş geldin! Metin taşlarını kır, düşen eşyaları topla.');
+    if (up && me) { me.level = level; updateLabelText(me); log(`<b>Sistem:</b> Seviye atladın! Artık Sv. ${level}.`); floatText('SEVİYE ' + level, me.group.position.x, 3, me.group.position.z, true); }
   });
-  socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); });
+  socket.on('expGain', (n) => { const me = players[myId]; if (me) floatText(`+${n} TP`, me.group.position.x, 2.6, me.group.position.z, false); });
   socket.on('notice', (t) => toast(t));
+  socket.on('announce', (t) => { toast(t); log(`<b style="color:#ffb347">Duyuru:</b> ${esc(t)}`); });
   socket.on('look', ({ id, look }) => { const p = players[id]; if (p) applyLook(p, look); });
-  socket.on('playerJoin', (p) => { if (myId) { createPlayer(p); log(`<b>${esc(p.name)}</b> oyuna katıldı.`); } });
+  socket.on('playerJoin', (p) => { createPlayer(p); log(`<b>${esc(p.name)}</b> haritaya geldi.`); });
   socket.on('playerLeave', ({ id }) => removePlayer(id));
-  socket.on('state', (list) => {
-    if (!myId) return;
+  socket.on('playerLevel', ({ id, level }) => { const p = players[id]; if (p) { p.level = level; updateLabelText(p); } });
+  socket.on('playerDied', ({ id }) => { const p = players[id]; if (p) p.dead = true; });
+  socket.on('died', ({ village }) => {
+    amDead = true;
+    document.getElementById('deadText').textContent = `${village} köyünde yeniden doğacaksın.`;
+    deadEl.classList.add('open');
+  });
+  socket.on('state', ({ p: list, m: mlist }) => {
     document.getElementById('count').textContent = list.length;
     for (const s of list) {
       if (s.id === myId) continue;
       const p = players[s.id]; if (!p) continue;
       p.target.set(s.x, 0, s.z); p.ry = s.ry; p.moving = s.moving;
+      if (p.dead && s.moving) p.dead = false;
+    }
+    for (const [id, x, z, ry, mv] of mlist) {
+      const m = mobs[id]; if (!m) continue;
+      m.target.set(x, 0, z); m.ry = ry; m.moving = !!mv;
     }
   });
   socket.on('correct', ({ x, z }) => { const me = players[myId]; if (me) me.group.position.set(x, 0, z); });
   socket.on('swing', ({ id, combo, target }) => {
     const p = players[id]; if (!p) return;
-    if (p.cls === 'okcu' && target && stones[target]) shootArrow(p, stones[target]);
+    const tm = target && (mobs[target] ? mobs[target].v.root.position : stones[target] ? stones[target] : null);
+    if (p.cls === 'okcu' && tm) shootArrow(p, tm);
     p.swingT = SWING_T; p.combo = combo || 0;
     if (p.cls !== 'okcu') p.slashT = 0.3;
   });
-  socket.on('stoneSpawn', (s) => { if (myId) createStone(s); });
-  socket.on('hit', ({ stoneId, dmg, crit, hp }) => {
-    const s = stones[stoneId]; if (!s) return;
-    s.hp = hp; s.label.hp.style.width = (100 * hp / s.max) + '%'; s.shake = 0.2;
-    floatText((crit ? 'KRİTİK ' : '') + '-' + dmg, s.x, 4.4, s.z, crit);
-  });
-  socket.on('stoneDown', ({ stoneId, by, name, stoneName }) => {
-    removeStone(stoneId);
-    log(by === myId ? `<b>Sistem:</b> ${esc(stoneName)}'ni kırdın! Ganimetleri topla.` : `<b>${esc(name)}</b> bir ${esc(stoneName)} kırdı.`);
-  });
-  socket.on('drop', (d) => { if (myId) createDrop(d); });
-  socket.on('dropGone', ({ id }) => removeDrop(id));
-  socket.on('playerStats', ({ id, level, exp, need, up }) => {
-    const p = players[id]; if (!p) return;
-    p.level = level; updateLabelText(p);
-    if (id === myId) {
-      setStats(level, exp, need);
-      if (up) { log(`<b>Sistem:</b> Seviye atladın! Artık Sv. ${level}.`); floatText('SEVİYE ' + level, p.group.position.x, 3, p.group.position.z, true); }
+  socket.on('hit', ({ id, kind, dmg, crit, hp }) => {
+    if (kind === 'mob') {
+      const m = mobs[id]; if (!m) return;
+      m.hp = hp; m.label.hp.style.width = (100 * hp / m.max) + '%';
+      floatText((crit ? 'KRİTİK ' : '') + '-' + dmg, m.v.root.position.x, m.height + 0.6, m.v.root.position.z, crit);
+    } else {
+      const s = stones[id]; if (!s) return;
+      s.hp = hp; s.label.hp.style.width = (100 * hp / s.max) + '%'; s.shake = 0.2;
+      floatText((crit ? 'KRİTİK ' : '') + '-' + dmg, s.x, 4.4, s.z, crit);
     }
   });
+  socket.on('mobSpawn', (m) => createMob(m));
+  socket.on('mobDie', ({ id, by, name, mobName, boss }) => {
+    removeMob(id);
+    if (by === myId) log(`<b>Sistem:</b> ${esc(mobName)} yenildi.`);
+    else if (boss) log(`<b>${esc(name)}</b> ${esc(mobName)} adlı boss'u yendi!`);
+  });
+  socket.on('mobAttack', ({ id, target, dmg }) => {
+    const m = mobs[id]; if (m) m.atkT = 0.4;
+    const p = players[target];
+    if (p) floatText('-' + dmg, p.group.position.x, 2.4, p.group.position.z, false);
+    if (target === myId) document.body.classList.add('hurt'), setTimeout(() => document.body.classList.remove('hurt'), 180);
+  });
+  socket.on('mobHeal', ({ id, hp }) => { const m = mobs[id]; if (m) { m.hp = hp; m.label.hp.style.width = '100%'; } });
+  socket.on('stoneSpawn', (s) => createStone(s));
+  socket.on('stoneDown', ({ id, by, name, stoneName }) => {
+    removeStone(id);
+    log(by === myId ? `<b>Sistem:</b> ${esc(stoneName)}'ni kırdın! Ganimetleri topla.` : `<b>${esc(name)}</b> bir ${esc(stoneName)} kırdı.`);
+  });
+  socket.on('drop', (d) => createDrop(d));
+  socket.on('dropGone', ({ id }) => removeDrop(id));
   socket.on('chat', ({ name, text }) => log(`<b>${esc(name)}:</b> ${esc(text)}`));
   socket.on('disconnect', (reason) => { if (reason !== 'io client disconnect') log('<b>Sistem:</b> Sunucu bağlantısı koptu, yeniden bağlanılıyor…'); });
   socket.on('connect', () => { if (myId) location.reload(); });
@@ -794,6 +972,7 @@ export function startGame(sock, opts = {}) {
 }
 
 function setStats(level, exp, need) {
+  myLevel = level;
   document.getElementById('lv').textContent = level;
   document.getElementById('expbar').style.width = Math.min(100, 100 * exp / need) + '%';
 }
@@ -812,8 +991,8 @@ function collide(pos) {
     const dx = pos.x - c.x, dz = pos.z - c.z, d = Math.hypot(dx, dz), r = c.r + 0.45;
     if (d < r && d > 0.0001) { pos.x = c.x + dx / d * r; pos.z = c.z + dz / d * r; }
   }
-  pos.x = Math.max(u(-6), Math.min(u(26), pos.x));
-  pos.z = Math.max(u(-6), Math.min(u(26), pos.z));
+  pos.x = Math.max(BOUNDS.min, Math.min(BOUNDS.max, pos.x));
+  pos.z = Math.max(BOUNDS.min, Math.min(BOUNDS.max, pos.z));
 }
 
 // ---------- oklar ----------
@@ -821,10 +1000,10 @@ const arrows = [];
 const arrowGeo = new THREE.CylinderGeometry(0.025, 0.025, 1.1, 4);
 arrowGeo.rotateX(Math.PI / 2);
 const arrowMat = new THREE.MeshBasicMaterial({ color: '#f4e2b8' });
-function shootArrow(p, stone) {
+function shootArrow(p, target) {
   const m = new THREE.Mesh(arrowGeo, arrowMat);
   const from = p.group.position.clone(); from.y = 1.4;
-  const to = new V3(stone.x, 2.0, stone.z);
+  const to = new V3(target.x, 1.6, target.z);
   m.position.copy(from); m.lookAt(to);
   scene.add(m);
   arrows.push({ m, from, to, t: 0, dur: Math.max(0.12, from.distanceTo(to) / 40) });
@@ -839,29 +1018,44 @@ function updateArrows(dt) {
   }
 }
 
+// ---------- yakındaki NPC ve geçitler ----------
+function findNearAction(pos) {
+  for (const p of Object.values(players)) {
+    if (!p.npcKind || Math.hypot(p.group.position.x - pos.x, p.group.position.z - pos.z) > 4) continue;
+    if (p.npcKind === 'teleport') return { label: 'Işınlayıcı', run: () => openShop('teleport', 'IŞINLAYICI') };
+    return { label: p.name, run: () => openShop(p.npcKind, p.name.toLocaleUpperCase('tr-TR')) };
+  }
+  for (const pt of mapInfo.portals) {
+    if (Math.hypot(pt.x - pos.x, pt.z - pos.z) > 4.5) continue;
+    const t = MAPS[pt.to];
+    return { label: `Geçit: ${t.name}`, run: () => socket.emit('travel', pt.to) };
+  }
+  return null;
+}
+
 // ---------- ana döngü ----------
 const clock = new THREE.Clock();
-const camRight = new V3(1, 0, -1).normalize();
-const camFwd = new V3(-1, 0, -1).normalize();
 const camPos = new V3();
 function angleLerp(a, b, t) {
   let d = ((b - a + Math.PI) % (Math.PI * 2)) - Math.PI;
   if (d < -Math.PI) d += Math.PI * 2;
   return a + d * t;
 }
+let actionCheck = 0;
 function loop() {
   requestAnimationFrame(loop);
   const dt = Math.min(clock.getDelta(), 0.05);
   const now = performance.now();
   const me = players[myId];
+  updateCamVectors();
 
-  if (me) {
+  if (me && currentMap) {
     if (atkHeld) attack();
     let ix = input.x, iy = input.y;
     if (keys.w || keys.arrowup) iy = -1; if (keys.s || keys.arrowdown) iy = 1;
     if (keys.a || keys.arrowleft) ix = -1; if (keys.d || keys.arrowright) ix = 1;
     const mag = Math.min(1, Math.hypot(ix, iy));
-    const moving = mag > 0.15 && me.swingT <= 0;   // saldırırken yürünmez
+    const moving = !amDead && mag > 0.15 && me.swingT <= 0;   // saldırırken yürünmez
     if (moving) {
       const dir = new V3().addScaledVector(camRight, ix).addScaledVector(camFwd, -iy).normalize();
       me.group.position.addScaledVector(dir, SPEED * CLASS_SPEED() * mag * dt);
@@ -876,32 +1070,41 @@ function loop() {
     // yakındaki ganimeti otomatik topla
     for (const d of Object.values(drops)) {
       if (now - d.lastTry < 1500) continue;
-      if (d.owner !== myId && now - d.born < 15500) continue;   // başkasının ganimeti, süresi dolsun
+      if (d.owner !== myId && now - d.born < 15500) continue;
       if (Math.hypot(d.x - me.group.position.x, d.z - me.group.position.z) < 1.8) { d.lastTry = now; socket.emit('pickup', d.id); }
     }
-    camPos.copy(me.group.position).add(CAM_OFFSET);
+    // NPC / geçit butonu
+    if (now - actionCheck > 200) {
+      actionCheck = now;
+      nearAction = amDead ? null : findNearAction(me.group.position);
+      talkBtn.style.display = nearAction ? 'flex' : 'none';
+      if (nearAction) talkBtn.textContent = nearAction.label;
+    }
+    camPos.copy(me.group.position).add(camOffset);
     camera.position.lerp(camPos, 1 - Math.exp(-8 * dt));
-    camera.lookAt(camera.position.x - CAM_OFFSET.x, 1.2, camera.position.z - CAM_OFFSET.z);
+    camera.lookAt(camera.position.x - camOffset.x, 1.2, camera.position.z - camOffset.z);
     sun.position.set(me.group.position.x + 12, 25, me.group.position.z + 6);
     sun.target.position.copy(me.group.position);
   } else {
-    camera.position.set(u(10) + 14, 16, u(10) + 14);
-    camera.lookAt(u(10), 0, u(10));
+    camera.position.set(25 + 14, 16, 25 + 14);
+    camera.lookAt(25, 0, 25);
   }
 
   for (const p of Object.values(players)) {
-    if (p.id !== myId) p.group.position.lerp(p.target, 1 - Math.exp(-10 * dt));
+    if (p.id !== myId && !p.npc) p.group.position.lerp(p.target, 1 - Math.exp(-10 * dt));
     p.group.rotation.y = angleLerp(p.group.rotation.y, p.ry, 1 - Math.exp(-14 * dt));
     setAnim(p, p.moving && p.swingT <= 0 ? 'Run' : 'Idle');
     if (p.mixer) p.mixer.update(dt);
     if (p.swingT > 0) p.swingT = Math.max(0, p.swingT - dt);
     applySwing(p);
+    if (p.model) p.model.parent.rotation.x = (p.id === myId ? amDead : p.dead) ? -Math.PI / 2 : 0;
     if (p.slashT > 0) {
       p.slashT -= dt;
       p.slash.material.opacity = Math.max(0, p.slashT / 0.3) * 0.7;
     } else p.slash.material.opacity = 0;
     placeLabel(p.label, p.group.position.x, 2.4, p.group.position.z);
   }
+  updateMobs(dt);
   for (const s of Object.values(stones)) {
     if (s.shake > 0) { s.shake -= dt; s.rock.position.x = (Math.random() - 0.5) * 0.25; } else s.rock.position.x = 0;
     placeLabel(s.label, s.x, 4.6, s.z);
@@ -911,6 +1114,10 @@ function loop() {
     d.spin.rotation.y += dt * 1.5;
     d.group.position.y = Math.sin(d.t * 3) * 0.08;
     placeLabel(d.label, d.x, 1.3, d.z);
+  }
+  for (const pt of mapInfo.portals) {
+    if (pt.label) placeLabel(pt.label, pt.x, 6.2, pt.z);
+    if (pt.field) pt.field.material.opacity = 0.35 + Math.sin(now / 300) * 0.12;
   }
   updateArrows(dt);
   renderer.render(scene, camera);

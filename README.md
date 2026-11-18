@@ -2,19 +2,29 @@
 
 Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod ve tasarım projenin kendisine aittir.
 
-## Durum: Aşama 0
+## Durum
 
-Bu aşamada **gerçekten çalışanlar**:
+### Aşama 1 (bu sürüm)
 
-- Hesap sistemi: kayıt, giriş, çıkış. Şifreler `scrypt` ile özetlenerek saklanır, düz metin tutulmaz.
-- Hesap başına 4 karaktere kadar oluşturma ve silme; 5 sınıf: Savaşçı, Ninja, Sura, Şaman, Okçu.
-- Sınıf farkları: başlangıç silahı, saldırı gücü çarpanı, kritik şansı (Ninja %25), hareket hızı (Ninja +%12), saldırı menzili (Okçu 12 m, oklar görünür).
-- Silahlar sınıfa göre giyilir (kılıç, hançer, yay, asa).
-- Atabis Köyü haritası, metin taşları, 3'lü kombo, kritik vuruş, ganimet, envanter, ekipman.
-- Tüm ilerleme (seviye, Yang, eşya, konum) PostgreSQL'e kaydedilir.
-- Aynı karakterle ikinci kez girilirse eski oturum kapatılır.
+- **15 harita**, her biri bir seviye bölgesi: Atabis Köyü (Sv. 1) → Kızılçam Köyü (Sv. 15) → Sisli Orman (22) → Taş Vadisi (29) → Kuru Çöl (36) → Çöl Kervansarayı (43) → Kara Bataklık (50) → Karlı Dağlar (57) → Buz Mağarası (64) → Volkan Eteği (71) → Ejder Kalesi Kasabası (78) → Lanetli Harabeler (85) → İblis Kulesi (92) → Ejder Vadisi (99) → Kara Taht (106).
+- Haritalar kenarlarındaki **geçitlerle** birbirine bağlı; seviyen yetmezse geçemezsin. Köylerdeki **Işınlayıcı** ile açtığın haritalara doğrudan gidebilirsin.
+- **45 yaratık türü ve 17 boss.** İlk köyde köpek, kurt ve yaban domuzu; her haritada daha güçlüleri. Saldırgan olanlar seni görünce saldırır, pasifler vurunca karşılık verir. Boss'lar 2 dakikada bir yeniden doğar ve nadir eşya düşürür.
+- **Can sistemi:** yaratıklar vurur, ölünce köyde yeniden doğarsın. 5 saniye hasar almazsan can kendiliğinden dolar.
+- **Kırmızı iksirler** (4 boy), sağ alttaki butonla içilir.
+- **Köy dükkânları** (Yang ile): Market (iksir), Silahçı, Zırhçı (zırh, miğfer, ayakkabı, bilezik, küpe). Eşya satabilirsin.
+- **6 ekipman yeri:** silah, zırh, miğfer, ayakkabı, bilezik, küpe. Her eşyanın **seviye şartı** var.
+- 16 eşya kademesi (Acemi → İmparator) ve her kademenin **Efsanevi** sürümü (sadece boss'lardan düşer).
+- Kamera: tek parmakla sürükleyerek döndür, iki parmakla yakınlaştır.
 
-**Henüz olmayanlar** (sonraki aşamalarda): can ve mana, oyuncuya saldıran yaratıklar, sınıfa özel yetenekler ve modeller, kamera döndürme ve yakınlaştırma, görevler, sohbet arayüzü, grup, lonca, ticaret, PvP, zindanlar, kanallar.
+**Bilinen sınırlar:** Yaratıklar şimdilik kodla çizilmiş basit 3D şekiller (insansı olanlar asker modelinin boyanmış hali). Ayakkabı, bilezik ve küpe karakterin üstünde görünmüyor, sadece değerleri etkiliyor. Mana, sınıf yetenekleri, görevler, grup, lonca, ticaret ve PvP henüz yok.
+
+### Aşama 0
+
+Hesap sistemi (şifreler `scrypt` ile), hesap başına 4 karakter, 5 sınıf (Savaşçı, Ninja, Sura, Şaman, Okçu), metin taşları, kombo, kritik vuruş, PostgreSQL kayıt.
+
+## Denge ve içerik
+
+Tüm eşya, yaratık ve harita verisi `tools/gen_data.py` ile üretilir. Sayıları değiştirmek için o dosyayı düzenle ve çalıştır: `python3 tools/gen_data.py`
 
 ## Klasörler
 
@@ -25,15 +35,22 @@ server/            sunucu (Node.js)
   db.js            PostgreSQL bağlantısı, şema kurulumu
   auth.js          kayıt, giriş, oturum
   characters.js    karakter listeleme, oluşturma, silme
-  game/world.js    oyun dünyası: hareket, savaş, metin taşları, ganimet, kayıt
+  game/rules.js    formüller: can, hasar, tecrübe
+  game/zone.js     bir harita: yaratık yapay zekası, metin taşları, ganimet
+  game/world.js    bağlantılar, envanter, dükkân, iksir, geçitler, kayıt
 client/            tarayıcı tarafı
   index.html       ekranlar ve arayüz
   css/style.css    görünüm
   js/main.js       giriş → karakter seçimi → oyun akışı
-  js/game.js       3D sahne, karakterler, kontroller, envanter
-shared/            sunucu ve istemcinin ortak verileri
+  js/game.js       3D sahne, karakterler, kontroller, envanter, dükkân
+  js/world/map.js  harita oluşturucu (15 tema)
+  js/entities/mobs.js  yaratık modelleri ve hareketleri
+  js/util.js       ortak yardımcılar
+shared/            sunucu ve istemcinin ortak verileri (tools/gen_data.py üretir)
   classes.json     sınıflar
-  items.json       eşyalar
+  items.json       eşyalar ve iksirler
+  mobs.json        yaratıklar ve boss'lar
+  maps.json        haritalar, dükkânlar, geçitler
 db/schema.sql      veritabanı tabloları
 scripts/update.sh  tek komutla güncelleme
 ```

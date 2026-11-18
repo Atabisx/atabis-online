@@ -24,10 +24,11 @@
     <div id="lv">1</div>
     <div style="display:flex;flex-direction:column;gap:5px">
       <div style="display:flex;justify-content:space-between;font-size:12px;width:150px"><b id="myname">-</b><span id="myclass" style="color:#c9c4b6">-</span></div>
+      <div class="bar hpwrap"><div id="hpbar" style="width:100%;background:#d9443a"></div><span id="hptext"></span></div>
       <div class="bar"><div id="expbar" style="width:0%;background:#e8b54a"></div></div>
     </div>
   </div>
-  <div id="place" class="panel"><b>ATABİS KÖYÜ</b><span>Metin taşlarını kır, seviye atla</span></div>
+  <div id="place" class="panel"><b id="mapName">ATABİS KÖYÜ</b><span id="mapSub"></span></div>
   <div id="online" class="panel">Çevrimiçi: <b id="count">0</b></div>
   <button id="invbtn" aria-label="Envanter">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
@@ -38,6 +39,11 @@
   <button id="atk" aria-label="Saldır">
     <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg>
   </button>
+  <button id="potBtn" aria-label="Kırmızı iksir iç">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ff8a7a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v5L6 15a5 5 0 0 0 4.5 6h3A5 5 0 0 0 18 15l-4-7V3"/></svg>
+    <i id="potCount">0</i>
+  </button>
+  <button id="talkBtn" style="display:none">Konuş</button>
   <div id="labels"></div>
   <div id="toast"></div>
   <div id="inv" role="dialog" aria-label="Envanter">
@@ -48,11 +54,30 @@
           <button class="eq" data-slot="weapon"></button>
           <button class="eq" data-slot="armor"></button>
           <button class="eq" data-slot="helmet"></button>
+          <button class="eq" data-slot="shoes"></button>
+          <button class="eq" data-slot="bracelet"></button>
+          <button class="eq" data-slot="earring"></button>
           <div id="stats"></div>
         </div>
         <div id="grid"></div>
       </div>
       <div id="detail"><span class="grow" style="color:#8b877c">Bir eşyaya dokun.</span></div>
+    </div>
+  </div>
+  <div id="shop" class="modal" role="dialog" aria-label="Dükkân">
+    <div class="modalbox">
+      <div id="shopHead" class="mhead"><b id="shopTitle" style="color:#e8b54a;letter-spacing:.06em">DÜKKÂN</b><span id="shopYang" style="color:#ffe08a;font-size:13px"></span><button id="shopClose" class="xbtn" aria-label="Kapat">×</button></div>
+      <div id="shopTabs" class="tabs">
+        <button data-tab="potions">İksir</button><button data-tab="weapons">Silah</button><button data-tab="armor">Zırh ve takı</button><button data-tab="sell">Sat</button>
+      </div>
+      <div id="shopList"></div>
+    </div>
+  </div>
+  <div id="dead" class="modal" role="dialog" aria-label="Öldün">
+    <div class="modalbox" style="width:min(340px,92vw);text-align:center;align-items:center">
+      <b style="font-size:24px;color:#ff6a5a;letter-spacing:.06em">ÖLDÜN</b>
+      <p id="deadText" style="margin:0;color:#c9c4b6;font-size:13px"></p>
+      <button id="respawnBtn" class="btn" style="width:100%">Köyde yeniden doğ</button>
     </div>
   </div>
 </div>

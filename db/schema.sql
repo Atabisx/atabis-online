@@ -36,3 +36,7 @@ CREATE TABLE IF NOT EXISTS characters (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS characters_name_lower_idx ON characters (lower(name));
 CREATE INDEX IF NOT EXISTS characters_account_idx ON characters(account_id);
+
+-- Aşama 1: haritalar ve can
+ALTER TABLE characters ADD COLUMN IF NOT EXISTS map_id INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE characters ADD COLUMN IF NOT EXISTS hp INTEGER;
