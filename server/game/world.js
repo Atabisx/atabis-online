@@ -6,6 +6,15 @@ const { Zone } = require('./zone');
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const VILLAGES = R.MAPS.filter((m) => m.village).map((m) => m.id);
+const HORSE_QUEST = { level: 25, mob: 'vkurt', count: 20 };
+const FISH_TABLE = [['b_hamsi', 38], ['b_sazan', 25], ['b_alabalik', 15], ['b_levrek', 9], ['b_yayin', 3], ['istiridye', 4], ['b_cizme', 6]];
+const PEARLS = [['inci_beyaz', 70], ['inci_mavi', 25], ['inci_kirmizi', 5]];
+function roll(table) {
+  const total = table.reduce((a, [, w]) => a + w, 0);
+  let r = Math.random() * total;
+  for (const [k, w] of table) { r -= w; if (r <= 0) return k; }
+  return table[0][0];
+}
 
 function createWorld(io) {
   const players = {};                 // socket.id -> oyuncu
@@ -18,14 +27,39 @@ function createWorld(io) {
     return l;
   }
   const publicPlayer = (p) => ({ id: p.id, name: p.name, cls: p.class, x: p.x, z: p.z, ry: p.ry, level: p.level,
-    look: looks(p), hp: p.hp, maxHp: p.maxHp, dead: !!p.dead });
+    look: looks(p), hp: p.hp, maxHp: p.maxHp, dead: !!p.dead, mounted: !!p.mounted });
   function recalc(p) {
     p.maxHp = R.maxHp(p);
+    p.maxMp = R.maxMp(p);
     p.hp = Math.min(p.hp, p.maxHp);
+    if (p.mp != null) p.mp = Math.min(p.mp, p.maxMp);
   }
   function sendInv(p) {
+    const t = R.totals(p);
     p.socket.emit('inv', { inventory: p.inventory, equip: p.equip, yang: p.yang,
-      atk: R.attackPower(p), def: R.defense(p), maxHp: p.maxHp });
+      atk: R.attackPower(p), def: R.defense(p), maxHp: p.maxHp, maxMp: p.maxMp,
+      crit: Math.round(((R.classOf(p).crit || 0.12) * 100) + t.crit), atkspeed: t.atkspeed, movespeed: t.movespeed,
+      speed: R.speedMul(p), atkCd: R.attackCooldown(p), mounted: !!p.mounted });
+  }
+  function sendMp(p) { p.socket.emit('mp', { mp: p.mp, max: p.maxMp }); }
+  function sendSkills(p) {
+    p.socket.emit('skills', { levels: p.skills, points: R.skillPoints(p), unlock: R.SKILL_UNLOCK });
+  }
+  function sendBuffs(p) {
+    const now = Date.now(), list = {};
+    for (const [stat, b] of Object.entries(p.buffs)) if (b.until > now) list[stat] = { value: b.value, left: Math.round((b.until - now) / 1000), src: b.src };
+    p.socket.emit('buffs', list);
+  }
+  function sendQuests(p) { p.socket.emit('quests', p.quests); }
+  function addBuff(p, stat, value, sec, src) {
+    p.buffs[stat] = { value, until: Date.now() + sec * 1000, src };
+    recalc(p); sendInv(p); sendBuffs(p);
+  }
+  function setMounted(p, on) {
+    if (!!p.mounted === on) return;
+    p.mounted = on;
+    sendInv(p);
+    if (p.zone) p.zone.emit('mount', { id: p.id, on });
   }
   function sendHp(p) {
     p.socket.emit('hp', { hp: p.hp, max: p.maxHp });
@@ -77,9 +111,9 @@ function createWorld(io) {
     try {
       await db.query(
         `UPDATE characters SET level=$2, exp=$3, yang=$4, kills=$5, pos_x=$6, pos_z=$7,
-         inventory=$8, equip=$9, next_uid=$10, map_id=$11, hp=$12, last_played=now() WHERE id=$1`,
+         inventory=$8, equip=$9, next_uid=$10, map_id=$11, hp=$12, mp=$13, skills=$14, quests=$15, last_played=now() WHERE id=$1`,
         [p.charId, p.level, p.exp, p.yang, p.kills, p.x, p.z, JSON.stringify(p.inventory), JSON.stringify(p.equip),
-         p.nextUid, p.zone ? p.zone.id : p.mapId, p.dead ? p.maxHp : p.hp]);
+         p.nextUid, p.zone ? p.zone.id : p.mapId, p.dead ? p.maxHp : p.hp, p.mp, JSON.stringify(p.skills), JSON.stringify(p.quests)]);
     } catch (e) { console.error('Kayıt hatası', p.name, e.message); }
   }
 
@@ -94,7 +128,10 @@ function createWorld(io) {
       while (p.level < R.MAX_LEVEL && p.exp >= R.expForLevel(p.level)) {
         p.exp -= R.expForLevel(p.level); p.level++; up = true;
       }
-      if (up) { recalc(p); p.hp = p.maxHp; sendHp(p); sendInv(p); }
+      if (up) {
+        recalc(p); p.hp = p.maxHp; p.mp = p.maxMp; sendHp(p); sendMp(p); sendInv(p); sendSkills(p);
+        levelRewards(p);
+      }
       sendStats(p, up);
       p.socket.emit('expGain', amount);
     },
@@ -106,6 +143,7 @@ function createWorld(io) {
       if (p.hp <= 0) {
         p.dead = true;
         p.moving = false;
+        p.mounted = false; p.fish = null;
         p.zone.emit('playerDied', { id: p.id });
         p.socket.emit('died', { village: R.MAPS[villageFor(p.zone.id)].name });
       }
@@ -115,9 +153,32 @@ function createWorld(io) {
       p.hp = Math.min(p.maxHp, p.hp + amount);
       sendHp(p);
     },
+    onMobKilled(p, m) {
+      const q = p.quests;
+      if (q.horse === 'active' && m.key === HORSE_QUEST.mob) {
+        q.horseKills = (q.horseKills || 0) + 1;
+        if (q.horseKills >= HORSE_QUEST.count) { q.horse = 'ready'; notice(p, 'At görevi tamamlandı! Ödülünü almak için Seyis\'e git.'); }
+        sendQuests(p);
+      }
+    },
     announce(text, zone) { (zone ? zone : io).emit('announce', text); },
   };
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
+
+  // seviye ödülleri: 25'te at görevi, 30'da olta
+  function levelRewards(p) {
+    const q = p.quests;
+    if (p.level >= 5 && !q.skillHint) { q.skillHint = true; notice(p, 'Becerilerin açıldı! Beceri penceresinden puan ver.'); }
+    if (p.level >= HORSE_QUEST.level && !q.horse) { q.horse = 'available'; notice(p, 'Köydeki Seyis seninle konuşmak istiyor: at görevi!'); sendQuests(p); }
+    if (p.level >= 30 && !q.rod) {
+      if (addItem(p, 'olta', 1)) {
+        addItem(p, 'yem', 20);
+        q.rod = true;
+        notice(p, 'Oltanı aldın! Işınlayıcıyla Gümüş Göl\'e gidip balık tutabilirsin.');
+        sendInv(p);
+      } else notice(p, 'Oltanı verebilmek için envanterinde yer aç.');
+    }
+  }
 
   function villageFor(mapId) {
     let v = 0;
@@ -130,6 +191,8 @@ function createWorld(io) {
     const target = zones[mapId];
     if (!target) return;
     if (p.zone) p.zone.removePlayer(p);
+    p.fish = null;
+    if (target.def.safe) p.mounted = false;
     const [sx, sz] = pos || target.def.spawn;
     const jitter = pos ? 0 : 3;
     p.x = sx + (Math.random() - 0.5) * jitter; p.z = sz + (Math.random() - 0.5) * jitter;
@@ -170,15 +233,19 @@ function createWorld(io) {
       level: row.level, exp: row.exp, yang: Number(row.yang), kills: row.kills,
       inventory: row.inventory || [], equip: row.equip || {}, nextUid: row.next_uid,
       mapId: R.MAPS[row.map_id] ? row.map_id : 0, hp: row.hp, dead: false, zone: null,
+      mp: row.mp, skills: row.skills || {}, quests: row.quests || {}, buffs: {}, skillCd: {}, mounted: false,
+      fish: null, facing: 0,
     };
     if (prev) {
-      for (const k of ['level', 'exp', 'yang', 'kills', 'inventory', 'equip', 'nextUid', 'hp']) p[k] = prev[k];
+      for (const k of ['level', 'exp', 'yang', 'kills', 'inventory', 'equip', 'nextUid', 'hp', 'mp', 'skills', 'quests', 'buffs']) p[k] = prev[k];
       if (prev.zone) p.mapId = prev.zone.id;
     }
     for (const s of R.EQUIP_SLOTS) if (p.equip[s] === undefined) p.equip[s] = null;
     recalc(p);
     if (!p.hp || p.hp <= 0) p.hp = p.maxHp;
+    if (p.mp == null) p.mp = p.maxMp;
     players[socket.id] = p;
+    levelRewards(p);
 
     const startPos = prev ? [prev.x, prev.z] : (row.pos_x != null ? [row.pos_x, row.pos_z] : null);
     socket.emit('welcome', {
@@ -188,7 +255,7 @@ function createWorld(io) {
     });
     moveToZone(p, p.mapId, startPos);
     sendInv(p);
-    sendHp(p);
+    sendHp(p); sendMp(p); sendSkills(p); sendQuests(p); sendBuffs(p);
 
     socket.on('move', (m) => {
       if (!m || p.dead) return;
@@ -197,7 +264,7 @@ function createWorld(io) {
       const now = Date.now();
       const dt = Math.max(0.05, (now - p.lastMove) / 1000);
       const d = Math.hypot(nx - p.x, nz - p.z);
-      const maxD = R.BASE_SPEED * (R.classOf(p).speed || 1) * 1.4 * dt + 1;   // hız hilesi koruması
+      const maxD = R.BASE_SPEED * R.speedMul(p) * 1.4 * dt + 1;   // hız hilesi koruması
       if (d > maxD) {
         const k = maxD / d;
         p.x += (nx - p.x) * k; p.z += (nz - p.z) * k;
@@ -205,15 +272,19 @@ function createWorld(io) {
       } else { p.x = nx; p.z = nz; }
       p.x = clamp(p.x, Zone.BOUNDS.min, Zone.BOUNDS.max); p.z = clamp(p.z, Zone.BOUNDS.min, Zone.BOUNDS.max);
       p.ry = Number(m.ry) || 0;
+      if (isFinite(Number(m.f))) p.facing = Number(m.f);
       p.moving = !!m.moving;
       p.lastMove = now;
+      if (p.fish && p.moving) { p.fish = null; socket.emit('fishEnd', { ok: false, msg: 'Hareket ettin, olta toplandı.' }); }
     });
 
     socket.on('attack', () => {
       if (p.dead || !p.zone) return;
       const now = Date.now();
-      const cd = p.class === 'ninja' ? 400 : 480;
+      const cd = R.attackCooldown(p);
       if (now - p.lastAttack < cd) return;
+      if (p.zone.def.safe) return;
+      setMounted(p, false);
       p.combo = now - p.lastAttack < 1200 ? (p.combo + 1) % 3 : 0;
       p.lastAttack = now;
       p.zone.attack(p, p.combo);
@@ -270,20 +341,178 @@ function createWorld(io) {
       sendInv(p);
     });
 
-    socket.on('usePotion', (key) => {
-      if (p.dead) return;
-      const now = Date.now();
-      if (now - p.lastPotion < 800) return;
-      // istenen iksir yoksa elindeki ilk kırmızı iksiri kullan (küçükten büyüğe)
-      const order = ['p_hp1', 'p_hp2', 'p_hp3', 'p_hp4'];
-      const it = p.inventory.find((i) => i.key === key) || order.map((k) => p.inventory.find((i) => i.key === k)).find(Boolean);
-      if (!it) { notice(p, 'İksirin kalmadı. Köydeki marketten alabilirsin.'); return; }
-      if (p.hp >= p.maxHp) { notice(p, 'Canın zaten dolu.'); return; }
-      p.lastPotion = now;
+    // hızlı iksir butonları: kind = 'hp' ya da 'mp'
+    const POTS = { hp: ['p_hp1', 'p_hp2', 'p_hp3', 'p_hp4'], mp: ['p_mp1', 'p_mp2', 'p_mp3', 'p_mp4'] };
+    socket.on('usePotion', (kind) => {
+      const order = POTS[kind === 'mp' ? 'mp' : 'hp'];
+      const it = order.map((k) => p.inventory.find((i) => i.key === k)).find(Boolean);
+      if (!it) { notice(p, kind === 'mp' ? 'Mavi iksirin kalmadı.' : 'Kırmızı iksirin kalmadı. Köydeki marketten alabilirsin.'); return; }
+      useItem(it);
+    });
+    socket.on('useItem', (uid) => {
+      const it = p.inventory.find((i) => i.uid === Number(uid));
+      if (it) useItem(it);
+    });
+    function consume(it) {
       it.n = (it.n || 1) - 1;
       if (it.n <= 0) p.inventory.splice(p.inventory.indexOf(it), 1);
-      hooks.heal(p, R.ITEMS[it.key].heal);
+    }
+    function useItem(it) {
+      if (p.dead) return;
+      const def = R.ITEMS[it.key];
+      if (!def) return;
+      const now = Date.now();
+      if (def.slot === 'potion') {
+        if (now - p.lastPotion < 600) return;
+        if (def.heal && p.hp >= p.maxHp) { notice(p, 'Canın zaten dolu.'); return; }
+        if (def.mana && p.mp >= p.maxMp) { notice(p, 'Manan zaten dolu.'); return; }
+        p.lastPotion = now;
+        consume(it);
+        if (def.heal) hooks.heal(p, def.heal);
+        if (def.mana) { p.mp = Math.min(p.maxMp, p.mp + def.mana); sendMp(p); }
+        if (def.buff) { addBuff(p, def.buff.stat, def.buff.value, def.buff.dur, def.name); notice(p, `${def.name}: ${def.desc}`); }
+        sendInv(p);
+        return;
+      }
+      if (it.key === 'istiridye') {
+        consume(it);
+        if (Math.random() < 0.12) {
+          const pearl = roll(PEARLS);
+          addItem(p, pearl, 1);
+          notice(p, `İstiridyeden ${R.ITEMS[pearl].name} çıktı!`);
+          if (p.zone) p.zone.emit('announce', `${p.name} bir ${R.ITEMS[pearl].name} buldu!`);
+        } else notice(p, 'İstiridye boş çıktı.');
+        sendInv(p);
+        return;
+      }
+      if (it.key === 'at_muhru') {
+        if (p.zone && p.zone.def.safe && !p.mounted) { notice(p, 'Burada ata binemezsin.'); return; }
+        setMounted(p, !p.mounted);
+        notice(p, p.mounted ? 'Atına bindin.' : 'Atından indin.');
+        return;
+      }
+      if (it.key === 'olta' || it.key === 'yem') { notice(p, 'Balık tutmak için Gümüş Göl kıyısına git.'); return; }
+      if (it.key === 'efsun') { notice(p, 'Efsunlamak istediğin ekipmana dokun ve "Efsunla"ya bas.'); return; }
+    }
+
+    // efsun nesnesi: ekipmana efsun ekle (5 doluysa hepsini yeniden belirle)
+    socket.on('enchant', (data) => {
+      const ef = p.inventory.find((i) => i.key === 'efsun');
+      if (!ef) { notice(p, 'Efsun nesnen yok.'); return; }
+      let target = null;
+      if (data && data.slot && R.EQUIP_SLOTS.includes(data.slot)) target = p.equip[data.slot];
+      else if (data && data.uid != null) target = p.inventory.find((i) => i.uid === Number(data.uid));
+      const def = target && R.ITEMS[target.key];
+      if (!def || !R.EQUIP_SLOTS.includes(def.slot)) { notice(p, 'Sadece ekipmanlar efsunlanabilir.'); return; }
+      const types = Object.keys(R.BONUS_TYPES);
+      target.bon = target.bon || [];
+      if (target.bon.length >= 5) {
+        const pick = types.sort(() => Math.random() - 0.5).slice(0, 5);
+        target.bon = pick.map((t) => [t, R.rollBonus(t, def.tier)]);
+        notice(p, `${def.name} efsunları yeniden belirlendi.`);
+      } else {
+        const free = types.filter((t) => !target.bon.some((b) => b[0] === t));
+        const t = free[Math.floor(Math.random() * free.length)];
+        const v = R.rollBonus(t, def.tier);
+        target.bon.push([t, v]);
+        const b = R.BONUS_TYPES[t];
+        notice(p, `Yeni efsun: ${b.name} +${v}${b.unit}`);
+      }
+      consume(ef);
+      recalc(p); sendInv(p); sendHp(p); sendMp(p);
+    });
+
+    // ---------- beceriler ----------
+    socket.on('skillUp', (key) => {
+      const sk = R.skillsOf(p).find((s) => s.key === key);
+      if (!sk) return;
+      if (p.level < R.SKILL_UNLOCK) { notice(p, `Beceriler ${R.SKILL_UNLOCK}. seviyede açılır.`); return; }
+      if (R.skillPoints(p) <= 0) { notice(p, 'Beceri puanın yok. Seviye atladıkça puan kazanırsın.'); return; }
+      const lv = p.skills[key] || 0;
+      if (lv >= R.SKILL_MAX) { notice(p, 'Bu beceri en yüksek seviyede.'); return; }
+      p.skills[key] = lv + 1;
+      sendSkills(p);
+    });
+    socket.on('skill', (data) => {
+      const key = data && data.key;
+      const sk = R.skillsOf(p).find((s) => s.key === key);
+      if (!sk || p.dead || !p.zone) return;
+      if (p.zone.def.safe) { notice(p, 'Burada beceri kullanılamaz.'); return; }
+      const lv = p.skills[key] || 0;
+      if (!lv) { notice(p, `${sk.name} henüz öğrenilmedi. Beceri penceresinden puan ver.`); return; }
+      const now = Date.now();
+      if (now < (p.skillCd[key] || 0)) return;
+      const cost = sk.mp + sk.mpLv * (lv - 1);
+      if (p.mp < cost) { notice(p, 'Yeterli manan yok.'); return; }
+      if (isFinite(Number(data.f))) p.facing = Number(data.f);
+      setMounted(p, false);
+      p.mp -= cost; sendMp(p);
+      p.skillCd[key] = now + sk.cd * 1000;
+      let targets = [];
+      if (sk.target === 'self' || sk.target === 'heal') {
+        const radius = sk.radius || 0;
+        const group = radius ? [...p.zone.players.values()].filter((o) => !o.dead && Math.hypot(o.x - p.x, o.z - p.z) <= radius) : [p];
+        if (sk.buff) {
+          const value = Math.round(sk.buff.base + sk.buff.perLv * (lv - 1));
+          for (const o of group) {
+            addBuff(o, sk.buff.stat, value, sk.buff.dur, sk.name);
+            for (const [st, v] of Object.entries(sk.buff.extra || {})) addBuff(o, st, v, sk.buff.dur, sk.name);
+          }
+        }
+        if (sk.heal) {
+          const amount = Math.round(sk.heal.base + sk.heal.perLv * (lv - 1) + sk.heal.perLevel * p.level);
+          for (const o of group) hooks.heal(o, amount);
+        }
+        targets = group.map((o) => o.id);
+      } else {
+        targets = p.zone.useSkill(p, sk, lv);
+      }
+      p.zone.emit('skillFx', { id: p.id, key, targets, x: p.x, z: p.z });
+      socket.emit('skillCd', { key, until: sk.cd });
+    });
+
+    // ---------- balık tutma ----------
+    socket.on('fishCast', () => {
+      const z = p.zone;
+      if (!z || !z.def.fishing || p.dead) { notice(p, 'Balık sadece Gümüş Göl\'de tutulur.'); return; }
+      if (!p.inventory.some((i) => i.key === 'olta')) { notice(p, 'Oltan yok. 30. seviyede oltanı alırsın.'); return; }
+      const lake = z.def.lake;
+      const d = Math.hypot(p.x - lake.x, p.z - lake.z);
+      if (d > lake.r + 4 || d < lake.r - 2.5) { notice(p, 'Gölün kıyısına git.'); return; }
+      const yem = p.inventory.find((i) => i.key === 'yem');
+      if (!yem) { notice(p, 'Yemin bitti. Balıkçıdan yem alabilirsin.'); return; }
+      if (p.fish) return;
+      consume(yem); sendInv(p);
+      p.fish = { biteAt: Date.now() + 3000 + Math.random() * 5000, bitten: false };
+      socket.emit('fishWait');
+      z.emit('fishing', { id: p.id, on: true });
+    });
+    socket.on('fishPull', () => {
+      const f = p.fish; if (!f) return;
+      p.fish = null;
+      if (p.zone) p.zone.emit('fishing', { id: p.id, on: false });
+      const now = Date.now();
+      if (!f.bitten || now > f.biteAt + 1800) { socket.emit('fishEnd', { ok: false, msg: f.bitten ? 'Geç kaldın, balık kaçtı.' : 'Erken çektin, balık kaçtı.' }); return; }
+      const key = roll(FISH_TABLE);
+      if (!addItem(p, key, 1)) { socket.emit('fishEnd', { ok: false, msg: 'Envanterin dolu!' }); return; }
       sendInv(p);
+      socket.emit('fishEnd', { ok: true, msg: `${R.ITEMS[key].name} tuttun!`, key });
+    });
+
+    // ---------- at görevi ----------
+    socket.on('quest', (act) => {
+      const q = p.quests;
+      if (!p.zone || !p.zone.def.village) return;
+      if (act === 'accept' && q.horse === 'available') {
+        q.horse = 'active'; q.horseKills = 0;
+        notice(p, `Görev: Kızılçam Köyü çevresindeki ${HORSE_QUEST.count} Vahşi Kurt'u yen.`);
+      } else if (act === 'claim' && q.horse === 'ready') {
+        if (!addItem(p, 'at_muhru', 1)) { notice(p, 'Envanterinde yer aç.'); return; }
+        q.horse = 'done';
+        notice(p, 'At Mührü\'nü aldın! Envanterden kullanarak atına binebilirsin.');
+        sendInv(p);
+      }
+      sendQuests(p);
     });
 
     socket.on('buy', (data) => {
@@ -330,7 +559,7 @@ function createWorld(io) {
     // köylerdeki ışınlayıcı
     socket.on('teleport', (to) => {
       const z = p.zone; if (!z || p.dead) return;
-      if (!z.def.village) { notice(p, 'Işınlayıcı sadece köylerde var.'); return; }
+      if (!z.def.village && !z.def.fishing) { notice(p, 'Işınlayıcı sadece köylerde var.'); return; }
       const target = R.MAPS[Number(to)];
       if (!target || target.id === z.id) return;
       if (p.level < target.minLevel) { notice(p, `${target.name} için en az ${target.minLevel}. seviye olmalısın.`); return; }
@@ -340,7 +569,7 @@ function createWorld(io) {
     socket.on('respawn', () => {
       if (!p.dead) return;
       p.dead = false;
-      p.hp = p.maxHp;
+      p.hp = p.maxHp; p.mp = p.maxMp; p.mounted = false; sendMp(p);
       moveToZone(p, villageFor(p.zone ? p.zone.id : 0));
       sendHp(p);
     });
@@ -367,6 +596,32 @@ function createWorld(io) {
     for (const z of zones) z.tick(dt);
   }, 100);
   setInterval(() => { for (const p of Object.values(players)) save(p); }, 20000);
+  // her saniye: mana yenilenmesi, biten güçlendirmeler
+  setInterval(() => {
+    const now = Date.now();
+    for (const p of Object.values(players)) {
+      if (p.dead) continue;
+      if (p.mp < p.maxMp) {
+        const rate = now - (p.lastHurt || 0) > 5000 ? 0.04 : 0.015;
+        p.mp = Math.min(p.maxMp, p.mp + Math.max(1, Math.round(p.maxMp * rate)));
+        sendMp(p);
+      }
+      let expired = false;
+      for (const [stat, b] of Object.entries(p.buffs)) if (b.until <= now) { delete p.buffs[stat]; expired = true; }
+      if (expired) { recalc(p); sendInv(p); sendBuffs(p); sendHp(p); sendMp(p); }
+    }
+  }, 1000);
+  // balık oltaya geldi mi?
+  setInterval(() => {
+    const now = Date.now();
+    for (const p of Object.values(players)) {
+      if (p.fish && !p.fish.bitten && now >= p.fish.biteAt) { p.fish.bitten = true; p.socket.emit('fishBite'); }
+      if (p.fish && p.fish.bitten && now > p.fish.biteAt + 1800) {
+        p.fish = null; p.socket.emit('fishEnd', { ok: false, msg: 'Geç kaldın, balık kaçtı.' });
+        if (p.zone) p.zone.emit('fishing', { id: p.id, on: false });
+      }
+    }
+  }, 100);
 
   return {
     async saveAll() { await Promise.all(Object.values(players).map(save)); },

@@ -216,6 +216,7 @@ export function buildMob(def, humanoidFactory) {
     case 'wolf': v = quad(col, { len: 1.2, h: 0.55, w: 0.42, legH: 0.5, ears: true, snout: 0.38, eyes: '#ffd23f', tail: 0.6 }); break;
     case 'boar': v = quad(col, { len: 1.1, h: 0.65, w: 0.55, legH: 0.32, tusks: true, snout: 0.25, tail: 0.15 }); break;
     case 'bear': v = quad(col, { len: 1.5, h: 0.9, w: 0.8, legH: 0.55, ears: true, snout: 0.3, tail: false }); break;
+    case 'horse': v = quad(col, { len: 1.7, h: 0.75, w: 0.55, legH: 1.0, ears: true, snout: 0.45, tail: 0.8, neck: true }); break;
     case 'dragon': v = quad(col, { len: 2.0, h: 0.8, w: 0.8, legH: 0.6, snout: 0.5, tail: 1.6, wings: true, neck: true, eyes: '#ffb347' }); break;
     case 'spider': v = spider(col, false); break;
     case 'scorpion': v = spider(col, true); break;

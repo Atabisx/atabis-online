@@ -4,7 +4,18 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 1 (bu sürüm)
+### Aşama 2 (bu sürüm)
+
+- **Beceriler:** her sınıfın 4 kendi becerisi var, 5. seviyede açılır. Her seviyede 1 beceri puanı; beceriler 1-17, sonra M1-M3'e kadar yükselir. Sol üstteki şimşek simgesi beceri penceresini açar; beceri butonları saldırı butonunun solunda.
+- **Mana (MP):** beceriler mana harcar; mana kendiliğinden dolar.
+- **İksirler:** kırmızı (can), mavi (mana), yeşil (5 dk saldırı hızı +%20), hız iksiri (5 dk hareket hızı +%25). Hepsi markette ucuz fiyata; boss'lardan da düşer.
+- **Efsun Nesnesi:** sadece metin taşlarından %15 ihtimalle düşer. Ekipmana rastgele efsun ekler (en fazla 5): maks. can/mana, saldırı, savunma, kritik, saldırı ve hareket hızı, canavarlara karşı güç, can çalma. 5 efsunlu eşyada hepsini yeniden belirler.
+- **At:** 25. seviyede köydeki Seyis'ten görev al (20 Vahşi Kurt), ödül At Mührü. Atlıyken %60 daha hızlısın.
+- **Balık tutma:** 30. seviyede olta ve 20 yem otomatik verilir. Işınlayıcıdan Gümüş Göl'e git, kıyıda "Olta at"a bas, buton "ÇEK!" olunca dokun. İstiridyeden nadiren inci çıkar.
+- Boss'lar köprünün ötesinde ve önce sen saldırmadıkça saldırmaz. Her haritada 5 metin taşı var.
+- Seviye atlama ışık efekti, oyuncuların başında can barı. İlk 25 seviye aynı hızda; sonrası giderek zorlaşır.
+
+### Aşama 1
 
 - **15 harita**, her biri bir seviye bölgesi: Atabis Köyü (Sv. 1) → Kızılçam Köyü (Sv. 15) → Sisli Orman (22) → Taş Vadisi (29) → Kuru Çöl (36) → Çöl Kervansarayı (43) → Kara Bataklık (50) → Karlı Dağlar (57) → Buz Mağarası (64) → Volkan Eteği (71) → Ejder Kalesi Kasabası (78) → Lanetli Harabeler (85) → İblis Kulesi (92) → Ejder Vadisi (99) → Kara Taht (106).
 - Haritalar kenarlarındaki **geçitlerle** birbirine bağlı; seviyen yetmezse geçemezsin. Köylerdeki **Işınlayıcı** ile açtığın haritalara doğrudan gidebilirsin.
@@ -16,7 +27,7 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 - 16 eşya kademesi (Acemi → İmparator) ve her kademenin **Efsanevi** sürümü (sadece boss'lardan düşer).
 - Kamera: tek parmakla sürükleyerek döndür, iki parmakla yakınlaştır.
 
-**Bilinen sınırlar:** Yaratıklar şimdilik kodla çizilmiş basit 3D şekiller (insansı olanlar asker modelinin boyanmış hali). Ayakkabı, bilezik ve küpe karakterin üstünde görünmüyor, sadece değerleri etkiliyor. Mana, sınıf yetenekleri, görevler, grup, lonca, ticaret ve PvP henüz yok.
+**Bilinen sınırlar:** Yaratıklar ve at kodla çizilmiş basit 3D şekiller; atın üstünde karakter ayakta duruyor (oturma animasyonu yok). Ayakkabı, bilezik ve küpe karakterin üstünde görünmüyor. Grup, lonca, ticaret ve PvP henüz yok.
 
 ### Aşama 0
 
@@ -51,6 +62,7 @@ shared/            sunucu ve istemcinin ortak verileri (tools/gen_data.py üreti
   items.json       eşyalar ve iksirler
   mobs.json        yaratıklar ve boss'lar
   maps.json        haritalar, dükkânlar, geçitler
+  skills.json      sınıf becerileri
 db/schema.sql      veritabanı tabloları
 scripts/update.sh  tek komutla güncelleme
 ```

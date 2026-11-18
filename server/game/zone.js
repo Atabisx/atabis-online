@@ -5,7 +5,8 @@ const R = require('./rules');
 const BOUNDS = { min: -15, max: 65 };
 const VILLAGE_CENTER = { x: 25, z: 25 };
 const LEASH = 28;                 // yaratık evinden bu kadar uzaklaşınca geri döner
-const BOSS_SPOTS = [[52, 52], [52, -2], [-2, 52], [48, 10]];
+// boss'lar köprünün ötesinde, köyden uzakta
+const BOSS_SPOTS = [[57, 52], [58, -4], [60, 38]];
 const STONE_SPOTS = [[40.5, 8], [55, 22.5], [52.5, 40], [7.5, 55], [-5, 10], [37.5, 52.5], [60, 5], [-7.5, 37.5]];
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -26,7 +27,7 @@ class Zone {
     this.alive = true;
     for (const sp of def.spawns) for (let i = 0; i < sp.count; i++) this.spawnMob(sp.mob, null);
     def.bosses.forEach((key, i) => this.spawnMob(key, BOSS_SPOTS[i % BOSS_SPOTS.length]));
-    for (let i = 0; i < 3; i++) this.spawnStone();
+    for (let i = 0; i < (def.stones ?? 5); i++) this.spawnStone();
   }
 
   emit(ev, data) { this.io.to(this.room).emit(ev, data); }
@@ -35,6 +36,7 @@ class Zone {
   safeFrom(x, z) {
     if (this.def.village && Math.hypot(x - VILLAGE_CENTER.x, z - VILLAGE_CENTER.z) < 22) return false;
     if (Math.hypot(x - this.def.spawn[0], z - this.def.spawn[1]) < 12) return false;
+    for (const b of BOSS_SPOTS) if (Math.hypot(x - b[0], z - b[1]) < 8) return false;
     for (const p of this.def.portals) if (Math.hypot(x - p.x, z - p.z) < 8) return false;
     return true;
   }
@@ -51,7 +53,7 @@ class Zone {
     const d = R.MOBS[key];
     const [x, z] = spot || this.randomSpot();
     const id = this.nextId++;
-    const m = { id, key, d, x, z, homeX: x, homeZ: z, hp: d.hp, max: d.hp, state: 'idle', target: null,
+    const m = { id, key, d, x, z, homeX: x, homeZ: z, hp: d.hp, max: d.hp, state: 'idle', target: null, dots: [],
                 nextWander: Date.now() + rand(1000, 5000), wx: x, wz: z, lastAttack: 0, ry: rand(0, 6.28),
                 moving: false, dmgBy: new Map(), spot };
     this.mobs.set(id, m);
@@ -136,14 +138,26 @@ class Zone {
     }
     this.emit('swing', { id: p.id, combo, target: best ? best.id : null });
     if (!best) return;
-    const { dmg, crit } = R.playerDamage(p, kind === 'mob' ? best.d.def : 0, combo);
+    const { dmg, crit, steal } = R.playerDamage(p, kind === 'mob' ? best.d.def : 0, combo);
+    if (steal) this.hooks.heal(p, Math.round(dmg * steal / 100));
+    if (kind === 'mob') this.damageMob(best, p, dmg, crit);
+    else this.damageStone(best, p, dmg, crit);
+  }
+
+  damageMob(m, p, dmg, crit) {
+    if (!this.mobs.has(m.id)) return;
+    m.hp = Math.max(0, m.hp - dmg);
+    this.emit('hit', { id: m.id, kind: 'mob', dmg, crit, hp: m.hp, by: p.id });
+    m.dmgBy.set(p.id, (m.dmgBy.get(p.id) || 0) + dmg);
+    if (m.state !== 'chase' && !p.dead) { m.state = 'chase'; m.target = p; }
+    if (m.hp <= 0) this.killMob(m);
+  }
+
+  damageStone(best, p, dmg, crit) {
+    if (!this.stones.has(best.id)) return;
     best.hp = Math.max(0, best.hp - dmg);
-    this.emit('hit', { id: best.id, kind, dmg, crit, hp: best.hp, by: p.id });
-    if (kind === 'mob') {
-      best.dmgBy.set(p.id, (best.dmgBy.get(p.id) || 0) + dmg);
-      if (best.state !== 'chase') { best.state = 'chase'; best.target = p; }
-      if (best.hp <= 0) this.killMob(best);
-    } else if (best.hp <= 0) {
+    this.emit('hit', { id: best.id, kind: 'stone', dmg, crit, hp: best.hp, by: p.id });
+    if (best.hp <= 0) {
       this.stones.delete(best.id);
       this.emit('stoneDown', { id: best.id, by: p.id, name: p.name, stoneName: best.name });
       const exp = Math.round((20 + best.lv * 9 + best.lv * best.lv * 0.35) * 5);
@@ -151,6 +165,7 @@ class Zone {
       const own = this.def.stoneDrops;
       const n = best.color === 'purple' ? 2 : 1;
       for (let i = 0; i < n; i++) if (Math.random() < 0.6) this.makeDrop(best.x, best.z, p.id, { key: own[Math.floor(Math.random() * own.length)] });
+      if (Math.random() < 0.15) this.makeDrop(best.x, best.z, p.id, { key: 'efsun', n: 1 });   // efsun nesnesi sadece taşlardan
       this.makeDrop(best.x, best.z, p.id, null, Math.round((50 + best.lv * 30) * (n + Math.random())));
       setTimeout(() => this.spawnStone(), 15000);
     }
@@ -163,11 +178,78 @@ class Zone {
     for (const [id, v] of m.dmgBy) if (v > top && this.players.has(id)) { top = v; ownerId = id; }
     const owner = ownerId ? this.players.get(ownerId) : null;
     this.emit('mobDie', { id: m.id, by: ownerId, name: owner ? owner.name : '', mobName: m.d.name, boss: m.d.boss });
-    if (owner) this.hooks.giveExp(owner, R.expGain(m.d.lv, owner.level, m.d.exp));
+    if (owner) { this.hooks.giveExp(owner, R.expGain(m.d.lv, owner.level, m.d.exp)); this.hooks.onMobKilled(owner, m); }
     this.rollLoot(m.x, m.z, ownerId, m.d.drops, m.d.potions, m.d.yang);
     const delay = (m.d.respawn || 12) * 1000;
     setTimeout(() => { if (this.alive) this.spawnMob(m.key, m.spot); }, delay);
     if (m.d.boss) this.hooks.announce(`${m.d.name} ${owner ? owner.name + ' tarafından ' : ''}yenildi! ${m.d.respawn || 120} saniye sonra geri dönecek.`, this);
+  }
+
+  // ---------- beceriler ----------
+  targetsAround(x, z, r) {
+    const list = [];
+    for (const m of this.mobs.values()) if (Math.hypot(m.x - x, m.z - z) - m.d.scale * 0.6 < r) list.push(['mob', m]);
+    for (const s of this.stones.values()) if (Math.hypot(s.x - x, s.z - z) - 1.2 < r) list.push(['stone', s]);
+    return list;
+  }
+  nearestTarget(p, range) {
+    let best = null, bd = Infinity;
+    for (const t of this.targetsAround(p.x, p.z, range)) {
+      const d = Math.hypot(t[1].x - p.x, t[1].z - p.z);
+      if (d < bd) { bd = d; best = t; }
+    }
+    return best;
+  }
+  // beceriyi uygula; vurulan hedeflerin listesini döndürür
+  useSkill(p, sk, lv) {
+    const mult = (sk.mult || 0) + (sk.multLv || 0) * (lv - 1);
+    let targets = [];
+    if (sk.target === 'aoe') targets = this.targetsAround(p.x, p.z, sk.radius);
+    else if (sk.target === 'front') {
+      const fx = Math.sin(p.facing || 0), fz = Math.cos(p.facing || 0);
+      targets = this.targetsAround(p.x, p.z, sk.radius).filter(([, t]) => {
+        const dx = t.x - p.x, dz = t.z - p.z, d = Math.hypot(dx, dz) || 1;
+        return (dx * fx + dz * fz) / d > 0.2;
+      });
+    } else if (sk.target === 'single') {
+      const t = this.nearestTarget(p, sk.range); if (t) targets = [t];
+      if (t && sk.splash) targets = targets.concat(this.targetsAround(t[1].x, t[1].z, sk.splash).filter((o) => o[1] !== t[1]));
+    } else if (sk.target === 'multi') {
+      targets = this.targetsAround(p.x, p.z, sk.range).sort((a, b) => Math.hypot(a[1].x - p.x, a[1].z - p.z) - Math.hypot(b[1].x - p.x, b[1].z - p.z)).slice(0, sk.count || 3);
+    } else if (sk.target === 'chain') {
+      const first = this.nearestTarget(p, sk.range);
+      if (first) {
+        const max = 3 + (lv >= 10 ? 1 : 0) + (lv >= 18 ? 1 : 0);
+        targets = [first];
+        let cur = first[1];
+        while (targets.length < max) {
+          const next = this.targetsAround(cur.x, cur.z, 7).filter((t) => !targets.some((o) => o[1] === t[1]))
+            .sort((a, b) => Math.hypot(a[1].x - cur.x, a[1].z - cur.z) - Math.hypot(b[1].x - cur.x, b[1].z - cur.z))[0];
+          if (!next) break;
+          targets.push(next); cur = next[1];
+        }
+      }
+    } else if (sk.target === 'dash') {
+      const fx = Math.sin(p.facing || 0), fz = Math.cos(p.facing || 0);
+      p.x = Math.max(BOUNDS.min, Math.min(BOUNDS.max, p.x + fx * sk.dist));
+      p.z = Math.max(BOUNDS.min, Math.min(BOUNDS.max, p.z + fz * sk.dist));
+      p.socket.emit('correct', { x: p.x, z: p.z });
+      targets = this.targetsAround(p.x, p.z, sk.radius);
+    }
+    for (const [kind, t] of targets) {
+      const { dmg, crit, steal } = R.playerDamage(p, kind === 'mob' ? t.d.def : 0, 0, mult, !!sk.crit);
+      const heal = Math.round(dmg * ((sk.lifesteal || 0) + (steal || 0) / 100));
+      if (heal) this.hooks.heal(p, heal);
+      if (kind === 'mob') {
+        if (sk.dot && this.mobs.has(t.id)) {
+          const per = Math.max(1, Math.round(dmg * ((sk.dot.mult || 0) + (sk.dot.multLv || 0) * (lv - 1)) / (crit ? 2 : 1)));
+          t.dots = t.dots.filter((d) => d.key !== sk.key);
+          t.dots.push({ key: sk.key, owner: p, per, until: Date.now() + sk.dot.sec * 1000, next: Date.now() + 1000 });
+        }
+        this.damageMob(t, p, dmg, crit);
+      } else this.damageStone(t, p, dmg, crit);
+    }
+    return targets.map(([, t]) => t.id);
   }
 
   // ---------- zaman adımı ----------
@@ -175,8 +257,19 @@ class Zone {
     const now = Date.now();
     const alivePlayers = [...this.players.values()].filter((p) => !p.dead);
     // haritada kimse yoksa yaratıklar bekler (işlemciyi boşa harcamaz)
-    if (this.players.size) for (const m of this.mobs.values()) {
+    if (this.players.size) for (const m of [...this.mobs.values()]) {
       const d = m.d;
+      // zehir / yanık hasarı
+      if (m.dots.length) {
+        for (const dot of m.dots) {
+          if (now >= dot.next && now <= dot.until + 50) {
+            dot.next += 1000;
+            if (dot.owner.zone === this) this.damageMob(m, dot.owner, dot.per, false);
+          }
+        }
+        m.dots = m.dots.filter((dot) => now <= dot.until);
+        if (!this.mobs.has(m.id)) continue;
+      }
       let tx = null, tz = null, speed = d.speed;
       // saldırgan yaratık yakındaki oyuncuyu fark eder
       if (m.state === 'idle' && d.aggro > 0) {

@@ -32,6 +32,7 @@ scene.add(sun, sun.target);
 
 // harita verisi (sunucuyla aynı dosya)
 let MAPS = [];
+let SKILLS = {};
 let currentMap = null, mapInfo = { portals: [], npcs: [] };
 
 
@@ -118,6 +119,7 @@ const itemsReady = Promise.all([
   fetch('/shared/classes.json').then((r) => r.json()).then((j) => { CLASSES = j; }),
   fetch('/shared/maps.json').then((r) => r.json()).then((j) => { MAPS = j; }),
   fetch('/shared/mobs.json').then((r) => r.json()).then((j) => { MOBS = j; }),
+  fetch('/shared/skills.json').then((r) => r.json()).then((j) => { SKILLS = j; }),
 ]).catch((e) => console.warn('Veri dosyaları yüklenemedi', e));
 const RARITY = ['#f4f1e8', '#7fb3ff', '#ffb347'];
 
@@ -345,10 +347,32 @@ function createPlayer(p) {
   obj.slash = slash;
   group.position.set(p.x, 0, p.z);
   scene.add(group);
-  obj.label = makeLabel(p.npc ? p.name : `${p.name} · Sv. ${obj.level}`, p.npc ? '#7be08f' : p.id === myId ? '#e8b54a' : '#8ec5ff', false);
+  obj.label = makeLabel(p.npc ? p.name : `${p.name} · Sv. ${obj.level}`, p.npc ? '#7be08f' : p.id === myId ? '#e8b54a' : '#8ec5ff', !p.npc);
+  if (obj.label.hp) { obj.label.hp.parentNode.classList.add('player'); obj.label.hp.style.width = (p.maxHp ? 100 * p.hp / p.maxHp : 100) + '%'; }
   players[p.id] = obj;
   applyLook(obj, p.look);
   return obj;
+}
+// at: binince karakterin altına at modeli gelir
+function setMount(p, on) {
+  p.mounted = on;
+  if (on && !p.horse) {
+    p.horse = buildMob({ shape: 'horse', color: '#6b4a2e', scale: 1 }, null);
+    p.group.add(p.horse.root);
+  }
+  if (p.horse) p.horse.root.visible = on;
+  if (p.model) p.model.parent.position.y = (calib ? -calib.minY / calib.k : 0) + (on ? 1.0 : 0);
+}
+// balık tutarken elde olta
+function setRod(p, on) {
+  if (p.rod) { p.rod.parent && p.rod.parent.remove(p.rod); p.rod = null; }
+  if (!on || !calib || !p.boneMap) return;
+  const bone = p.boneMap[calib.sword.bone]; if (!bone) return;
+  const g = new THREE.Group();
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.022, 2.4, 5), mat('#8a6440'));
+  pole.position.y = 1.0; g.add(pole);
+  g.position.copy(calib.sword.p); g.quaternion.copy(calib.sword.q); g.scale.multiply(calib.sword.s);
+  bone.add(g); p.rod = g;
 }
 function removePlayer(id) {
   const p = players[id]; if (!p) return;
@@ -574,7 +598,10 @@ function removeDrop(id) {
 const inv = { inventory: [], equip: {}, yang: 0, atk: 0, def: 0, maxHp: 0 };
 let myLevel = 1;
 let selected = null;   // {uid} veya {slot}
-const SLOT_NAMES = { weapon: 'Silah', armor: 'Zırh', helmet: 'Miğfer', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', potion: 'İksir' };
+const EQUIP = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring'];
+const BONUS_NAMES = { maxhp: ['Maks. Can', ''], maxmp: ['Maks. Mana', ''], atk: ['Saldırı', ''], def: ['Savunma', ''], crit: ['Kritik', '%'],
+  atkspeed: ['Saldırı Hızı', '%'], movespeed: ['Hareket Hızı', '%'], monster: ['Canavarlara Güç', '%'], hpsteal: ['Can Çalma', '%'] };
+const SLOT_NAMES = { weapon: 'Silah', armor: 'Zırh', helmet: 'Miğfer', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', potion: 'İksir', use: 'Kullanılır', fish: 'Balık', gem: 'Değerli taş' };
 const ICONS = {
   weapon: '<path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/>',
   armor: '<path d="M8 3 4 6v5l3 1v9h10v-9l3-1V6l-4-3-2 2h-4z"/>',
@@ -583,6 +610,9 @@ const ICONS = {
   bracelet: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="4"/>',
   earring: '<path d="M12 3v5"/><circle cx="12" cy="14" r="5"/>',
   potion: '<path d="M9 3h6"/><path d="M10 3v5L6 15a5 5 0 0 0 4.5 6h3A5 5 0 0 0 18 15l-4-7V3"/>',
+  use: '<path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/>',
+  fish: '<path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0z"/><path d="M18 12l3-3v6z"/>',
+  gem: '<circle cx="12" cy="12" r="6"/><circle cx="10" cy="10" r="1.5"/>',
 };
 function iconSvg(def, size = 26, slot) {
   const c = def ? (def.color === '#ffffff' ? '#d9cfb8' : def.color) : '#5a5e55';
@@ -592,6 +622,9 @@ function iconSvg(def, size = 26, slot) {
 function statText(def) {
   const parts = [];
   if (def.heal) parts.push(`+${def.heal} can`);
+  if (def.mana) parts.push(`+${def.mana} mana`);
+  if (def.buff) parts.push(def.desc);
+  if (def.slot === 'fish' || def.slot === 'gem') parts.push(`Satış: ${Math.floor(def.price * 0.25).toLocaleString('tr-TR')} Yang`);
   if (def.atk) parts.push(`Saldırı +${def.atk}`);
   if (def.def) parts.push(`Savunma +${def.def}`);
   if (def.hp) parts.push(`Can +${def.hp}`);
@@ -635,10 +668,15 @@ function renderDetail() {
   if (def.classes) cls = ' · ' + def.classes.map((c) => (CLASSES[c] || {}).name || c).join(', ');
   let buttons;
   if (equipped) buttons = '<button data-act="unequip">Çıkar</button>';
-  else if (def.slot === 'potion') buttons = '<button data-act="use">Kullan</button><button class="alt" data-act="drop">Yere at</button>';
+  else if (def.slot === 'potion' || def.slot === 'use') buttons = '<button data-act="use">Kullan</button><button class="alt" data-act="drop">Yere at</button>';
+  else if (def.slot === 'fish' || def.slot === 'gem') buttons = '<button class="alt" data-act="drop">Yere at</button>';
   else buttons = '<button data-act="equip">Giy</button><button class="alt" data-act="drop">Yere at</button>';
   detailEl.innerHTML = `<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(def.name)}${it.n > 1 ? ' x' + it.n : ''}</b><br>` +
-    `<span style="color:#c9c4b6">${SLOT_NAMES[def.slot] || ''} · ${statText(def)}</span> ${reqText(def)}<span style="color:#8b877c">${esc(cls)}</span></span>` + buttons;
+    `<span style="color:#c9c4b6">${SLOT_NAMES[def.slot] || ''} · ${statText(def)}</span> ${reqText(def)}<span style="color:#8b877c">${esc(cls)}</span>` +
+    (def.desc ? `<br><small style="color:#8b877c">${esc(def.desc)}</small>` : '') +
+    (it.bon && it.bon.length ? '<br>' + it.bon.map(([t, v]) => `<small style="color:#c86bff">${BONUS_NAMES[t] ? BONUS_NAMES[t][0] : t} +${v}${BONUS_NAMES[t] ? BONUS_NAMES[t][1] : ''}</small>`).join(' · ') : '') +
+    '</span>' + buttons +
+    (EQUIP.includes(def.slot) && inv.inventory.some((x) => x.key === 'efsun') ? '<button class="alt" data-act="enchant" style="color:#c86bff">Efsunla</button>' : '');
 }
 document.getElementById('invbtn').addEventListener('click', () => { selected = null; renderInv(); invEl.classList.add('open'); });
 document.getElementById('invclose').addEventListener('click', () => invEl.classList.remove('open'));
@@ -657,7 +695,8 @@ detailEl.addEventListener('click', (e) => {
   if (b.dataset.act === 'equip') socket.emit('equip', selected.uid);
   if (b.dataset.act === 'unequip') socket.emit('unequip', selected.slot);
   if (b.dataset.act === 'drop') socket.emit('dropItem', selected.uid);
-  if (b.dataset.act === 'use' && it) { socket.emit('usePotion', it.key); return; }
+  if (b.dataset.act === 'use' && it) { socket.emit('useItem', it.uid); return; }
+  if (b.dataset.act === 'enchant') { socket.emit('enchant', selected.slot ? { slot: selected.slot } : { uid: selected.uid }); return; }
   selected = null;
 });
 const toastEl = document.getElementById('toast');
@@ -680,7 +719,17 @@ function renderShop() {
   if (!shopKind || !currentMap) return;
   const shop = currentMap.shop;
   let html = '';
-  if (shopKind === 'teleport') {
+  if (shopKind === 'stable') {
+    const q = quests;
+    const st = q.horse;
+    let body;
+    if (!st && myLevel < 25) body = '<p class="muted">Ata binmek için önce 25. seviyeye ulaş. Sonra gel, sana bir görevim olacak.</p>';
+    else if (st === 'available' || (!st && myLevel >= 25)) body = '<p>Kızılçam Köyü\'nün çevresindeki <b>Vahşi Kurt</b>lar atlarımıza saldırıyor. <b>20</b> tanesini yen, sana kendi atını vereyim.</p><button class="btn" data-quest="accept">Görevi kabul et</button>';
+    else if (st === 'active') body = `<p>Vahşi Kurt: <b>${q.horseKills || 0} / 20</b></p><p class="muted">Kızılçam Köyü (Sv. 15) çevresinde bulabilirsin.</p>`;
+    else if (st === 'ready') body = '<p>Harika iş çıkardın! Atın seni bekliyor.</p><button class="btn" data-quest="claim">At Mührü\'nü al</button>';
+    else body = '<p>Atına iyi bak. Envanterindeki At Mührü ile binip inebilirsin. Atlıyken saldırırsan ya da beceri kullanırsan atından inersin.</p>';
+    html = `<div style="display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5">${body}</div>`;
+  } else if (shopKind === 'teleport') {
     for (const m of MAPS) {
       const here = m.id === currentMap.id, ok = myLevel >= m.minLevel;
       html += `<div class="srow"><span class="grow"><b>${esc(m.name)}</b>${m.village ? ' <small>(köy)</small>' : ''}<br><small style="color:${ok ? '#8b877c' : '#ff6a5a'}">Sv. ${m.minLevel}+</small></span>` +
@@ -708,11 +757,16 @@ function renderShop() {
   }
   shopList.innerHTML = html;
   document.getElementById('shopYang').textContent = `${inv.yang.toLocaleString('tr-TR')} Yang`;
-  document.getElementById('shopTabs').style.display = shopKind === 'teleport' ? 'none' : 'flex';
+  document.getElementById('shopTabs').style.display = shopKind === 'teleport' || shopKind === 'stable' ? 'none' : 'flex';
+  document.querySelectorAll('#shopTabs button').forEach((b) => {
+    const list = shop && shop[b.dataset.tab];
+    b.style.display = b.dataset.tab === 'sell' || (list && list.length) ? '' : 'none';
+  });
   document.querySelectorAll('#shopTabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === shopKind));
 }
 shopList.addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b || !socket) return;
+  if (b.dataset.quest) socket.emit('quest', b.dataset.quest);
   if (b.dataset.buy) socket.emit('buy', { key: b.dataset.buy, n: Number(b.dataset.n || 1) });
   if (b.dataset.sell) socket.emit('sell', Number(b.dataset.sell));
   if (b.dataset.tp) { socket.emit('teleport', Number(b.dataset.tp)); shopEl.classList.remove('open'); }
@@ -734,8 +788,100 @@ function updatePotionButton() {
   const n = inv.inventory.filter((i) => i.key && i.key.startsWith('p_hp')).reduce((a, i) => a + (i.n || 1), 0);
   document.getElementById('potCount').textContent = n;
   potBtn.classList.toggle('empty', n === 0);
+  const m = inv.inventory.filter((i) => i.key && i.key.startsWith('p_mp')).reduce((a, i) => a + (i.n || 1), 0);
+  document.getElementById('mpCount').textContent = m;
+  document.getElementById('mpBtn').classList.toggle('empty', m === 0);
+  if (typeof updateToolButtons === 'function') updateToolButtons();
 }
-potBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); if (socket) socket.emit('usePotion'); });
+potBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); if (socket) socket.emit('usePotion', 'hp'); });
+const mpBtn = document.getElementById('mpBtn');
+mpBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); if (socket) socket.emit('usePotion', 'mp'); });
+const mpBarEl = document.getElementById('mpbar'), mpTextEl = document.getElementById('mptext');
+function setMp(mp, max) {
+  mpBarEl.style.width = Math.max(0, Math.min(100, 100 * mp / max)) + '%';
+  mpTextEl.textContent = `${mp} / ${max}`;
+  myMp = mp;
+}
+let myMp = 0;
+let quests = {};
+// güçlendirme göstergesi
+const buffsEl = document.getElementById('buffs');
+let buffList = {}, buffAt = 0;
+const BUFF_NAMES = { atk: 'Saldırı', def: 'Savunma', atkspeed: 'Saldırı hızı', movespeed: 'Hareket hızı', crit: 'Kritik' };
+function renderBuffs() {
+  const passed = (performance.now() - buffAt) / 1000;
+  buffsEl.innerHTML = Object.entries(buffList).map(([stat, b]) => {
+    const left = Math.max(0, Math.round(b.left - passed));
+    return left > 0 ? `<span>${BUFF_NAMES[stat] || stat} +${b.value}${stat === 'atk' || stat === 'def' ? '' : '%'} · ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}</span>` : '';
+  }).join('');
+}
+setInterval(renderBuffs, 1000);
+
+// ---------- beceriler ----------
+const skillbarEl = document.getElementById('skillbar'), skillwinEl = document.getElementById('skillwin');
+let skillState = { levels: {}, points: 0, unlock: 5 };
+const skillCdUntil = {};
+const skLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
+function mySkills() { return SKILLS[myClass] || []; }
+function renderSkillbar() {
+  skillbarEl.innerHTML = mySkills().map((sk, i) => {
+    const lv = skillState.levels[sk.key] || 0;
+    const short = sk.name.split(' ').map((w) => w[0]).join('').slice(0, 2);
+    return `<button class="skb${lv ? '' : ' locked'}" data-sk="${sk.key}" aria-label="${esc(sk.name)}" style="border-color:${sk.color}"><span style="color:${sk.color}">${esc(short)}</span><span class="cd" id="cd_${sk.key}"></span><span class="lv">${lv ? skLabel(lv) : ''}</span></button>`;
+  }).join('');
+  const pts = document.getElementById('skillPts');
+  pts.textContent = skillState.points; pts.style.display = skillState.points > 0 && myLevel >= skillState.unlock ? '' : 'none';
+}
+function renderSkillWin() {
+  document.getElementById('skillPtsText').textContent = myLevel < skillState.unlock ? `${skillState.unlock}. seviyede açılır` : `Puan: ${skillState.points}`;
+  document.getElementById('skillList').innerHTML = mySkills().map((sk) => {
+    const lv = skillState.levels[sk.key] || 0;
+    const mp = sk.mp + sk.mpLv * Math.max(0, lv - 1);
+    const can = myLevel >= skillState.unlock && skillState.points > 0 && lv < 20;
+    return `<div class="sk-row"><span class="badge" style="color:${sk.color}">${lv ? skLabel(lv) : '–'}</span><span class="grow"><b>${esc(sk.name)}</b><br><small>${esc(sk.desc)}</small><br><small>Mana ${mp} · Bekleme ${sk.cd} sn</small></span><button data-up="${sk.key}" ${can ? '' : 'disabled'} aria-label="${esc(sk.name)} seviyesini artır">+</button></div>`;
+  }).join('');
+}
+skillbarEl.addEventListener('pointerdown', (e) => {
+  const b = e.target.closest('[data-sk]'); if (!b) return;
+  e.preventDefault();
+  useSkill(b.dataset.sk);
+});
+document.getElementById('skillBtn').addEventListener('click', () => { renderSkillWin(); skillwinEl.classList.add('open'); });
+document.getElementById('skillClose').addEventListener('click', () => skillwinEl.classList.remove('open'));
+document.getElementById('skillList').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-up]'); if (b && socket) socket.emit('skillUp', b.dataset.up);
+});
+function updateSkillCooldowns() {
+  const now = performance.now();
+  for (const sk of mySkills()) {
+    const el = document.getElementById('cd_' + sk.key); if (!el) continue;
+    const c = skillCdUntil[sk.key];
+    el.style.height = c && c.until > now ? (100 * (c.until - now) / c.total) + '%' : '0';
+  }
+}
+
+// ---------- at ve balık butonları ----------
+const mountBtn = document.getElementById('mountBtn'), fishBtn = document.getElementById('fishBtn');
+mountBtn.addEventListener('click', () => {
+  const it = inv.inventory.find((i) => i.key === 'at_muhru');
+  if (it && socket) socket.emit('useItem', it.uid);
+});
+let fishState = 'idle';
+fishBtn.addEventListener('pointerdown', (e) => {
+  e.preventDefault(); if (!socket) return;
+  if (fishState === 'idle') socket.emit('fishCast');
+  else if (fishState === 'bite' || fishState === 'wait') socket.emit('fishPull');
+});
+function setFishState(st) {
+  fishState = st;
+  fishBtn.classList.toggle('bite', st === 'bite');
+  fishBtn.textContent = st === 'idle' ? 'Olta at' : st === 'wait' ? 'Bekle…' : 'ÇEK!';
+}
+function updateToolButtons() {
+  mountBtn.style.display = inv.inventory.some((i) => i.key === 'at_muhru') ? 'flex' : 'none';
+  mountBtn.classList.toggle('on', !!inv.mounted);
+  fishBtn.style.display = currentMap && currentMap.fishing && inv.inventory.some((i) => i.key === 'olta') ? 'block' : 'none';
+}
 const talkBtn = document.getElementById('talkBtn');
 let nearAction = null;
 talkBtn.addEventListener('click', () => { if (nearAction) nearAction.run(); });
@@ -817,12 +963,12 @@ let socket = null;
 let lastSent = 0, lastMoving = false, lastAttackSent = 0;
 let myClass = 'savasci', amDead = false;
 const CLASS_RANGE = () => (CLASSES[myClass] && CLASSES[myClass].range) || ATTACK_RANGE;
-const CLASS_SPEED = () => (CLASSES[myClass] && CLASSES[myClass].speed) || 1;
+const CLASS_SPEED = () => inv.speed || (CLASSES[myClass] && CLASSES[myClass].speed) || 1;
 
 function attack() {
   const me = players[myId]; if (!me || !socket || amDead) return;
   const now = performance.now();
-  if (now - lastAttackSent < (myClass === 'ninja' ? 420 : 500)) return;
+  if (now - lastAttackSent < (inv.atkCd || (myClass === 'ninja' ? 400 : 480)) + 20) return;
   lastAttackSent = now;
   // en yakın hedefe dön (yaratık ya da taş)
   let best = null, bestD = CLASS_RANGE() + 1.5;
@@ -837,6 +983,75 @@ function attack() {
   }
   if (best) me.ry = Math.atan2(best.x - pos.x, best.z - pos.z) + FACE_OFFSET;
   socket.emit('attack');
+}
+// beceri kullan: önce en yakın hedefe dön
+function useSkill(key) {
+  const me = players[myId]; if (!me || !socket || amDead) return;
+  const sk = mySkills().find((x) => x.key === key); if (!sk) return;
+  const lv = skillState.levels[key] || 0;
+  if (!lv) { toast(myLevel < skillState.unlock ? `Beceriler ${skillState.unlock}. seviyede açılır.` : 'Bu beceriyi önce beceri penceresinden öğren.'); return; }
+  const c = skillCdUntil[key];
+  if (c && c.until > performance.now()) return;
+  const pos = me.group.position;
+  if (sk.target !== 'self' && sk.target !== 'heal') {
+    let best = null, bestD = (sk.range || sk.radius || 6) + 2;
+    for (const m of Object.values(mobs)) {
+      const p = m.v.root.position, d = Math.hypot(p.x - pos.x, p.z - pos.z);
+      if (d < bestD) { best = p; bestD = d; }
+    }
+    for (const st of Object.values(stones)) { const d = Math.hypot(st.x - pos.x, st.z - pos.z); if (d < bestD) { best = st; bestD = d; } }
+    if (best) me.ry = Math.atan2(best.x - pos.x, best.z - pos.z) + FACE_OFFSET;
+  }
+  socket.emit('skill', { key, f: me.ry - FACE_OFFSET });
+}
+
+// ---------- görsel efektler ----------
+const effects = [];
+function ringFx(x, z, r, color, dur = 0.5, y = 0.15) {
+  const m = new THREE.Mesh(new THREE.RingGeometry(0.6, 1, 40), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.position.set(x, y, z);
+  scene.add(m);
+  effects.push({ m, t: 0, dur, update(k) { const s = 0.3 + k * r; m.scale.set(s, s, s); m.material.opacity = 0.85 * (1 - k); } });
+}
+function beamFx(x, z, color, dur = 1.2, h = 6) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.2, h, 16, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false }));
+  m.position.set(x, h / 2, z);
+  scene.add(m);
+  effects.push({ m, t: 0, dur, update(k) { m.material.opacity = 0.5 * (1 - k); m.scale.set(1 + k * 0.4, 0.3 + k, 1 + k * 0.4); m.position.y = h / 2 * (0.3 + k); } });
+}
+function boltFx(from, to, color, dur = 0.35) {
+  const a = new THREE.Vector3(from.x, 1.5, from.z), b = new THREE.Vector3(to.x, 1.5, to.z);
+  const len = Math.max(0.1, Math.hypot(b.x - a.x, b.z - a.z));
+  const m = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, len), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 }));
+  m.position.set((a.x + b.x) / 2, 1.5, (a.z + b.z) / 2);
+  m.rotation.y = Math.atan2(b.x - a.x, b.z - a.z);
+  scene.add(m);
+  effects.push({ m, t: 0, dur, update(k) { m.material.opacity = 0.9 * (1 - k); } });
+}
+function updateEffects(dt) {
+  for (let i = effects.length - 1; i >= 0; i--) {
+    const e = effects[i];
+    e.t += dt;
+    const k = Math.min(1, e.t / e.dur);
+    e.update(k);
+    if (k >= 1) { scene.remove(e.m); e.m.geometry.dispose(); e.m.material.dispose(); effects.splice(i, 1); }
+  }
+}
+function levelUpFx(p) {
+  const { x, z } = p.group.position;
+  beamFx(x, z, '#ffd23f', 1.6, 7);
+  ringFx(x, z, 4, '#ffd23f', 0.9);
+  setTimeout(() => ringFx(p.group.position.x, p.group.position.z, 5, '#fff1b8', 0.9), 250);
+}
+function skillDef(key) {
+  for (const list of Object.values(SKILLS)) for (const sk of list) if (sk.key === key) return sk;
+  return null;
+}
+function targetPos(id) {
+  if (mobs[id]) return mobs[id].v.root.position;
+  if (stones[id]) return stones[id];
+  if (players[id]) return players[id].group.position;
+  return null;
 }
 let alertBox = (msg) => toast(msg);
 
@@ -860,7 +1075,7 @@ function enterMap(data) {
       look: { weapon: null, armor: n.kind === 'armor' ? 'armor3' : n.kind === 'weapons' ? 'armor1' : null, helmet: null } });
     npc.ry = FACE_OFFSET; npc.group.rotation.y = FACE_OFFSET; npc.npcKind = n.kind;
   }
-  for (const p of Object.values(data.players)) createPlayer(p);
+  for (const p of Object.values(data.players)) { const o = createPlayer(p); if (p.mounted) setMount(o, true); }
   for (const m of data.mobs) createMob(m);
   for (const s of data.stones) createStone(s);
   for (const d of data.drops) createDrop(d);
@@ -892,7 +1107,7 @@ export function startGame(sock, opts = {}) {
     setStats(data.stats.level, data.stats.exp, data.stats.need);
     if (opts.onWelcome) opts.onWelcome();
   });
-  socket.on('mapChange', (data) => { amDead = false; deadEl.classList.remove('open'); enterMap(data); });
+  socket.on('mapChange', (data) => { amDead = false; deadEl.classList.remove('open'); setFishState('idle'); enterMap(data); updateToolButtons(); renderSkillbar(); });
   socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (shopKind) renderShop(); });
   socket.on('hp', ({ hp, max }) => setHp(hp, max));
   socket.on('stats', ({ level, exp, need, up }) => {
@@ -904,9 +1119,31 @@ export function startGame(sock, opts = {}) {
   socket.on('notice', (t) => toast(t));
   socket.on('announce', (t) => { toast(t); log(`<b style="color:#ffb347">Duyuru:</b> ${esc(t)}`); });
   socket.on('look', ({ id, look }) => { const p = players[id]; if (p) applyLook(p, look); });
-  socket.on('playerJoin', (p) => { createPlayer(p); log(`<b>${esc(p.name)}</b> haritaya geldi.`); });
+  socket.on('mp', ({ mp, max }) => setMp(mp, max));
+  socket.on('skills', (data) => { skillState = data; renderSkillbar(); if (skillwinEl.classList.contains('open')) renderSkillWin(); });
+  socket.on('skillCd', ({ key, until }) => { skillCdUntil[key] = { until: performance.now() + until * 1000, total: until * 1000 }; });
+  socket.on('buffs', (list) => { buffList = list; buffAt = performance.now(); renderBuffs(); });
+  socket.on('quests', (q) => { quests = q; if (shopKind === 'stable') renderShop(); });
+  socket.on('mount', ({ id, on }) => { const p = players[id]; if (p) setMount(p, on); });
+  socket.on('fishing', ({ id, on }) => { const p = players[id]; if (p) setRod(p, on); });
+  socket.on('fishWait', () => setFishState('wait'));
+  socket.on('fishBite', () => { setFishState('bite'); if (navigator.vibrate) navigator.vibrate(150); });
+  socket.on('fishEnd', ({ ok, msg }) => { setFishState('idle'); toast(msg); });
+  socket.on('playerHp', ({ id, hp, max }) => { const p = players[id]; if (p && p.label.hp) p.label.hp.style.width = Math.max(0, 100 * hp / max) + '%'; });
+  socket.on('skillFx', ({ id, key, targets, x, z }) => {
+    const sk = skillDef(key); if (!sk) return;
+    const p = players[id];
+    if (p && sk.combo != null) { p.swingT = SWING_T; p.combo = sk.combo; if (p.cls !== 'okcu') p.slashT = 0.3; }
+    if (p && sk.target === 'dash') { /* konum 'correct' ile gelir */ }
+    const from = p ? p.group.position : { x, z };
+    if (sk.target === 'aoe' || sk.target === 'front' || sk.target === 'dash') ringFx(sk.target === 'dash' ? from.x : x, sk.target === 'dash' ? from.z : z, sk.radius, sk.color, 0.5);
+    if (sk.target === 'single' || sk.target === 'multi') for (const t of targets) { const tp = targetPos(t); if (tp) { boltFx(from, tp, sk.color); ringFx(tp.x, tp.z, sk.splash || 1.5, sk.color, 0.4); } }
+    if (sk.target === 'chain') { let prev = from; for (const t of targets) { const tp = targetPos(t); if (tp) { boltFx(prev, tp, sk.color, 0.45); prev = tp; } } }
+    if (sk.target === 'self' || sk.target === 'heal') for (const t of targets) { const tp = targetPos(t); if (tp) beamFx(tp.x, tp.z, sk.color, 1.0, 4); }
+  });
+  socket.on('playerJoin', (p) => { const o = createPlayer(p); if (p.mounted) setMount(o, true); log(`<b>${esc(p.name)}</b> haritaya geldi.`); });
   socket.on('playerLeave', ({ id }) => removePlayer(id));
-  socket.on('playerLevel', ({ id, level }) => { const p = players[id]; if (p) { p.level = level; updateLabelText(p); } });
+  socket.on('playerLevel', ({ id, level }) => { const p = players[id]; if (p) { p.level = level; updateLabelText(p); levelUpFx(p); } });
   socket.on('playerDied', ({ id }) => { const p = players[id]; if (p) p.dead = true; });
   socket.on('died', ({ village }) => {
     amDead = true;
@@ -1023,6 +1260,8 @@ function findNearAction(pos) {
   for (const p of Object.values(players)) {
     if (!p.npcKind || Math.hypot(p.group.position.x - pos.x, p.group.position.z - pos.z) > 4) continue;
     if (p.npcKind === 'teleport') return { label: 'Işınlayıcı', run: () => openShop('teleport', 'IŞINLAYICI') };
+    if (p.npcKind === 'stable') return { label: 'Seyis', run: () => openShop('stable', 'SEYİS · AT GÖREVİ') };
+    if (p.npcKind === 'fisher') return { label: 'Balıkçı', run: () => openShop('potions', 'BALIKÇI') };
     return { label: p.name, run: () => openShop(p.npcKind, p.name.toLocaleUpperCase('tr-TR')) };
   }
   for (const pt of mapInfo.portals) {
@@ -1064,7 +1303,7 @@ function loop() {
     }
     me.moving = moving;
     if (now - lastSent > 100 && (moving || lastMoving || now - lastSent > 1000)) {
-      socket.emit('move', { x: me.group.position.x, z: me.group.position.z, ry: me.ry, moving });
+      socket.emit('move', { x: me.group.position.x, z: me.group.position.z, ry: me.ry, f: me.ry - FACE_OFFSET, moving });
       lastSent = now; lastMoving = moving;
     }
     // yakındaki ganimeti otomatik topla
@@ -1120,6 +1359,8 @@ function loop() {
     if (pt.field) pt.field.material.opacity = 0.35 + Math.sin(now / 300) * 0.12;
   }
   updateArrows(dt);
+  updateEffects(dt);
+  updateSkillCooldowns();
   renderer.render(scene, camera);
 }
 loop();

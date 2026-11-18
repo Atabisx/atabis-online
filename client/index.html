@@ -25,9 +25,11 @@
     <div style="display:flex;flex-direction:column;gap:5px">
       <div style="display:flex;justify-content:space-between;font-size:12px;width:150px"><b id="myname">-</b><span id="myclass" style="color:#c9c4b6">-</span></div>
       <div class="bar hpwrap"><div id="hpbar" style="width:100%;background:#d9443a"></div><span id="hptext"></span></div>
+      <div class="bar hpwrap mpwrap"><div id="mpbar" style="width:100%;background:#3d7fc4"></div><span id="mptext"></span></div>
       <div class="bar"><div id="expbar" style="width:0%;background:#e8b54a"></div></div>
     </div>
   </div>
+  <div id="buffs"></div>
   <div id="place" class="panel"><b id="mapName">ATABİS KÖYÜ</b><span id="mapSub"></span></div>
   <div id="online" class="panel">Çevrimiçi: <b id="count">0</b></div>
   <button id="invbtn" aria-label="Envanter">
@@ -43,6 +45,19 @@
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ff8a7a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v5L6 15a5 5 0 0 0 4.5 6h3A5 5 0 0 0 18 15l-4-7V3"/></svg>
     <i id="potCount">0</i>
   </button>
+  <button id="mpBtn" aria-label="Mavi iksir iç">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7fb3ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v5L6 15a5 5 0 0 0 4.5 6h3A5 5 0 0 0 18 15l-4-7V3"/></svg>
+    <i id="mpCount">0</i>
+  </button>
+  <div id="skillbar"></div>
+  <button id="skillBtn" aria-label="Beceriler">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+    <i id="skillPts" style="display:none">0</i>
+  </button>
+  <button id="mountBtn" style="display:none" aria-label="Ata bin">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20v-6l3-4h7l3-5 2 1-1 4 2 3v7"/><path d="M8 20v-5"/><path d="M15 20v-5"/></svg>
+  </button>
+  <button id="fishBtn" style="display:none">Olta at</button>
   <button id="talkBtn" style="display:none">Konuş</button>
   <div id="labels"></div>
   <div id="toast"></div>
@@ -71,6 +86,12 @@
         <button data-tab="potions">İksir</button><button data-tab="weapons">Silah</button><button data-tab="armor">Zırh ve takı</button><button data-tab="sell">Sat</button>
       </div>
       <div id="shopList"></div>
+    </div>
+  </div>
+  <div id="skillwin" class="modal" role="dialog" aria-label="Beceriler">
+    <div class="modalbox">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">BECERİLER</b><span id="skillPtsText" style="font-size:13px;color:#ffe08a"></span><button id="skillClose" class="xbtn" aria-label="Kapat">×</button></div>
+      <div id="skillList" style="overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
     </div>
   </div>
   <div id="dead" class="modal" role="dialog" aria-label="Öldün">

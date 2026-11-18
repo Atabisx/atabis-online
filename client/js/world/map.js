@@ -25,6 +25,7 @@ const THEMES = {
   ruins: { ground: '#6a6a5a', ground2: '#666656', path: '#8a8a7a', sky: '#8a8a9a', fog: [25, 75], props: { pillar: 30, dead: 20, rock: 15 } },
   demon: { ground: '#3a1a1a', ground2: '#361818', path: '#4a2a2a', sky: '#2a0a0a', fog: [20, 65], props: { spike: 35, lava: 12, lavarock: 15 } },
   dragon_valley: { ground: '#7a8a5a', ground2: '#768656', path: '#9a8a6a', sky: '#c8b8a8', fog: [35, 95], props: { boulder: 30, bones: 15, tree: 10 } },
+  lake: { ground: '#6c9b4b', ground2: '#689748', path: '#b8996a', sky: '#a8d0e8', fog: [45, 110], props: { tree: 16, pine: 12, reed: 25, rock: 8 } },
   dark_throne: { ground: '#1a1a22', ground2: '#18181f', path: '#2a2a35', sky: '#1a1028', fog: [20, 65], props: { pillar: 25, darkcrystal: 30, spike: 10 } },
 };
 
@@ -108,7 +109,12 @@ export const NPC_SPOTS = {
   weapons: { x: 38.5, z: 22.5, name: 'Silahçı', kind: 'weapons' },
   armor: { x: 20, z: 18.8, name: 'Zırhçı', kind: 'armor' },
   teleport: { x: 28.5, z: 33.8, name: 'Işınlayıcı', kind: 'teleport' },
+  stable: { x: 15, z: 31, name: 'Seyis', kind: 'stable' },
 };
+const LAKE_NPCS = [
+  { x: 31, z: 21, name: 'Işınlayıcı', kind: 'teleport' },
+  { x: 19, z: 21, name: 'Balıkçı', kind: 'fisher' },
+];
 function buildVillage(th, rnd) {
   const v = th.village;
   area(6.5, 6.5, 13.5, 13.5, '#c7aa78', 0.03);
@@ -284,11 +290,23 @@ export function loadMap(scene, def) {
     buildVillage(th, rnd);
     for (const n of Object.values(NPC_SPOTS)) npcs.push({ ...n });
   }
+  if (def.lake) {
+    const L = def.lake;
+    const sand = new THREE.Mesh(new THREE.CircleGeometry(L.r + 3, 40), mat('#d9c08a'));
+    sand.rotation.x = -Math.PI / 2; add(sand, L.x, 0.03, L.z, false);
+    const water = new THREE.Mesh(new THREE.CircleGeometry(L.r, 40), new THREE.MeshLambertMaterial({ color: '#3f86a8', emissive: '#0d2a3a', emissiveIntensity: 0.3 }));
+    water.rotation.x = -Math.PI / 2; add(water, L.x, 0.06, L.z, false);
+    circles.push({ x: L.x, z: L.z, r: L.r - 1.2 });
+    obelisk(LAKE_NPCS[0].x + 2.5, LAKE_NPCS[0].z - 2);
+    stall(LAKE_NPCS[1].x - 3.5, LAKE_NPCS[1].z - 4.5, '#3d7fc4', '#f4efe4', ['#7fb3c4', '#7fb3c4', '#c8c0b0']);
+    for (const n of LAKE_NPCS) npcs.push({ ...n });
+  }
 
   // doğa: köy merkezinden, yoldan ve geçitlerden uzak
   const blocked = (x, z) => {
     if (z > 20 && z < 30) return true;
     if (def.village && Math.hypot(x - 25, z - 25) < 21) return true;
+    if (def.lake && Math.hypot(x - def.lake.x, z - def.lake.z) < def.lake.r + 4) return true;
     if (Math.hypot(x - def.spawn[0], z - def.spawn[1]) < 6) return true;
     for (const p of def.portals) if (Math.hypot(x - p.x, z - p.z) < 7) return true;
     return false;

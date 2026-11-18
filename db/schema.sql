@@ -40,3 +40,8 @@ CREATE INDEX IF NOT EXISTS characters_account_idx ON characters(account_id);
 -- Aşama 1: haritalar ve can
 ALTER TABLE characters ADD COLUMN IF NOT EXISTS map_id INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE characters ADD COLUMN IF NOT EXISTS hp INTEGER;
+
+-- Aşama 2: mana, beceriler, görevler
+ALTER TABLE characters ADD COLUMN IF NOT EXISTS mp INTEGER;
+ALTER TABLE characters ADD COLUMN IF NOT EXISTS skills JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE characters ADD COLUMN IF NOT EXISTS quests JSONB NOT NULL DEFAULT '{}';

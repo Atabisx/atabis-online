@@ -73,11 +73,39 @@ def build_items():
                 items[f'{slot}{i}{suf}'] = it
 
     # iksirler (üst üste biner)
-    potions = [('p_hp1', 'Küçük Kırmızı İksir', 120, 25, 1), ('p_hp2', 'Kırmızı İksir', 400, 90, 15),
-               ('p_hp3', 'Büyük Kırmızı İksir', 1200, 260, 40), ('p_hp4', 'Dev Kırmızı İksir', 3500, 700, 75)]
+    potions = [('p_hp1', 'Küçük Kırmızı İksir', 120, 15, 1), ('p_hp2', 'Kırmızı İksir', 400, 45, 15),
+               ('p_hp3', 'Büyük Kırmızı İksir', 1200, 120, 40), ('p_hp4', 'Dev Kırmızı İksir', 3500, 300, 75)]
     for key, name, heal, cost, lv in potions:
         items[key] = {'name': name, 'slot': 'potion', 'heal': heal, 'lv': lv, 'price': cost,
                       'rarity': 0, 'color': '#e5533d', 'stack': 200}
+    mana = [('p_mp1', 'Küçük Mavi İksir', 80, 15, 1), ('p_mp2', 'Mavi İksir', 250, 45, 15),
+            ('p_mp3', 'Büyük Mavi İksir', 700, 120, 40), ('p_mp4', 'Dev Mavi İksir', 2000, 300, 75)]
+    for key, name, mp, cost, lv in mana:
+        items[key] = {'name': name, 'slot': 'potion', 'mana': mp, 'lv': lv, 'price': cost,
+                      'rarity': 0, 'color': '#3d7fc4', 'stack': 200}
+    # süreli güçlendirme iksirleri (5 dakika)
+    items['p_green'] = {'name': 'Yeşil İksir', 'slot': 'potion', 'buff': {'stat': 'atkspeed', 'value': 20, 'dur': 300},
+                        'desc': '5 dakika saldırı hızı +%20', 'lv': 1, 'price': 150, 'rarity': 1, 'color': '#4fbf5a', 'stack': 200}
+    items['p_speed'] = {'name': 'Hız İksiri', 'slot': 'potion', 'buff': {'stat': 'movespeed', 'value': 25, 'dur': 300},
+                        'desc': '5 dakika hareket hızı +%25', 'lv': 1, 'price': 150, 'rarity': 1, 'color': '#f2c94c', 'stack': 200}
+
+    # efsun nesnesi: sadece metin taşlarından düşer
+    items['efsun'] = {'name': 'Efsun Nesnesi', 'slot': 'use', 'desc': 'Bir ekipmana rastgele bir efsun ekler (en fazla 5). 5 efsunlu eşyada tüm efsunları yeniden belirler.',
+                      'lv': 1, 'price': 0, 'rarity': 2, 'color': '#c86bff', 'stack': 200}
+    # balıkçılık
+    items['olta'] = {'name': 'Olta', 'slot': 'use', 'desc': 'Gümüş Göl kıyısında balık tutmak için.', 'lv': 30, 'price': 0, 'rarity': 1, 'color': '#8a6440'}
+    items['yem'] = {'name': 'Solucan Yem', 'slot': 'use', 'desc': 'Her atışta bir yem harcanır.', 'lv': 1, 'price': 8, 'rarity': 0, 'color': '#b0726a', 'stack': 200}
+    fish = [('b_hamsi', 'Hamsi', 20), ('b_sazan', 'Sazan', 45), ('b_alabalik', 'Alabalık', 90), ('b_levrek', 'Levrek', 160),
+            ('b_yayin', 'Yayın Balığı', 600), ('b_cizme', 'Eski Çizme', 2)]
+    for key, name, value in fish:
+        items[key] = {'name': name, 'slot': 'fish', 'lv': 1, 'price': value * 4, 'rarity': 1 if value >= 600 else 0,
+                      'color': '#7fb3c4' if key != 'b_cizme' else '#6b4a2e', 'stack': 200}
+    items['istiridye'] = {'name': 'İstiridye', 'slot': 'use', 'desc': 'Aç: içinden nadiren inci çıkar.', 'lv': 1, 'price': 40, 'rarity': 1, 'color': '#c8c0b0', 'stack': 200}
+    for key, name, value, color in [('inci_beyaz', 'Beyaz İnci', 3000, '#f4f1e8'), ('inci_mavi', 'Mavi İnci', 9000, '#7fb3ff'), ('inci_kirmizi', 'Kırmızı İnci', 30000, '#ff6a5a')]:
+        items[key] = {'name': name, 'slot': 'gem', 'lv': 1, 'price': value * 4, 'rarity': 2, 'color': color, 'stack': 200}
+    # at
+    items['at_muhru'] = {'name': 'At Mührü', 'slot': 'use', 'desc': 'Kullanınca atına biner ya da iner. Atlıyken %60 daha hızlısın.',
+                         'lv': 25, 'price': 0, 'rarity': 2, 'color': '#c9a35a'}
 
     # eski sürümden kalan eşyalar (var olan karakterler bozulmasın)
     legacy = json.load(open(os.path.join(ROOT, 'items.json'), encoding='utf8')) if os.path.exists(
@@ -188,10 +216,10 @@ MAPS = [
 ]
 
 SHOPS = {  # harita sırası -> (iksirler, satılan kademeler)
-    0: (['p_hp1', 'p_hp2'], [0, 1]),
-    1: (['p_hp1', 'p_hp2'], [1, 2, 3]),
-    5: (['p_hp2', 'p_hp3'], [4, 5, 6]),
-    10: (['p_hp3', 'p_hp4'], [8, 9, 10]),
+    0: (['p_hp1', 'p_hp2', 'p_mp1', 'p_mp2', 'p_green', 'p_speed'], [0, 1]),
+    1: (['p_hp1', 'p_hp2', 'p_mp1', 'p_mp2', 'p_green', 'p_speed'], [1, 2, 3]),
+    5: (['p_hp2', 'p_hp3', 'p_mp2', 'p_mp3', 'p_green', 'p_speed'], [4, 5, 6]),
+    10: (['p_hp3', 'p_hp4', 'p_mp3', 'p_mp4', 'p_green', 'p_speed'], [8, 9, 10]),
 }
 
 
@@ -213,22 +241,25 @@ def build(items):
             d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': aggro,
                       'speed': speed, 'range': 2.4 * max(1, scale), 'cd': 1600, 'boss': False,
                       'drops': [[k, 0.012] for k in own] + [[k, 0.02] for k in low],
-                      'potions': [['p_hp1' if lv < 15 else 'p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4', 0.08]]})
+                      'potions': [[('p_hp1' if lv < 15 else 'p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4'), 0.08],
+                                  [('p_mp1' if lv < 15 else 'p_mp2' if lv < 40 else 'p_mp3' if lv < 75 else 'p_mp4'), 0.05]]})
             mobs[key] = d
             spawns.append({'mob': key, 'count': 8 if i == 0 else 7})
         for key, name, lv, shape, color, scale in m['bosses']:
             d = mob_stats(lv, boss=True)
-            d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': 13,
+            d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': 0,
                       'speed': 5.2, 'range': 2.6 * scale, 'cd': 2000, 'boss': True, 'respawn': 120,
                       'drops': [[k, 0.28] for k in own] + [[k, 0.12] for k in nxt] + [[k, 0.035] for k in leg],
-                      'potions': [['p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4', 1.0]]})
+                      'potions': [[('p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4'), 1.0],
+                                  [('p_mp2' if lv < 40 else 'p_mp3' if lv < 75 else 'p_mp4'), 1.0],
+                                  ['p_green', 0.3], ['p_speed', 0.3]]})
             mobs[key] = d
             bosses.append(key)
         entry = {
             'id': i, 'name': m['name'], 'minLevel': m['lv'], 'theme': m['theme'],
             'village': bool(m.get('village')), 'tier': tier, 'seed': 1000 + i * 97,
             'spawns': spawns, 'bosses': bosses,
-            'stoneDrops': own,
+            'stoneDrops': own, 'stones': 5,
             'spawn': [25, 29] if m.get('village') else [-4, 25],
             'portals': ([{'to': i - 1, 'x': -12, 'z': 25}] if i > 0 else []) +
                        ([{'to': i + 1, 'x': 62, 'z': 25}] if i < len(MAPS) - 1 else []),
@@ -242,13 +273,58 @@ def build(items):
                           and v.get('tier') in tiers and not k.endswith('_L')],
             }
         maps.append(entry)
+    # balık tutma haritası: yaratık yok, sadece ışınlayıcıyla gelinir
+    maps.append({'id': len(maps), 'name': 'Gümüş Göl', 'minLevel': 30, 'theme': 'lake', 'village': False, 'fishing': True,
+                 'safe': True, 'tier': 0, 'seed': 4242, 'spawns': [], 'bosses': [], 'stoneDrops': [], 'stones': 0,
+                 'spawn': [25, 22], 'portals': [], 'lake': {'x': 25, 'z': 44, 'r': 15},
+                 'shop': {'potions': ['yem', 'p_hp1', 'p_mp1'], 'weapons': [], 'armor': []}})
     return mobs, maps
 
+
+# ---------------------------------------------------------------- beceriler
+# 5. seviyede açılır; her seviyede 1 puan; beceri seviyesi 1-17, sonra M1-M3 (18-20)
+def sk(key, name, desc, target, mp, mpLv, cd, color, **kw):
+    d = {'key': key, 'name': name, 'desc': desc, 'target': target, 'mp': mp, 'mpLv': mpLv, 'cd': cd, 'color': color}
+    d.update(kw)
+    return d
+
+SKILLS = {
+    'savasci': [
+        sk('s_ucluk', 'Üçlü Kesik', 'Önündeki düşmanlara üç yönlü güçlü bir kesik.', 'front', 15, 3, 6, '#ff6a5a', radius=5, mult=1.6, multLv=0.12, combo=1),
+        sk('s_firtina', 'Kılıç Fırtınası', 'Etrafında dönerek çevresindeki herkesi biçer.', 'aoe', 25, 4, 10, '#e8b54a', radius=4.5, mult=1.3, multLv=0.1, combo=1),
+        sk('s_hamle', 'Saldırı Hamlesi', 'İleri atılır, vardığı yerdeki düşmanlara vurur.', 'dash', 20, 3, 12, '#ffb347', radius=3, dist=7, mult=1.8, multLv=0.14, combo=2),
+        sk('s_demir', 'Demir Beden', '60 saniye savunmanı artırır.', 'self', 30, 3, 60, '#c9d1d9', buff={'stat': 'def', 'base': 10, 'perLv': 4, 'dur': 60}),
+    ],
+    'ninja': [
+        sk('n_golge', 'Gölge Darbesi', 'Tek hedefe her zaman kritik vuran sinsi bir darbe.', 'single', 18, 3, 7, '#8a7dff', range=4.8, mult=2.0, multLv=0.15, crit=True, combo=2),
+        sk('n_zehir', 'Zehirli Hançer', 'Vurur ve 8 saniye zehirler.', 'single', 15, 2, 9, '#6fd36f', range=4.8, mult=1.0, multLv=0.06, dot={'mult': 0.45, 'multLv': 0.05, 'sec': 8}, combo=0),
+        sk('n_yagmur', 'Hançer Yağmuru', 'Çevresine hançer yağdırır.', 'aoe', 28, 4, 12, '#c9d1d9', radius=5, mult=1.2, multLv=0.1, combo=1),
+        sk('n_adim', 'Kaçış Adımı', '30 saniye hareket ve saldırı hızını artırır.', 'self', 25, 2, 45, '#7be08f', buff={'stat': 'movespeed', 'base': 15, 'perLv': 1, 'dur': 30, 'extra': {'atkspeed': 10}}),
+    ],
+    'sura': [
+        sk('u_kara', 'Karanlık Kılıç', '60 saniye saldırı gücünü artırır.', 'self', 30, 3, 60, '#8e44ad', buff={'stat': 'atk', 'base': 8, 'perLv': 5, 'dur': 60}),
+        sk('u_emme', 'Ruh Emme', 'Vurduğu hasarın %30\'u kadar can çalar.', 'single', 20, 3, 8, '#b06bff', range=5.5, mult=1.7, multLv=0.12, lifesteal=0.3, combo=2),
+        sk('u_alev', 'Kara Alev', 'Çevresini kara alevlerle yakar.', 'aoe', 35, 5, 12, '#6c3483', radius=5.5, mult=1.5, multLv=0.12, dot={'mult': 0.3, 'multLv': 0.03, 'sec': 5}, combo=1),
+        sk('u_kalkan', 'Gölge Kalkanı', '60 saniye savunmanı artırır.', 'self', 25, 3, 60, '#5a5e6a', buff={'stat': 'def', 'base': 8, 'perLv': 3, 'dur': 60}),
+    ],
+    'saman': [
+        sk('m_sifa', 'Şifa', 'Kendini ve 8 metre içindeki oyuncuları iyileştirir.', 'heal', 30, 3, 8, '#7be08f', heal={'base': 80, 'perLv': 14, 'perLevel': 8}, radius=8),
+        sk('m_simsek', 'Şimşek', 'Hedeften hedefe sıçrayan yıldırım (3 hedef, 10. seviyede 4, M1\'de 5).', 'chain', 22, 3, 6, '#9fd8ff', range=11, mult=1.5, multLv=0.12),
+        sk('m_kutsama', 'Kutsama', '90 saniye kendinin ve yakınındakilerin savunmasını artırır.', 'self', 35, 3, 60, '#ffd23f', buff={'stat': 'def', 'base': 6, 'perLv': 3, 'dur': 90}, radius=10),
+        sk('m_kukreme', 'Ejder Kükremesi', 'Çevresine ateşli bir kükreme salar.', 'aoe', 40, 5, 14, '#ff6a3d', radius=6, mult=1.6, multLv=0.13, combo=1),
+    ],
+    'okcu': [
+        sk('o_coklu', 'Çoklu Ok', 'Aynı anda 3 hedefe ok atar.', 'multi', 18, 3, 5, '#f4e2b8', range=12, mult=1.2, multLv=0.1, count=3),
+        sk('o_zehirli', 'Zehirli Ok', 'Vurur ve 8 saniye zehirler.', 'single', 15, 2, 8, '#6fd36f', range=12, mult=1.0, multLv=0.08, dot={'mult': 0.5, 'multLv': 0.05, 'sec': 8}),
+        sk('o_ates', 'Ateşli Ok', 'Patlayan ok: hedefin çevresine de hasar verir.', 'single', 28, 4, 10, '#ff6a3d', range=13, mult=2.2, multLv=0.17, splash=2.8),
+        sk('o_hafif', 'Hafif Adım', '40 saniye hareket ve saldırı hızını artırır.', 'self', 20, 2, 45, '#7be08f', buff={'stat': 'movespeed', 'base': 20, 'perLv': 1.5, 'dur': 40, 'extra': {'atkspeed': 8}}),
+    ],
+}
 
 if __name__ == '__main__':
     items = build_items()
     mobs, maps = build(items)
-    for name, data in (('items.json', items), ('mobs.json', mobs), ('maps.json', maps)):
+    for name, data in (('items.json', items), ('mobs.json', mobs), ('maps.json', maps), ('skills.json', SKILLS)):
         with open(os.path.join(ROOT, name), 'w', encoding='utf8') as f:
             json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
     print(f'{len(items)} eşya, {len(mobs)} yaratık, {len(maps)} harita yazıldı.')
