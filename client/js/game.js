@@ -6,6 +6,7 @@ import { mat, esc } from './util.js';
 import { loadMap, colliders, circles, BOUNDS } from './world/map.js';
 import { buildMob } from './entities/mobs.js';
 import { itemModel, ITEM_MODELS, attachMountModel, MOUNT } from './entities/models.js';
+import { buildOutfit, undersuitColor } from './entities/outfits.js';
 import * as sfx from './audio.js';
 import * as fx from './fx.js';
 import * as icons from './icons.js';
@@ -328,7 +329,28 @@ function calibrate(root) {
     back: { bone: spine.name, ...localTransform(spine, ps.clone().addScaledVector(fwd, -0.13 * k).addScaledVector(up, 0.12 * k), qBody, k) },
     neck: { bone: spine.name, ...localTransform(spine, ps.clone().addScaledVector(up, 0.2 * k), qBody, k) },
     hips: hips ? { bone: hips.name, ...localTransform(hips, hips.getWorldPosition(new V3()), qBody, k) } : null,
+    // uzuv çerçeveleri (kemik doğrultusunda): omuzluk, bileklik, uyluk plakası, dizlik
+    shoulderL: limbFrame(root, 'LeftArm', 'LeftForeArm', 0.12, true, fwd, k),
+    shoulderR: limbFrame(root, 'RightArm', 'RightForeArm', 0.12, true, fwd, k),
+    foreL: limbFrame(root, 'LeftForeArm', 'LeftHand', 0.55, false, fwd, k),
+    foreR: limbFrame(root, 'RightForeArm', 'RightHand', 0.55, false, fwd, k),
+    thighL: limbFrame(root, 'LeftUpLeg', 'LeftLeg', 0.08, true, fwd, k),
+    thighR: limbFrame(root, 'RightUpLeg', 'RightLeg', 0.08, true, fwd, k),
+    shinL: limbFrame(root, 'LeftLeg', 'LeftFoot', 0.45, false, fwd, k),
+    shinR: limbFrame(root, 'RightLeg', 'RightFoot', 0.45, false, fwd, k),
   };
+}
+// kemik boyunca hizalı çerçeve: y = kemikten çocuğuna (flip ise tersi), z = öne yakın, x = yana
+function limbFrame(root, name, childName, t, flip, fwd, k) {
+  const b = boneByName(root, name), c = boneByName(root, childName);
+  if (!b || !c) return null;
+  const a = b.getWorldPosition(new V3()), e = c.getWorldPosition(new V3());
+  const y = e.clone().sub(a).normalize(); if (flip) y.negate();
+  const z = fwd.clone().sub(y.clone().multiplyScalar(fwd.dot(y)));
+  if (z.lengthSq() < 1e-6) z.set(0, 0, 1);
+  z.normalize();
+  const x = new V3().crossVectors(y, z).normalize();
+  return { bone: b.name, ...localTransform(b, a.clone().lerp(e, t), basisQuat(x, y, z), k) };
 }
 
 // ---------- sınıf görünümleri: her sınıfın kendi silueti (Metin2'deki gibi ayırt edilsin) ----------
@@ -340,89 +362,6 @@ const CLASS_LOOK = {
   saman: { bulk: 0.97, tint: '#d8cfa8' },
   okcu: { bulk: 0.93, tint: '#3f6a3a' },
 };
-const cm = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: o.rough ?? 0.8, metalness: o.metal ?? 0.05, side: o.side || THREE.FrontSide, emissive: o.emissive || '#000000', emissiveIntensity: o.ei || 0 });
-function capeMesh(color, inner, len = 1.05, w = 0.5) {
-  const g = new THREE.Group();
-  const outer = new THREE.Mesh(new THREE.PlaneGeometry(w, len, 1, 6), cm(color, { side: THREE.DoubleSide }));
-  outer.position.set(0, -len / 2, -0.01); outer.castShadow = true;
-  // hafif kıvrım
-  const pos = outer.geometry.attributes.position;
-  for (let i = 0; i < pos.count; i++) pos.setZ(i, -Math.abs(pos.getX(i)) * 0.25 - (pos.getY(i) < 0 ? 0.04 : 0));
-  outer.geometry.computeVertexNormals();
-  g.add(outer);
-  if (inner) { const inn = new THREE.Mesh(outer.geometry, cm(inner, { side: THREE.BackSide })); inn.position.copy(outer.position); inn.position.z += 0.012; g.add(inn); }
-  g.rotation.x = 0.12;
-  g.userData.cape = true;
-  return g;
-}
-function costumeParts(cls, hasHelmet) {
-  const parts = [];   // [bağlantı adı, mesh]
-  if (cls === 'savasci') {
-    const fur = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.075, 8, 18, Math.PI * 1.2), cm('#6b4a2e', { rough: 1 }));
-    fur.rotation.set(Math.PI / 2, 0, Math.PI * 1.4); fur.position.set(0, 0.0, -0.02); fur.scale.set(1.15, 1, 0.8);
-    parts.push(['neck', fur]);
-    const belt = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.028, 6, 22), cm('#3a2a1c'));
-    belt.rotation.x = Math.PI / 2; belt.scale.set(1, 0.75, 1);
-    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.02), cm('#e8b54a', { metal: 0.9, rough: 0.3 })); buckle.position.set(0, 0, 0.13);
-    const bg = new THREE.Group(); bg.add(belt, buckle); bg.position.y = 0.06;
-    parts.push(['hips', bg]);
-  } else if (cls === 'ninja') {
-    if (!hasHelmet) {
-      const hood = new THREE.Mesh(new THREE.SphereGeometry(0.135, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.62), cm('#1f2230'));
-      hood.scale.set(1.05, 1.1, 1.15); hood.position.set(0, -0.06, -0.01);
-      parts.push(['helmet', hood]);
-    }
-    const mask = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.1, 0.07, 14, 1, true), cm('#14161e', { side: THREE.DoubleSide }));
-    mask.position.set(0, -0.155, 0.015);
-    parts.push(['helmet', mask]);
-    const scarf = capeMesh('#b0362b', null, 0.6, 0.12); scarf.position.set(0.06, 0.02, -0.06); scarf.rotation.z = -0.25;
-    parts.push(['neck', scarf]);
-  } else if (cls === 'sura') {
-    parts.push(['back', capeMesh('#1a1424', '#8e1f2a', 1.1, 0.52)]);
-    for (const [pad, sx] of [['padL', 1], ['padR', -1]]) {
-      const horn = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.18, 6), cm('#d9cfb8', { rough: 0.5 }));
-      horn.position.set(sx * 0.02, 0.1, -0.02); horn.rotation.z = -sx * 0.5;
-      const sp = new THREE.Mesh(new THREE.SphereGeometry(0.085, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), cm('#2a1f30', { metal: 0.6, rough: 0.4 }));
-      const g = new THREE.Group(); g.add(sp, horn);
-      parts.push([pad, g]);
-    }
-  } else if (cls === 'saman') {
-    const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.34, 0.78, 18, 1, true), cm('#ece4cc', { side: THREE.DoubleSide }));
-    robe.position.y = -0.38;
-    const hem = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.018, 6, 26), cm('#e8b54a', { metal: 0.8, rough: 0.3 })); hem.rotation.x = Math.PI / 2; hem.position.y = -0.77;
-    const sash = new THREE.Mesh(new THREE.TorusGeometry(0.175, 0.03, 6, 22), cm('#2f6f8a')); sash.rotation.x = Math.PI / 2; sash.position.y = 0.02;
-    const rg = new THREE.Group(); rg.add(robe, hem, sash); rg.userData.robe = true;
-    parts.push(['hips', rg]);
-    const beads = new THREE.Group();
-    for (let i = 0; i < 12; i++) { const a = Math.PI * (0.15 + i / 11 * 0.7); const b = new THREE.Mesh(new THREE.SphereGeometry(0.018, 6, 5), cm(i % 3 ? '#b0362b' : '#e8b54a', { rough: 0.3 })); b.position.set(Math.cos(a) * 0.13, -Math.sin(a) * 0.12 + 0.02, 0.09); beads.add(b); }
-    parts.push(['neck', beads]);
-    if (!hasHelmet) {
-      const hat = new THREE.Group();
-      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.08, 16), cm('#2f6f8a')); band.position.y = -0.03;
-      hat.add(band);
-      for (let i = 0; i < 5; i++) { const f = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.24, 4), cm(i % 2 ? '#f4f1e8' : '#e8b54a')); f.position.set((i - 2) * 0.04, 0.1, -0.06); f.rotation.x = -0.35; f.rotation.z = (i - 2) * 0.15; hat.add(f); }
-      parts.push(['helmet', hat]);
-    }
-  } else if (cls === 'okcu') {
-    const quiver = new THREE.Group();
-    const q = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.045, 0.5, 10), cm('#6b4a2e')); quiver.add(q);
-    for (let i = 0; i < 5; i++) {
-      const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.22, 4), cm('#c9b48a')); sh.position.set((i - 2) * 0.016, 0.33, (i % 2) * 0.015);
-      const fl = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.06, 0.004), cm('#b0362b')); fl.position.set((i - 2) * 0.016, 0.42, (i % 2) * 0.015);
-      quiver.add(sh, fl);
-    }
-    quiver.rotation.z = 0.5; quiver.position.set(0, -0.08, -0.04);
-    parts.push(['back', quiver]);
-    parts.push(['back', capeMesh('#2f5a2a', '#1f3a1c', 0.55, 0.42)]);
-    if (!hasHelmet) {
-      const hood = new THREE.Mesh(new THREE.SphereGeometry(0.135, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), cm('#3f6a3a'));
-      hood.scale.set(1.05, 1.05, 1.15); hood.position.set(0, -0.07, -0.015);
-      parts.push(['helmet', hood]);
-    }
-  }
-  return parts;
-}
-
 // ---------- ekipman görselleri (metre cinsinden) ----------
 function swordMesh(def) {
   const g = new THREE.Group();
@@ -610,22 +549,23 @@ function applyLook(p, look) {
   if (w) { wMesh = weaponMesh(w); attach(p, calib.sword, wMesh); }
   // sınıfa göre vücut oranı ve renk; zırh varsa onun rengi ağır basar
   const cl = CLASS_LOOK[p.cls];
-  const armorTint = a && a.color && a.color !== '#ffffff';
-  const tint = new THREE.Color(armorTint ? a.color : cl ? cl.tint : '#ffffff');
-  for (const m of p.materials) m.color.copy(m.userData.base).lerp(tint, armorTint ? 0.55 : cl ? 0.42 : 0);
+  // alttaki modeli sınıfın koyu iç giysisine doğru karart; metal parçalar zırhın rengini alır
+  const under = undersuitColor(p.cls);
+  const tint = new THREE.Color(under || '#ffffff');
+  for (const m of p.materials) m.color.copy(m.userData.base).lerp(tint, under ? 0.6 : 0);
   if (p.model && p.model.parent && cl) { const base = 1 / calib.k; p.model.parent.scale.set(base * cl.bulk, base, base * cl.bulk); }
   p.capes = [];
   p.robe = null;
-  if (cl) for (const [where, mesh] of costumeParts(p.cls, !!h)) {
+  const outfit = cl ? buildOutfit(p.cls, { metal: a && a.color && a.color !== '#ffffff' ? a.color : null, tier: a ? a.tier : null, legendary: a && a.rarity >= 2, hasHelmet: !!h }) : [];
+  for (const [where, mesh] of outfit) {
     if (!calib[where]) continue;
     attach(p, calib[where], mesh);
     if (mesh.userData.cape) p.capes.push(mesh);
     if (mesh.userData.robe) p.robe = mesh;
   }
   if (a && a.plate) {
-    const spec = a.model && ITEM_MODELS[a.model];
-    attach(p, calib.chest, spec ? itemModel(a.model, chestMesh(a)) : chestMesh(a));
-    if (!spec || spec.pads) { attach(p, calib.padL, padMesh(a)); attach(p, calib.padR, padMesh(a)); }
+    // sınıflı karakterde zırh, takımın kendisidir (renk ve süs); sınıfsızlarda eski göğüslük
+    if (!CLASS_LOOK[p.cls]) { attach(p, calib.chest, chestMesh(a)); attach(p, calib.padL, padMesh(a)); attach(p, calib.padR, padMesh(a)); }
   }
   if (h) attach(p, calib.helmet, h.model && ITEM_MODELS[h.model] ? itemModel(h.model, helmetMesh(h)) : helmetMesh(h));
   setupAuras(p, wMesh, w, a);

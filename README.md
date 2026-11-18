@@ -4,7 +4,18 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 3.5 (bu sürüm): silah ve zırh aurası
+### Aşama 3.6 (bu sürüm): sınıflara özel Uzak Doğu zırh takımları
+
+- **Her sınıfın kendi takımı (`client/js/entities/outfits.js`):** plaka sıralı lamel göğüslük, katlı omuzluklar, kol ve baldır zırhları, bel kuşağı, uyluk plakaları ve sınıf başlığı. Tasarımlar projeye özgüdür; Metin2 dosyası kullanılmaz.
+  - **Savaşçı:** gümüş-çelik ağır lamel, kırmızı ön/arka etek, tüylü miğfer.
+  - **Ninja:** koyu, hafif zırh; kırmızı atkı, maske.
+  - **Sura:** kara-mor zırh, boynuzlu miğfer, kızıl pelerin.
+  - **Şaman:** altın işlemeli beyaz cüppe, boncuk kolye, taç.
+  - **Okçu:** kahverengi deri lamel, yeşil pelerin, sırtta ok kılıfı.
+- Giyilen zırhın rengi takıma karışır; Sv. 43+ zırhlarda süslemeler altın olur. Kask takılıysa sınıf başlığı yerine kask görünür.
+- Zırh GLB modelleri artık gövdeye giydirilmiyor (sıkışıp taşıyordu); envanter simgelerinde kullanılıyor.
+
+### Aşama 3.5: silah ve zırh aurası
 
 - Sv. 43+ eşyalar parlar: mavi (Sv. 43+), mor (Sv. 64+), kızıl (Sv. 85+), altın (son kademe ve efsanevi). Silahın üstünde parlayan kabuk ve bıçak boyunca kıvılcımlar; zırhta gövdeyi saran yükselen ışık sarmalı ve ayak altında dönen halka.
 
