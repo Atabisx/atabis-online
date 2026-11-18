@@ -407,7 +407,7 @@ export function loadMap(scene, def) {
     return false;
   };
   // büyük haritalarda süs sayısı alanla birlikte artar (telefon için ölçülü)
-  const density = Math.max(1, Math.min(1.9, ((span + 20) / 100) ** 1.4));
+  const density = Math.max(1, Math.min(2.3, ((span + 20) / 100) ** 1.4));
   for (const [kind, base] of Object.entries(th.props)) {
     const build = PROP_BUILDERS[kind];
     if (!build) continue;

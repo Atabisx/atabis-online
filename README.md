@@ -4,7 +4,15 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 3.1 (bu sürüm): eklenen 3D modeller
+### Aşama 3.2 (bu sürüm): köy hayvanları, büyük haritalar, Metin2 tarzı beceri efektleri
+
+- **Atabis Köyü:** köpek ve kurtlar kalktı; yerine gerçek boylarında Tavuk, Horoz, Domuz ve İnek (uysal, sen vurmadan saldırmaz). Tavuk/horoz yürür, kanat çırpar, yere gagalar; inek/domuz başını eğip otlar. Köy boss'ları: Dev Horoz ve Deli Boğa.
+- **Kızılçam Ormanı:** Kurt Lideri Bozkurt, Kuduz Benekli ve Alaca Kaplan buraya taşındı; yeni boss Ateş Kertenkelesi (saldırırken ateş püskürtür). Haritada 6 boss var, birbirinden uzak yerlerde.
+- **Haritalar büyüdü:** köy haritası 130×130 m, vahşi haritalar 180×180 m (her yaratık türünden 20).
+- **Beceri efektleri (`client/js/fx.js`):** her becerinin kendi görüntüsü: hilal kılıç izleri, karakteri saran dönen kılıç fırtınası, gökten yağan hançerler, dallanan şimşek, alev halkaları, ruh emme küreleri, ışık sütunları, dönen büyü çemberleri; buff süresince karakterin altında aura. Beceride karakter döner/sıçrar; normal vuruşta kıvılcım, kritikte parlama; seviye atlamada altın ışık sütunu.
+- FBX modeller GLB'ye çevrildi (`client/models/mobs`: tavuk, horoz, domuz, inek, kertenkele).
+
+### Aşama 3.1: eklenen 3D modeller
 
 - **Yeni boss'lar (hazır modeller):** Atabis Köyü: Kurt Lideri Bozkurt, Kuduz Benekli (köpek), Alaca Kaplan. Kızılçam Ormanı: Kristal Yılan, Savaşçı Alp Bey. Sisli Orman: Su Elementali, Sis Büyücüsü. Taş Vadisi: Kadim Mumya.
 - **Hareket:** modellerin iskeleti yok; `client/js/entities/models.js` bacak, kol, baş ve kuyruğu modelin şeklinden ayırıp ekran kartında döndürür: yürürken çapraz adım, kol sallama, kuyruk sallama; saldırıda ısırma, kılıç indirme, kollarını kaldırma; büyücü süzülür, yılan kıvrılır.

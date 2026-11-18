@@ -168,18 +168,23 @@ def mob_stats(lv, boss=False):
 # (anahtar, ad, seviye, şekil, renk, ölçek, saldırganlık yarıçapı, hız, menzil)
 MAPS = [
     {'name': 'Atabis Köyü', 'lv': 1, 'theme': 'village_winter', 'village': True,
-     'mobs': [('kopek', 'Sokak Köpeği', 1, 'dog', '#8a6a4a', 0.8, 0, 4.5),
-              ('kurt', 'Gri Kurt', 3, 'wolf', '#7d7f86', 1.0, 9, 5.5),
-              ('domuz', 'Yaban Domuzu', 5, 'boar', '#5a4535', 1.05, 7, 5.0)],
-     # 'model': client/models/mobs/<ad>.glb – kullanıcının eklediği modeller
-     'bosses': [('bozkurt', 'Kurt Lideri Bozkurt', 10, 'wolf', '#3a2f4a', 1.7, {'model': 'kurt', 'aura': '#b06bff'}),
-                ('kuduz', 'Kuduz Benekli', 12, 'dog', '#f4f1e8', 1.8, {'model': 'kopek', 'aura': '#ff6a3d'}),
-                ('kaplan', 'Alaca Kaplan', 14, 'wolf', '#e67e22', 1.9, {'model': 'kaplan', 'aura': '#ffb347'})]},
+     # köy hayvanları: gerçek boylarında, uysal (sen vurmadan saldırmazlar)
+     # 9. alan: {'model': client/models/mobs/<ad>.glb} – kullanıcının eklediği modeller
+     'mobs': [('tavuk', 'Tavuk', 1, 'frog', '#f4f1e8', 1.0, 0, 3.4, {'model': 'tavuk'}),
+              ('horoz', 'Horoz', 2, 'frog', '#c0392b', 1.0, 0, 3.8, {'model': 'horoz'}),
+              ('domuz', 'Domuz', 3, 'boar', '#e8a0a0', 1.0, 0, 4.0, {'model': 'domuz'}),
+              ('inek', 'İnek', 5, 'bear', '#a0522d', 1.0, 0, 3.2, {'model': 'inek'})],
+     'bosses': [('devhoroz', 'Dev Horoz', 8, 'frog', '#c0392b', 2.6, {'model': 'horoz', 'aura': '#ffb347'}),
+                ('deliboga', 'Deli Boğa', 12, 'bear', '#6b3a1e', 1.7, {'model': 'inek', 'aura': '#ff3b2f'})]},
     {'name': 'Kızılçam Ormanı', 'lv': 15, 'theme': 'pine_forest',
      'mobs': [('vkurt', 'Vahşi Kurt', 15, 'wolf', '#5a4a3a', 1.1, 10, 5.8),
               ('kdomuz', 'Kara Domuz', 17, 'boar', '#2a2522', 1.15, 8, 5.2),
               ('ayi', 'Orman Ayısı', 19, 'bear', '#4a3020', 1.3, 8, 4.6)],
-     'bosses': [('kristalyilan', 'Kristal Yılan', 22, 'worm', '#b0362b', 1.9, {'model': 'yilan', 'aura': '#ff3b5c'}),
+     'bosses': [('bozkurt', 'Kurt Lideri Bozkurt', 17, 'wolf', '#3a2f4a', 1.7, {'model': 'kurt', 'aura': '#b06bff'}),
+                ('kuduz', 'Kuduz Benekli', 18, 'dog', '#f4f1e8', 1.8, {'model': 'kopek', 'aura': '#ff6a3d'}),
+                ('kaplan', 'Alaca Kaplan', 20, 'wolf', '#e67e22', 1.9, {'model': 'kaplan', 'aura': '#ffb347'}),
+                ('atesker', 'Ateş Kertenkelesi', 21, 'frog', '#b0362b', 2.0, {'model': 'kertenkele', 'aura': '#ff6a3d', 'breath': '#ff6a3d'}),
+                ('kristalyilan', 'Kristal Yılan', 22, 'worm', '#b0362b', 1.9, {'model': 'yilan', 'aura': '#ff3b5c'}),
                 ('alpbey', 'Savaşçı Alp Bey', 24, 'humanoid', '#8a6a3a', 1.2, {'model': 'savasci', 'aura': '#e8b54a'})]},
     {'name': 'Sisli Orman', 'lv': 22, 'theme': 'forest_mist',
      'mobs': [('sisorumcek', 'Sis Örümceği', 22, 'spider', '#5a5e6a', 1.0, 9, 5.5),
@@ -256,8 +261,8 @@ SHOPS = {
 }
 
 # harita sınırları: köy haritası orta boy, vahşi haritalar büyük
-VILLAGE_BOUNDS = [-25, 75]
-WILD_BOUNDS = [-45, 95]
+VILLAGE_BOUNDS = [-40, 90]
+WILD_BOUNDS = [-65, 115]
 
 
 def tier_for_map(i):
@@ -273,15 +278,18 @@ def build(items):
         nxt = [k for k, v in items.items() if v.get('tier') == min(tier + 1, len(TIERS) - 1) and not k.endswith('_L')]
         leg = [k for k, v in items.items() if v.get('tier') == tier and k.endswith('_L')]
         low = [k for k, v in items.items() if v.get('tier') == max(0, tier - 1) and not k.endswith('_L')]
-        for key, name, lv, shape, color, scale, aggro, speed in m['mobs']:
+        for t in m['mobs']:
+            key, name, lv, shape, color, scale, aggro, speed = t[:8]
             d = mob_stats(lv)
+            if len(t) > 8:
+                d['style'] = t[8]
             d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': aggro,
                       'speed': speed, 'range': 2.4 * max(1, scale), 'cd': 1600, 'boss': False,
                       'drops': [[k, 0.012] for k in own] + [[k, 0.02] for k in low],
                       'potions': [[('p_hp1' if lv < 15 else 'p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4'), 0.08],
                                   [('p_mp1' if lv < 15 else 'p_mp2' if lv < 40 else 'p_mp3' if lv < 75 else 'p_mp4'), 0.05]]})
             mobs[key] = d
-            spawns.append({'mob': key, 'count': 10 if i == 0 else 14})
+            spawns.append({'mob': key, 'count': 9 if i == 0 else 20})
         for key, name, lv, shape, color, scale, style in m['bosses']:
             d = mob_stats(lv, boss=True)
             d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': 0,

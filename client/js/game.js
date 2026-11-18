@@ -7,6 +7,7 @@ import { loadMap, colliders, circles, BOUNDS } from './world/map.js';
 import { buildMob } from './entities/mobs.js';
 import { itemModel, ITEM_MODELS, attachMountModel, MOUNT } from './entities/models.js';
 import * as sfx from './audio.js';
+import * as fx from './fx.js';
 
 let FACE_OFFSET = Math.PI;     // model yüklenince otomatik hesaplanır
 const SPEED = 6;               // metre / saniye
@@ -22,6 +23,7 @@ document.body.prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 220);
+fx.initFx(scene, camera, renderer);
 
 scene.add(new THREE.HemisphereLight('#dfefff', '#4a6a35', 1.1));
 const sun = new THREE.DirectionalLight('#fff3dc', 2.0);
@@ -416,9 +418,30 @@ function setMount(p, on) {
   if (p.horse) p.horse.root.visible = on;
   seatRider(p);
 }
-function seatRider(p) {
+function riderBaseY(p) {
   const lift = p.mounted ? (p.horse && p.horse.modelLoaded ? MOUNT.riderY : 1.0) : 0;
-  if (p.model) p.model.parent.position.y = (calib ? -calib.minY / calib.k : 0) + lift;
+  return (calib ? -calib.minY / calib.k : 0) + lift;
+}
+function seatRider(p) {
+  if (p.model) p.model.parent.position.y = riderBaseY(p);
+}
+// beceri hareketleri: kılıç fırtınasında dönme, buff ve seviye atlamada sıçrama
+function skillPoseUpdate(p, dt) {
+  if (!p.model || (!p.spinT && !p.jumpT && !p.posed)) return;
+  const wrap = p.model.parent;
+  p.posed = false;
+  if (p.spinT > 0) {
+    p.spinT = Math.max(0, p.spinT - dt);
+    wrap.rotation.y = (1 - p.spinT / p.spinDur) * Math.PI * 4;
+    p.posed = true;
+  } else wrap.rotation.y = 0;
+  let jump = 0;
+  if (p.jumpT > 0) {
+    p.jumpT = Math.max(0, p.jumpT - dt);
+    jump = Math.sin((1 - p.jumpT / p.jumpDur) * Math.PI) * 0.45;
+    p.posed = true;
+  }
+  wrap.position.y = riderBaseY(p) + jump;
 }
 // balık tutarken elde olta
 function setRod(p, on) {
@@ -1098,10 +1121,8 @@ function updateEffects(dt) {
   }
 }
 function levelUpFx(p) {
-  const { x, z } = p.group.position;
-  beamFx(x, z, '#ffd23f', 1.6, 7);
-  ringFx(x, z, 4, '#ffd23f', 0.9);
-  setTimeout(() => ringFx(p.group.position.x, p.group.position.z, 5, '#fff1b8', 0.9), 250);
+  fx.levelUp(p);
+  p.jumpT = p.jumpDur = 0.6;
 }
 function skillDef(key) {
   for (const list of Object.values(SKILLS)) for (const sk of list) if (sk.key === key) return sk;
@@ -1122,6 +1143,7 @@ function clearWorld() {
   for (const id of Object.keys(drops)) removeDrop(id);
   for (const p of mapInfo.portals) if (p.label) p.label.el.remove();
   pendingPick.clear();
+  fx.clearFx();
 }
 function enterMap(data) {
   clearWorld();
@@ -1202,13 +1224,18 @@ export function startGame(sock, opts = {}) {
     const sk = skillDef(key); if (!sk) return;
     const p = players[id];
     if (p && sk.combo != null) { p.swingT = SWING_T; p.combo = sk.combo; if (p.cls !== 'okcu') p.slashT = 0.3; }
-    if (p && sk.target === 'dash') { /* konum 'correct' ile gelir */ }
     const from = p ? p.group.position : { x, z };
     sfx.skill(sk, from);
-    if (sk.target === 'aoe' || sk.target === 'front' || sk.target === 'dash') ringFx(sk.target === 'dash' ? from.x : x, sk.target === 'dash' ? from.z : z, sk.radius, sk.color, 0.5);
-    if (sk.target === 'single' || sk.target === 'multi') for (const t of targets) { const tp = targetPos(t); if (tp) { boltFx(from, tp, sk.color); ringFx(tp.x, tp.z, sk.splash || 1.5, sk.color, 0.4); } }
-    if (sk.target === 'chain') { let prev = from; for (const t of targets) { const tp = targetPos(t); if (tp) { boltFx(prev, tp, sk.color, 0.45); prev = tp; } } }
-    if (sk.target === 'self' || sk.target === 'heal') for (const t of targets) { const tp = targetPos(t); if (tp) beamFx(tp.x, tp.z, sk.color, 1.0, 4); }
+    // Metin2 tarzı beceri görüntüsü (fx.js) + karakterin dönmesi/sıçraması
+    const tl = [];
+    for (const t of targets) { const tp = targetPos(t); if (tp) tl.push({ x: tp.x, y: 0, z: tp.z, obj: players[t] || null }); }
+    const facing = p ? p.group.rotation.y - FACE_OFFSET : 0;
+    try { fx.playSkill(sk, { caster: p || null, from: { x: from.x, z: from.z }, facing, targets: tl }); } catch (e) { console.warn('Beceri efekti', key, e); }
+    if (p) {
+      const pose = fx.skillPose(sk);
+      if (pose.spin) { p.spinT = p.spinDur = pose.spin; }
+      if (pose.jump) { p.jumpT = p.jumpDur = pose.jump; }
+    }
   });
   socket.on('playerJoin', (p) => { const o = createPlayer(p); if (p.mounted) setMount(o, true); log(`<b>${esc(p.name)}</b> haritaya geldi.`); });
   socket.on('playerLeave', ({ id }) => removePlayer(id));
@@ -1247,10 +1274,12 @@ export function startGame(sock, opts = {}) {
       m.hp = hp; m.label.hp.style.width = (100 * hp / m.max) + '%';
       floatText((crit ? 'KRİTİK ' : '') + '-' + dmg, m.v.root.position.x, m.height + 0.6, m.v.root.position.z, crit);
       sfx.hit('mob', crit, m.v.root.position);
+      fx.hitSpark(m.v.root.position, crit, 'mob');
     } else {
       const s = stones[id]; if (!s) return;
       s.hp = hp; s.label.hp.style.width = (100 * hp / s.max) + '%'; s.shake = 0.2;
       sfx.hit('stone', crit, s);
+      fx.hitSpark({ x: s.x, y: 0.6, z: s.z }, crit, 'stone');
       floatText((crit ? 'KRİTİK ' : '') + '-' + dmg, s.x, 4.4, s.z, crit);
     }
   });
@@ -1266,6 +1295,11 @@ export function startGame(sock, opts = {}) {
     const m = mobs[id]; if (m) m.atkT = 0.4;
     if (target === myId) sfx.hurt(); else if (m) sfx.mobAttack(m.v.root.position);
     const p = players[target];
+    // ateş püskürten yaratıklar (ör. Ateş Kertenkelesi)
+    if (m && p && m.def && m.def.style && m.def.style.breath) {
+      const mp = m.v.root.position;
+      fx.breath({ x: mp.x, y: (m.height || 2) * 0.45, z: mp.z }, p.group.position, m.def.style.breath);
+    }
     if (p) floatText('-' + dmg, p.group.position.x, 2.4, p.group.position.z, false);
     if (target === myId) document.body.classList.add('hurt'), setTimeout(() => document.body.classList.remove('hurt'), 180);
   });
@@ -1470,6 +1504,7 @@ function loop() {
     setAnim(p, p.moving && p.swingT <= 0 ? 'Run' : 'Idle');
     if (p.mixer) p.mixer.update(dt);
     if (p.mounted && p.horse) p.horse.update(clock.elapsedTime, p.moving, 0, dt);
+    skillPoseUpdate(p, dt);
     if (p.swingT > 0) p.swingT = Math.max(0, p.swingT - dt);
     applySwing(p);
     if (p.model) p.model.parent.rotation.x = (p.id === myId ? amDead : p.dead) ? -Math.PI / 2 : 0;
@@ -1507,6 +1542,7 @@ function loop() {
   }
   updateArrows(dt);
   updateEffects(dt);
+  fx.updateFx(dt, (o) => players[o.id] === o);
   updateWeather(dt);
   updateSkillCooldowns();
   renderer.render(scene, camera);

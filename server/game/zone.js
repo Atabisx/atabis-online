@@ -12,9 +12,23 @@ function boundsOf(def) {
   return { min, max };
 }
 // boss'lar haritanın uzak (doğu) yarısında, girişten ve köyden uzakta
-function bossSpots(b) {
-  // üçüncü yer (sadece 3 boss'lu köy haritasında kullanılır) karşı köşede, köyden uzakta
-  return [[b.max - 12, b.max - 12], [b.max - 12, b.min + 12], [b.min + 12, b.max - 12]];
+function bossSpots(b, n = 3) {
+  // ilk ikisi doğu köşelerinde; üçüncüsü karşı köşede (köy haritasında köyden uzak)
+  const spots = [[b.max - 12, b.max - 12], [b.max - 12, b.min + 12], [b.min + 12, b.max - 12]];
+  // daha fazla boss varsa haritanın doğu yarısında birbirinden en uzak noktalara dağıt
+  const mid = (b.min + b.max) / 2;
+  while (spots.length < n) {
+    let best = null, bestD = -1;
+    for (let x = mid; x <= b.max - 10; x += 4) {
+      for (let z = b.min + 10; z <= b.max - 10; z += 4) {
+        if (Math.abs(z - 25) < 10) continue;   // ana yol ve doğu geçidinin önü boş kalsın
+        const d = Math.min(...spots.map((s) => Math.hypot(s[0] - x, s[1] - z)));
+        if (d > bestD) { bestD = d; best = [x, z]; }
+      }
+    }
+    spots.push(best);
+  }
+  return spots;
 }
 // harita tohumundan, her açılışta aynı çıkan sabit rastgele sayı
 function seeded(seed) {
@@ -39,7 +53,7 @@ class Zone {
     this.nextId = 1;
     this.alive = true;
     this.bounds = boundsOf(def);
-    this.bossSpots = bossSpots(this.bounds);
+    this.bossSpots = bossSpots(this.bounds, Math.max(3, def.bosses.length));
     this.stoneSpots = this.makeStoneSpots((def.stones ?? 5) + 3);
     for (const sp of def.spawns) for (let i = 0; i < sp.count; i++) this.spawnMob(sp.mob, null);
     def.bosses.forEach((key, i) => this.spawnMob(key, this.bossSpots[i % this.bossSpots.length]));

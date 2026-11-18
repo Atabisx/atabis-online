@@ -18,8 +18,14 @@ export const MOB_MODELS = {
   su_elementi: { kind: 'humanoid', size: 1.3, legTop: 0.14, armX: 0.24, armMin: 0.08, shoulder: 0.58, headY: 0.7, freq: 6, amp: 0.35 },
   buyucu:      { kind: 'robe', size: 1.8, legTop: 0, armX: 0.2, armMin: 0.5, shoulder: 0.78, headY: 0.9, freq: 4, amp: 0.3 },
   yilan:       { kind: 'snake', size: 1.0, headY: 0.62, freq: 6, amp: 0.3 },
+  // köy hayvanları: gerçek boylarında; boşta otlar / yere gagalar
+  tavuk:       { kind: 'bird', size: 0.45, legTop: 0.24, armX: 0.24, armMin: 0.3, shoulder: 0.62, headY: 0.68, tail: 0.25, freq: 14, amp: 0.55, graze: 0.9, grazeRate: 1.6 },
+  horoz:       { kind: 'bird', size: 0.55, legTop: 0.22, armX: 9, armMin: 0.3, shoulder: 0.62, headY: 0.7, tail: 0.32, freq: 13, amp: 0.55, graze: 0.8, grazeRate: 1.3 },
+  domuz:       { kind: 'quad', size: 0.75, legTop: 0.28, head: 0.24, tail: 0.08, freq: 11, amp: 0.45, graze: 0.45, grazeRate: 0.7 },
+  inek:        { kind: 'quad', size: 1.45, legTop: 0.36, head: 0.25, tail: 0.12, freq: 7, amp: 0.38, graze: 0.75, grazeRate: 0.45 },
+  kertenkele:  { kind: 'quad', size: 1.0, legTop: 0.26, head: 0.28, tail: 0.3, tailFirst: true, freq: 10, amp: 0.5 },
 };
-const KIND = { quad: 0, sit: 0, humanoid: 1, robe: 2, snake: 3 };
+const KIND = { quad: 0, sit: 0, humanoid: 1, robe: 2, snake: 3, bird: 4 };
 
 const loader = new GLTFLoader();
 const cache = {};
@@ -64,7 +70,10 @@ export function rig(geo, spec) {
     const sum = [0, 0, 0, 0, 0], cnt = [0, 0, 0, 0, 0];
     const headZ = bb.max.z - spec.head * L, tailZ = bb.min.z + (spec.tail || 0) * L;
     for (let i = 0; i < n; i++) {
-      if (y(i) < legTopY) {
+      if (spec.tailFirst && z(i) < tailZ) {
+        // yerde kıvrılan kuyruk bacak sanılmasın
+        part[i] = 8; w[i] = clamp01((tailZ - z(i)) / (0.12 * L));
+      } else if (y(i) < legTopY) {
         const front = z(i) > mz, left = x(i) > mx;
         const p = front ? (left ? 1 : 2) : (left ? 3 : 4);
         if (spec.kind === 'sit' && !front) continue;   // oturan köpeğin arka bacakları kıvrık, oynamaz
@@ -81,19 +90,26 @@ export function rig(geo, spec) {
       const p = part[i];
       if (p >= 1 && p <= 4) { piv[i * 3 + 1] = legTopY; piv[i * 3 + 2] = sum[p] / (cnt[p] || 1); }
     }
-  } else if (spec.kind === 'humanoid' || spec.kind === 'robe') {
+  } else if (spec.kind === 'humanoid' || spec.kind === 'robe' || spec.kind === 'bird') {
     const armX = spec.armX * H, armMin = bb.min.y + spec.armMin * H, shY = bb.min.y + spec.shoulder * H;
     const headY = bb.min.y + spec.headY * H;
     const sum = new Array(9).fill(0), cnt = new Array(9).fill(0);
-    const bx = spec.kind === 'humanoid' ? midX(bb.min.y + 0.6 * (legTopY - bb.min.y)) : xc;
+    const legged = spec.kind !== 'robe';
+    const bx = legged ? midX(bb.min.y + 0.6 * (legTopY - bb.min.y)) : xc;
+    const zc = (bb.min.z + bb.max.z) / 2, tailZ = bb.min.z + (spec.tail || 0) * L;
     for (let i = 0; i < n; i++) {
       const dx = x(i) - bx;
-      if (spec.kind === 'humanoid' && y(i) < legTopY) {
+      if (spec.kind === 'bird' && spec.tail && z(i) < tailZ && y(i) > legTopY) {
+        // kuyruk tüyleri
+        part[i] = 8; w[i] = clamp01((tailZ - z(i)) / (0.1 * L));
+        continue;
+      }
+      if (legged && y(i) < legTopY) {
         part[i] = dx > 0 ? 1 : 2; w[i] = clamp01((legTopY - y(i)) / (0.2 * H)) * seam(dx);
       } else if (Math.abs(dx) > armX && y(i) > armMin && y(i) < headY) {
         const p = dx < 0 ? 5 : 6;
         part[i] = p; w[i] = clamp01((Math.abs(dx) - armX) / (0.06 * H));
-      } else if (y(i) > headY) {
+      } else if (y(i) > headY && (spec.kind !== 'bird' || z(i) > zc - 0.1 * L)) {
         part[i] = 7; w[i] = clamp01((y(i) - headY) / (0.05 * H));
       } else continue;
       sum[part[i]] += z(i); cnt[part[i]]++;
@@ -126,7 +142,7 @@ export function rig(geo, spec) {
 // ---------- ekran kartı kodu: bölgeleri döndür ----------
 const HEAD = /* glsl */`
 attribute float aPart; attribute float aW; attribute vec3 aPiv;
-uniform float uTime, uMove, uAtk, uFreq, uAmp, uKind, uH, uMinY;
+uniform float uTime, uMove, uAtk, uFreq, uAmp, uKind, uH, uMinY, uGraze;
 vec3 rotX(vec3 p, vec3 c, float a) { vec2 d = p.yz - c.yz; float s = sin(a), k = cos(a); return vec3(p.x, c.y + d.x * k - d.y * s, c.z + d.x * s + d.y * k); }
 vec3 rotZ(vec3 p, vec3 c, float a) { vec2 d = p.xy - c.xy; float s = sin(a), k = cos(a); return vec3(c.x + d.x * k - d.y * s, c.y + d.x * s + d.y * k, p.z); }
 `;
@@ -145,7 +161,12 @@ const BODY = /* glsl */`
     // kollar: yürürken zıt bacakla sallanır; sağ kol saldırıda kalkar
     float right = aPart < 5.5 ? 1.0 : 0.0;
     float s = sin(cyc + (right > 0.5 ? 0.0 : 3.14159));
-    if (uKind > 1.5) {
+    if (uKind > 3.5) {
+      // kuş kanatları: yürürken ve saldırırken çırpar
+      float flap = uAtk * 0.9 + uMove * abs(sin(uTime * 16.0)) * 0.35 + abs(sin(uTime * 0.7)) * 0.04;
+      float side = right > 0.5 ? -1.0 : 1.0;
+      transformed = rotZ(transformed, aPiv, side * flap * aW);
+    } else if (uKind > 1.5 && uKind < 2.5) {
       float raise = sin(uTime * 1.8) * 0.12 + uAtk * 0.7;
       float side = right > 0.5 ? -1.0 : 1.0;
       transformed = rotZ(transformed, aPiv, side * raise * aW);
@@ -157,18 +178,19 @@ const BODY = /* glsl */`
     }
   } else if (aPart > 6.5 && aPart < 7.5) {
     // baş: hafif nefes, yürürken sallanma, saldırıda ısırma/öne atılma
-    float a = sin(uTime * 2.1) * 0.05 + sin(cyc * 2.0) * 0.05 * uMove + uAtk * 0.55;
-    if (uKind > 2.5) a = sin(uTime * 1.5) * 0.08 + uAtk * 0.9;
+    float a = sin(uTime * 2.1) * 0.05 + sin(cyc * 2.0) * 0.05 * uMove + uAtk * 0.55 + uGraze * idle;
+    if (uKind > 2.5 && uKind < 3.5) a = sin(uTime * 1.5) * 0.08 + uAtk * 0.9;
+    if (uKind > 3.5) a = sin(cyc) * 0.12 * uMove + uAtk * 0.8 + uGraze * idle;   // kuş: yürürken baş öne-arkaya, boşta gagalar
     transformed = rotX(transformed, aPiv, a * aW);
   } else if (aPart > 7.5) {
     // kuyruk sallama
     transformed.x += sin(uTime * (5.0 + 7.0 * uMove)) * 0.12 * uH * aW;
   }
   float k = (transformed.y - uMinY) / uH;
-  if (uKind > 2.5) {
+  if (uKind > 2.5 && uKind < 3.5) {
     // yılan: gövde boyunca kıvrılan dalga
     transformed.x += sin(uTime * (2.0 + 5.0 * uMove) - k * 6.0) * 0.07 * uH * k;
-  } else if (uKind > 1.5) {
+  } else if (uKind > 1.5 && uKind < 2.5) {
     // cüppe eteği dalgalanır
     float e = max(0.0, 1.0 - k / 0.35);
     transformed.x += sin(uTime * 2.2 + transformed.z * 4.0) * 0.03 * uH * e;
@@ -190,7 +212,8 @@ export function animatedInstance(scene, spec) {
   const model = scene.clone(true);
   let rigInfo = null;
   const u = { uTime: { value: 0 }, uMove: { value: 0 }, uAtk: { value: 0 }, uFreq: { value: spec.freq || 8 },
-    uAmp: { value: spec.amp || 0.4 }, uKind: { value: KIND[spec.kind] || 0 }, uH: { value: 1 }, uMinY: { value: 0 } };
+    uAmp: { value: spec.amp || 0.4 }, uKind: { value: KIND[spec.kind] || 0 }, uH: { value: 1 }, uMinY: { value: 0 }, uGraze: { value: 0 } };
+  const phase = Math.random() * 20;   // sürüdeki hayvanlar aynı anda otlamasın
   model.traverse((o) => {
     if (!o.isMesh) return;
     rigInfo = rig(o.geometry, spec);
@@ -215,11 +238,17 @@ export function animatedInstance(scene, spec) {
   function update(t, moving, atk, dt) {
     move += ((moving ? 1 : 0) - move) * Math.min(1, (dt || 0.016) * 8);
     u.uTime.value = t; u.uMove.value = move; u.uAtk.value = atk || 0;
+    if (spec.graze) {
+      // ara ara başını yere eğip otlar / gagalar
+      const pulse = Math.max(0, Math.min(1, (Math.sin(t * spec.grazeRate + phase) - 0.35) * 2.5));
+      const peck = spec.kind === 'bird' ? 0.6 + 0.4 * Math.abs(Math.sin(t * 9)) : 1;
+      u.uGraze.value = spec.graze * pulse * peck;
+    }
     const cyc = t * (spec.freq || 8);
     let y = 0;
     if (spec.kind === 'quad') y = Math.abs(Math.sin(cyc)) * 0.04 * size * move;
     else if (spec.kind === 'sit') y = Math.abs(Math.sin(cyc * 0.5)) * 0.18 * size * move;   // oturan köpek zıplayarak ilerler
-    else if (spec.kind === 'humanoid') y = Math.abs(Math.sin(cyc)) * 0.03 * size * move;
+    else if (spec.kind === 'humanoid' || spec.kind === 'bird') y = Math.abs(Math.sin(cyc)) * 0.03 * size * move;
     else if (spec.kind === 'robe') y = 0.12 * size + Math.sin(t * 1.6) * 0.05 * size;      // büyücü havada süzülür
     holder.position.y = y;
     holder.position.z = (atk || 0) * 0.18 * size;                                            // saldırıda öne atılma
