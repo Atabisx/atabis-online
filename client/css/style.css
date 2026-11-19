@@ -401,3 +401,23 @@ body.standalone #chatBtn { left: 116px; } body.standalone #friendBtn { left: 168
 .rwi b { color: #ffe08a; font-size: 18px; } .rwi small { font-size: 11px; color: #d8d2c0; }
 #rewardSub { color: #a8a290; }
 .chatparty { color: #7dff78; } .chatguild { color: #8ec5ff; }
+
+/* lonca */
+.guildbox { width: min(560px, 96vw); overflow-y: auto; }
+.gtxt { font-size: 13px; color: #d8d2c0; margin: 0; }
+.grow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.grow input { flex: 1; min-width: 120px; height: 44px; border-radius: 10px; border: 1px solid #5a4a2a; background: #12140f; color: #f4f1e8; font: inherit; font-size: 16px; padding: 0 10px; }
+.grow .btn { min-height: 44px; font-size: 14px; }
+.btn.danger { background: #7a2018; color: #ffd9d2; }
+.gstat { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: #c9c4b6; } .gstat b { color: #ffe08a; }
+.gnotice { font-size: 13px; color: #f2e2a0; background: rgba(232,181,74,.08); border-left: 3px solid #e8b54a; padding: 6px 8px; border-radius: 6px; }
+.gnotice:empty { display: none; }
+.gtabs { display: flex; gap: 6px; } .gtabs button { flex: 1; min-height: 40px; border-radius: 10px; border: 1px solid #3a3f35; background: #22261e; color: #c9c4b6; font: inherit; font-weight: 700; }
+.gtabs button.on { background: #3a3220; color: #ffe08a; border-color: #e8b54a; }
+.gtab { display: flex; flex-direction: column; gap: 6px; }
+.gmem { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; background: rgba(0,0,0,.25); font-size: 13px; }
+.gmem .dot { width: 9px; height: 9px; border-radius: 50%; background: #555; flex: none; } .gmem.on .dot { background: #5fd35a; box-shadow: 0 0 6px #5fd35a; }
+.gmem .nm { flex: 1; min-width: 0; } .gmem .nm small { display: block; color: #8b877c; font-size: 11px; }
+.gmem .rk { font-size: 11px; color: #e8b54a; } .gmem button { min-height: 34px; border-radius: 8px; border: 0; background: #3a3f35; color: #f4f1e8; font: inherit; font-size: 12px; padding: 0 8px; }
+#pmenu .guildbtn { background: #4a3a1a; color: #ffe8b0; }
+.label .gtag { display: block; font-size: 10px; color: #8ec5ff; font-weight: 700; margin-bottom: 1px; }

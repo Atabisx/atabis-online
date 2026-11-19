@@ -26,6 +26,7 @@ export function setup(ctx) {
     if (e.target.closest('#loginClaim') && socket) socket.emit('loginClaim');
   });
   $('rewardOk').addEventListener('click', () => $('rewardwin').classList.remove('open'));
+  setupGuild();
   // ---------- grup çerçeveleri ----------
   $('partyFrames').addEventListener('click', (e) => {
     const row = e.target.closest('[data-pid]'); if (!row || !party) return;
@@ -37,6 +38,62 @@ export function setup(ctx) {
     }
   });
 }
+
+// ---------- lonca ----------
+let guild = null, gTab = 'members';
+export const getGuild = () => guild;
+export function openGuild() { if (socket) socket.emit('guildGet'); renderGuild(); $('guildwin').classList.add('open'); }
+function setupGuild() {
+  $('guildX').addEventListener('click', () => $('guildwin').classList.remove('open'));
+  $('guildwin').addEventListener('click', (e) => { if (e.target.id === 'guildwin') $('guildwin').classList.remove('open'); });
+  $('gCreate').addEventListener('click', () => { const n = $('gName').value.trim(); if (n && socket) socket.emit('guildCreate', { name: n }); });
+  document.querySelector('.gtabs').addEventListener('click', (e) => { const b = e.target.closest('[data-gt]'); if (!b) return; gTab = b.dataset.gt; C.sfx.click(); renderGuild(); });
+  $('gtMembers').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-ga]'); if (!b || !socket || !guild) return;
+    const id = Number(b.dataset.id), m = guild.members.find((x) => x.charId === id); if (!m) return;
+    if (b.dataset.ga === 'kick') C.askBox(`${m.name} loncadan çıkarılsın mı?`, (ok) => ok && socket.emit('guildKick', id), 'Çıkar', 'Vazgeç', true);
+    if (b.dataset.ga === 'rank') socket.emit('guildRank', { charId: id });
+    if (b.dataset.ga === 'lead') C.askBox(`Liderliği ${m.name} oyuncusuna devretmek istiyor musun?`, (ok) => ok && socket.emit('guildRank', { charId: id, rank: 'lead' }), 'Devret', 'Vazgeç', true);
+  });
+  $('gStore').addEventListener('click', (e) => { const b = e.target.closest('[data-uid]'); if (b && socket) { socket.emit('guildWithdraw', Number(b.dataset.uid)); C.sfx.click(); } });
+  $('gInv').addEventListener('click', (e) => { const b = e.target.closest('[data-uid]'); if (b && socket) { socket.emit('guildDeposit', Number(b.dataset.uid)); C.sfx.click(); } });
+  $('gYangIn').addEventListener('click', () => socket && socket.emit('guildYang', { dir: 'in', n: Number($('gYangN').value) || 0 }));
+  $('gYangOut').addEventListener('click', () => socket && socket.emit('guildYang', { dir: 'out', n: Number($('gYangN').value) || 0 }));
+  $('gNoticeSet').addEventListener('click', () => socket && socket.emit('guildNotice', $('gNoticeIn').value));
+  $('gLeave').addEventListener('click', () => C.askBox('Loncadan ayrılmak istiyor musun?', (ok) => ok && socket.emit('guildLeave'), 'Ayrıl', 'Vazgeç', true));
+  $('gDisband').addEventListener('click', () => C.askBox('Lonca tamamen dağıtılsın mı? Depodaki eşyalar ve kasa sana kalır.', (ok) => ok && socket.emit('guildDisband'), 'Dağıt', 'Vazgeç', true));
+}
+const CLS_NAMES = { savasci: 'Savaşçı', ninja: 'Ninja', sura: 'Sura', saman: 'Şaman', okcu: 'Okçu' };
+function slotHtml(it) {
+  const d = C.ITEMS[it.key] || { name: '?', rarity: 0 };
+  return `<button class="slot" data-uid="${it.uid}" aria-label="${C.esc(d.name)}" title="${C.esc(d.name + (it.by ? ' · ' + it.by : ''))}">${C.itemIcon(it.key, d)}${it.n > 1 ? `<i class="cnt">${it.n}</i>` : ''}${it.up ? `<i class="upb">+${it.up}</i>` : ''}</button>`;
+}
+function renderGuild() {
+  $('gNone').style.display = guild ? 'none' : '';
+  $('gHas').style.display = guild ? '' : 'none';
+  if (!guild) { $('gTitle').textContent = 'LONCA'; $('gSub').textContent = ''; return; }
+  const g = guild, mine = g.myRank;
+  $('gTitle').textContent = g.name.toLocaleUpperCase('tr-TR');
+  $('gSub').textContent = g.ranks[mine] || '';
+  $('gLv').textContent = g.level; $('gCnt').textContent = `${g.members.length}/${g.cap}`; $('gBonus').textContent = `+%${g.bonus}`;
+  $('gYang').textContent = g.yang.toLocaleString('tr-TR');
+  $('gExp').style.width = (g.level >= g.maxLevel ? 100 : Math.min(100, 100 * g.exp / g.need)) + '%';
+  $('gNotice').textContent = g.notice || '';
+  for (const b of document.querySelectorAll('.gtabs [data-gt]')) b.classList.toggle('on', b.dataset.gt === gTab);
+  $('gtMembers').style.display = gTab === 'members' ? '' : 'none';
+  $('gtStore').style.display = gTab === 'store' ? '' : 'none';
+  $('gtManage').style.display = gTab === 'manage' ? '' : 'none';
+  $('gtMembers').innerHTML = g.members.map((m) => `<div class="gmem${m.online ? ' on' : ''}"><span class="dot"></span>
+      <span class="nm"><b>${C.esc(m.name)}</b> <span class="rk">${m.rank ? g.ranks[m.rank] : ''}</span><small>${CLS_NAMES[m.cls] || ''} · Sv. ${m.level}${m.online && m.map ? ' · ' + C.esc(m.map) : m.online ? '' : ' · çevrimdışı'}</small></span>
+      ${mine === 2 && m.rank < 2 ? `<button data-ga="rank" data-id="${m.charId}">${m.rank ? 'Üye yap' : 'Subay yap'}</button><button data-ga="lead" data-id="${m.charId}">Lider yap</button>` : ''}
+      ${mine >= 1 && m.rank < mine ? `<button data-ga="kick" data-id="${m.charId}">Çıkar</button>` : ''}</div>`).join('');
+  $('gStore').innerHTML = g.storage.map(slotHtml).join('') + `<small style="grid-column:1/-1;color:#8b877c">${g.storage.length}/${g.storeCap} yuva</small>`;
+  $('gInv').innerHTML = (C.inventory() || []).map(slotHtml).join('');
+  $('gDisband').style.display = mine === 2 ? '' : 'none';
+  $('gNoticeIn').disabled = $('gNoticeSet').disabled = mine < 1;
+  if (document.activeElement !== $('gNoticeIn')) $('gNoticeIn').value = g.notice || '';
+}
+export function refreshGuild() { if ($('guildwin').classList.contains('open')) renderGuild(); }
 
 function openMenu() { renderMenuBadges(); $('menuwin').classList.add('open'); }
 function renderMenuBadges() {
@@ -52,6 +109,8 @@ export function bind(sock) {
   socket.on('daily', (d) => { daily = d; renderDaily(); renderMenuBadges(); });
   socket.on('dailyDone', () => { C.sfx.levelUp && C.sfx.levelUp(); });
   socket.on('loginReward', (r) => showLoginReward(r));
+  socket.on('guild', (g) => { guild = g; renderGuild(); });
+  socket.on('guildAsk', ({ name, from }) => C.askBox(`${from} seni "${name}" loncasına davet ediyor.`, (ok) => socket.emit('guildAnswer', { ok })));
 }
 export const getParty = () => party;
 export const inParty = (id) => !!(party && party.members.some((m) => m.id === id));

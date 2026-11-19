@@ -684,10 +684,18 @@ function createPlayer(p) {
     obj.label.el.classList.add('gm');
   }
   if (!p.npc && social.inParty(p.id)) obj.label.el.classList.add('party');
+  setGuildTag(obj, p.guild);
   if (obj.label.hp) { obj.label.hp.parentNode.classList.add('player'); obj.label.hp.style.width = (p.maxHp ? 100 * p.hp / p.maxHp : 100) + '%'; }
   players[p.id] = obj;
   applyLook(obj, p.look);
   return obj;
+}
+// lonca adı etiketin üstünde
+function setGuildTag(obj, name) {
+  let t = obj.label.el.querySelector('.gtag');
+  if (!name) { if (t) t.remove(); return; }
+  if (!t) { t = document.createElement('span'); t.className = 'gtag'; obj.label.el.insertBefore(t, obj.label.el.firstChild); }
+  t.textContent = `[${name}]`;
 }
 // at: binince karakterin altına at modeli gelir
 function setMount(p, on) {
@@ -1844,7 +1852,7 @@ export function startGame(sock, opts = {}) {
     if (opts.onWelcome) opts.onWelcome();
   });
   socket.on('mapChange', (data) => { amDead = false; deadEl.classList.remove('open'); setFishState('idle'); enterMap(data); updateToolButtons(); renderSkillbar(); });
-  socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (shopKind) renderShop(); renderSmith(); if (trade) renderTrade(); });
+  socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (shopKind) renderShop(); renderSmith(); if (trade) renderTrade(); social.refreshGuild(); });
   socket.on('upgraded', ({ ok, name, up, stone }) => smithResult(ok, ok ? (stone ? `BAŞARILI · ${name}` : `BAŞARILI · ${name} +${up}`) : (stone ? 'BAŞARISIZ · taş kırıldı' : `BAŞARISIZ · ${name} +${up}`)));
   socket.on('socketed', ({ ok }) => { if (ok) sfx.enchant(); else sfx.hit('stone', false, null); });
   // ---------- sohbet, fısıltı, arkadaşlar, düello ----------
@@ -1894,6 +1902,7 @@ export function startGame(sock, opts = {}) {
   socket.on('buffs', (list) => { buffList = list; buffAt = performance.now(); renderBuffs(); });
   socket.on('quests', (q) => { quests = q; if (shopKind === 'stable') renderShop(); });
   socket.on('mount', ({ id, on }) => { const p = players[id]; if (p) setMount(p, on); });
+  socket.on('playerGuild', ({ id, guild }) => { const p = players[id]; if (p) setGuildTag(p, guild); });
   socket.on('fishing', ({ id, on }) => { const p = players[id]; if (p) setRod(p, on); });
   socket.on('fishWait', () => setFishState('wait'));
   socket.on('fishBite', () => { setFishState('bite'); sfx.fishBite(); if (navigator.vibrate) navigator.vibrate(150); });
@@ -2194,6 +2203,7 @@ pmenu.addEventListener('click', (e) => {
   if (b.dataset.pm === 'duel' && p) socket.emit('duelRequest', p.id);
   if (b.dataset.pm === 'trade' && p) socket.emit('tradeRequest', p.id);
   if (b.dataset.pm === 'party' && p) socket.emit('partyInvite', p.id);
+  if (b.dataset.pm === 'guild' && p) socket.emit('guildInvite', p.id);
   pmenu.classList.remove('open');
 });
 const _proj = new THREE.Vector3();
@@ -2530,11 +2540,12 @@ window.addEventListener('resize', () => {
 });
 
 // ---------- topluluk: menü, grup, görevler ----------
-const MENU_SOON = { guild: 'Lonca', rank: 'Sıralama', stall: 'Pazar tezgâhı', dungeon: 'Zindan', events: 'Etkinlikler', help: 'Rehber' };
+const MENU_SOON = { rank: 'Sıralama', stall: 'Pazar tezgâhı', dungeon: 'Zindan', events: 'Etkinlikler', help: 'Rehber' };
 const menuHandlers = {
   friends: () => document.getElementById('friendBtn').click(),
   char: () => document.getElementById('charBtn').click(),
   skills: () => document.getElementById('skillBtn').click(),
+  guild: () => social.openGuild(),
 };
 export function onMenu(key, fn) { menuHandlers[key] = fn; }
 function partyLabels(pt) {
@@ -2542,7 +2553,7 @@ function partyLabels(pt) {
   for (const p of Object.values(players)) if (p.label && !p.npc && p.id !== myId) p.label.el.classList.toggle('party', ids.has(p.id));
 }
 social.setup({
-  myId: () => myId, esc, toast, askBox, itemIcon, sfx, get ITEMS() { return ITEMS; },
+  myId: () => myId, esc, toast, askBox, itemIcon, sfx, get ITEMS() { return ITEMS; }, inventory: () => inv.inventory,
   onParty: partyLabels,
   menuAction: (k) => { if (menuHandlers[k]) menuHandlers[k](); else toast(`${MENU_SOON[k] || k} çok yakında!`); },
 });

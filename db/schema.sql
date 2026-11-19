@@ -49,3 +49,35 @@ ALTER TABLE characters ADD COLUMN IF NOT EXISTS quests JSONB NOT NULL DEFAULT '{
 ALTER TABLE characters ADD COLUMN IF NOT EXISTS stats JSONB NOT NULL DEFAULT '{}';
 -- arkadaş listesi (karakter adları)
 ALTER TABLE characters ADD COLUMN IF NOT EXISTS friends JSONB NOT NULL DEFAULT '[]';
+
+-- Aşama 5: lonca, krallık, pazar tezgâhı
+CREATE TABLE IF NOT EXISTS guilds (
+  id         SERIAL PRIMARY KEY,
+  name       VARCHAR(16) NOT NULL,
+  leader_id  INTEGER,
+  level      INTEGER     NOT NULL DEFAULT 1,
+  exp        BIGINT      NOT NULL DEFAULT 0,
+  storage    JSONB       NOT NULL DEFAULT '[]',
+  yang       BIGINT      NOT NULL DEFAULT 0,
+  notice     TEXT        NOT NULL DEFAULT '',
+  wins       INTEGER     NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS guilds_name_lower_idx ON guilds (lower(name));
+ALTER TABLE characters ADD COLUMN IF NOT EXISTS guild_id INTEGER;
+ALTER TABLE characters ADD COLUMN IF NOT EXISTS guild_rank SMALLINT NOT NULL DEFAULT 0;   -- 0 üye, 1 subay, 2 lider
+ALTER TABLE characters ADD COLUMN IF NOT EXISTS empire SMALLINT;                         -- 1 Shinsoo (kırmızı), 2 Chunjo (sarı), 3 Jinno (mavi)
+CREATE TABLE IF NOT EXISTS stalls (
+  char_id    INTEGER     PRIMARY KEY REFERENCES characters(id) ON DELETE CASCADE,
+  owner_name VARCHAR(14) NOT NULL,
+  map_id     INTEGER     NOT NULL,
+  x          REAL        NOT NULL,
+  z          REAL        NOT NULL,
+  title      VARCHAR(32) NOT NULL,
+  items      JSONB       NOT NULL DEFAULT '[]',
+  earnings   BIGINT      NOT NULL DEFAULT 0,
+  log        JSONB       NOT NULL DEFAULT '[]',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- sıralama sorguları için
+CREATE INDEX IF NOT EXISTS characters_level_idx ON characters (level DESC, exp DESC);

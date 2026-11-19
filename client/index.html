@@ -160,6 +160,35 @@
       <div class="loginbox"><b>Günlük giriş ödülü</b><div id="loginDays"></div><div id="loginInfo"></div></div>
     </div>
   </div>
+  <div id="guildwin" class="modal" role="dialog" aria-label="Lonca">
+    <div class="modalbox guildbox">
+      <div class="mhead"><b id="gTitle" style="color:#e8b54a;letter-spacing:.06em">LONCA</b><span id="gSub" style="font-size:12px;color:#8ec5ff"></span><button id="guildX" class="xbtn" aria-label="Kapat">×</button></div>
+      <div id="gNone">
+        <p class="gtxt">Bir loncan yok. Bir oyuncuya dokunup lonca daveti bekleyebilir ya da kendi loncanı kurabilirsin.</p>
+        <p class="gtxt"><b>Kurma şartı:</b> 20. seviye ve 100.000 yang. Lonca seviyesi arttıkça üyelere ek tecrübe, daha çok üye yeri ve daha büyük depo.</p>
+        <div class="grow"><input id="gName" maxlength="16" placeholder="Lonca adı" aria-label="Lonca adı"><button id="gCreate" class="btn">Kur</button></div>
+      </div>
+      <div id="gHas" style="display:none">
+        <div class="gstat"><span>Seviye <b id="gLv">1</b></span><span>Üye <b id="gCnt">0</b></span><span>Tecrübe bonusu <b id="gBonus">+%0</b></span><span>Kasa <b id="gYang">0</b></span></div>
+        <div class="dqbar"><i id="gExp" style="width:0%"></i></div>
+        <div id="gNotice" class="gnotice"></div>
+        <div class="gtabs" role="tablist"><button data-gt="members" class="on">Üyeler</button><button data-gt="store">Depo</button><button data-gt="manage">Yönetim</button></div>
+        <div id="gtMembers" class="gtab"></div>
+        <div id="gtStore" class="gtab" style="display:none">
+          <small class="gtxt">Herkes depoya koyabilir; lider ve subaylar alabilir. Kasaya yang koyabilirsin, kasadan sadece lider alır.</small>
+          <div class="tgrid inv" id="gStore"></div>
+          <div class="tinvhead">Çantan <small>(depoya koymak için dokun)</small></div>
+          <div class="tgrid inv" id="gInv"></div>
+          <div class="grow"><input id="gYangN" type="number" inputmode="numeric" placeholder="Yang" aria-label="Yang miktarı"><button id="gYangIn" class="btn alt">Kasaya koy</button><button id="gYangOut" class="btn alt">Kasadan al</button></div>
+        </div>
+        <div id="gtManage" class="gtab" style="display:none">
+          <div class="grow"><input id="gNoticeIn" maxlength="140" placeholder="Lonca duyurusu" aria-label="Lonca duyurusu"><button id="gNoticeSet" class="btn alt">Kaydet</button></div>
+          <small class="gtxt">Oyuncuya dokunup "Loncaya davet et" ile üye alırsın. Lonca sohbeti için mesajın başına % koy.</small>
+          <div class="grow"><button id="gLeave" class="btn alt">Loncadan ayrıl</button><button id="gDisband" class="btn danger">Loncayı dağıt</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div id="rewardwin" class="modal" role="dialog" aria-label="Giriş ödülü">
     <div class="modalbox rewardbox">
       <b id="rewardTitle" class="rwt"></b>
@@ -193,6 +222,7 @@
     <button data-pm="whisper">Fısılda</button>
     <button data-pm="party" class="partybtn">Gruba davet et</button>
     <button data-pm="trade" class="tradebtn">Ticaret</button>
+    <button data-pm="guild" class="guildbtn">Loncaya davet et</button>
     <button data-pm="friend">Arkadaş ekle</button>
     <button data-pm="duel" class="duelbtn">Düello iste</button>
   </div>

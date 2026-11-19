@@ -5,6 +5,7 @@ const R = require('./rules');
 const config = require('../config');
 const { Zone, boundsOf } = require('./zone');
 const { createSocial } = require('./social');
+const { createGuilds } = require('./guild');
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const VILLAGES = R.MAPS.filter((m) => m.village).map((m) => m.id);
@@ -29,7 +30,8 @@ function createWorld(io) {
     return l;
   }
   const publicPlayer = (p) => ({ id: p.id, name: p.name, cls: p.class, x: p.x, z: p.z, ry: p.ry, level: p.level,
-    look: looks(p), hp: p.hp, maxHp: p.maxHp, dead: !!p.dead, mounted: !!p.mounted, gm: !!p.gm });
+    look: looks(p), hp: p.hp, maxHp: p.maxHp, dead: !!p.dead, mounted: !!p.mounted, gm: !!p.gm,
+    guild: p.guild ? p.guild.name : null, empire: p.empire || 0 });
   function recalc(p) {
     p.maxHp = R.maxHp(p);
     p.maxMp = R.maxMp(p);
@@ -204,8 +206,11 @@ function createWorld(io) {
   }
 
   // ---------- tecrübe, hasar, iyileşme ----------
-  function expRaw(p, amount, kill) {
+  // tecrübe çarpanı: lonca seviyesi, etkinlikler, krallık savaşı ödülü
+  function expMul(p) { return 1 + guilds.expBonus(p) / 100 + (W.expBonus ? W.expBonus(p) : 0); }
+  function expRaw(p, amount, kill, fromMob = true) {
     if (kill) p.kills++;
+    if (fromMob) { amount = Math.round(amount * expMul(p)); guilds.addExp(p, amount); }
     if (p.level >= R.MAX_LEVEL) return;
     p.exp += amount;
     let up = false;
@@ -216,6 +221,7 @@ function createWorld(io) {
       recalc(p); p.hp = p.maxHp; p.mp = p.maxMp; sendHp(p); sendMp(p); sendInv(p); sendSkills(p);
       notice(p, `+${R.STAT_PER_LEVEL || 3} durum puanı kazandın. Karakter penceresinden (K) dağıt.`);
       levelRewards(p);
+      guilds.onLevel(p);
     }
     sendStats(p, up);
     p.socket.emit('expGain', amount);
@@ -276,7 +282,9 @@ function createWorld(io) {
       sendHp(t);
     },
   };
-  const social = createSocial({ players, notice, sendInv, addItem, freeSlotsFor, save, giveExpDirect: (p, n) => expRaw(p, n, false) });
+  const W = {};      // sonraki aşamaların (krallık, etkinlik) bağlandığı yer
+  const social = createSocial({ players, notice, sendInv, addItem, freeSlotsFor, save, giveExpDirect: (p, n) => expRaw(p, n, false, false) });
+  const guilds = createGuilds({ db, players, notice, sendInv, addItem, save, announce: (t) => io.emit('announce', t) });
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
 
   // seviye ödülleri: 25'te at görevi, 30'da olta
@@ -439,6 +447,7 @@ function createWorld(io) {
       mapId: R.MAPS[row.map_id] ? row.map_id : 0, hp: row.hp, dead: false, zone: null,
       mp: row.mp, skills: row.skills || {}, quests: row.quests || {}, stats: row.stats || {}, buffs: {}, skillCd: {}, mounted: false,
       fish: null, facing: 0, friends: Array.isArray(row.friends) ? row.friends : [], duel: null,
+      guildId: row.guild_id || null, guildRank: row.guild_rank || 0, guild: null, empire: row.empire || 0,
     };
     if (prev) {
       for (const k of ['level', 'exp', 'yang', 'kills', 'inventory', 'equip', 'nextUid', 'hp', 'mp', 'skills', 'quests', 'stats', 'buffs', 'friends']) p[k] = prev[k];
@@ -464,6 +473,7 @@ function createWorld(io) {
     sendFriends(p); tellFriends(p, true);
     sendHp(p); sendMp(p); sendSkills(p); sendQuests(p); sendBuffs(p);
     social.onConnect(p, socket);
+    guilds.onConnect(p, socket);
 
     socket.on('move', (m) => {
       if (!m || p.dead) return;
@@ -1017,7 +1027,7 @@ function createWorld(io) {
     socket.on('chat', (text) => {
       const t = String(text || '').replace(/[<>&"'\\]/g, '').trim().slice(0, 80);
       if (p.gm && t.startsWith('/')) { gmCommand(p, t); return; }
-      if (t && social.chat(p, t)) return;
+      if (t && (social.chat(p, t) || guilds.chat(p, t))) return;
       if (t && p.zone) p.zone.emit('chat', { name: p.name, text: t, gm: !!p.gm });
     });
 
@@ -1026,7 +1036,7 @@ function createWorld(io) {
       delete players[socket.id];
       if (p.duel) endDuel(null, p, 'left');
       if (p.trade) closeTrade(p, `${p.name} oyundan çıktı, ticaret iptal.`);
-      social.onDisconnect(p);
+      social.onDisconnect(p); guilds.onDisconnect(p);
       if (p.zone) { p.mapId = p.zone.id; p.zone.removePlayer(p); p.zone = null; }
       tellFriends(p, false);
       save(p);
@@ -1080,7 +1090,7 @@ function createWorld(io) {
   }, 100);
 
   return {
-    async saveAll() { await Promise.all(Object.values(players).map(save)); },
+    async saveAll() { await Promise.all(Object.values(players).map(save)); await guilds.saveAll(); },
     online: () => Object.keys(players).length,
     zones,       // testler için
     players,
