@@ -10,6 +10,7 @@ const { createRealm } = require('./realm');
 const { createMarket } = require('./market');
 const { createDungeons } = require('./dungeon');
 const { createEvents } = require('./events');
+const { createRanking } = require('./ranking');
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const VILLAGES = R.MAPS.filter((m) => m.village).map((m) => m.id);
@@ -314,6 +315,7 @@ function createWorld(io) {
   const market = createMarket({ db, players, notice, sendInv, addItem, save, zones });
   const dungeons = createDungeons({ io, players, notice, moveToZone, hooks, villageFor });
   const events = createEvents({ io, zones, notice });
+  const ranking = createRanking({ db });
   W.expBonus = (p) => realm.expBonus(p) + events.expBonus(p);
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
 
@@ -509,6 +511,7 @@ function createWorld(io) {
     market.onConnect(p, socket);
     dungeons.onConnect(p, socket);
     events.onConnect(p, socket);
+    ranking.onConnect(p, socket);
 
     socket.on('move', (m) => {
       if (!m || p.dead) return;

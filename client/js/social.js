@@ -29,6 +29,9 @@ export function setup(ctx) {
   setupGuild();
   setupStalls();
   setupDungeon();
+  $('rankX').addEventListener('click', () => $('rankwin').classList.remove('open'));
+  $('rankwin').addEventListener('click', (e) => { if (e.target.id === 'rankwin') $('rankwin').classList.remove('open'); });
+  document.querySelector('.rtabs').addEventListener('click', (e) => { const b = e.target.closest('[data-rt]'); if (!b) return; rankTab = b.dataset.rt; C.sfx.click(); loadRank(); });
   $('empirePick').addEventListener('click', (e) => {
     const b = e.target.closest('[data-emp]'); if (!b || !socket) return;
     const k = Number(b.dataset.emp);
@@ -78,6 +81,29 @@ function renderWarHud() {
   el.innerHTML = [1, 2, 3].map((e) => `<span style="color:${EMPIRES[e].color}">${war.score[e] || 0}</span>`).join('<small>·</small>') + `<small>${fmtLeft(war.ends - Date.now())}</small>`;
 }
 export function refreshWar() { renderWarHud(); }
+
+// ---------- sıralama ----------
+let rankTab = 'level', rankData = null;
+export function openRank() { $('rankwin').classList.add('open'); loadRank(); }
+function loadRank() { if (socket) socket.emit('rankGet', rankTab); for (const b of document.querySelectorAll('.rtabs [data-rt]')) b.classList.toggle('on', b.dataset.rt === rankTab); $('rankList').innerHTML = '<p class="gtxt">Yükleniyor…</p>'; }
+function renderRank() {
+  if (!rankData || rankData.tab !== rankTab) return;
+  const rows = rankData.rows, me = C.myName();
+  const emp = (e) => (e && EMPIRES[e] ? `<span class="emp" style="display:inline-block;width:8px;height:8px;transform:rotate(45deg);margin-right:5px;background:${EMPIRES[e].color}"></span>` : '');
+  $('rankMine').textContent = rankData.mine ? `Senin sıran: ${rankData.mine}.` : '';
+  if (!rows.length) { $('rankList').innerHTML = '<p class="gtxt">Henüz kimse yok. İlk sen ol!</p>'; return; }
+  if (rankTab === 'empire') {
+    const max = Math.max(1, ...rows.map((r) => r.levels));
+    $('rankList').innerHTML = rows.map((r) => `<div class="rk" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between"><b style="color:${EMPIRES[r.empire].color}">${EMPIRES[r.empire].name}</b><span class="vl">${r.players} oyuncu</span></div>
+      <small style="color:#a8a290">Toplam seviye ${r.levels.toLocaleString('tr-TR')} · En yüksek Sv. ${r.top}${war && war.winner === r.empire ? ' · Savaş galibi (+%20 tecrübe)' : ''}</small><div class="empbar" style="width:${100 * r.levels / max}%;background:${EMPIRES[r.empire].color}"></div></div>`).join('');
+    return;
+  }
+  $('rankList').innerHTML = rows.map((r, i) => {
+    if (rankTab === 'guild') return `<div class="rk"><span class="no">${i + 1}</span><span class="nm"><b>${C.esc(r.name)}</b><small>Lider ${C.esc(r.leader || '-')} · ${r.members} üye</small></span><span class="vl">Sv. ${r.level}</span></div>`;
+    const val = rankTab === 'level' ? `Sv. ${r.level}` : rankTab === 'kills' ? `${Number(r.value).toLocaleString('tr-TR')} av` : `${r.value} galibiyet`;
+    return `<div class="rk${r.name === me ? ' me' : ''}"><span class="no">${i + 1}</span><span class="nm">${emp(r.empire)}<b>${C.esc(r.name)}</b><small>${CLS_NAMES[r.class] || ''}${rankTab !== 'level' ? ' · Sv. ' + r.level : ''}${r.guild ? ' · [' + C.esc(r.guild) + ']' : ''}</small></span><span class="vl">${val}</span></div>`;
+  }).join('');
+}
 
 // ---------- zindan ----------
 let dun = null, dunInfo = null;
@@ -222,6 +248,7 @@ export function bind(sock) {
   socket.on('guild', (g) => { guild = g; renderGuild(); });
   socket.on('warState', (w) => { war = w; renderEvents(); renderWarHud(); C.onWar && C.onWar(w); });
   socket.on('events', (list) => { events = list; renderEvents(); });
+  socket.on('rank', (d) => { rankData = d; renderRank(); });
   socket.on('dungeon', (d) => { dun = d; renderDunHud(); });
   socket.on('dungeonInfo', (d) => { dunInfo = d; renderDungeon(); });
   socket.on('stallView', (v) => { stallSeen = v; renderStall(); $('stallwin').classList.add('open'); });

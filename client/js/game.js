@@ -2620,6 +2620,7 @@ const menuHandlers = {
   events: () => social.openEvents(),
   stall: () => social.openMyStall(),
   dungeon: () => social.openDungeon(),
+  rank: () => social.openRank(),
 };
 export function onMenu(key, fn) { menuHandlers[key] = fn; }
 function partyLabels(pt) {
@@ -2627,7 +2628,7 @@ function partyLabels(pt) {
   for (const p of Object.values(players)) if (p.label && !p.npc && p.id !== myId) p.label.el.classList.toggle('party', ids.has(p.id));
 }
 social.setup({
-  myId: () => myId, esc, toast, askBox, itemIcon, sfx, get ITEMS() { return ITEMS; }, inventory: () => inv.inventory, yang: () => inv.yang,
+  myId: () => myId, esc, toast, askBox, itemIcon, sfx, get ITEMS() { return ITEMS; }, inventory: () => inv.inventory, yang: () => inv.yang, myName: () => myName,
   onParty: partyLabels,
   inWarMap: () => !!(currentMap && currentMap.war),
   onWar: () => refreshFoes(),
