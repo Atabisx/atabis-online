@@ -9,6 +9,7 @@ const { createGuilds } = require('./guild');
 const { createRealm } = require('./realm');
 const { createMarket } = require('./market');
 const { createDungeons } = require('./dungeon');
+const { createEvents } = require('./events');
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const VILLAGES = R.MAPS.filter((m) => m.village).map((m) => m.id);
@@ -195,8 +196,9 @@ function createWorld(io) {
       p.inventory.push(it); sendInv(p); notice(p, R.ITEMS[a0].name + ' verildi.'); return;
     }
     if (cmd === 'savas') { realm.gm(p, args); return; }
+    if (cmd === 'etkinlik') { events.gm(p, args); return; }
     if (cmd === 'iyiles') { p.hp = p.maxHp; p.mp = p.maxMp; sendHp(p); sendMp(p); return; }
-    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /iyiles, /savas [bitir]');
+    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /iyiles, /savas [bitir], /etkinlik <metin|exp|boss|drop> [dk]');
   }
 
   // zindan ve savaş meydanı kaydedilmez: oyuncu tekrar girince köyde başlar
@@ -236,6 +238,7 @@ function createWorld(io) {
   // ---------- bölgelerin ihtiyaç duyduğu işlemler ----------
   const hooks = {
     publicPlayer,
+    dropMul: () => events.dropMul(),
     // grup varsa tecrübe yakındaki üyelerle paylaşılır
     giveExp(p, amount) { social.shareExp(p, amount, expRaw); },
     onStoneBroken(p) { social.progress(p, 'stone'); },
@@ -310,7 +313,8 @@ function createWorld(io) {
   const realm = createRealm({ db, io, players, notice, moveToZone, sendInv, addItem, save, villageFor });
   const market = createMarket({ db, players, notice, sendInv, addItem, save, zones });
   const dungeons = createDungeons({ io, players, notice, moveToZone, hooks, villageFor });
-  W.expBonus = (p) => realm.expBonus(p) + (W.eventBonus ? W.eventBonus(p) : 0);
+  const events = createEvents({ io, zones, notice });
+  W.expBonus = (p) => realm.expBonus(p) + events.expBonus(p);
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
 
   // seviye ödülleri: 25'te at görevi, 30'da olta
@@ -504,6 +508,7 @@ function createWorld(io) {
     realm.onConnect(p, socket);
     market.onConnect(p, socket);
     dungeons.onConnect(p, socket);
+    events.onConnect(p, socket);
 
     socket.on('move', (m) => {
       if (!m || p.dead) return;

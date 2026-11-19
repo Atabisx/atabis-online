@@ -2073,6 +2073,8 @@ export function startGame(sock, opts = {}) {
   });
   socket.on('mobHeal', ({ id, hp }) => { const m = mobs[id]; if (m) { m.hp = hp; m.label.hp.style.width = '100%'; } });
   socket.on('stoneSpawn', (s) => createStone(s));
+  socket.on('stoneGone', ({ id }) => removeStone(id));
+  socket.on('mobGone', ({ id }) => removeMob(id));
   socket.on('stoneDown', ({ id, by, name, stoneName }) => {
     if (stones[id]) { sfx.stoneBreak(stones[id]); fx.stoneBreak(stones[id], stones[id].glowColor || '#ff4a2f'); }
     removeStone(id);

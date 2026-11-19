@@ -149,6 +149,20 @@ class Zone {
     this.stones.set(id, s);
     this.emit('stoneSpawn', s);
   }
+  // etkinlik metini: rastgele yerde, kırılınca yeniden çıkmaz
+  spawnExtraStone() {
+    const [x, z] = this.randomSpot();
+    const lv = this.def.minLevel + 4, purple = Math.random() < 0.4;
+    const hp = Math.round((100 + lv * lv * 2.5 + lv * 20) * (purple ? 7 : 5));
+    const s = { id: this.nextId++, spot: -1, extra: true, x, z, lv, hp, max: hp, name: purple ? 'Gölge Metini' : 'Ölüm Metini', color: purple ? 'purple' : 'red' };
+    this.stones.set(s.id, s);
+    this.emit('stoneSpawn', s);
+    return s;
+  }
+  removeExtras() {
+    for (const s of [...this.stones.values()]) if (s.extra) { this.stones.delete(s.id); this.emit('stoneGone', { id: s.id }); }
+    for (const m of [...this.mobs.values()]) if (m.event) { this.mobs.delete(m.id); this.emit('mobGone', { id: m.id }); }
+  }
 
   // ---------- ganimet ----------
   publicDrop(d) { return { id: d.id, x: d.x, z: d.z, owner: d.owner, key: d.item ? d.item.key : null, n: d.item ? d.item.n || 1 : 0, yang: d.yang }; }
@@ -163,7 +177,7 @@ class Zone {
   rollLoot(x, z, owner, drops, potions, yangRange) {
     if (yangRange) this.makeDrop(x, z, owner, null, Math.round(rand(yangRange[0], yangRange[1])));
     for (const [key, chance] of drops || []) {
-      if (R.ITEMS[key] && Math.random() < chance) this.makeDrop(x, z, owner, { key });
+      if (R.ITEMS[key] && Math.random() < chance * (this.hooks.dropMul ? this.hooks.dropMul() : 1)) this.makeDrop(x, z, owner, { key });
     }
     for (const [key, chance] of potions || []) {
       if (R.ITEMS[key] && Math.random() < chance) this.makeDrop(x, z, owner, { key, n: 1 + Math.floor(Math.random() * 3) });
@@ -261,7 +275,7 @@ class Zone {
       // demirci yaprakları: %35 şansla 1-3 adet (rengi rastgele)
       if (Math.random() < 0.35) this.makeDrop(best.x, best.z, p.id, { key: R.LEAVES[Math.floor(Math.random() * 3)], n: 1 + Math.floor(Math.random() * 3) });
       this.makeDrop(best.x, best.z, p.id, null, Math.round((50 + best.lv * 30) * (n + Math.random())));
-      setTimeout(() => this.spawnStone(), 15000);
+      if (!best.extra) setTimeout(() => this.spawnStone(), 15000);
     }
   }
 
@@ -275,9 +289,9 @@ class Zone {
     if (owner) { this.hooks.giveExp(owner, R.expGain(m.d.lv, owner.level, m.d.exp)); this.hooks.onMobKilled(owner, m); }
     this.rollLoot(m.x, m.z, ownerId, m.d.drops, m.d.potions, m.d.yang);
     const delay = (m.d.respawn || 12) * 1000;
-    if (!this.noRespawn) setTimeout(() => { if (this.alive) this.spawnMob(m.key, m.spot); }, delay);
+    if (!this.noRespawn && !m.event) setTimeout(() => { if (this.alive) this.spawnMob(m.key, m.spot); }, delay);
     if (this.onKill) this.onKill(m, owner);
-    if (m.d.boss && !this.noRespawn) this.hooks.announce(`${m.d.name} ${owner ? owner.name + ' tarafından ' : ''}yenildi! ${m.d.respawn || 120} saniye sonra geri dönecek.`, this);
+    if (m.d.boss && !this.noRespawn && !m.event) this.hooks.announce(`${m.d.name} ${owner ? owner.name + ' tarafından ' : ''}yenildi! ${m.d.respawn || 120} saniye sonra geri dönecek.`, this);
   }
 
   // ---------- beceriler ----------
