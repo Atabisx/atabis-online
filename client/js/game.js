@@ -226,8 +226,13 @@ const loader = new GLTFLoader();
 // Sınıfa özel karakter modelleri (mixamo iskeletli, kendi kıyafeti ve dokusuyla).
 // Bekleme/yürüme/koşma Soldier'dan aktarılır, böylece silah tutuşu ve saldırı pozları aynı kalır.
 // hide: silah takılıyken gizlenen parçalar (modelin kendi asası gibi); skip: ölçüde sayılmayan parçalar.
+// k: boy ölçeği (verilmezse ölçülür); helm: kask takılınca gizlenen kendi miğferi;
+// helmet: false → kapüşonlu modele kask eşyası giydirilmez (iç içe geçmesin)
 const CHAR_MODELS = {
-  saman: { url: 'models/chars/saman.glb', hide: ['prop'], skip: ['prop', 'outline'] },
+  savasci: { url: 'models/chars/savasci.glb', skip: ['helmet'], helm: ['helmet'] },             // boynuzlu miğferli barbar
+  ninja: { url: 'models/chars/ninja.glb', helmet: false },                                     // kapüşonlu suikastçı
+  sura: { url: 'models/chars/sura.glb', hide: ['spear'], k: 1.1 },                              // kanatlı savaşçı (kanatlar boyu etkilemesin)
+  saman: { url: 'models/chars/saman.glb', hide: ['prop'], skip: ['prop', 'outline'], k: 0.933 },
 };
 const charModels = {};   // cls -> { scene, calib, clips }
 function loadGlb(url) { return new Promise((res) => loader.load(url, res, undefined, (e) => { console.warn('Model yüklenemedi:', url, e); res(null); })); }
@@ -247,12 +252,17 @@ const modelReady = (async () => {
       sc.traverse((o) => { if (o.isMesh && part(o, cfg.skip || [])) { hidden.push(o); o.visible = false; } });
       const c0 = calibrate(sc);
       sc.rotation.y = c0.faceOffset - calib.faceOffset;          // Soldier ile aynı yöne baksın
-      const cc = calibrate(sc);
+      const cc = calibrate(sc, cfg.k);
       for (const o of hidden) o.visible = true;
-      sc.traverse((o) => { if (o.isMesh && part(o, cfg.hide || [])) o.userData.hideWithWeapon = true; if (o.isMesh && part(o, ['outline'])) o.userData.outline = true; });
+      sc.traverse((o) => {
+        if (!o.isMesh) return;
+        if (part(o, cfg.hide || [])) o.userData.hideWithWeapon = true;
+        if (part(o, cfg.helm || [])) o.userData.ownHelmet = true;
+        if (part(o, ['outline'])) o.userData.outline = true;
+      });
       const moves = retargetClips(g.scene, sc, g.animations.filter((a) => a.name !== 'TPose'));
       for (const k of Object.keys(cc)) if (cc[k] && cc[k].bone) cc[k] = correctFrame(cc[k], moves);
-      charModels[cls] = { scene: sc, calib: cc, clips: moves };
+      charModels[cls] = { scene: sc, calib: cc, clips: moves, cfg };
     } catch (e) { console.warn('Karakter modeli hazırlanamadı', cls, e); }
   }));
 })();
@@ -322,13 +332,13 @@ function localTransform(bone, wPos, wQuat, wScale) {
   return { p, q, s };
 }
 // modelin baktığı yönü, boyunu ve kılıç/zırh yerlerini dinlenme pozundan hesapla
-function calibrate(root) {
+function calibrate(root, kOver) {
   root.updateMatrixWorld(true);
   const box = new THREE.Box3();
   root.traverse((o) => { if (o.isMesh && o.visible) box.expandByObject(o); });
   if (box.isEmpty()) box.setFromObject(root);
   const height = box.max.y - box.min.y;
-  const k = height / 1.8;                         // modelin 1 metresi
+  const k = kOver || height / 1.8;               // modelin 1 metresi
   const L = boneByName(root, 'LeftArm'), R = boneByName(root, 'RightArm');
   const hand = boneByName(root, 'RightHand'), finger = boneByName(root, 'RightHandMiddle1') || boneByName(root, 'RightHandIndex1');
   const spine = boneByName(root, 'Spine2') || boneByName(root, 'Spine1') || boneByName(root, 'Spine');
@@ -579,9 +589,10 @@ function applyLook(p, look) {
   if (w) { wMesh = weaponMesh(w); attach(p, calib.sword, wMesh); }
   if (p.custom) {
     // kendi kıyafeti olan karakter: kostüm parçası ve renk boyası yok; silah takılıysa kendi asası gizlenir
-    p.model.traverse((o) => { if (o.userData.hideWithWeapon) o.visible = !w; });
+    const helmOk = h && !(p.charCfg && p.charCfg.helmet === false);
+    p.model.traverse((o) => { if (o.userData.hideWithWeapon) o.visible = !w; if (o.userData.ownHelmet) o.visible = !helmOk; });
     p.capes = []; p.robe = null;
-    if (h) attach(p, calib.helmet, h.model && ITEM_MODELS[h.model] ? itemModel(h.model, helmetMesh(h)) : helmetMesh(h));
+    if (helmOk) attach(p, calib.helmet, h.model && ITEM_MODELS[h.model] ? itemModel(h.model, helmetMesh(h)) : helmetMesh(h));
     setupAuras(p, wMesh, w, a);
     return;
   }
@@ -623,7 +634,7 @@ function createPlayer(p) {
     const cm = !p.npc && charModels[p.cls];
     const model = SkeletonUtils.clone(cm ? cm.scene : gltf.scene);
     obj.calib = cm ? cm.calib : calib;
-    obj.custom = !!cm;
+    obj.custom = !!cm; obj.charCfg = cm ? cm.cfg : null;
     model.traverse((o) => {
       if (o.isBone) obj.boneMap[o.name] = o;
       if (o.isMesh) {

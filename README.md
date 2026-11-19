@@ -4,7 +4,16 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 3.8 (bu sürüm): Şaman için kendi karakter modeli
+### Aşama 3.9 (bu sürüm): Savaşçı, Ninja ve Sura için yeni karakter modelleri
+
+- **Savaşçı:** boynuzlu miğferli, kürk pelerinli barbar. Kask eşyası takılınca kendi miğferi gizlenir.
+- **Ninja:** kapüşonlu, koyu kıyafetli suikastçı (kask eşyası kapüşonun üstüne giydirilmez).
+- **Sura:** kanatlı, altın işlemeli zırhlı savaşçı. Silah takılıyken kendi mızrağı gizlenir.
+- Modeller kullanıcının Envato Elements'ten indirdiği paketlerden çevrildi (`tools/fbxskin.py`: iskeletli FBX → GLB, kemikler mixamo adlarına çevrilir, dokular küçültülür).
+- Ninja modelinin iskeleti yoktu: savaşçının iskeleti boyuna ve kol açısına göre oturtulup deri ağırlıkları en yakın noktalardan aktarıldı.
+- Hepsi bekleme, yürüme, koşma, saldırı ve beceri pozlarıyla çalışır; silah sağ ele oturur.
+
+### Aşama 3.8: Şaman için kendi karakter modeli
 
 - **Ateş Büyücüsü (`client/models/chars/saman.glb`):** Şaman sınıfı artık kullanıcının eklediği, alev işlemeli kırmızı cüppeli karakterle görünür (mixamo iskeleti, yaklaşık 14 bin nokta, dokular dosyanın içinde).
 - **Animasyon aktarma (`client/js/entities/retarget.js`):** Bekleme, yürüme ve koşma Soldier modelinden dünya uzayında aktarılır. Kemiklerin dinlenme pozu farklı olsa bile duruş korunur. Silah tutuşu ve kask yeri de aynı düzeltmeyle hesaplanır; saldırı, beceri, nefes ve at pozları aynen çalışır.
