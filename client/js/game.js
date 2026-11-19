@@ -956,6 +956,9 @@ const corpses = [];
 function killMobVisual(m, boss) {
   m.label.el.remove(); delete mobs[m.id];
   const root = m.v.root;
+  // yerdeki halka/parıltı gövdeyle birlikte dikilmesin diye kaldırılır
+  const flat = []; root.traverse((o) => { if (o.geometry && (o.geometry.type === 'RingGeometry' || o.geometry.type === 'CircleGeometry')) flat.push(o); });
+  for (const o of flat) o.parent.remove(o);
   // yere yatınca gövdenin yarı genişliği kadar kaldırılır (yarısı toprağa girmesin)
   const ry = root.rotation.y; root.rotation.y = 0; root.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(root), size = box.getSize(new THREE.Vector3());
