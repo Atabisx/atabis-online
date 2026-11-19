@@ -53,11 +53,12 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 class Zone {
-  constructor(io, def, hooks) {
+  constructor(io, def, hooks, opts = {}) {
     this.io = io;
     this.def = def;
     this.id = def.id;
-    this.room = 'map:' + def.id;
+    this.room = opts.room || 'map:' + def.id;     // zindan kopyaları kendi odalarını kullanır
+    this.noRespawn = !!opts.noRespawn;
     this.hooks = hooks;            // world.js'ten gelen: onMobKilled, onPlayerDied, givePlayerDrop...
     this.players = new Map();      // socket.id -> oyuncu
     this.mobs = new Map();
@@ -274,8 +275,9 @@ class Zone {
     if (owner) { this.hooks.giveExp(owner, R.expGain(m.d.lv, owner.level, m.d.exp)); this.hooks.onMobKilled(owner, m); }
     this.rollLoot(m.x, m.z, ownerId, m.d.drops, m.d.potions, m.d.yang);
     const delay = (m.d.respawn || 12) * 1000;
-    setTimeout(() => { if (this.alive) this.spawnMob(m.key, m.spot); }, delay);
-    if (m.d.boss) this.hooks.announce(`${m.d.name} ${owner ? owner.name + ' tarafından ' : ''}yenildi! ${m.d.respawn || 120} saniye sonra geri dönecek.`, this);
+    if (!this.noRespawn) setTimeout(() => { if (this.alive) this.spawnMob(m.key, m.spot); }, delay);
+    if (this.onKill) this.onKill(m, owner);
+    if (m.d.boss && !this.noRespawn) this.hooks.announce(`${m.d.name} ${owner ? owner.name + ' tarafından ' : ''}yenildi! ${m.d.respawn || 120} saniye sonra geri dönecek.`, this);
   }
 
   // ---------- beceriler ----------

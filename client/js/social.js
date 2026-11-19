@@ -28,6 +28,7 @@ export function setup(ctx) {
   $('rewardOk').addEventListener('click', () => $('rewardwin').classList.remove('open'));
   setupGuild();
   setupStalls();
+  setupDungeon();
   $('empirePick').addEventListener('click', (e) => {
     const b = e.target.closest('[data-emp]'); if (!b || !socket) return;
     const k = Number(b.dataset.emp);
@@ -77,6 +78,29 @@ function renderWarHud() {
   el.innerHTML = [1, 2, 3].map((e) => `<span style="color:${EMPIRES[e].color}">${war.score[e] || 0}</span>`).join('<small>·</small>') + `<small>${fmtLeft(war.ends - Date.now())}</small>`;
 }
 export function refreshWar() { renderWarHud(); }
+
+// ---------- zindan ----------
+let dun = null, dunInfo = null;
+export function clearDungeon() { dun = null; renderDunHud(); }
+export function openDungeon() { if (socket) socket.emit('dungeonInfo'); renderDungeon(); $('dungeonwin').classList.add('open'); }
+function renderDungeon() {
+  if (dunInfo) $('dunWaves').innerHTML = dunInfo.waves.map((w, i) => `<span>${i + 1}. ${C.esc(w)}</span>`).join('');
+  $('dunInfo').innerHTML = dun ? 'Şu an zindandasın.' : dunInfo && dunInfo.cooldown > 0 ? `Tekrar girebilmen için <b>${Math.ceil(dunInfo.cooldown / 60000)} dk</b> beklemen gerekiyor.` : dunInfo ? `Temizlediğin zindan: <b>${dunInfo.runs}</b>` : '';
+  $('dunEnter').style.display = dun ? 'none' : ''; $('dunLeave').style.display = dun ? '' : 'none';
+}
+function renderDunHud() {
+  const el = $('dunHud');
+  if (!dun) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = `<b>${C.esc(dun.name)} · ${dun.done ? 'TEMİZLENDİ' : `${dun.stage}/${dun.stages} ${C.esc(dun.wave)}`}</b><small>${dun.done ? 'Köye dönüş' : `Kalan düşman ${dun.left}`} · ${fmtLeft(dun.ends - Date.now())}</small>`;
+}
+function setupDungeon() {
+  $('dungeonX').addEventListener('click', () => $('dungeonwin').classList.remove('open'));
+  $('dungeonwin').addEventListener('click', (e) => { if (e.target.id === 'dungeonwin') $('dungeonwin').classList.remove('open'); });
+  $('dunEnter').addEventListener('click', () => { if (socket) socket.emit('dungeonEnter'); $('dungeonwin').classList.remove('open'); });
+  $('dunLeave').addEventListener('click', () => C.askBox('Zindandan çıkmak istiyor musun? Bekleme süresi sıfırlanmaz.', (ok) => { if (ok && socket) socket.emit('dungeonLeave'); $('dungeonwin').classList.remove('open'); }, 'Çık', 'Kal', true));
+  setInterval(renderDunHud, 1000);
+}
 
 // ---------- pazar ----------
 let stallSeen = null, myStall = null;
@@ -198,6 +222,8 @@ export function bind(sock) {
   socket.on('guild', (g) => { guild = g; renderGuild(); });
   socket.on('warState', (w) => { war = w; renderEvents(); renderWarHud(); C.onWar && C.onWar(w); });
   socket.on('events', (list) => { events = list; renderEvents(); });
+  socket.on('dungeon', (d) => { dun = d; renderDunHud(); });
+  socket.on('dungeonInfo', (d) => { dunInfo = d; renderDungeon(); });
   socket.on('stallView', (v) => { stallSeen = v; renderStall(); $('stallwin').classList.add('open'); });
   socket.on('stallMine', (v) => { myStall = v; renderMyStall(); });
   socket.on('empire', (n) => C.onEmpire && C.onEmpire(n));

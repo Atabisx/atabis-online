@@ -453,3 +453,10 @@ body.standalone #chatBtn { left: 116px; } body.standalone #friendBtn { left: 168
 .st input[type=checkbox] { width: 22px; height: 22px; accent-color: #e8b54a; flex: none; }
 .st.buy:active { border-color: #e8b54a; }
 .mslog { font-size: 12px; color: #c9c4b6; display: flex; flex-direction: column; gap: 2px; max-height: 20vh; overflow-y: auto; }
+
+/* zindan */
+#dunHud { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 14px; border-radius: 12px; background: rgba(20,8,24,.85); border: 1px solid #c03aff; z-index: 6; font-size: 12px; color: #f4f1e8; }
+#dunHud b { color: #e0b0ff; font-size: 13px; } #dunHud small { color: #c9c4b6; }
+.evcard.dun { border-color: #6a2a7a; }
+.dunwaves { display: flex; gap: 6px; } .dunwaves span { flex: 1; text-align: center; padding: 6px 4px; border-radius: 8px; background: rgba(0,0,0,.35); font-size: 11px; color: #d8d2c0; }
+.dunwaves span:last-child { color: #e0b0ff; border: 1px solid #6a2a7a; }

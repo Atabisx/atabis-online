@@ -209,6 +209,19 @@
     </div>
   </div>
   <div id="warHud" style="display:none"></div>
+  <div id="dunHud" style="display:none"></div>
+  <div id="dungeonwin" class="modal" role="dialog" aria-label="Zindan">
+    <div class="modalbox">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">ZİNDAN</b><button id="dungeonX" class="xbtn" aria-label="Kapat">×</button></div>
+      <div class="evcard dun">
+        <div class="evh"><b>🕸️ Örümcek Mağarası</b><span>Sv. 30+ · 25 dakika</span></div>
+        <small class="gtxt">Grubunla (ya da tek başına) kendi mağarana girersin: üç dalga örümcek, sonunda devasa <b>Örümcek Kraliçe</b>. Kraliçe yenilince her üyeye ayrı sandık düşer: kutsama kağıdı, ruh taşları, yapraklar, efsun ve şansa bağlı ekipman. Grup lideri girer, yanındaki üyeler de gelir.</small>
+        <div id="dunWaves" class="dunwaves"></div>
+        <div id="dunInfo" class="gtxt"></div>
+        <div class="frow"><button id="dunEnter" class="btn">Zindana gir</button><button id="dunLeave" class="btn alt" style="display:none">Zindandan çık</button></div>
+      </div>
+    </div>
+  </div>
   <div id="stallwin" class="modal" role="dialog" aria-label="Tezgâh">
     <div class="modalbox">
       <div class="mhead"><b id="stTitle" style="color:#ffd36b"></b><span id="stOwner" style="font-size:12px;color:#8ec5ff"></span><button id="stallX" class="xbtn" aria-label="Kapat">×</button></div>

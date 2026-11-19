@@ -8,6 +8,7 @@ const { createSocial } = require('./social');
 const { createGuilds } = require('./guild');
 const { createRealm } = require('./realm');
 const { createMarket } = require('./market');
+const { createDungeons } = require('./dungeon');
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const VILLAGES = R.MAPS.filter((m) => m.village).map((m) => m.id);
@@ -198,13 +199,15 @@ function createWorld(io) {
     notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /iyiles, /savas [bitir]');
   }
 
+  // zindan ve savaş meydanı kaydedilmez: oyuncu tekrar girince köyde başlar
+  const hiddenMap = (p) => { const id = p.zone ? p.zone.id : p.mapId; return !!(R.MAPS[id] && R.MAPS[id].hidden); };
   async function save(p) {
     try {
       await db.query(
         `UPDATE characters SET level=$2, exp=$3, yang=$4, kills=$5, pos_x=$6, pos_z=$7,
          inventory=$8, equip=$9, next_uid=$10, map_id=$11, hp=$12, mp=$13, skills=$14, quests=$15, stats=$16, friends=$17, last_played=now() WHERE id=$1`,
-        [p.charId, p.level, p.exp, p.yang, p.kills, p.x, p.z, JSON.stringify(p.inventory), JSON.stringify(p.equip),
-         p.nextUid, p.zone ? p.zone.id : p.mapId, p.dead ? p.maxHp : p.hp, p.mp, JSON.stringify(p.skills), JSON.stringify(p.quests), JSON.stringify(p.stats || {}), JSON.stringify(p.friends || [])]);
+        [p.charId, p.level, p.exp, p.yang, p.kills, hiddenMap(p) ? null : p.x, hiddenMap(p) ? null : p.z, JSON.stringify(p.inventory), JSON.stringify(p.equip),
+         p.nextUid, hiddenMap(p) ? villageFor(0) : p.zone ? p.zone.id : p.mapId, p.dead ? p.maxHp : p.hp, p.mp, JSON.stringify(p.skills), JSON.stringify(p.quests), JSON.stringify(p.stats || {}), JSON.stringify(p.friends || [])]);
     } catch (e) { console.error('Kayıt hatası', p.name, e.message); }
   }
 
@@ -306,6 +309,7 @@ function createWorld(io) {
   const guilds = createGuilds({ db, players, notice, sendInv, addItem, save, announce: (t) => io.emit('announce', t) });
   const realm = createRealm({ db, io, players, notice, moveToZone, sendInv, addItem, save, villageFor });
   const market = createMarket({ db, players, notice, sendInv, addItem, save, zones });
+  const dungeons = createDungeons({ io, players, notice, moveToZone, hooks, villageFor });
   W.expBonus = (p) => realm.expBonus(p) + (W.eventBonus ? W.eventBonus(p) : 0);
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
 
@@ -333,7 +337,7 @@ function createWorld(io) {
   // oyuncuyu başka haritaya taşı
   function moveToZone(p, mapId, pos) {
     if (p.trade) closeTrade(p, 'Ticaret iptal: harita değişti.');
-    const target = zones[mapId];
+    const target = mapId && typeof mapId === 'object' ? mapId : zones[mapId];   // zindan kopyası doğrudan verilebilir
     if (!target) return;
     if (p.duel) endDuel(null, p, 'left');
     if (p.zone) p.zone.removePlayer(p);
@@ -467,14 +471,14 @@ function createWorld(io) {
       x: 0, z: 0, ry: 0, moving: false, lastAttack: 0, lastMove: Date.now(), combo: 0, lastPotion: 0,
       level: row.level, exp: row.exp, yang: Number(row.yang), kills: row.kills,
       inventory: row.inventory || [], equip: row.equip || {}, nextUid: row.next_uid,
-      mapId: R.MAPS[row.map_id] ? row.map_id : 0, hp: row.hp, dead: false, zone: null,
+      mapId: R.MAPS[row.map_id] && !R.MAPS[row.map_id].hidden ? row.map_id : 0, hp: row.hp, dead: false, zone: null,
       mp: row.mp, skills: row.skills || {}, quests: row.quests || {}, stats: row.stats || {}, buffs: {}, skillCd: {}, mounted: false,
       fish: null, facing: 0, friends: Array.isArray(row.friends) ? row.friends : [], duel: null,
       guildId: row.guild_id || null, guildRank: row.guild_rank || 0, guild: null, empire: row.empire || 0,
     };
     if (prev) {
       for (const k of ['level', 'exp', 'yang', 'kills', 'inventory', 'equip', 'nextUid', 'hp', 'mp', 'skills', 'quests', 'stats', 'buffs', 'friends']) p[k] = prev[k];
-      if (prev.zone) p.mapId = prev.zone.id;
+      if (prev.zone) p.mapId = prev.zone.instance ? prev.zone : prev.zone.id;
     }
     for (const s of R.EQUIP_SLOTS) if (p.equip[s] === undefined) p.equip[s] = null;
     p.gm = config.gmNames.includes(String(p.name).toLocaleLowerCase('tr-TR'));
@@ -499,6 +503,7 @@ function createWorld(io) {
     guilds.onConnect(p, socket);
     realm.onConnect(p, socket);
     market.onConnect(p, socket);
+    dungeons.onConnect(p, socket);
 
     socket.on('move', (m) => {
       if (!m || p.dead) return;
@@ -1078,6 +1083,7 @@ function createWorld(io) {
     const dt = Math.min(0.25, (now - last) / 1000);
     last = now;
     for (const z of zones) z.tick(dt);
+    dungeons.tickAll(dt);
   }, 100);
   setInterval(() => { for (const p of Object.values(players)) save(p); }, 20000);
   // her saniye: mana yenilenmesi, biten güçlendirmeler
