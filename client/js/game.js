@@ -951,6 +951,37 @@ function removeMob(id) {
   const m = mobs[id]; if (!m) return;
   scene.remove(m.v.root); m.label.el.remove(); delete mobs[id];
 }
+// ölen yaratık yan yatar ve bir süre yerde kalır (boss'lar daha uzun), sonra toprağa gömülür
+const corpses = [];
+function killMobVisual(m, boss) {
+  m.label.el.remove(); delete mobs[m.id];
+  const root = m.v.root;
+  // yere yatınca gövdenin yarı genişliği kadar kaldırılır (yarısı toprağa girmesin)
+  const ry = root.rotation.y; root.rotation.y = 0; root.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(root), size = box.getSize(new THREE.Vector3());
+  root.rotation.y = ry; root.rotation.order = 'YXZ';
+  const half = Math.max(0.05, Math.min(size.x, size.z) / 2);
+  corpses.push({ root, t: 0, side: Math.random() < 0.5 ? 1 : -1, half, lie: boss ? 12 : 3, boss, y0: root.position.y, dust: false });
+}
+function updateCorpses(dt) {
+  for (let i = corpses.length - 1; i >= 0; i--) {
+    const c = corpses[i]; c.t += dt;
+    const fallT = c.boss ? 1.0 : 0.6, fall = Math.min(1, c.t / fallT), e = fall * fall;     // hızlanarak devrilir
+    const bounce = fall >= 1 ? Math.sin(Math.min(1, (c.t - fallT) / 0.25) * Math.PI) * 0.06 : 0;
+    c.root.rotation.z = c.side * (Math.PI / 2) * e - c.side * bounce;
+    let y = c.y0 + c.half * Math.sin(e * Math.PI / 2);
+    if (fall >= 1 && !c.dust) {
+      c.dust = true;
+      const p = c.root.position, n = c.boss ? 40 : 14;
+      for (let k = 0; k < n; k++) { const a = Math.random() * Math.PI * 2; fx.emit(p.x + Math.cos(a) * c.half * 2, 0.2, p.z + Math.sin(a) * c.half * 2, { vx: Math.cos(a) * 2, vy: 0.8, vz: Math.sin(a) * 2, color: '#b8a888', size: c.boss ? 1.2 : 0.5, life: 1.0, grow: 1.5, drag: 2 }); }
+      if (c.boss) sfx.hit('stone', true, p);
+    }
+    const sinkT = c.t - c.lie;
+    if (sinkT > 0) y -= (c.half * 2 + 0.2) * Math.min(1, sinkT / 1.5);
+    c.root.position.y = y;
+    if (sinkT > 1.5) { scene.remove(c.root); corpses.splice(i, 1); }
+  }
+}
 function updateMobs(dt) {
   for (const m of Object.values(mobs)) {
     m.t += dt;
@@ -1029,7 +1060,7 @@ let selected = null;   // {uid} veya {slot}
 const EQUIP = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring'];
 const BONUS_NAMES = { maxhp: ['Maks. Can', ''], maxmp: ['Maks. Mana', ''], atk: ['Saldırı', ''], def: ['Savunma', ''], crit: ['Kritik', '%'],
   atkspeed: ['Saldırı Hızı', '%'], movespeed: ['Hareket Hızı', '%'], monster: ['Canavarlara Güç', '%'], hpsteal: ['Can Çalma', '%'] };
-const SLOT_NAMES = { stone: 'Ruh taşı', weapon: 'Silah', armor: 'Zırh', helmet: 'Miğfer', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', potion: 'İksir', use: 'Kullanılır', fish: 'Balık', gem: 'Değerli taş' };
+const SLOT_NAMES = { stone: 'Ruh taşı', material: 'Malzeme', weapon: 'Silah', armor: 'Zırh', helmet: 'Miğfer', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', potion: 'İksir', use: 'Kullanılır', fish: 'Balık', gem: 'Değerli taş' };
 const ICONS = {
   weapon: '<path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/>',
   armor: '<path d="M8 3 4 6v5l3 1v9h10v-9l3-1V6l-4-3-2 2h-4z"/>',
@@ -1042,6 +1073,7 @@ const ICONS = {
   fish: '<path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0z"/><path d="M18 12l3-3v6z"/>',
   gem: '<circle cx="12" cy="12" r="6"/><circle cx="10" cy="10" r="1.5"/>',
   stone: '<path d="M12 3l7 6-3 10H8L5 9z"/>',
+  material: '<path d="M12 21c-5-3-7-8-5-14 6 0 9 4 9 9"/><path d="M12 21V9"/>',
 };
 // ---------- gerçekçi 3D simgeler (icons.js) ----------
 function iconBuilder(key, def) {
@@ -1061,6 +1093,7 @@ function iconBuilder(key, def) {
   if (s === 'gem') return () => icons.pearlMesh(def.color);
   if (s === 'fish') return () => (key === 'b_cizme' ? icons.bootsMesh({ color: '#5a4a3a' }) : icons.fishMesh(def.color));
   if (s === 'stone') return () => icons.spiritStoneMesh(def.color, def.stone.grade);
+  if (s === 'material') return () => icons.leafMesh(def.color);
   if (key === 'kutsama') return () => icons.scrollMesh();
   if (key === 'efsun') return () => icons.crystalMesh('#c86bff');
   if (key === 'efsun_degis') return () => icons.crystalMesh('#4fd1c5', true);
@@ -1072,7 +1105,7 @@ function iconBuilder(key, def) {
   return null;
 }
 const ICON_POSE = { weapon: { rz: -0.8, ry: 0.35 }, armor: { ry: 0.45, rx: 0.08 }, helmet: { ry: 0.65, rx: 0.1 }, shoes: { ry: 0.55, rx: 0.2 },
-  bracelet: { ry: 0.3 }, earring: { ry: 0.4 }, potion: { ry: 0.3, rx: 0.1 }, fish: { ry: 0.5 }, gem: { rx: 0.5 }, use: { ry: 0.5, rx: 0.15 }, stone: { rx: 0.4, ry: 0.3 } };
+  bracelet: { ry: 0.3 }, earring: { ry: 0.4 }, potion: { ry: 0.3, rx: 0.1 }, fish: { ry: 0.5 }, gem: { rx: 0.5 }, use: { ry: 0.5, rx: 0.15 }, stone: { rx: 0.4, ry: 0.3 }, material: { rx: 0.3, ry: 0.4 } };
 function itemIcon(key, def, size = 26, slot) {
   if (def && key) {
     const b = iconBuilder(key, def);
@@ -1112,6 +1145,9 @@ const UP_CHANCE = [95, 90, 85, 75, 65, 55, 45, 35, 25], STONE_UP_CHANCE = [70, 6
 const SOCKETS = { weapon: 3, armor: 3 };
 const upgradeCost = (def, up) => Math.round((2000 + (def.lv || 1) * 300) * (up + 1) * (1 + up * 0.35));
 const stoneUpCost = (g) => 5000 * (g + 1) * (g + 1);
+const LEAVES = ['yaprak_mor', 'yaprak_mavi', 'yaprak_kirmizi'];
+const leafNeed = (def, up) => ((def.lv || 1) >= 30 && up >= 6 ? up + 1 : 0);
+const countItem = (key) => inv.inventory.reduce((a, i) => a + (i.key === key ? (i.n || 1) : 0), 0);
 function upBonus(def, up) {
   if (!up) return { atk: 0, def: 0, hp: 0 };
   return { atk: def.atk ? Math.round(def.atk * 0.08 * up + up * 2) : 0, def: def.def ? Math.round(def.def * 0.1 * up + up) : 0, hp: def.hp ? Math.round(def.hp * 0.08 * up) : 0 };
@@ -1168,7 +1204,7 @@ function renderDetail() {
   let buttons;
   if (equipped) buttons = '<button data-act="unequip">Çıkar</button>';
   else if (def.slot === 'potion' || def.slot === 'use') buttons = '<button data-act="use">Kullan</button><button class="alt" data-act="drop">Yere at</button>';
-  else if (def.slot === 'fish' || def.slot === 'gem') buttons = '<button class="alt" data-act="drop">Yere at</button>';
+  else if (def.slot === 'fish' || def.slot === 'gem' || def.slot === 'material') buttons = '<button class="alt" data-act="drop">Yere at</button>';
   else if (def.slot === 'stone') buttons = `<button data-act="socket" style="background:${def.color};color:#111">${def.stone.for === 'weapon' ? 'Silaha tak' : 'Zırha tak'}</button><button class="alt" data-act="drop">Yere at</button>`;
   else buttons = '<button data-act="equip">Giy</button><button class="alt" data-act="drop">Yere at</button>';
   detailEl.innerHTML = `<span class="dico">${itemIcon(it.key, def, 48)}</span><span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(itemName(it, def))}${it.n > 1 ? ' x' + it.n : ''}</b><br>` +
@@ -1234,7 +1270,15 @@ function renderSmith() {
       const up = it.up || 0;
       can = up < 9;
       const risk = smithScroll ? 'Kağıt korur' : up >= 4 ? 'Başarısızsa −1' : 'Başarısızsa değişmez';
-      info = can ? `+${up} → +${up + 1} · Şans %${UP_CHANCE[up]} · ${upgradeCost(def, up).toLocaleString('tr-TR')} Yang<br><small class="${up >= 4 && !smithScroll ? 'warn' : ''}">${risk}</small>` : 'En yüksek seviye (+9)';
+      // Sv. 30+ eşyalarda +6'dan sonra üç renk yaprak istenir
+      const need = can ? leafNeed(def, up) : 0;
+      let leafHtml = '';
+      if (need) {
+        leafHtml = '<span class="leaves">' + LEAVES.map((k) => { const have = countItem(k), ok = have >= need;
+          if (!ok) can = false;
+          return `<span class="leaf${ok ? '' : ' miss'}" style="--c:${ITEMS[k].color}">${itemIcon(k, ITEMS[k], 18)}${have}/${need}</span>`; }).join('') + '</span>';
+      }
+      info = up < 9 ? `+${up} → +${up + 1} · Şans %${UP_CHANCE[up]} · ${upgradeCost(def, up).toLocaleString('tr-TR')} Yang<br><small class="${up >= 4 && !smithScroll ? 'warn' : ''}">${risk}</small>${leafHtml}` : 'En yüksek seviye (+9)';
     }
     html += `<div class="srow">${itemIcon(it.key, def, 26)}<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(itemName(it, def))}</b>${eq ? ' <small class="eqtag">kuşanılı</small>' : ''}${it.n > 1 ? ' <small>x' + it.n + '</small>' : ''}<br><small>${info}</small></span>` +
       `<button data-up='${JSON.stringify(ref)}' ${can ? '' : 'disabled'}>${btn}</button></div>`;
@@ -1727,6 +1771,8 @@ let alertBox = (msg) => toast(msg);
 function clearWorld() {
   for (const id of Object.keys(players)) removePlayer(id);
   for (const id of Object.keys(mobs)) removeMob(id);
+  for (const c of corpses) scene.remove(c.root);
+  corpses.length = 0;
   for (const id of Object.keys(stones)) removeStone(id);
   for (const id of Object.keys(drops)) removeDrop(id);
   for (const p of mapInfo.portals) if (p.label) p.label.el.remove();
@@ -1919,7 +1965,7 @@ export function startGame(sock, opts = {}) {
   socket.on('mobDie', ({ id, by, name, mobName, boss }) => {
     const dm = mobs[id];
     sfx.die(boss, dm ? dm.v.root.position : null);
-    removeMob(id);
+    if (dm) killMobVisual(dm, boss); else removeMob(id);
     if (by === myId) log(`<b>Sistem:</b> ${esc(mobName)} yenildi.`);
     else if (boss) log(`<b>${esc(name)}</b> ${esc(mobName)} adlı boss'u yendi!`);
   });
@@ -2377,6 +2423,7 @@ function loop() {
     placeLabel(p.label, p.group.position.x, p.labelY || 2.4, p.group.position.z);
   }
   updateMobs(dt);
+  updateCorpses(dt);
   updateStones(dt, clock.elapsedTime);
   for (const s of Object.values(stones)) placeLabel(s.label, s.x, 4.6, s.z);
   for (const d of Object.values(drops)) {

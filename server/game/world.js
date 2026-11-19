@@ -104,6 +104,17 @@ function createWorld(io) {
     p.inventory.push({ uid: p.nextUid++, key });
     return true;
   }
+  const countItem = (p, key) => p.inventory.reduce((a, i) => a + (i.key === key ? (i.n || 1) : 0), 0);
+  // yığınlardan n adet eksilt (biten yığın çantadan çıkar)
+  function takeItem(p, key, n) {
+    for (let i = p.inventory.length - 1; i >= 0 && n > 0; i--) {
+      const it = p.inventory[i];
+      if (it.key !== key) continue;
+      const t = Math.min(n, it.n || 1);
+      it.n = (it.n || 1) - t; n -= t;
+      if (it.n <= 0) p.inventory.splice(i, 1);
+    }
+  }
   function freeSlotsFor(p, key, n) {
     const def = R.ITEMS[key];
     if (!def.stack) return p.inventory.length < R.INV_SIZE;
@@ -244,11 +255,16 @@ function createWorld(io) {
     },
     pvpDamage(p, t, dmg, crit) {
       if (t.dead || !p.duel || p.duel.with !== t) return;
-      t.hp = Math.max(0, t.hp - dmg);
-      t.lastHurt = Date.now();
-      if (p.zone) p.zone.emit('hit', { id: t.id, kind: 'player', dmg, crit, hp: t.hp, max: t.maxHp, by: p.id });
+      const left = Math.max(0, t.hp - dmg);
+      if (p.zone) p.zone.emit('hit', { id: t.id, kind: 'player', dmg, crit, hp: left, max: t.maxHp, by: p.id });
+      if (left <= 0) {
+        // düelloyu kaybeden ölür (Metin2 gibi); köyde ya da 5 sn sonra burada başlayabilir
+        endDuel(p, t, 'win');
+        hooks.damagePlayer(t, dmg);
+        return;
+      }
+      t.hp = left; t.lastHurt = Date.now();
       sendHp(t);
-      if (t.hp <= 0) { t.hp = 1; sendHp(t); endDuel(p, t, 'win'); }
     },
   };
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
@@ -775,6 +791,13 @@ function createWorld(io) {
       if (p.yang < cost) { notice(p, `Yeterli Yang yok (${cost.toLocaleString('tr-TR')} gerekli).`); return; }
       const scroll = data && data.scroll ? p.inventory.find((i) => i.key === 'kutsama') : null;
       if (data && data.scroll && !scroll) { notice(p, 'Kutsama Kağıdın yok.'); return; }
+      // yapraklar (Sv. 30+ eşya, +6 ve üstü)
+      const need = R.leafNeed(def, up);
+      if (need) {
+        const miss = R.LEAVES.filter((k) => countItem(p, k) < need);
+        if (miss.length) { notice(p, `Bu yükseltme için ${need}'şer ${R.LEAVES.map((k) => R.ITEMS[k].name).join(', ')} gerekir. Eksik: ${miss.map((k) => R.ITEMS[k].name).join(', ')}.`); return; }
+        for (const k of R.LEAVES) takeItem(p, k, need);
+      }
       p.yang -= cost;
       const ok = Math.random() * 100 < R.UP_CHANCE[up];
       let msg;

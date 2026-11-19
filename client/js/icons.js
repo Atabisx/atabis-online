@@ -244,3 +244,18 @@ export function scrollMesh() {
   g.add(paper, rib, seal);
   return g;
 }
+// demirci yaprağı: damarlı, hafif kıvrık yaprak
+export function leafMesh(color) {
+  const g = new THREE.Group();
+  const shape = new THREE.Shape();
+  shape.moveTo(0, -0.45); shape.quadraticCurveTo(0.34, -0.1, 0, 0.5); shape.quadraticCurveTo(-0.34, -0.1, 0, -0.45);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.03, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2, curveSegments: 16 });
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) { const x = pos.getX(i); pos.setZ(i, pos.getZ(i) + x * x * 0.9); }
+  geo.computeVertexNormals();
+  const leaf = new THREE.Mesh(geo, std(color, 0.15, 0.45, { emissive: color, emissiveIntensity: 0.25 }));
+  const vein = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.018, 0.9, 6), std('#f4f1e8', 0, 0.6)); vein.position.z = 0.05;
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.22, 6), std('#5a3d24', 0, 0.7)); stem.position.set(0, -0.55, 0.02);
+  g.add(leaf, vein, stem); g.rotation.z = -0.5;
+  return g;
+}

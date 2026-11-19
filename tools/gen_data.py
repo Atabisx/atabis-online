@@ -167,6 +167,10 @@ def build_items():
             items[f'tas_{key}_{g}'] = {'name': f'{name} +{g}', 'slot': 'stone', 'stone': {'type': key, 'for': target, 'stat': stat, 'value': vals[g], 'grade': g},
                                        'desc': desc.format(v=vals[g]) + (' Silaha takılır.' if target == 'weapon' else ' Zırha takılır.'),
                                        'lv': 1, 'price': 2000 * (g + 1) ** 2, 'rarity': 1 if g < 2 else 2, 'color': color, 'stack': 200}
+    # demirci yaprakları: 30. seviye ve üstü eşyaları +6'dan sonra yükseltmek için (metin taşlarından düşer)
+    for key, name, color in [('yaprak_mor', 'Mor Yaprak', '#9b59d0'), ('yaprak_mavi', 'Mavi Yaprak', '#3d8fe0'), ('yaprak_kirmizi', 'Kırmızı Yaprak', '#e0453a')]:
+        items[key] = {'name': name, 'slot': 'material', 'desc': "Demircide 30. seviye ve üstü eşyaları +6'dan sonra yükseltmek için gerekir. Metin taşlarından düşer.",
+                      'lv': 1, 'price': 400, 'rarity': 1, 'color': color, 'stack': 200}
     # Kutsama Kağıdı: demircide yükseltme başarısız olursa eşya seviyesi düşmez
     items['kutsama'] = {'name': 'Kutsama Kağıdı', 'slot': 'use', 'desc': 'Demircide yükseltme başarısız olursa eşyanın artısı düşmez (kağıt harcanır).',
                         'lv': 1, 'price': 75000, 'rarity': 2, 'color': '#f2e2a0', 'stack': 200}

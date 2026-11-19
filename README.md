@@ -4,7 +4,13 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 4.0 (bu sürüm): Ataonline girişi, 3D karakter seçimi, demirci, ruh taşları, düello ve arkadaşlar
+### Aşama 4.1 (bu sürüm): Düelloda ölüm, yere düşen yaratıklar, demirci yaprakları
+
+- **Düello:** canı biten oyuncu artık gerçekten ölür (ölüm ekranı, yeniden doğma). Kazanan duyurulur.
+- **Ölen yaratıklar yere yatar:** yan yatarak devrilir, yere çarpınca toz kalkar. Normal yaratıklar 3 saniye, boss'lar 12 saniye yerde kalır, sonra toprağa gömülerek kaybolur. Boss'lar daha yavaş ve gürültülü düşer.
+- **Mor, Mavi ve Kırmızı Yaprak:** 30. seviye ve üstü eşyaları +6'dan sonra yükseltmek için her renkten gerekir: +6→+7 için 7'şer, +7→+8 için 8'er, +8→+9 için 9'ar. Yükseltme başarısız olsa da yapraklar harcanır. Yapraklar metin taşlarından %35 şansla 1–3 adet (rastgele renk) düşer. Demirci ekranı eksik yaprakları kırmızıyla gösterir.
+
+### Aşama 4.0: Ataonline girişi, 3D karakter seçimi, demirci, ruh taşları, düello ve arkadaşlar
 
 - **Giriş ekranı:** "ATA ONLINE" logosu; arkada gece vakti taş sunak, yanan mangallar, sancaklar, Uzak Doğu kapısı ve dağlar (`client/js/lobby.js`). Kamera sunağın çevresinde döner.
 - **Karakter seçme (Metin2 tarzı):** solda karakter listesi, ortada seçili karakter sunakta ışık sütunu içinde belirir; üç vuruşluk gösteri yapar ve sınıf becerisini M1 renginde kullanır. Boş alanda sürükleyince karakter döner, dokununca gösteriyi tekrarlar. Yeni karakter oluştururken seçilen sınıf sunakta başlangıç eşyalarıyla görünür.

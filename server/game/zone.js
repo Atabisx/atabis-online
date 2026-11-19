@@ -257,6 +257,8 @@ class Zone {
         this.makeDrop(best.x, best.z, p.id, { key: `tas_${STONE_TYPES[Math.floor(Math.random() * STONE_TYPES.length)]}_${g}`, n: 1 });
       }
       if (Math.random() < 0.03) this.makeDrop(best.x, best.z, p.id, { key: 'kutsama', n: 1 });
+      // demirci yaprakları: %35 şansla 1-3 adet (rengi rastgele)
+      if (Math.random() < 0.35) this.makeDrop(best.x, best.z, p.id, { key: R.LEAVES[Math.floor(Math.random() * 3)], n: 1 + Math.floor(Math.random() * 3) });
       this.makeDrop(best.x, best.z, p.id, null, Math.round((50 + best.lv * 30) * (n + Math.random())));
       setTimeout(() => this.spawnStone(), 15000);
     }
