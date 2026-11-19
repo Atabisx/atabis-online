@@ -6,6 +6,7 @@ const config = require('../config');
 const { Zone, boundsOf } = require('./zone');
 const { createSocial } = require('./social');
 const { createGuilds } = require('./guild');
+const { createRealm } = require('./realm');
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const VILLAGES = R.MAPS.filter((m) => m.village).map((m) => m.id);
@@ -191,8 +192,9 @@ function createWorld(io) {
       if (p.inventory.length >= R.INV_SIZE) { notice(p, 'Çanta dolu.'); return; }
       p.inventory.push(it); sendInv(p); notice(p, R.ITEMS[a0].name + ' verildi.'); return;
     }
+    if (cmd === 'savas') { realm.gm(p, args); return; }
     if (cmd === 'iyiles') { p.hp = p.maxHp; p.mp = p.maxMp; sendHp(p); sendMp(p); return; }
-    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /iyiles');
+    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /iyiles, /savas [bitir]');
   }
 
   async function save(p) {
@@ -268,8 +270,24 @@ function createWorld(io) {
       const o = d.with;
       return o && !o.dead && o.zone === p.zone && o.duel && o.duel.with === p ? o : null;
     },
+    // vurulabilecek oyuncular: düello rakibi + savaş meydanında düşman krallık
+    enemies(p) {
+      const list = realm.enemies(p);
+      const o = hooks.duelOpponent(p);
+      if (o && !list.includes(o)) list.push(o);
+      return list;
+    },
     pvpDamage(p, t, dmg, crit) {
-      if (t.dead || !p.duel || p.duel.with !== t) return;
+      if (t.dead) return;
+      const inDuel = p.duel && p.duel.with === t;
+      if (!inDuel && !realm.isEnemy(p, t)) return;
+      if (!inDuel) {
+        const left = Math.max(0, t.hp - dmg);
+        if (p.zone) p.zone.emit('hit', { id: t.id, kind: 'player', dmg, crit, hp: left, max: t.maxHp, by: p.id });
+        if (left <= 0) { realm.onKill(p, t); hooks.damagePlayer(t, dmg); return; }
+        t.hp = left; t.lastHurt = Date.now(); sendHp(t);
+        return;
+      }
       const left = Math.max(0, t.hp - dmg);
       if (p.zone) p.zone.emit('hit', { id: t.id, kind: 'player', dmg, crit, hp: left, max: t.maxHp, by: p.id });
       if (left <= 0) {
@@ -285,6 +303,8 @@ function createWorld(io) {
   const W = {};      // sonraki aşamaların (krallık, etkinlik) bağlandığı yer
   const social = createSocial({ players, notice, sendInv, addItem, freeSlotsFor, save, giveExpDirect: (p, n) => expRaw(p, n, false, false) });
   const guilds = createGuilds({ db, players, notice, sendInv, addItem, save, announce: (t) => io.emit('announce', t) });
+  const realm = createRealm({ db, io, players, notice, moveToZone, sendInv, addItem, save, villageFor });
+  W.expBonus = (p) => realm.expBonus(p) + (W.eventBonus ? W.eventBonus(p) : 0);
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
 
   // seviye ödülleri: 25'te at görevi, 30'da olta
@@ -464,7 +484,7 @@ function createWorld(io) {
 
     const startPos = prev ? [prev.x, prev.z] : (row.pos_x != null ? [row.pos_x, row.pos_z] : null);
     socket.emit('welcome', { gm: !!p.gm,
-      id: socket.id, cls: p.class, name: p.name,
+      id: socket.id, cls: p.class, name: p.name, empire: p.empire || 0,
       stats: { level: p.level, exp: p.exp, need: R.expForLevel(p.level) },
       villages: VILLAGES,
     });
@@ -474,6 +494,7 @@ function createWorld(io) {
     sendHp(p); sendMp(p); sendSkills(p); sendQuests(p); sendBuffs(p);
     social.onConnect(p, socket);
     guilds.onConnect(p, socket);
+    realm.onConnect(p, socket);
 
     socket.on('move', (m) => {
       if (!m || p.dead) return;
@@ -819,6 +840,7 @@ function createWorld(io) {
       if (!z.def.village && !z.def.fishing && !ring) { notice(p, 'Işınlayıcı sadece köyde var. Işınlanma Yüzüğü ile her yerden ışınlanabilirsin.'); return; }
       const target = R.MAPS[Number(to)];
       if (!target || target.id === z.id) return;
+      if (target.hidden && !p.gm) { notice(p, `${target.name} buradan gidilemez.`); return; }
       if (!p.gm && p.level < target.minLevel) { notice(p, `${target.name} için en az ${target.minLevel}. seviye olmalısın.`); return; }
       moveToZone(p, target.id);
     });
@@ -829,8 +851,10 @@ function createWorld(io) {
       const here = opt && opt.here;
       if (here && Date.now() - (p.diedAt || 0) < 5000) { notice(p, 'Burada başlamak için biraz bekle.'); return; }
       p.dead = false; p.mounted = false;
-      if (here && p.zone) {
-        p.hp = Math.round(p.maxHp * 0.5); p.mp = Math.round(p.maxMp * 0.5);
+      const warPos = realm.respawnPos(p);
+      if (warPos) { p.x = warPos[0]; p.z = warPos[1]; }
+      if ((here || warPos) && p.zone) {
+        p.hp = Math.round(p.maxHp * (warPos ? 1 : 0.5)); p.mp = Math.round(p.maxMp * (warPos ? 1 : 0.5));
         sendHp(p); sendMp(p);
         p.zone.emit('playerRevive', { id: p.id, x: p.x, z: p.z });
         socket.emit('revived', { x: p.x, z: p.z });

@@ -166,7 +166,7 @@
       <div id="gNone">
         <p class="gtxt">Bir loncan yok. Bir oyuncuya dokunup lonca daveti bekleyebilir ya da kendi loncanı kurabilirsin.</p>
         <p class="gtxt"><b>Kurma şartı:</b> 20. seviye ve 100.000 yang. Lonca seviyesi arttıkça üyelere ek tecrübe, daha çok üye yeri ve daha büyük depo.</p>
-        <div class="grow"><input id="gName" maxlength="16" placeholder="Lonca adı" aria-label="Lonca adı"><button id="gCreate" class="btn">Kur</button></div>
+        <div class="frow"><input id="gName" maxlength="16" placeholder="Lonca adı" aria-label="Lonca adı"><button id="gCreate" class="btn">Kur</button></div>
       </div>
       <div id="gHas" style="display:none">
         <div class="gstat"><span>Seviye <b id="gLv">1</b></span><span>Üye <b id="gCnt">0</b></span><span>Tecrübe bonusu <b id="gBonus">+%0</b></span><span>Kasa <b id="gYang">0</b></span></div>
@@ -179,16 +179,36 @@
           <div class="tgrid inv" id="gStore"></div>
           <div class="tinvhead">Çantan <small>(depoya koymak için dokun)</small></div>
           <div class="tgrid inv" id="gInv"></div>
-          <div class="grow"><input id="gYangN" type="number" inputmode="numeric" placeholder="Yang" aria-label="Yang miktarı"><button id="gYangIn" class="btn alt">Kasaya koy</button><button id="gYangOut" class="btn alt">Kasadan al</button></div>
+          <div class="frow"><input id="gYangN" type="number" inputmode="numeric" placeholder="Yang" aria-label="Yang miktarı"><button id="gYangIn" class="btn alt">Kasaya koy</button><button id="gYangOut" class="btn alt">Kasadan al</button></div>
         </div>
         <div id="gtManage" class="gtab" style="display:none">
-          <div class="grow"><input id="gNoticeIn" maxlength="140" placeholder="Lonca duyurusu" aria-label="Lonca duyurusu"><button id="gNoticeSet" class="btn alt">Kaydet</button></div>
+          <div class="frow"><input id="gNoticeIn" maxlength="140" placeholder="Lonca duyurusu" aria-label="Lonca duyurusu"><button id="gNoticeSet" class="btn alt">Kaydet</button></div>
           <small class="gtxt">Oyuncuya dokunup "Loncaya davet et" ile üye alırsın. Lonca sohbeti için mesajın başına % koy.</small>
-          <div class="grow"><button id="gLeave" class="btn alt">Loncadan ayrıl</button><button id="gDisband" class="btn danger">Loncayı dağıt</button></div>
+          <div class="frow"><button id="gLeave" class="btn alt">Loncadan ayrıl</button><button id="gDisband" class="btn danger">Loncayı dağıt</button></div>
         </div>
       </div>
     </div>
   </div>
+  <div id="empirewin" class="modal" role="dialog" aria-label="Krallık seç">
+    <div class="modalbox empbox">
+      <b class="rwt">KRALLIĞINI SEÇ</b>
+      <p class="gtxt">Krallığın, krallık savaşlarında kiminle omuz omuza savaşacağını belirler. Sonradan değiştirilemez.</p>
+      <div id="empirePick" class="empires big"></div>
+    </div>
+  </div>
+  <div id="eventwin" class="modal" role="dialog" aria-label="Etkinlikler">
+    <div class="modalbox">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">ETKİNLİKLER</b><button id="eventX" class="xbtn" aria-label="Kapat">×</button></div>
+      <div class="evcard war">
+        <div class="evh"><b>⚔️ Krallık Savaşı</b><span id="warStatus"></span></div>
+        <div id="warScore" class="warscore"></div>
+        <small class="gtxt">Çarşamba ve Cumartesi 21:00'de 20 dakika. Savaş Meydanı'nda düşman krallıkları yen; her galibiyet krallığına puan. Kazanan krallık 24 saat +%20 tecrübe alır. Sv. 20+.</small>
+        <button id="warJoin" class="btn">Savaş Meydanı'na git</button>
+      </div>
+      <div id="eventList"></div>
+    </div>
+  </div>
+  <div id="warHud" style="display:none"></div>
   <div id="rewardwin" class="modal" role="dialog" aria-label="Giriş ödülü">
     <div class="modalbox rewardbox">
       <b id="rewardTitle" class="rwt"></b>
@@ -311,6 +331,8 @@
     <div class="slotshead">YENİ KARAKTER</div>
     <div id="classList" class="classes"></div>
     <div id="classdesc"></div>
+    <div class="slotshead" style="font-size:13px;margin-top:4px">KRALLIK</div>
+    <div id="empireList" class="empires"></div>
     <label for="charName">Karakter adı</label>
     <input id="charName" maxlength="14" autocomplete="off" placeholder="Örn. Atabis" required>
     <div class="row">

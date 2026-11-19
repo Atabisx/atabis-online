@@ -405,9 +405,9 @@ body.standalone #chatBtn { left: 116px; } body.standalone #friendBtn { left: 168
 /* lonca */
 .guildbox { width: min(560px, 96vw); overflow-y: auto; }
 .gtxt { font-size: 13px; color: #d8d2c0; margin: 0; }
-.grow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.grow input { flex: 1; min-width: 120px; height: 44px; border-radius: 10px; border: 1px solid #5a4a2a; background: #12140f; color: #f4f1e8; font: inherit; font-size: 16px; padding: 0 10px; }
-.grow .btn { min-height: 44px; font-size: 14px; }
+.frow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.frow input { flex: 1; min-width: 120px; height: 44px; border-radius: 10px; border: 1px solid #5a4a2a; background: #12140f; color: #f4f1e8; font: inherit; font-size: 16px; padding: 0 10px; }
+.frow .btn { min-height: 44px; font-size: 14px; }
 .btn.danger { background: #7a2018; color: #ffd9d2; }
 .gstat { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: #c9c4b6; } .gstat b { color: #ffe08a; }
 .gnotice { font-size: 13px; color: #f2e2a0; background: rgba(232,181,74,.08); border-left: 3px solid #e8b54a; padding: 6px 8px; border-radius: 6px; }
@@ -421,3 +421,22 @@ body.standalone #chatBtn { left: 116px; } body.standalone #friendBtn { left: 168
 .gmem .rk { font-size: 11px; color: #e8b54a; } .gmem button { min-height: 34px; border-radius: 8px; border: 0; background: #3a3f35; color: #f4f1e8; font: inherit; font-size: 12px; padding: 0 8px; }
 #pmenu .guildbtn { background: #4a3a1a; color: #ffe8b0; }
 .label .gtag { display: block; font-size: 10px; color: #8ec5ff; font-weight: 700; margin-bottom: 1px; }
+
+/* krallıklar ve savaş */
+.empires { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.empires button { min-height: 52px; border-radius: 12px; border: 2px solid #3a3f35; background: #1a1d17; color: #f4f1e8; font: inherit; font-weight: 800; font-size: 13px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.empires button i { width: 22px; height: 22px; border-radius: 6px; transform: rotate(45deg); display: block; margin-bottom: 4px; box-shadow: 0 0 10px currentColor; }
+.empires button.sel { border-color: currentColor; background: rgba(255,255,255,.06); }
+.empires.big button { min-height: 120px; font-size: 16px; } .empires.big button i { width: 36px; height: 36px; margin-bottom: 10px; }
+.empires button small { font-weight: 400; font-size: 11px; color: #a8a290; }
+.empbox { width: min(560px, 96vw); align-items: center; text-align: center; border-color: #e8b54a; }
+.label .emp { display: inline-block; width: 8px; height: 8px; transform: rotate(45deg); margin-right: 5px; vertical-align: 1px; border-radius: 1px; }
+.label.foe { color: #ff6a5a !important; }
+.evcard { border: 2px solid #5a4a2a; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,.25); }
+.evcard.on { border-color: #ff6a3d; box-shadow: 0 0 16px rgba(255,90,40,.3) inset; }
+.evh { display: flex; justify-content: space-between; align-items: center; font-size: 16px; } .evh span { font-size: 12px; color: #ffe08a; text-align: right; }
+.warscore { display: flex; gap: 6px; } .warscore div { flex: 1; text-align: center; padding: 6px; border-radius: 10px; background: rgba(0,0,0,.35); font-size: 12px; }
+.warscore b { display: block; font-size: 22px; }
+#eventList { display: flex; flex-direction: column; gap: 8px; }
+#warHud { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; padding: 5px 10px; border-radius: 12px; background: rgba(14,10,8,.85); border: 1px solid #ff6a3d; z-index: 6; font-size: 13px; font-weight: 800; align-items: center; }
+#warHud span { padding: 0 6px; } #warHud small { color: #c9c4b6; font-weight: 600; }

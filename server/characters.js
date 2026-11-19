@@ -7,7 +7,7 @@ const CLASSES = require('../shared/classes.json');
 const NAME_RE = /^[a-zA-Z0-9_çğıöşüÇĞİÖŞÜ]{3,14}$/;
 
 function publicChar(row) {
-  return { id: row.id, name: row.name, class: row.class, level: row.level, equip: row.equip };
+  return { id: row.id, name: row.name, class: row.class, level: row.level, equip: row.equip, empire: row.empire || 0 };
 }
 
 function routes(app) {
@@ -19,6 +19,7 @@ function routes(app) {
   app.post('/api/characters', requireAuth, async (req, res) => {
     try {
       const { name, cls } = req.body || {};
+      const empire = [1, 2, 3].includes(Number((req.body || {}).empire)) ? Number(req.body.empire) : null;
       if (!NAME_RE.test(String(name || ''))) {
         return res.status(400).json({ error: 'Karakter adı 3-14 karakter olmalı; harf, rakam ve _ kullanılabilir.' });
       }
@@ -33,8 +34,8 @@ function routes(app) {
                       helmet: null, shoes: null, bracelet: null, earring: null };
       const inventory = [{ uid: 3, key: 'p_hp1', n: 10 }];   // başlangıç iksirleri
       const r = await db.query(
-        'INSERT INTO characters (account_id, name, class, equip, inventory) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [req.account.id, name, cls, JSON.stringify(equip), JSON.stringify(inventory)]);
+        'INSERT INTO characters (account_id, name, class, equip, inventory, empire) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+        [req.account.id, name, cls, JSON.stringify(equip), JSON.stringify(inventory), empire]);
       res.json({ character: publicChar(r.rows[0]) });
     } catch (e) {
       if (e.code === '23505') return res.status(409).json({ error: 'Bu karakter adı alınmış.' });

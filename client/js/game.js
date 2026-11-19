@@ -685,10 +685,33 @@ function createPlayer(p) {
   }
   if (!p.npc && social.inParty(p.id)) obj.label.el.classList.add('party');
   setGuildTag(obj, p.guild);
+  setEmpireTag(obj, p.empire);
+  if (isWarFoe(obj)) setTimeout(() => markFoe(obj.id, true), 0);
   if (obj.label.hp) { obj.label.hp.parentNode.classList.add('player'); obj.label.hp.style.width = (p.maxHp ? 100 * p.hp / p.maxHp : 100) + '%'; }
   players[p.id] = obj;
   applyLook(obj, p.look);
   return obj;
+}
+// krallık işareti (ismin önünde renkli elmas)
+const EMP_COLORS = { 1: '#e0453a', 2: '#e8b54a', 3: '#3d8fe0' };
+let myEmpire = 0;
+function setEmpireTag(obj, e) {
+  obj.empire = e || 0;
+  let t = obj.label.el.querySelector('.emp');
+  if (!e) { if (t) t.remove(); return; }
+  if (!t) { t = document.createElement('span'); t.className = 'emp'; obj.label.el.insertBefore(t, obj.label.tn); }
+  t.style.background = EMP_COLORS[e];
+}
+// savaş meydanında düşman krallıktan oyuncular kırmızı halka ve isimle görünür
+function isWarFoe(p) {
+  const w = social.warState();
+  return !!(w && w.active && currentMap && currentMap.war && p && !p.npc && p.id !== myId && p.empire && myEmpire && p.empire !== myEmpire);
+}
+function refreshFoes() { for (const p of Object.values(players)) if (!p.npc && p.id !== myId) markFoe(p.id, p.id === duelFoe || isWarFoe(p)); social.refreshWar(); }
+function foesList() {
+  const list = [];
+  for (const p of Object.values(players)) if (!p.dead && (p.id === duelFoe || isWarFoe(p))) list.push(p);
+  return list;
 }
 // lonca adı etiketin üstünde
 function setGuildTag(obj, name) {
@@ -1351,6 +1374,7 @@ function renderShop() {
     html = `<div style="display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5">${body}</div>`;
   } else if (shopKind === 'teleport') {
     for (const m of MAPS) {
+      if (m.hidden && !myGm) continue;
       const here = m.id === currentMap.id, ok = myGm || myLevel >= m.minLevel;
       html += `<div class="srow"><span class="grow"><b>${esc(m.name)}</b>${m.village ? ' <small>(köy)</small>' : ''}<br><small style="color:${ok ? '#8b877c' : '#ff6a5a'}">Sv. ${m.minLevel}+</small></span>` +
         (here ? '<small>Buradasın</small>' : `<button data-tp="${m.id}" ${ok ? '' : 'disabled'}>Git</button>`) + '</div>';
@@ -1702,8 +1726,7 @@ function attack() {
     const d = Math.hypot(s.x - pos.x, s.z - pos.z);
     if (d < bestD) { best = { x: s.x, z: s.z }; bestD = d; }
   }
-  const foe = duelFoe && players[duelFoe];
-  if (foe) { const fp = foe.group.position, d = Math.hypot(fp.x - pos.x, fp.z - pos.z); if (d < bestD) { best = fp; bestD = d; } }
+  for (const foe of foesList()) { const fp = foe.group.position, d = Math.hypot(fp.x - pos.x, fp.z - pos.z); if (d < bestD) { best = fp; bestD = d; } }
   if (best) me.ry = Math.atan2(best.x - pos.x, best.z - pos.z) + FACE_OFFSET;
   socket.emit('attack');
 }
@@ -1723,8 +1746,7 @@ function useSkill(key) {
       if (d < bestD) { best = p; bestD = d; }
     }
     for (const st of Object.values(stones)) { const d = Math.hypot(st.x - pos.x, st.z - pos.z); if (d < bestD) { best = st; bestD = d; } }
-    const foe = duelFoe && players[duelFoe];
-    if (foe) { const fp = foe.group.position, d = Math.hypot(fp.x - pos.x, fp.z - pos.z); if (d < bestD) { best = fp; bestD = d; } }
+    for (const foe of foesList()) { const fp = foe.group.position, d = Math.hypot(fp.x - pos.x, fp.z - pos.z); if (d < bestD) { best = fp; bestD = d; } }
     if (best) me.ry = Math.atan2(best.x - pos.x, best.z - pos.z) + FACE_OFFSET;
   }
   socket.emit('skill', { key, f: me.ry - FACE_OFFSET });
@@ -1849,9 +1871,11 @@ export function startGame(sock, opts = {}) {
     document.getElementById('myname').textContent = data.name;
     document.getElementById('myclass').textContent = (CLASSES[myClass] || {}).name || '';
     setStats(data.stats.level, data.stats.exp, data.stats.need);
+    myEmpire = data.empire || 0;
+    if (!myEmpire && !myGm) setTimeout(() => social.askEmpire(), 1500);
     if (opts.onWelcome) opts.onWelcome();
   });
-  socket.on('mapChange', (data) => { amDead = false; deadEl.classList.remove('open'); setFishState('idle'); enterMap(data); updateToolButtons(); renderSkillbar(); });
+  socket.on('mapChange', (data) => { amDead = false; deadEl.classList.remove('open'); setFishState('idle'); enterMap(data); updateToolButtons(); renderSkillbar(); refreshFoes(); });
   socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (shopKind) renderShop(); renderSmith(); if (trade) renderTrade(); social.refreshGuild(); });
   socket.on('upgraded', ({ ok, name, up, stone }) => smithResult(ok, ok ? (stone ? `BAŞARILI · ${name}` : `BAŞARILI · ${name} +${up}`) : (stone ? 'BAŞARISIZ · taş kırıldı' : `BAŞARISIZ · ${name} +${up}`)));
   socket.on('socketed', ({ ok }) => { if (ok) sfx.enchant(); else sfx.hit('stone', false, null); });
@@ -1903,6 +1927,7 @@ export function startGame(sock, opts = {}) {
   socket.on('quests', (q) => { quests = q; if (shopKind === 'stable') renderShop(); });
   socket.on('mount', ({ id, on }) => { const p = players[id]; if (p) setMount(p, on); });
   socket.on('playerGuild', ({ id, guild }) => { const p = players[id]; if (p) setGuildTag(p, guild); });
+  socket.on('playerEmpire', ({ id, empire }) => { const p = players[id]; if (p) setEmpireTag(p, empire); });
   socket.on('fishing', ({ id, on }) => { const p = players[id]; if (p) setRod(p, on); });
   socket.on('fishWait', () => setFishState('wait'));
   socket.on('fishBite', () => { setFishState('bite'); sfx.fishBite(); if (navigator.vibrate) navigator.vibrate(150); });
@@ -2546,6 +2571,7 @@ const menuHandlers = {
   char: () => document.getElementById('charBtn').click(),
   skills: () => document.getElementById('skillBtn').click(),
   guild: () => social.openGuild(),
+  events: () => social.openEvents(),
 };
 export function onMenu(key, fn) { menuHandlers[key] = fn; }
 function partyLabels(pt) {
@@ -2555,5 +2581,8 @@ function partyLabels(pt) {
 social.setup({
   myId: () => myId, esc, toast, askBox, itemIcon, sfx, get ITEMS() { return ITEMS; }, inventory: () => inv.inventory,
   onParty: partyLabels,
+  inWarMap: () => !!(currentMap && currentMap.war),
+  onWar: () => refreshFoes(),
+  onEmpire: (n) => { myEmpire = n; const me = players[myId]; if (me) setEmpireTag(me, n); refreshFoes(); },
   menuAction: (k) => { if (menuHandlers[k]) menuHandlers[k](); else toast(`${MENU_SOON[k] || k} çok yakında!`); },
 });

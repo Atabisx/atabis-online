@@ -205,9 +205,8 @@ class Zone {
       const d = dist(s, p) - 1.2;
       if (d < range && d < bestD) { best = s; bestD = d; kind = 'stone'; }
     }
-    // düello rakibi
-    const opp = this.hooks.duelOpponent && this.hooks.duelOpponent(p);
-    if (opp) { const d = dist(opp, p) - 0.6; if (d < range && d < bestD) { best = opp; bestD = d; kind = 'player'; } }
+    // düello rakibi ve krallık savaşında düşmanlar
+    for (const opp of this.hooks.enemies ? this.hooks.enemies(p) : []) { const d = dist(opp, p) - 0.6; if (d < range && d < bestD) { best = opp; bestD = d; kind = 'player'; } }
     this.emit('swing', { id: p.id, combo, target: best ? best.id : null });
     if (!best) return;
     if (kind === 'player') { this.pvpHit(p, best, combo, 1, false); return; }
@@ -284,8 +283,7 @@ class Zone {
     const list = [];
     for (const m of this.mobs.values()) if (Math.hypot(m.x - x, m.z - z) - (m.d.hitR || m.d.scale * 0.6) < r) list.push(['mob', m]);
     for (const s of this.stones.values()) if (Math.hypot(s.x - x, s.z - z) - 1.2 < r) list.push(['stone', s]);
-    const opp = p && this.hooks.duelOpponent && this.hooks.duelOpponent(p);
-    if (opp && Math.hypot(opp.x - x, opp.z - z) - 0.6 < r) list.push(['player', opp]);
+    if (p && this.hooks.enemies) for (const opp of this.hooks.enemies(p)) if (Math.hypot(opp.x - x, opp.z - z) - 0.6 < r) list.push(['player', opp]);
     return list;
   }
   nearestTarget(p, range) {

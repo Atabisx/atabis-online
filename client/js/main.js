@@ -137,6 +137,8 @@ $('logoutBtn').addEventListener('click', async () => {
 
 // ---------- karakter oluşturma ----------
 let chosenClass = 'savasci';
+const EMPIRES = { 1: { name: 'Kızıl Ejder', color: '#e0453a' }, 2: { name: 'Altın Kartal', color: '#e8b54a' }, 3: { name: 'Gök Kurt', color: '#3d8fe0' } };
+let chosenEmpire = 1 + Math.floor(Math.random() * 3);
 function openCreate() {
   const list = $('classList');
   list.innerHTML = '';
@@ -148,6 +150,15 @@ function openCreate() {
     b.querySelector('b').textContent = c.name;
     b.addEventListener('click', () => { chosenClass = key; openCreate(); });
     list.appendChild(b);
+  }
+  const el = $('empireList'); el.innerHTML = '';
+  for (const [k, e] of Object.entries(EMPIRES)) {
+    const b = document.createElement('button'); b.type = 'button';
+    b.className = Number(k) === chosenEmpire ? 'sel' : ''; b.style.color = e.color;
+    b.innerHTML = `<i style="background:${e.color}"></i><span style="color:#f4f1e8"></span>`;
+    b.querySelector('span').textContent = e.name;
+    b.addEventListener('click', () => { chosenEmpire = Number(k); openCreate(); });
+    el.appendChild(b);
   }
   const cl = CLASSES[chosenClass] || {};
   $('classdesc').textContent = cl.desc || '';
@@ -162,7 +173,7 @@ $('createBack').addEventListener('click', () => { show('charScreen'); renderChar
 $('createForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   try {
-    const data = await api('POST', '/api/characters', { name: $('charName').value.trim(), cls: chosenClass });
+    const data = await api('POST', '/api/characters', { name: $('charName').value.trim(), cls: chosenClass, empire: chosenEmpire });
     $('charName').value = '';
     selectedChar = data.character.id;
     await openCharacters();

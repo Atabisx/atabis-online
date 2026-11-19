@@ -380,6 +380,23 @@ def build(items):
                  'safe': True, 'tier': 0, 'seed': 4242, 'bounds': [-15, 65], 'spawns': [], 'bosses': [], 'stoneDrops': [], 'stones': 0,
                  'spawn': [25, 22], 'portals': [], 'lake': {'x': 25, 'z': 44, 'r': 15},
                  'shop': {'potions': ['yem', 'p_hp1', 'p_mp1'], 'weapons': [], 'armor': []}})
+    # krallık savaşı meydanı: sadece savaş sırasında girilir, üç krallığın üssü üç köşede
+    maps.append({'id': len(maps), 'name': 'Savaş Meydanı', 'minLevel': 20, 'theme': 'ruins', 'village': False, 'hidden': True, 'war': True,
+                 'tier': 0, 'seed': 5151, 'bounds': [-15, 65], 'spawns': [], 'bosses': [], 'stoneDrops': [], 'stones': 0,
+                 'spawn': [25, 25], 'portals': [], 'bases': {'1': [-8, 25], '2': [52, -6], '3': [52, 56]}})
+    # grup zindanı: Örümcek Mağarası (dalgalar + kraliçe), zindan kapısından girilir
+    mobs['zorumcek'] = dict(mob_stats(32), name='Mağara Örümceği', shape='spider', color='#3a2f45', scale=1.1, aggro=12, speed=6.2,
+                            range=2.2, cd=1300, respawn=0, drops=[], potions=[['p_hp2', 0.15]], style={})
+    mobs['zzehir'] = dict(mob_stats(35), name='Zehirli Örümcek', shape='spider', color='#4f8a2a', scale=1.35, aggro=12, speed=5.8,
+                          range=2.4, cd=1400, respawn=0, drops=[], potions=[['p_hp2', 0.2]], style={'aura': '#7dff3a'})
+    q = mob_stats(40, boss=True)
+    q.update({'name': 'Örümcek Kraliçe', 'shape': 'spider', 'color': '#5a1a4a', 'scale': 4.2, 'aggro': 0, 'speed': 4.6, 'range': 6.0, 'cd': 1800,
+              'boss': True, 'respawn': 0, 'hitR': 3.2, 'drops': [], 'potions': [['p_hp3', 1.0]], 'style': {'aura': '#c03aff', 'breath': '#9dff3a'}})
+    q['hp'] = q['hp'] * 3
+    mobs['zkralice'] = q
+    maps.append({'id': len(maps), 'name': 'Örümcek Mağarası', 'minLevel': 30, 'theme': 'swamp', 'village': False, 'hidden': True, 'dungeon': True,
+                 'tier': 4, 'seed': 6161, 'bounds': [-15, 65], 'spawns': [], 'bosses': [], 'stoneDrops': [], 'stones': 0,
+                 'spawn': [25, -8], 'portals': []})
     return mobs, maps
 
 

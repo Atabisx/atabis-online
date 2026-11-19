@@ -27,6 +27,15 @@ export function setup(ctx) {
   });
   $('rewardOk').addEventListener('click', () => $('rewardwin').classList.remove('open'));
   setupGuild();
+  $('empirePick').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-emp]'); if (!b || !socket) return;
+    const k = Number(b.dataset.emp);
+    C.askBox(`${EMPIRES[k].name} krallığına katılmak istiyor musun? Sonradan değiştirilemez.`, (ok) => { if (ok) { socket.emit('chooseEmpire', k); $('empirewin').classList.remove('open'); } }, 'Katıl', 'Vazgeç');
+  });
+  $('eventX').addEventListener('click', () => $('eventwin').classList.remove('open'));
+  $('eventwin').addEventListener('click', (e) => { if (e.target.id === 'eventwin') $('eventwin').classList.remove('open'); });
+  $('warJoin').addEventListener('click', () => { if (socket) socket.emit('warJoin'); $('eventwin').classList.remove('open'); $('menuwin').classList.remove('open'); });
+  setInterval(() => { renderWarHud(); if ($('eventwin').classList.contains('open')) renderEvents(); }, 5000);
   // ---------- grup çerçeveleri ----------
   $('partyFrames').addEventListener('click', (e) => {
     const row = e.target.closest('[data-pid]'); if (!row || !party) return;
@@ -38,6 +47,35 @@ export function setup(ctx) {
     }
   });
 }
+
+// ---------- krallık ve etkinlikler ----------
+export const EMPIRES = { 1: { name: 'Kızıl Ejder', color: '#e0453a' }, 2: { name: 'Altın Kartal', color: '#e8b54a' }, 3: { name: 'Gök Kurt', color: '#3d8fe0' } };
+let war = null, events = null;
+export const warState = () => war;
+export function askEmpire() {
+  $('empirePick').innerHTML = Object.entries(EMPIRES).map(([k, e]) => `<button data-emp="${k}" style="color:${e.color}"><i style="background:${e.color}"></i><span style="color:#f4f1e8">${e.name}</span><small>${C.esc(EMP_TEXT[k])}</small></button>`).join('');
+  $('empirewin').classList.add('open');
+}
+const EMP_TEXT = { 1: 'Ateşin ve cesaretin krallığı', 2: 'Bilgeliğin ve zenginliğin krallığı', 3: 'Göklerin ve bozkırın krallığı' };
+export function openEvents() { if (socket) { socket.emit('warGet'); socket.emit('eventsGet'); } renderEvents(); $('eventwin').classList.add('open'); }
+const fmtLeft = (ms) => { const m = Math.max(0, Math.round(ms / 60000)); return m >= 60 * 24 ? `${Math.floor(m / 1440)} gün ${Math.floor((m % 1440) / 60)} sa` : m >= 60 ? `${Math.floor(m / 60)} sa ${m % 60} dk` : `${m} dk`; };
+function renderEvents() {
+  if (war) {
+    const now = Date.now();
+    document.querySelector('.evcard.war').classList.toggle('on', war.active);
+    $('warStatus').innerHTML = war.active ? `<b style="color:#ff6a3d">SÜRÜYOR</b> · ${fmtLeft(war.ends - now)} kaldı` : war.next ? `Sonraki: ${fmtLeft(war.next - now)} sonra` : '';
+    $('warScore').innerHTML = [1, 2, 3].map((e) => `<div style="color:${EMPIRES[e].color}${war.winner === e ? ';box-shadow:0 0 0 2px ' + EMPIRES[e].color : ''}"><b>${war.score[e] || 0}</b>${EMPIRES[e].name}${war.winner === e ? '<br><small>+%20 tecrübe</small>' : ''}</div>`).join('');
+    $('warJoin').style.display = war.active ? '' : 'none';
+  }
+  $('eventList').innerHTML = (events || []).map((e) => `<div class="evcard${e.active ? ' on' : ''}"><div class="evh"><b>${C.esc(e.icon + ' ' + e.name)}</b><span>${e.active ? `<b style="color:#ff6a3d">SÜRÜYOR</b> · ${fmtLeft(e.ends - Date.now())} kaldı` : e.next ? `Sonraki: ${fmtLeft(e.next - Date.now())} sonra` : ''}</span></div><small class="gtxt">${C.esc(e.desc)}</small></div>`).join('');
+}
+function renderWarHud() {
+  const el = $('warHud');
+  if (!war || !war.active || !C.inWarMap()) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = [1, 2, 3].map((e) => `<span style="color:${EMPIRES[e].color}">${war.score[e] || 0}</span>`).join('<small>·</small>') + `<small>${fmtLeft(war.ends - Date.now())}</small>`;
+}
+export function refreshWar() { renderWarHud(); }
 
 // ---------- lonca ----------
 let guild = null, gTab = 'members';
@@ -110,6 +148,9 @@ export function bind(sock) {
   socket.on('dailyDone', () => { C.sfx.levelUp && C.sfx.levelUp(); });
   socket.on('loginReward', (r) => showLoginReward(r));
   socket.on('guild', (g) => { guild = g; renderGuild(); });
+  socket.on('warState', (w) => { war = w; renderEvents(); renderWarHud(); C.onWar && C.onWar(w); });
+  socket.on('events', (list) => { events = list; renderEvents(); });
+  socket.on('empire', (n) => C.onEmpire && C.onEmpire(n));
   socket.on('guildAsk', ({ name, from }) => C.askBox(`${from} seni "${name}" loncasına davet ediyor.`, (ok) => socket.emit('guildAnswer', { ok })));
 }
 export const getParty = () => party;
