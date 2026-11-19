@@ -4,7 +4,18 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 3.9 (bu sürüm): Savaşçı, Ninja ve Sura için yeni karakter modelleri
+### Aşama 4.0 (bu sürüm): Ataonline girişi, 3D karakter seçimi, demirci, ruh taşları, düello ve arkadaşlar
+
+- **Giriş ekranı:** "ATA ONLINE" logosu; arkada gece vakti taş sunak, yanan mangallar, sancaklar, Uzak Doğu kapısı ve dağlar (`client/js/lobby.js`). Kamera sunağın çevresinde döner.
+- **Karakter seçme (Metin2 tarzı):** solda karakter listesi, ortada seçili karakter sunakta ışık sütunu içinde belirir; üç vuruşluk gösteri yapar ve sınıf becerisini M1 renginde kullanır. Boş alanda sürükleyince karakter döner, dokununca gösteriyi tekrarlar. Yeni karakter oluştururken seçilen sınıf sunakta başlangıç eşyalarıyla görünür.
+- **Demirci (köyde, örs ve ocağın yanında):** silah, zırh ve takılar +0'dan +9'a yükseltilir. Başarı şansı +1'de %95, +9'da %25. +4'ten sonra başarısız olursa eşya bir seviye düşer; **Kutsama Kağıdı** (dükkânda 75.000 Yang, metinlerden nadiren düşer) kullanılırsa düşmez. Her artı saldırı/savunma/canı artırır; eşya adında "+7" gibi görünür, büyük artılar (+7 ve üstü) haritaya duyurulur.
+- **Ruh taşları (sadece metinlerden düşer):** Kırma (kritik), Delme (savunmayı deler), Savaşçı/Ninja/Sura/Şaman/Okçu (o sınıfa karşı güç) silaha; Hayat, Savunma, Hız, Kaçınma, Büyü zırha takılır. Silah ve zırhta 3 yuva var; aynı türden taş bir eşyaya bir kez takılır. Takma şansı +0'da %95, +4'te %55 (başarısızsa taş kırılır). Taşlar demircide +4'e kadar yükseltilir (başarısızsa kırılır). Üst haritalarda daha yüksek dereceli taşlar düşer.
+- **Oyuncuya dokununca menü:** Fısılda, Arkadaş ekle, Düello iste. Gelen istekler kabul/ret kutusuyla sorulur.
+- **Düello:** 3 saniyelik geri sayım, rakip kırmızı halkayla işaretlenir; vuruşlar ve beceriler rakibe işler (sınıf taşları ve kaçınma geçerli). Canı biten kaybeder ama ölmez; 3 dakika sonra ya da uzaklaşınca düello biter.
+- **Sohbet:** sohbet düğmesi ya da Enter; "/w isim mesaj" ile fısıltı, "/r mesaj" ile son fısıldayana cevap. Arkadaş listesi (çevrimiçi durumu, harita, seviye) ve giriş/çıkış haberleri. Arkadaşlar veritabanına kaydedilir.
+- **Beceriler:** her beceriye ayırt edici bir imza efekti eklendi (ileri uçan hilal dalgalar, altın hortum, yerden fışkıran kaya ve kristal dikenler, altıgen kalkan kubbesi, şifa nilüferi, kara bulut ve şimşek fırtınası, ejder ateşi konisi, ışık kanatları) ve çevreyi beceri renginde aydınlatan ışık parlamaları. Karlı ve çöl haritalarında efektler artık beyaza dönmüyor, renkleri seçiliyor.
+
+### Aşama 3.9: Savaşçı, Ninja ve Sura için yeni karakter modelleri
 
 - **Savaşçı:** boynuzlu miğferli, kürk pelerinli barbar. Kask eşyası takılınca kendi miğferi gizlenir.
 - **Ninja:** kapüşonlu, koyu kıyafetli suikastçı (kask eşyası kapüşonun üstüne giydirilmez).

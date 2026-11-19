@@ -58,6 +58,22 @@ def price(i, factor):
     return int(round(50 * (i + 1) ** 2.2 * factor / 10.0)) * 10
 
 
+# ruh taşları: anahtar, ad, takıldığı yer, etkilediği değer, +0..+4 değerleri, renk, açıklama
+STONES = [
+    ('kirma', 'Kırma Taşı', 'weapon', 'crit', [1, 2, 3, 4, 5], '#ff6a5a', 'Kritik vuruş şansı +%{v}.'),
+    ('delme', 'Delme Taşı', 'weapon', 'pierce', [1, 2, 3, 4, 5], '#f2c94c', '%{v} şansla savunmayı deler.'),
+    ('savasci', 'Savaşçı Taşı', 'weapon', 'vs_savasci', [2, 4, 6, 8, 10], '#c0392b', 'Savaşçılara karşı güç +%{v}.'),
+    ('ninja', 'Ninja Taşı', 'weapon', 'vs_ninja', [2, 4, 6, 8, 10], '#5a5f73', 'Ninjalara karşı güç +%{v}.'),
+    ('sura', 'Sura Taşı', 'weapon', 'vs_sura', [2, 4, 6, 8, 10], '#8e44ad', 'Suralara karşı güç +%{v}.'),
+    ('saman', 'Şaman Taşı', 'weapon', 'vs_saman', [2, 4, 6, 8, 10], '#27ae60', 'Şamanlara karşı güç +%{v}.'),
+    ('okcu', 'Okçu Taşı', 'weapon', 'vs_okcu', [2, 4, 6, 8, 10], '#b8860b', 'Okçulara karşı güç +%{v}.'),
+    ('hayat', 'Hayat Taşı', 'armor', 'hp', [80, 150, 250, 350, 500], '#e74c3c', 'Maks. Can +{v}.'),
+    ('savunma', 'Savunma Taşı', 'armor', 'def', [8, 15, 22, 30, 40], '#7f8c8d', 'Savunma +{v}.'),
+    ('hiz', 'Hız Taşı', 'armor', 'movespeed', [2, 4, 6, 8, 10], '#3498db', 'Hareket hızı +%{v}.'),
+    ('kacinma', 'Kaçınma Taşı', 'armor', 'dodge', [1, 2, 3, 4, 5], '#1abc9c', '%{v} şansla saldırıdan kaçar.'),
+    ('buyu', 'Büyü Taşı', 'armor', 'mp', [50, 100, 150, 200, 300], '#2f7fd0', 'Maks. Mana +{v}.'),
+]
+
 def build_items():
     items = {}
     for i, (lv, tname, color) in enumerate(TIERS):
@@ -144,6 +160,16 @@ def build_items():
                             'lv': 1, 'price': 2500000, 'rarity': 3, 'color': '#4fd1c5'}
     items['at_muhru'] = {'name': 'At Mührü', 'slot': 'use', 'desc': 'Kullanınca atına biner ya da iner. Atlıyken %60 daha hızlısın.',
                          'lv': 25, 'price': 0, 'rarity': 2, 'color': '#c9a35a'}
+
+    # ruh taşları (Metin2 gibi): metin taşlarından düşer, silah/zırh yuvalarına takılır, demircide +4'e kadar yükselir
+    for key, name, target, stat, vals, color, desc in STONES:
+        for g in range(5):
+            items[f'tas_{key}_{g}'] = {'name': f'{name} +{g}', 'slot': 'stone', 'stone': {'type': key, 'for': target, 'stat': stat, 'value': vals[g], 'grade': g},
+                                       'desc': desc.format(v=vals[g]) + (' Silaha takılır.' if target == 'weapon' else ' Zırha takılır.'),
+                                       'lv': 1, 'price': 2000 * (g + 1) ** 2, 'rarity': 1 if g < 2 else 2, 'color': color, 'stack': 200}
+    # Kutsama Kağıdı: demircide yükseltme başarısız olursa eşya seviyesi düşmez
+    items['kutsama'] = {'name': 'Kutsama Kağıdı', 'slot': 'use', 'desc': 'Demircide yükseltme başarısız olursa eşyanın artısı düşmez (kağıt harcanır).',
+                        'lv': 1, 'price': 75000, 'rarity': 2, 'color': '#f2e2a0', 'stack': 200}
 
     # eski sürümden kalan eşyalar (var olan karakterler bozulmasın)
     legacy = json.load(open(os.path.join(ROOT, 'items.json'), encoding='utf8')) if os.path.exists(
@@ -268,7 +294,7 @@ MAPS = [
 
 # tek köy var: bütün alışveriş Atabis Köyü'nde (harita sırası -> (iksirler, satılan kademeler))
 SHOPS = {
-    0: (['p_hp1', 'p_hp2', 'p_hp3', 'p_hp4', 'p_mp1', 'p_mp2', 'p_mp3', 'p_mp4', 'p_green', 'p_speed', 'isin_yuzugu'], list(range(0, 11))),
+    0: (['p_hp1', 'p_hp2', 'p_hp3', 'p_hp4', 'p_mp1', 'p_mp2', 'p_mp3', 'p_mp4', 'p_green', 'p_speed', 'kutsama', 'isin_yuzugu'], list(range(0, 11))),
 }
 
 # harita sınırları: köy haritası orta boy, vahşi haritalar büyük

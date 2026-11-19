@@ -11,6 +11,7 @@ import { retargetClips, correctFrame } from './entities/retarget.js';
 import * as sfx from './audio.js';
 import * as fx from './fx.js';
 import * as icons from './icons.js';
+import { buildStage, updateStage } from './lobby.js';
 
 let FACE_OFFSET = Math.PI;     // model yüklenince otomatik hesaplanır
 const SPEED = 6;               // metre / saniye
@@ -28,7 +29,8 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 220);
 fx.initFx(scene, camera, renderer);
 
-scene.add(new THREE.HemisphereLight('#dfefff', '#4a6a35', 1.1));
+const hemi = new THREE.HemisphereLight('#dfefff', '#4a6a35', 1.1);
+scene.add(hemi);
 const sun = new THREE.DirectionalLight('#fff3dc', 2.0);
 sun.castShadow = true;
 sun.shadow.mapSize.set(1024, 1024);
@@ -1027,7 +1029,7 @@ let selected = null;   // {uid} veya {slot}
 const EQUIP = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring'];
 const BONUS_NAMES = { maxhp: ['Maks. Can', ''], maxmp: ['Maks. Mana', ''], atk: ['Saldırı', ''], def: ['Savunma', ''], crit: ['Kritik', '%'],
   atkspeed: ['Saldırı Hızı', '%'], movespeed: ['Hareket Hızı', '%'], monster: ['Canavarlara Güç', '%'], hpsteal: ['Can Çalma', '%'] };
-const SLOT_NAMES = { weapon: 'Silah', armor: 'Zırh', helmet: 'Miğfer', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', potion: 'İksir', use: 'Kullanılır', fish: 'Balık', gem: 'Değerli taş' };
+const SLOT_NAMES = { stone: 'Ruh taşı', weapon: 'Silah', armor: 'Zırh', helmet: 'Miğfer', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', potion: 'İksir', use: 'Kullanılır', fish: 'Balık', gem: 'Değerli taş' };
 const ICONS = {
   weapon: '<path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/>',
   armor: '<path d="M8 3 4 6v5l3 1v9h10v-9l3-1V6l-4-3-2 2h-4z"/>',
@@ -1039,6 +1041,7 @@ const ICONS = {
   use: '<path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/>',
   fish: '<path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0z"/><path d="M18 12l3-3v6z"/>',
   gem: '<circle cx="12" cy="12" r="6"/><circle cx="10" cy="10" r="1.5"/>',
+  stone: '<path d="M12 3l7 6-3 10H8L5 9z"/>',
 };
 // ---------- gerçekçi 3D simgeler (icons.js) ----------
 function iconBuilder(key, def) {
@@ -1057,6 +1060,8 @@ function iconBuilder(key, def) {
   if (s === 'potion') return () => icons.potionMesh(def);
   if (s === 'gem') return () => icons.pearlMesh(def.color);
   if (s === 'fish') return () => (key === 'b_cizme' ? icons.bootsMesh({ color: '#5a4a3a' }) : icons.fishMesh(def.color));
+  if (s === 'stone') return () => icons.spiritStoneMesh(def.color, def.stone.grade);
+  if (key === 'kutsama') return () => icons.scrollMesh();
   if (key === 'efsun') return () => icons.crystalMesh('#c86bff');
   if (key === 'efsun_degis') return () => icons.crystalMesh('#4fd1c5', true);
   if (key === 'olta') return () => icons.rodMesh();
@@ -1067,7 +1072,7 @@ function iconBuilder(key, def) {
   return null;
 }
 const ICON_POSE = { weapon: { rz: -0.8, ry: 0.35 }, armor: { ry: 0.45, rx: 0.08 }, helmet: { ry: 0.65, rx: 0.1 }, shoes: { ry: 0.55, rx: 0.2 },
-  bracelet: { ry: 0.3 }, earring: { ry: 0.4 }, potion: { ry: 0.3, rx: 0.1 }, fish: { ry: 0.5 }, gem: { rx: 0.5 }, use: { ry: 0.5, rx: 0.15 } };
+  bracelet: { ry: 0.3 }, earring: { ry: 0.4 }, potion: { ry: 0.3, rx: 0.1 }, fish: { ry: 0.5 }, gem: { rx: 0.5 }, use: { ry: 0.5, rx: 0.15 }, stone: { rx: 0.4, ry: 0.3 } };
 function itemIcon(key, def, size = 26, slot) {
   if (def && key) {
     const b = iconBuilder(key, def);
@@ -1102,13 +1107,40 @@ function reqText(def) {
   const ok = myLevel >= def.lv;
   return `<span style="color:${ok ? '#8b877c' : '#ff6a5a'}">Sv. ${def.lv}</span>`;
 }
+// ---------- demirci artısı ve ruh taşları (sunucudaki rules.js ile aynı formüller) ----------
+const UP_CHANCE = [95, 90, 85, 75, 65, 55, 45, 35, 25], STONE_UP_CHANCE = [70, 60, 50, 40], STONE_ADD_CHANCE = [95, 85, 75, 65, 55];
+const SOCKETS = { weapon: 3, armor: 3 };
+const upgradeCost = (def, up) => Math.round((2000 + (def.lv || 1) * 300) * (up + 1) * (1 + up * 0.35));
+const stoneUpCost = (g) => 5000 * (g + 1) * (g + 1);
+function upBonus(def, up) {
+  if (!up) return { atk: 0, def: 0, hp: 0 };
+  return { atk: def.atk ? Math.round(def.atk * 0.08 * up + up * 2) : 0, def: def.def ? Math.round(def.def * 0.1 * up + up) : 0, hp: def.hp ? Math.round(def.hp * 0.08 * up) : 0 };
+}
+const itemName = (it, def) => (def ? def.name : '?') + (it && it.up ? ' +' + it.up : '');
+function statTextIt(it, def) {
+  const b = upBonus(def, (it && it.up) || 0), parts = [];
+  if (def.atk) parts.push(`Saldırı ${def.atk + b.atk}${b.atk ? ` <span class="upv">(+${b.atk})</span>` : ''}`);
+  if (def.def) parts.push(`Savunma ${def.def + b.def}${b.def ? ` <span class="upv">(+${b.def})</span>` : ''}`);
+  if (def.hp) parts.push(`Can ${def.hp + b.hp}${b.hp ? ` <span class="upv">(+${b.hp})</span>` : ''}`);
+  return parts.length ? parts.join(' · ') : statText(def);
+}
+// silah/zırhın taş yuvaları: dolu yuva taşın renginde
+function socketHtml(it, def) {
+  const n = SOCKETS[def.slot]; if (!n) return '';
+  let h = '<span class="socks">';
+  for (let i = 0; i < n; i++) {
+    const k = (it.sock || [])[i], sd = k && ITEMS[k];
+    h += sd ? `<i class="sock full" style="--c:${sd.color}" title="${esc(sd.name)}"></i><small style="color:${sd.color}">${esc(sd.name)}</small>` : '<i class="sock"></i>';
+  }
+  return h + '</span>';
+}
 const invEl = document.getElementById('inv'), gridEl = document.getElementById('grid'), detailEl = document.getElementById('detail');
 function renderInv() {
   document.getElementById('yang').textContent = `${inv.yang.toLocaleString('tr-TR')} Yang`;
   const eqEl = document.getElementById('equipcol');
   eqEl.querySelectorAll('.eq').forEach((el) => {
     const slot = el.dataset.slot, it = inv.equip[slot], def = it ? ITEMS[it.key] : null;
-    el.innerHTML = `${itemIcon(it && it.key, def, 22, slot)}<span>${def ? `<span style="color:${RARITY[def.rarity]}">${esc(def.name)}</span>` : 'Boş'}<small>${SLOT_NAMES[slot]}</small></span>`;
+    el.innerHTML = `${itemIcon(it && it.key, def, 22, slot)}<span>${def ? `<span style="color:${RARITY[def.rarity]}">${esc(itemName(it, def))}</span>` : 'Boş'}<small>${SLOT_NAMES[slot]}</small></span>`;
     el.classList.toggle('sel', !!(selected && selected.slot === slot));
   });
   document.getElementById('stats').innerHTML = `Saldırı <b>${inv.atk}</b> · Savunma <b>${inv.def}</b> · Can <b>${inv.maxHp}</b>`;
@@ -1118,7 +1150,7 @@ function renderInv() {
     if (it) {
       const def = ITEMS[it.key] || { name: '?', rarity: 0 };
       const sel = selected && selected.uid === it.uid ? ' sel' : '';
-      html += `<button class="slot${sel}" data-uid="${it.uid}" aria-label="${esc(def.name)}" style="border-color:${sel ? '' : RARITY[def.rarity] + '66'}">${itemIcon(it.key, def)}${it.n > 1 ? `<i class="cnt">${it.n}</i>` : ''}</button>`;
+      html += `<button class="slot${sel}" data-uid="${it.uid}" aria-label="${esc(itemName(it, def))}" style="border-color:${sel ? '' : RARITY[def.rarity] + '66'}">${itemIcon(it.key, def)}${it.n > 1 ? `<i class="cnt">${it.n}</i>` : ''}${it.up ? `<i class="upb">+${it.up}</i>` : ''}</button>`;
     } else html += '<div class="slot" aria-hidden="true"></div>';
   }
   gridEl.innerHTML = html;
@@ -1137,9 +1169,11 @@ function renderDetail() {
   if (equipped) buttons = '<button data-act="unequip">Çıkar</button>';
   else if (def.slot === 'potion' || def.slot === 'use') buttons = '<button data-act="use">Kullan</button><button class="alt" data-act="drop">Yere at</button>';
   else if (def.slot === 'fish' || def.slot === 'gem') buttons = '<button class="alt" data-act="drop">Yere at</button>';
+  else if (def.slot === 'stone') buttons = `<button data-act="socket" style="background:${def.color};color:#111">${def.stone.for === 'weapon' ? 'Silaha tak' : 'Zırha tak'}</button><button class="alt" data-act="drop">Yere at</button>`;
   else buttons = '<button data-act="equip">Giy</button><button class="alt" data-act="drop">Yere at</button>';
-  detailEl.innerHTML = `<span class="dico">${itemIcon(it.key, def, 48)}</span><span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(def.name)}${it.n > 1 ? ' x' + it.n : ''}</b><br>` +
-    `<span style="color:#c9c4b6">${SLOT_NAMES[def.slot] || ''} · ${statText(def)}</span> ${reqText(def)}<span style="color:#8b877c">${esc(cls)}</span>` +
+  detailEl.innerHTML = `<span class="dico">${itemIcon(it.key, def, 48)}</span><span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(itemName(it, def))}${it.n > 1 ? ' x' + it.n : ''}</b><br>` +
+    `<span style="color:#c9c4b6">${SLOT_NAMES[def.slot] || ''} · ${statTextIt(it, def)}</span> ${reqText(def)}<span style="color:#8b877c">${esc(cls)}</span>` +
+    socketHtml(it, def) +
     (def.desc ? `<br><small style="color:#8b877c">${esc(def.desc)}</small>` : '') +
     (it.bon && it.bon.length ? '<br>' + it.bon.map(([t, v]) => `<small style="color:#c86bff">${BONUS_NAMES[t] ? BONUS_NAMES[t][0] : t} +${v}${BONUS_NAMES[t] ? BONUS_NAMES[t][1] : ''}</small>`).join(' · ') : '') +
     '</span>' + buttons +
@@ -1166,8 +1200,67 @@ detailEl.addEventListener('click', (e) => {
   if (b.dataset.act === 'use' && it) { socket.emit('useItem', it.uid); if (ITEMS[it.key] && ITEMS[it.key].slot === 'potion') sfx.potion(); return; }
   if (b.dataset.act === 'enchant') { socket.emit('enchant', selected.slot ? { slot: selected.slot } : { uid: selected.uid }); return; }
   if (b.dataset.act === 'reroll') { socket.emit('reroll', selected.slot ? { slot: selected.slot } : { uid: selected.uid }); return; }
+  if (b.dataset.act === 'socket' && it) {
+    const sd = ITEMS[it.key].stone, slot = sd.for;
+    if (!inv.equip[slot]) { toast(slot === 'weapon' ? 'Önce bir silah kuşan.' : 'Önce bir zırh kuşan.'); return; }
+    socket.emit('socketStone', { stone: it.uid, slot }); return;
+  }
   selected = null;
 });
+// ---------- demirci (Metin2 gibi +0..+9, ruh taşı +0..+4) ----------
+const smithEl = document.getElementById('smith'), smithList = document.getElementById('smithList');
+let smithScroll = false;
+function openSmith() { smithEl.classList.add('open'); document.getElementById('smithResult').className = ''; renderSmith(); }
+function renderSmith() {
+  if (!smithEl.classList.contains('open')) return;
+  const scrolls = inv.inventory.filter((i) => i.key === 'kutsama').reduce((a, i) => a + (i.n || 1), 0);
+  if (!scrolls) smithScroll = false;
+  document.getElementById('smithYang').textContent = `${inv.yang.toLocaleString('tr-TR')} Yang`;
+  const sc = document.getElementById('smithScroll');
+  sc.checked = smithScroll; sc.disabled = !scrolls;
+  document.getElementById('smithScrollN').textContent = scrolls ? `(${scrolls} adet)` : '(yok · dükkânda satılır)';
+  const rows = [];
+  for (const slot of EQUIP) { const it = inv.equip[slot]; if (it) rows.push({ it, ref: { slot }, eq: true }); }
+  for (const it of inv.inventory) { const d = ITEMS[it.key]; if (d && (EQUIP.includes(d.slot) || d.slot === 'stone')) rows.push({ it, ref: { uid: it.uid } }); }
+  let html = '';
+  for (const { it, ref, eq } of rows) {
+    const def = ITEMS[it.key];
+    let info, can, btn = 'Yükselt';
+    if (def.slot === 'stone') {
+      const g = def.stone.grade;
+      can = g < 4;
+      info = can ? `+${g} → +${g + 1} · Şans %${STONE_UP_CHANCE[g]} · ${stoneUpCost(g).toLocaleString('tr-TR')} Yang<br><small class="warn">Başarısız olursa taş kırılır.</small>` : 'En yüksek derece (+4)';
+    } else {
+      const up = it.up || 0;
+      can = up < 9;
+      const risk = smithScroll ? 'Kağıt korur' : up >= 4 ? 'Başarısızsa −1' : 'Başarısızsa değişmez';
+      info = can ? `+${up} → +${up + 1} · Şans %${UP_CHANCE[up]} · ${upgradeCost(def, up).toLocaleString('tr-TR')} Yang<br><small class="${up >= 4 && !smithScroll ? 'warn' : ''}">${risk}</small>` : 'En yüksek seviye (+9)';
+    }
+    html += `<div class="srow">${itemIcon(it.key, def, 26)}<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(itemName(it, def))}</b>${eq ? ' <small class="eqtag">kuşanılı</small>' : ''}${it.n > 1 ? ' <small>x' + it.n + '</small>' : ''}<br><small>${info}</small></span>` +
+      `<button data-up='${JSON.stringify(ref)}' ${can ? '' : 'disabled'}>${btn}</button></div>`;
+  }
+  smithList.innerHTML = html || '<p style="color:#8b877c">Yükseltilecek eşyan yok.</p>';
+}
+smithList.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-up]'); if (!b || !socket) return;
+  const ref = JSON.parse(b.dataset.up);
+  socket.emit('upgrade', { ...ref, scroll: smithScroll });
+  sfx.click();
+});
+document.getElementById('smithScroll').addEventListener('change', (e) => { smithScroll = e.target.checked; renderSmith(); });
+document.getElementById('smithClose').addEventListener('click', () => smithEl.classList.remove('open'));
+function smithResult(ok, text) {
+  const r = document.getElementById('smithResult');
+  r.textContent = text; r.className = ''; void r.offsetWidth; r.className = ok ? 'ok' : 'fail';
+  const me = players[myId];
+  if (me) {
+    const p = me.group.position;
+    fx.hitSpark({ x: p.x, y: 1.2, z: p.z }, ok, 'stone');
+    if (ok) fx.levelUp(me);
+  }
+  if (ok) sfx.enchant(); else sfx.hit('stone', false, me ? me.group.position : null);
+}
+
 const toastEl = document.getElementById('toast');
 let toastTimer = null;
 function toast(text) {
@@ -1549,6 +1642,8 @@ function attack() {
     const d = Math.hypot(s.x - pos.x, s.z - pos.z);
     if (d < bestD) { best = { x: s.x, z: s.z }; bestD = d; }
   }
+  const foe = duelFoe && players[duelFoe];
+  if (foe) { const fp = foe.group.position, d = Math.hypot(fp.x - pos.x, fp.z - pos.z); if (d < bestD) { best = fp; bestD = d; } }
   if (best) me.ry = Math.atan2(best.x - pos.x, best.z - pos.z) + FACE_OFFSET;
   socket.emit('attack');
 }
@@ -1568,6 +1663,8 @@ function useSkill(key) {
       if (d < bestD) { best = p; bestD = d; }
     }
     for (const st of Object.values(stones)) { const d = Math.hypot(st.x - pos.x, st.z - pos.z); if (d < bestD) { best = st; bestD = d; } }
+    const foe = duelFoe && players[duelFoe];
+    if (foe) { const fp = foe.group.position, d = Math.hypot(fp.x - pos.x, fp.z - pos.z); if (d < bestD) { best = fp; bestD = d; } }
     if (best) me.ry = Math.atan2(best.x - pos.x, best.z - pos.z) + FACE_OFFSET;
   }
   socket.emit('skill', { key, f: me.ry - FACE_OFFSET });
@@ -1640,6 +1737,8 @@ function enterMap(data) {
   clearWorld();
   currentMap = MAPS[data.map];
   mapInfo = loadMap(scene, currentMap);
+  // açık renkli gökyüzü (kar, çöl): efektler normal karışımla çizilsin ki renkleri seçilsin
+  { const c = scene.background; fx.setBright(c && (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) > 0.62); }
   setWeather(mapInfo.weather);
   for (const p of mapInfo.portals) {
     const target = MAPS[p.to];
@@ -1681,6 +1780,7 @@ export function startGame(sock, opts = {}) {
   if (opts.onKicked) alertBox = opts.onKicked;
 
   socket.on('welcome', (data) => {
+    lobbyMode('off');
     myId = data.id; myClass = data.cls; myName = data.name; myGm = !!data.gm;
     document.getElementById('myname').textContent = data.name;
     document.getElementById('myclass').textContent = (CLASSES[myClass] || {}).name || '';
@@ -1688,7 +1788,35 @@ export function startGame(sock, opts = {}) {
     if (opts.onWelcome) opts.onWelcome();
   });
   socket.on('mapChange', (data) => { amDead = false; deadEl.classList.remove('open'); setFishState('idle'); enterMap(data); updateToolButtons(); renderSkillbar(); });
-  socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (shopKind) renderShop(); });
+  socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (shopKind) renderShop(); renderSmith(); });
+  socket.on('upgraded', ({ ok, name, up, stone }) => smithResult(ok, ok ? (stone ? `BAŞARILI · ${name}` : `BAŞARILI · ${name} +${up}`) : (stone ? 'BAŞARISIZ · taş kırıldı' : `BAŞARISIZ · ${name} +${up}`)));
+  socket.on('socketed', ({ ok }) => { if (ok) sfx.enchant(); else sfx.hit('stone', false, null); });
+  // ---------- sohbet, fısıltı, arkadaşlar, düello ----------
+  socket.on('whisper', ({ from, to, text }) => {
+    const mine = from === myName;
+    log(`<b class="wsp">[Fısıltı] ${mine ? 'Sen → ' + esc(to) : esc(from)}:</b> <span class="wsp">${esc(text)}</span>`);
+    if (!mine) { toast(`${from}: ${text}`); lastWhisperFrom = from; sfx.click(); }
+  });
+  socket.on('friends', (list) => { friendList = list; renderFriends(); });
+  socket.on('friendAsk', ({ id, name, level }) => askBox(`${name} (Sv. ${level}) seni arkadaş olarak eklemek istiyor.`, (ok) => socket.emit('friendAnswer', { id, ok })));
+  socket.on('duelAsk', ({ id, name, level }) => askBox(`${name} (Sv. ${level}) seni düelloya davet ediyor!`, (ok) => socket.emit('duelAnswer', { id, ok }), 'Kabul et', 'Reddet', true));
+  socket.on('duelStart', ({ a, b, in: sec }) => {
+    for (const id of [a, b]) { const p = players[id]; if (p) p.duelWith = id === a ? b : a; }
+    if (a === myId || b === myId) {
+      duelFoe = a === myId ? b : a;
+      markFoe(duelFoe, true);
+      let n = sec || 3;
+      const tick = () => { if (n > 0) { duelBanner(String(n), ''); n--; setTimeout(tick, 1000); } else duelBanner('DÜELLO!', 'fight'); };
+      tick();
+    }
+  });
+  socket.on('duelEnd', ({ a, b, winner }) => {
+    for (const id of [a, b]) { const p = players[id]; if (p) p.duelWith = null; }
+    if (a === myId || b === myId) {
+      markFoe(duelFoe, false); duelFoe = null;
+      if (winner) duelBanner(winner === myId ? 'KAZANDIN' : 'KAYBETTİN', winner === myId ? 'win' : 'lose');
+    }
+  });
   socket.on('hp', ({ hp, max }) => setHp(hp, max));
   socket.on('stats', ({ level, exp, need, up }) => {
     setStats(level, exp, need);
@@ -1757,13 +1885,22 @@ export function startGame(sock, opts = {}) {
   socket.on('correct', ({ x, z }) => { const me = players[myId]; if (me) me.group.position.set(x, 0, z); });
   socket.on('swing', ({ id, combo, target }) => {
     const p = players[id]; if (!p) return;
-    const tm = target && (mobs[target] ? mobs[target].v.root.position : stones[target] ? stones[target] : null);
+    const tm = target && (mobs[target] ? mobs[target].v.root.position : stones[target] ? stones[target] : players[target] ? players[target].group.position : null);
     if (p.cls === 'okcu' && tm) shootArrow(p, tm);
     sfx.swing(p.cls, p.group.position, combo || 0);
     p.swingT = SWING_T; p.combo = combo || 0;
     if (p.cls !== 'okcu') p.slashT = 0.3;
   });
-  socket.on('hit', ({ id, kind, dmg, crit, hp }) => {
+  socket.on('hit', ({ id, kind, dmg, crit, hp, max, miss }) => {
+    if (kind === 'player') {
+      const p = players[id]; if (!p) return;
+      const pos = p.group.position;
+      if (p.label.hp && max) p.label.hp.style.width = Math.max(0, 100 * hp / max) + '%';
+      floatText(miss ? 'ISKA' : (crit ? 'KRİTİK ' : '') + '-' + dmg, pos.x, 2.6, pos.z, crit);
+      if (!miss) { sfx.hit('mob', crit, pos); fx.hitSpark({ x: pos.x, y: 1.2, z: pos.z }, crit, 'mob'); }
+      if (id === myId && !miss) { document.body.classList.add('hurt'); setTimeout(() => document.body.classList.remove('hurt'), 180); }
+      return;
+    }
     if (kind === 'mob') {
       const m = mobs[id]; if (!m) return;
       m.hp = hp; m.label.hp.style.width = (100 * hp / m.max) + '%';
@@ -1786,8 +1923,9 @@ export function startGame(sock, opts = {}) {
     if (by === myId) log(`<b>Sistem:</b> ${esc(mobName)} yenildi.`);
     else if (boss) log(`<b>${esc(name)}</b> ${esc(mobName)} adlı boss'u yendi!`);
   });
-  socket.on('mobAttack', ({ id, target, dmg }) => {
+  socket.on('mobAttack', ({ id, target, dmg, miss }) => {
     const m = mobs[id]; if (m) m.atkT = 0.4;
+    if (miss) { const p = players[target]; if (p) floatText('ISKA', p.group.position.x, 2.4, p.group.position.z, false); return; }
     if (target === myId) sfx.hurt(); else if (m) sfx.mobAttack(m.v.root.position);
     const p = players[target];
     // ateş püskürten yaratıklar (ör. Ateş Kertenkelesi)
@@ -1878,6 +2016,7 @@ function findNearAction(pos) {
     if (p.npcKind === 'teleport') return { label: 'Işınlayıcı', run: () => openShop('teleport', 'IŞINLAYICI') };
     if (p.npcKind === 'stable') return { label: 'Seyis', run: () => openShop('stable', 'SEYİS · AT GÖREVİ') };
     if (p.npcKind === 'fisher') return { label: 'Balıkçı', run: () => openShop('potions', 'BALIKÇI') };
+    if (p.npcKind === 'blacksmith') return { label: 'Demirci', run: () => openSmith() };
     return { label: p.name, run: () => openShop(p.npcKind, p.name.toLocaleUpperCase('tr-TR')) };
   }
   for (const pt of mapInfo.portals) {
@@ -1941,6 +2080,210 @@ updateSndBtn();
 // tarayıcılar sesi ancak bir dokunuştan sonra açar
 for (const ev of ['pointerdown', 'keydown', 'touchstart']) window.addEventListener(ev, () => sfx.unlock(), { passive: true });
 
+// ---------- sohbet ----------
+let lastWhisperFrom = null, whisperTo = null;
+const chatBar = document.getElementById('chatBar'), chatInput = document.getElementById('chatInput'), chatTo = document.getElementById('chatTo');
+function openChat(to) {
+  whisperTo = to || null;
+  chatTo.textContent = whisperTo ? `${whisperTo}:` : 'Herkes:';
+  chatTo.classList.toggle('w', !!whisperTo);
+  chatBar.classList.add('open');
+  chatInput.focus();
+}
+function closeChat() { chatBar.classList.remove('open'); chatInput.blur(); chatInput.value = ''; }
+function sendChat() {
+  const t = chatInput.value.trim();
+  if (t && socket) {
+    const m = t.match(/^\/(w|f|fısılda)\s+(\S+)\s+(.+)$/i);
+    if (m) socket.emit('whisper', { to: m[2], text: m[3] });
+    else if (/^\/r\s+/i.test(t) && lastWhisperFrom) socket.emit('whisper', { to: lastWhisperFrom, text: t.replace(/^\/r\s+/i, '') });
+    else if (whisperTo) socket.emit('whisper', { to: whisperTo, text: t });
+    else socket.emit('chat', t);
+  }
+  closeChat();
+}
+document.getElementById('chatBtn').addEventListener('click', () => (chatBar.classList.contains('open') ? closeChat() : openChat()));
+document.getElementById('chatSend').addEventListener('click', sendChat);
+chatTo.addEventListener('click', () => { if (whisperTo) { whisperTo = null; chatTo.textContent = 'Herkes:'; chatTo.classList.remove('w'); } });
+chatInput.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') sendChat(); if (e.key === 'Escape') closeChat(); });
+window.addEventListener('keydown', (e) => { if (e.key === 'Enter' && document.body.classList.contains('ingame') && !chatBar.classList.contains('open')) { e.preventDefault(); openChat(); } });
+
+// ---------- oyuncuya dokununca menü: fısılda, arkadaş ekle, düello ----------
+const pmenu = document.getElementById('pmenu');
+let pmenuTarget = null;
+function openPlayerMenu(p, x, y) {
+  pmenuTarget = p.id;
+  document.getElementById('pmName').textContent = p.name;
+  document.getElementById('pmSub').textContent = `${(CLASSES[p.cls] || {}).name || ''} · Sv. ${p.level}`;
+  const isFriend = friendList.some((f) => f.name === p.name);
+  pmenu.querySelector('[data-pm="friend"]').style.display = isFriend ? 'none' : '';
+  pmenu.style.left = Math.min(window.innerWidth - 200, Math.max(8, x - 90)) + 'px';
+  pmenu.style.top = Math.min(window.innerHeight - 230, Math.max(8, y - 40)) + 'px';
+  pmenu.classList.add('open');
+}
+pmenu.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-pm]'); if (!b || !socket) return;
+  const p = players[pmenuTarget];
+  if (b.dataset.pm === 'whisper' && p) openChat(p.name);
+  if (b.dataset.pm === 'friend' && p) socket.emit('friendRequest', p.id);
+  if (b.dataset.pm === 'duel' && p) socket.emit('duelRequest', p.id);
+  pmenu.classList.remove('open');
+});
+const _proj = new THREE.Vector3();
+function pickPlayerAt(cx, cy) {
+  let best = null, bd = 56;
+  for (const p of Object.values(players)) {
+    if (p.id === myId || p.npc || String(p.id).startsWith('lobby')) continue;
+    _proj.set(p.group.position.x, 1.1, p.group.position.z).project(camera);
+    if (_proj.z > 1) continue;
+    const sx = (_proj.x + 1) / 2 * window.innerWidth, sy = (1 - _proj.y) / 2 * window.innerHeight;
+    const d = Math.hypot(sx - cx, sy - cy);
+    if (d < bd) { bd = d; best = p; }
+  }
+  return best;
+}
+let tapStart = null;
+renderer.domElement.addEventListener('pointerdown', (e) => { tapStart = { x: e.clientX, y: e.clientY, t: performance.now() }; pmenu.classList.remove('open'); });
+renderer.domElement.addEventListener('pointerup', (e) => {
+  if (!tapStart || !myId) return;
+  const moved = Math.hypot(e.clientX - tapStart.x, e.clientY - tapStart.y), dur = performance.now() - tapStart.t;
+  tapStart = null;
+  if (moved > 10 || dur > 450) return;
+  const p = pickPlayerAt(e.clientX, e.clientY);
+  if (p) openPlayerMenu(p, e.clientX, e.clientY);
+});
+
+// ---------- onay kutusu (düello / arkadaşlık isteği) ----------
+const askEl = document.getElementById('askBox');
+let askCb = null, askTimer = null;
+function askBox(text, cb, yes = 'Kabul et', no = 'Reddet', danger = false) {
+  if (askCb) askCb(false);
+  askCb = cb;
+  document.getElementById('askText').textContent = text;
+  document.getElementById('askYes').textContent = yes; document.getElementById('askNo').textContent = no;
+  askEl.classList.toggle('danger', danger);
+  askEl.classList.add('open');
+  sfx.click();
+  clearTimeout(askTimer);
+  askTimer = setTimeout(() => answerAsk(false), 20000);
+}
+function answerAsk(ok) { const cb = askCb; askCb = null; askEl.classList.remove('open'); clearTimeout(askTimer); if (cb) cb(ok); }
+document.getElementById('askYes').addEventListener('click', () => answerAsk(true));
+document.getElementById('askNo').addEventListener('click', () => answerAsk(false));
+
+// ---------- arkadaş listesi ----------
+let friendList = [];
+const friendsEl = document.getElementById('friendwin');
+function renderFriends() {
+  const on = friendList.filter((f) => f.online).length;
+  const badge = document.getElementById('friendOn'); badge.textContent = on; badge.style.display = on ? '' : 'none';
+  if (!friendsEl.classList.contains('open')) return;
+  document.getElementById('friendList').innerHTML = friendList.length ? friendList.map((f) =>
+    `<div class="srow"><i class="dot${f.online ? ' on' : ''}"></i><span class="grow"><b>${esc(f.name)}</b><br><small>${f.online ? `${esc((CLASSES[f.cls] || {}).name || '')} · Sv. ${f.level} · ${esc(f.map || '')}` : 'Çevrimdışı'}</small></span>` +
+    `<button data-fw="${esc(f.name)}" ${f.online ? '' : 'disabled'}>Fısılda</button><button class="alt" data-fr="${esc(f.name)}">Sil</button></div>`).join('')
+    : '<p style="color:#8b877c;font-size:13px">Henüz arkadaşın yok. Bir oyuncuya dokun ve "Arkadaş ekle"ye bas.</p>';
+}
+document.getElementById('friendBtn').addEventListener('click', () => { friendsEl.classList.add('open'); renderFriends(); if (socket) socket.emit('friendsGet'); });
+document.getElementById('friendClose').addEventListener('click', () => friendsEl.classList.remove('open'));
+document.getElementById('friendList').addEventListener('click', (e) => {
+  const w = e.target.closest('[data-fw]'), r = e.target.closest('[data-fr]');
+  if (w) { friendsEl.classList.remove('open'); openChat(w.dataset.fw); }
+  if (r && socket) { if (r.dataset.armed) socket.emit('friendRemove', r.dataset.fr); else { r.dataset.armed = '1'; r.textContent = 'Emin misin?'; } }
+});
+
+// ---------- düello ----------
+let duelFoe = null;
+function markFoe(id, on) {
+  const p = players[id]; if (!p) return;
+  p.label.el.classList.toggle('foe', on);
+  for (const ch of p.group.children) if (ch.geometry && ch.geometry.type === 'RingGeometry' && ch.userData.keep) ch.material.color.set(on ? '#ff3b2f' : '#8ec5ff');
+}
+function duelBanner(text, kind) {
+  const el = document.getElementById('duelBanner');
+  el.textContent = text; el.className = ''; void el.offsetWidth; el.className = 'show ' + (kind || '');
+  if (kind === 'fight' || kind === 'win') sfx.levelUp(); else sfx.click();
+}
+
+// ---------- giriş ve karakter seçme sahnesi (Metin2 tarzı) ----------
+const lobby = { st: null, mode: 'off', char: null, charKey: null, show: [], t: 0, yaw: 0, drag: 0 };
+// mode: 'login' (kamera sunağın çevresinde döner), 'select' (seçili karakter sunakta), 'off'
+export function lobbyMode(mode) {
+  if (mode === lobby.mode) return;
+  if (mode === 'off') {
+    if (lobby.st) { scene.remove(lobby.st.group); }
+    lobbyShowChar(null);
+    hemi.intensity = 1.1; sun.intensity = 2.0;
+    lobby.mode = 'off';
+    return;
+  }
+  if (!lobby.st) lobby.st = buildStage();
+  if (!lobby.st.group.parent) scene.add(lobby.st.group);
+  scene.background = new THREE.Color('#0a0f1e');
+  fx.setBright(false);
+  scene.fog = new THREE.Fog('#0a0f1e', 22, 95);
+  hemi.intensity = 0.35; sun.intensity = 0.45;
+  sun.position.set(-10, 20, 8); sun.target.position.set(0, 0, 0);
+  if (lobby.mode === 'off') lobby.t = 0;
+  lobby.mode = mode;
+  if (mode === 'login') lobbyShowChar(null);
+}
+const lookFromEquip = (e) => ({ weapon: e && e.weapon ? e.weapon.key : null, armor: e && e.armor ? e.armor.key : null, helmet: e && e.helmet ? e.helmet.key : null });
+// c: { id, name, class, level, equip } — sunakta gösterilecek karakter (null: kimse)
+export async function lobbyShowChar(c) {
+  const key = c ? `${c.id}|${c.class}|${JSON.stringify(lookFromEquip(c.equip))}` : null;
+  if (key === lobby.charKey) { if (c) lobbyFlourish(); return; }
+  lobby.charKey = key;
+  if (lobby.char) { removePlayer(lobby.char.id); lobby.char = null; }
+  lobby.show = [];
+  if (!c) return;
+  await modelReady;
+  if (lobby.charKey !== key || lobby.mode === 'off') return;
+  const o = createPlayer({ id: 'lobby:' + (c.id || c.class), name: c.name || '', cls: c.class, x: 0, z: 0, ry: FACE_OFFSET, level: c.level || 1, look: lookFromEquip(c.equip) });
+  o.target.set(0, 0.9, 0); o.group.position.set(0, 0.9, 0);
+  o.ry = FACE_OFFSET; o.group.rotation.y = FACE_OFFSET;
+  for (const ch of o.group.children) if (ch.geometry && ch.geometry.type === 'RingGeometry') ch.visible = false;
+  lobby.char = o; lobby.yaw = 0;
+  lobbyFlourish(true);
+}
+// seçince karakter gösteri yapar: ışık sütunu içinde belirir, üç vuruş, sonra sınıf becerisi
+function lobbyFlourish(appear) {
+  const o = lobby.char; if (!o) return;
+  const sk = (SKILLS[o.cls] || [])[1] || (SKILLS[o.cls] || [])[0];
+  const now = lobby.t;
+  lobby.show = [];
+  if (appear) lobby.show.push([now, () => { fx.levelUp(o); sfx.levelUp(); }]);
+  [0, 1, 2].forEach((k, i) => lobby.show.push([now + 0.7 + i * 0.42, () => {
+    o.swingT = SWING_T; o.combo = k; if (o.cls !== 'okcu') o.slashT = 0.3;
+    sfx.swing(o.cls, o.group.position, k);
+  }]));
+  if (sk) lobby.show.push([now + 2.2, () => {
+    try { fx.playSkill(sk, { caster: o, from: { x: 0, z: 0 }, facing: o.ry - FACE_OFFSET, targets: sk.target === 'self' || sk.target === 'heal' ? [{ x: 0, y: 0.9, z: 0, obj: o }] : [{ x: Math.sin(o.ry - FACE_OFFSET) * 3, y: 0.9, z: Math.cos(o.ry - FACE_OFFSET) * 3 }], lv: 18 }); } catch (e) { console.warn(e); }
+    const pose = fx.skillPose(sk);
+    if (pose.spin) o.spinT = o.spinDur = pose.spin;
+    if (pose.jump) o.jumpT = o.jumpDur = pose.jump;
+    if (pose.cast) { o.castT = o.castDur = 0.8; o.castKind = pose.cast; }
+    sfx.skill(sk, o.group.position);
+  }]);
+}
+export function lobbyRotate(dx) { lobby.yaw += dx * 0.01; }
+export function lobbyReplay() { lobbyFlourish(false); }
+function lobbyUpdate(dt) {
+  lobby.t += dt;
+  updateStage(lobby.st, dt);
+  for (let i = lobby.show.length - 1; i >= 0; i--) if (lobby.t >= lobby.show[i][0]) { const f = lobby.show[i][1]; lobby.show.splice(i, 1); f(); }
+  if (lobby.char) { lobby.char.ry = FACE_OFFSET + lobby.yaw; }
+  if (lobby.mode === 'login') {
+    const a = lobby.t * 0.08;
+    camera.position.set(Math.sin(a) * 13, 4.6 + Math.sin(lobby.t * 0.3) * 0.5, Math.cos(a) * 13);
+    camera.lookAt(0, 2.2, 0);
+  } else {
+    // karakter ekranın ortasında; telefon dikeyse biraz daha uzaktan
+    const portrait = camera.aspect < 1, far = portrait ? 1.5 : 1;
+    camera.position.set(Math.sin(lobby.t * 0.25) * 0.4, 2.3 * far, 6.6 * far);
+    camera.lookAt(0, portrait ? 0.55 : 1.75, 0);   // dikeyde karakter üst yarıda, liste altta
+  }
+}
+
 // ---------- ana döngü ----------
 const clock = new THREE.Clock();
 const camPos = new V3();
@@ -1994,6 +2337,8 @@ function loop() {
     sun.position.set(me.group.position.x + 12, 25, me.group.position.z + 6);
     sun.target.position.copy(me.group.position);
     sfx.setListener(me.group.position.x, me.group.position.z);
+  } else if (lobby.mode !== 'off') {
+    lobbyUpdate(dt);
   } else {
     camera.position.set(25 + 14, 16, 25 + 14);
     camera.lookAt(25, 0, 25);

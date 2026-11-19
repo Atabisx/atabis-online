@@ -205,12 +205,24 @@ class Zone {
       const d = dist(s, p) - 1.2;
       if (d < range && d < bestD) { best = s; bestD = d; kind = 'stone'; }
     }
+    // düello rakibi
+    const opp = this.hooks.duelOpponent && this.hooks.duelOpponent(p);
+    if (opp) { const d = dist(opp, p) - 0.6; if (d < range && d < bestD) { best = opp; bestD = d; kind = 'player'; } }
     this.emit('swing', { id: p.id, combo, target: best ? best.id : null });
     if (!best) return;
+    if (kind === 'player') { this.pvpHit(p, best, combo, 1, false); return; }
     const { dmg, crit, steal } = R.playerDamage(p, kind === 'mob' ? best.d.def : 0, combo);
     if (steal) this.hooks.heal(p, Math.round(dmg * steal / 100));
     if (kind === 'mob') this.damageMob(best, p, dmg, crit);
     else this.damageStone(best, p, dmg, crit);
+  }
+
+  // düelloda oyuncuya vuruş: savunma ve sınıf taşı hesaba katılır, kaçınma şansı var
+  pvpHit(p, t, combo, mult, forceCrit) {
+    const tt = R.totals(t);
+    if (tt.dodge && Math.random() * 100 < tt.dodge) { this.emit('hit', { id: t.id, kind: 'player', dmg: 0, miss: true, hp: t.hp, max: t.maxHp, by: p.id }); return; }
+    const { dmg, crit } = R.playerDamage(p, R.defense(t) * 2, combo, mult * 0.55, forceCrit, t.class);
+    this.hooks.pvpDamage(p, t, dmg, crit);
   }
 
   damageMob(m, p, dmg, crit) {
@@ -235,6 +247,16 @@ class Zone {
       const n = best.color === 'purple' ? 2 : 1;
       for (let i = 0; i < n; i++) if (Math.random() < 0.6) this.makeDrop(best.x, best.z, p.id, { key: own[Math.floor(Math.random() * own.length)] });
       if (Math.random() < 0.15) this.makeDrop(best.x, best.z, p.id, { key: 'efsun', n: 1 });   // efsun nesnesi sadece taşlardan
+      // ruh taşları (Metin2 gibi sadece metinlerden): üst haritalarda daha yüksek dereceli
+      const STONE_TYPES = ['kirma', 'delme', 'savasci', 'ninja', 'sura', 'saman', 'okcu', 'hayat', 'savunma', 'hiz', 'kacinma', 'buyu'];
+      if (Math.random() < (best.color === 'purple' ? 0.55 : 0.35)) {
+        const tier = this.def.tier || 0;
+        let g = 0; const r = Math.random();
+        if (r < 0.04 + tier * 0.006) g = 2; else if (r < 0.25 + tier * 0.02) g = 1;
+        if (tier >= 10 && Math.random() < 0.05) g = 3;
+        this.makeDrop(best.x, best.z, p.id, { key: `tas_${STONE_TYPES[Math.floor(Math.random() * STONE_TYPES.length)]}_${g}`, n: 1 });
+      }
+      if (Math.random() < 0.03) this.makeDrop(best.x, best.z, p.id, { key: 'kutsama', n: 1 });
       this.makeDrop(best.x, best.z, p.id, null, Math.round((50 + best.lv * 30) * (n + Math.random())));
       setTimeout(() => this.spawnStone(), 15000);
     }
@@ -255,15 +277,17 @@ class Zone {
   }
 
   // ---------- beceriler ----------
-  targetsAround(x, z, r) {
+  targetsAround(x, z, r, p = null) {
     const list = [];
     for (const m of this.mobs.values()) if (Math.hypot(m.x - x, m.z - z) - (m.d.hitR || m.d.scale * 0.6) < r) list.push(['mob', m]);
     for (const s of this.stones.values()) if (Math.hypot(s.x - x, s.z - z) - 1.2 < r) list.push(['stone', s]);
+    const opp = p && this.hooks.duelOpponent && this.hooks.duelOpponent(p);
+    if (opp && Math.hypot(opp.x - x, opp.z - z) - 0.6 < r) list.push(['player', opp]);
     return list;
   }
   nearestTarget(p, range) {
     let best = null, bd = Infinity;
-    for (const t of this.targetsAround(p.x, p.z, range)) {
+    for (const t of this.targetsAround(p.x, p.z, range, p)) {
       const d = Math.hypot(t[1].x - p.x, t[1].z - p.z);
       if (d < bd) { bd = d; best = t; }
     }
@@ -273,18 +297,18 @@ class Zone {
   useSkill(p, sk, lv) {
     const mult = (sk.mult || 0) + (sk.multLv || 0) * (lv - 1);
     let targets = [];
-    if (sk.target === 'aoe') targets = this.targetsAround(p.x, p.z, sk.radius);
+    if (sk.target === 'aoe') targets = this.targetsAround(p.x, p.z, sk.radius, p);
     else if (sk.target === 'front') {
       const fx = Math.sin(p.facing || 0), fz = Math.cos(p.facing || 0);
-      targets = this.targetsAround(p.x, p.z, sk.radius).filter(([, t]) => {
+      targets = this.targetsAround(p.x, p.z, sk.radius, p).filter(([, t]) => {
         const dx = t.x - p.x, dz = t.z - p.z, d = Math.hypot(dx, dz) || 1;
         return (dx * fx + dz * fz) / d > 0.2;
       });
     } else if (sk.target === 'single') {
       const t = this.nearestTarget(p, sk.range); if (t) targets = [t];
-      if (t && sk.splash) targets = targets.concat(this.targetsAround(t[1].x, t[1].z, sk.splash).filter((o) => o[1] !== t[1]));
+      if (t && sk.splash) targets = targets.concat(this.targetsAround(t[1].x, t[1].z, sk.splash, p).filter((o) => o[1] !== t[1]));
     } else if (sk.target === 'multi') {
-      targets = this.targetsAround(p.x, p.z, sk.range).sort((a, b) => Math.hypot(a[1].x - p.x, a[1].z - p.z) - Math.hypot(b[1].x - p.x, b[1].z - p.z)).slice(0, sk.count || 3);
+      targets = this.targetsAround(p.x, p.z, sk.range, p).sort((a, b) => Math.hypot(a[1].x - p.x, a[1].z - p.z) - Math.hypot(b[1].x - p.x, b[1].z - p.z)).slice(0, sk.count || 3);
     } else if (sk.target === 'chain') {
       const first = this.nearestTarget(p, sk.range);
       if (first) {
@@ -292,7 +316,7 @@ class Zone {
         targets = [first];
         let cur = first[1];
         while (targets.length < max) {
-          const next = this.targetsAround(cur.x, cur.z, 7).filter((t) => !targets.some((o) => o[1] === t[1]))
+          const next = this.targetsAround(cur.x, cur.z, 7, p).filter((t) => !targets.some((o) => o[1] === t[1]))
             .sort((a, b) => Math.hypot(a[1].x - cur.x, a[1].z - cur.z) - Math.hypot(b[1].x - cur.x, b[1].z - cur.z))[0];
           if (!next) break;
           targets.push(next); cur = next[1];
@@ -303,9 +327,10 @@ class Zone {
       p.x = this.clampX(p.x + fx * sk.dist);
       p.z = this.clampX(p.z + fz * sk.dist);
       p.socket.emit('correct', { x: p.x, z: p.z });
-      targets = this.targetsAround(p.x, p.z, sk.radius);
+      targets = this.targetsAround(p.x, p.z, sk.radius, p);
     }
     for (const [kind, t] of targets) {
+      if (kind === 'player') { this.pvpHit(p, t, 0, mult * R.skillMul(p), !!sk.crit); continue; }
       const { dmg, crit, steal } = R.playerDamage(p, kind === 'mob' ? t.d.def : 0, 0, mult * R.skillMul(p), !!sk.crit);
       const heal = Math.round(dmg * ((sk.lifesteal || 0) + (steal || 0) / 100));
       if (heal) this.hooks.heal(p, heal);
@@ -357,6 +382,8 @@ class Zone {
             m.ry = Math.atan2(t.x - m.x, t.z - m.z);
             if (now - m.lastAttack >= d.cd) {
               m.lastAttack = now;
+              const dodge = R.totals(t).dodge;
+              if (dodge && Math.random() * 100 < dodge) { this.emit('mobAttack', { id: m.id, target: t.id, dmg: 0, miss: true }); continue; }
               const dmg = R.mobDamage(d, t);
               this.emit('mobAttack', { id: m.id, target: t.id, dmg });
               this.hooks.damagePlayer(t, dmg, m);

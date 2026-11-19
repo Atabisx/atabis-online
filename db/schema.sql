@@ -47,3 +47,5 @@ ALTER TABLE characters ADD COLUMN IF NOT EXISTS skills JSONB NOT NULL DEFAULT '{
 ALTER TABLE characters ADD COLUMN IF NOT EXISTS quests JSONB NOT NULL DEFAULT '{}';
 -- Metin2 tarzı durum puanları (GÜÇ/CAN/ZEKA/ÇEV): harcanan puanlar
 ALTER TABLE characters ADD COLUMN IF NOT EXISTS stats JSONB NOT NULL DEFAULT '{}';
+-- arkadaş listesi (karakter adları)
+ALTER TABLE characters ADD COLUMN IF NOT EXISTS friends JSONB NOT NULL DEFAULT '[]';

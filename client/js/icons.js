@@ -218,3 +218,29 @@ export function ringMesh(color = '#4fd1c5') {
   g.rotation.x = 0.35;
   return g;
 }
+// ruh taşı: parlak yüzeyli yuvarlak taş, içinde ışıyan çekirdek, dereceye göre altın halka
+export function spiritStoneMesh(color, grade = 0) {
+  const g = new THREE.Group();
+  const geo = new THREE.IcosahedronGeometry(0.34, 1);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) { const k = 1 + Math.sin(i * 12.9898) * 0.06; pos.setXYZ(i, pos.getX(i) * k, pos.getY(i) * k * 0.82, pos.getZ(i) * k); }
+  geo.computeVertexNormals();
+  const shell = new THREE.Mesh(geo, std(color, 0.35, 0.18, { flatShading: true, transparent: true, opacity: 0.88 }));
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 12), glow(color, 0.95));
+  g.add(core, shell);
+  for (let i = 0; i < grade; i++) {
+    const r = new THREE.Mesh(new THREE.TorusGeometry(0.38 + i * 0.045, 0.012, 6, 36), std('#e8b54a', 1, 0.2));
+    r.rotation.x = Math.PI / 2 + 0.35; r.rotation.y = i * 0.5; g.add(r);
+  }
+  return g;
+}
+// kutsama kağıdı: dürülmüş parşömen ve kırmızı kurdele
+export function scrollMesh() {
+  const g = new THREE.Group();
+  const paper = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.78, 20), std('#efe0b0', 0, 0.8)); paper.rotation.z = Math.PI / 2;
+  for (const sx of [-1, 1]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.1, 12), std('#8a5a32', 0.2, 0.5)); c.rotation.z = Math.PI / 2; c.position.x = sx * 0.44; g.add(c); }
+  const rib = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.025, 8, 20), std('#b0281f', 0.1, 0.5)); rib.rotation.y = Math.PI / 2;
+  const seal = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.03, 14), std('#c9a14a', 0.9, 0.25)); seal.position.set(0, -0.06, 0.15); seal.rotation.x = Math.PI / 2;
+  g.add(paper, rib, seal);
+  return g;
+}

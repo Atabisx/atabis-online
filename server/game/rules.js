@@ -81,8 +81,28 @@ function statBonus(p) {
 }
 function skillMul(p) { return 1 + (totals(p).skill || 0) / 100; }
 
+// ---------- demirci: +0..+9 yükseltme ve ruh taşları ----------
+const MAX_UP = 9;
+const UP_CHANCE = [95, 90, 85, 75, 65, 55, 45, 35, 25];          // +1 ... +9 başarı yüzdesi
+const STONE_UP_CHANCE = [70, 60, 50, 40];                         // taş +1 ... +4
+const STONE_ADD_CHANCE = [95, 85, 75, 65, 55];                    // taş takma (+0 ... +4); başarısızsa taş kırılır
+const SOCKETS = { weapon: 3, armor: 3 };
+function upgradeCost(def, up) { return Math.round((2000 + (def.lv || 1) * 300) * (up + 1) * (1 + up * 0.35)); }
+function stoneUpCost(g) { return 5000 * (g + 1) * (g + 1); }
+// yükseltmenin eşyaya kattığı değerler
+function upBonus(def, up) {
+  if (!up) return { atk: 0, def: 0, hp: 0 };
+  return {
+    atk: def.atk ? Math.round(def.atk * 0.08 * up + up * 2) : 0,
+    def: def.def ? Math.round(def.def * 0.1 * up + up) : 0,
+    hp: def.hp ? Math.round(def.hp * 0.08 * up) : 0,
+  };
+}
+const CLASS_KEYS = ['savasci', 'ninja', 'sura', 'saman', 'okcu'];
+
 function totals(p) {
-  const s = { atk: 0, def: 0, hp: 0, mp: 0, crit: 0, atkspeed: 0, movespeed: 0, monster: 0, hpsteal: 0, skill: 0 };
+  const s = { atk: 0, def: 0, hp: 0, mp: 0, crit: 0, atkspeed: 0, movespeed: 0, monster: 0, hpsteal: 0, skill: 0, pierce: 0, dodge: 0 };
+  for (const c of CLASS_KEYS) s['vs_' + c] = 0;
   const sb = statBonus(p);
   for (const k of Object.keys(sb)) s[k] += sb[k];
   for (const slot of EQUIP_SLOTS) {
@@ -90,6 +110,12 @@ function totals(p) {
     const def = it && ITEMS[it.key];
     if (!def) continue;
     s.atk += def.atk || 0; s.def += def.def || 0; s.hp += def.hp || 0;
+    const ub = upBonus(def, it.up || 0);
+    s.atk += ub.atk; s.def += ub.def; s.hp += ub.hp;
+    for (const sk of it.sock || []) {
+      const st = ITEMS[sk] && ITEMS[sk].stone;
+      if (st) s[st.stat] = (s[st.stat] || 0) + st.value;
+    }
     for (const [type, v] of it.bon || []) {
       if (type === 'maxhp') s.hp += v; else if (type === 'maxmp') s.mp += v; else s[type] = (s[type] || 0) + v;
     }
@@ -117,11 +143,14 @@ function attackCooldown(p) {
 }
 
 // oyuncunun vurduğu hasar (mult: beceri çarpanı)
-function playerDamage(p, targetDef, combo, mult = 1, forceCrit = false) {
+// vsClass: rakip oyuncunun sınıfı (düello) — o sınıfa karşı taş/efsun gücü uygulanır, canavar gücü uygulanmaz
+function playerDamage(p, targetDef, combo, mult = 1, forceCrit = false, vsClass = null) {
   const c = classOf(p), t = totals(p);
   const crit = forceCrit || Math.random() < (c.crit || 0.12) + t.crit / 100;
   const base = 40 + p.level * 15 + t.atk * 4 + Math.random() * (20 + p.level * 2);
-  let dmg = base * (c.atk || 1) * (combo === 2 ? 1.3 : 1) * mult * (1 + t.monster / 100) - targetDef;
+  if (t.pierce && Math.random() * 100 < t.pierce) targetDef = 0;          // delici vuruş
+  const vs = vsClass ? 1 + (t['vs_' + vsClass] || 0) / 100 : 1 + t.monster / 100;
+  let dmg = base * (c.atk || 1) * (combo === 2 ? 1.3 : 1) * mult * vs - targetDef;
   dmg = Math.max(1, Math.round(dmg * (crit ? 2 : 1)));
   return { dmg, crit, steal: t.hpsteal };
 }
@@ -140,6 +169,6 @@ const skillLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 
 module.exports = {
   ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, EQUIP_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
-  BONUS_TYPES, rollBonus, maxBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
+  BONUS_TYPES, rollBonus, maxBonus, MAX_UP, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
   speedMul, attackCooldown, playerDamage, mobDamage, expGain, skillLabel,
 };

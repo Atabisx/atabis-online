@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0e100d">
-<title>ATABİS ONLINE</title>
+<title>ATAONLINE</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ATABİS">
+<meta name="apple-mobile-web-app-title" content="ATAONLINE">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;800&family=Cinzel+Decorative:wght@700;900&display=swap">
 <link rel="stylesheet" href="css/style.css">
 <style>#hud { display: none; } body.ingame #hud { display: block; }</style>
 <script type="importmap">
@@ -119,6 +119,43 @@
       <div id="charDerived" class="charderived"></div>
     </div>
   </div>
+  <div id="smith" class="modal" role="dialog" aria-label="Demirci">
+    <div class="modalbox">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">DEMİRCİ</b><span id="smithYang" style="color:#ffe08a;font-size:13px"></span><button id="smithClose" class="xbtn" aria-label="Kapat">×</button></div>
+      <label class="smithscroll"><input type="checkbox" id="smithScroll"> Kutsama Kağıdı kullan <span id="smithScrollN"></span></label>
+      <div id="smithResult"></div>
+      <div id="smithList"></div>
+    </div>
+  </div>
+  <div id="friendwin" class="modal" role="dialog" aria-label="Arkadaşlar">
+    <div class="modalbox" style="width:min(420px,94vw)">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">ARKADAŞLAR</b><button id="friendClose" class="xbtn" aria-label="Kapat">×</button></div>
+      <div id="friendList" style="overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+  </div>
+  <div id="pmenu" role="menu">
+    <b id="pmName"></b><small id="pmSub"></small>
+    <button data-pm="whisper">Fısılda</button>
+    <button data-pm="friend">Arkadaş ekle</button>
+    <button data-pm="duel" class="duelbtn">Düello iste</button>
+  </div>
+  <div id="askBox" role="alertdialog" aria-live="assertive">
+    <p id="askText"></p>
+    <div class="row"><button id="askNo" class="btn alt">Reddet</button><button id="askYes" class="btn">Kabul et</button></div>
+  </div>
+  <div id="duelBanner" aria-live="polite"></div>
+  <button id="chatBtn" aria-label="Sohbet">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg>
+  </button>
+  <button id="friendBtn" aria-label="Arkadaşlar">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20v-1a6.5 6.5 0 0 1 13 0v1"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.6a5 5 0 0 1 6 4.9V20"/></svg>
+    <i id="friendOn" style="display:none">0</i>
+  </button>
+  <div id="chatBar">
+    <button id="chatTo" type="button">Herkes:</button>
+    <input id="chatInput" maxlength="80" autocomplete="off" placeholder="Mesaj yaz… (/w isim mesaj: fısılda)">
+    <button id="chatSend" type="button" class="btn">Gönder</button>
+  </div>
   <div id="levelBanner" aria-live="polite"><div class="lb-glow"></div><div class="lb-title">SEVİYE ATLADIN</div><div class="lb-lv" id="lbLv">2</div><div class="lb-sub" id="lbSub">+3 durum puanı</div></div>
   <div id="dead" class="modal" role="dialog" aria-label="Öldün">
     <div class="modalbox" style="width:min(340px,92vw);text-align:center;align-items:center">
@@ -133,10 +170,9 @@
 </div>
 
 <!-- ===== giriş / kayıt ===== -->
-<div id="authScreen" class="screen">
-  <form id="authForm" class="card panel" autocomplete="on">
-    <h1 class="title">ATABİS ONLINE</h1>
-    <p class="sub">Tarayıcıda oynanan 3D MMORPG</p>
+<div id="authScreen" class="screen lobbyscr">
+  <div class="logo" aria-label="Ataonline"><span class="logo-a">ATA</span><span class="logo-b">ONLINE</span><i class="logo-sub">Kadim Toprakların Efsanesi</i></div>
+  <form id="authForm" class="card panel glass" autocomplete="on">
     <div class="tabs" role="tablist">
       <button type="button" id="tabLogin" class="on" role="tab">Giriş</button>
       <button type="button" id="tabRegister" role="tab">Kayıt ol</button>
@@ -164,28 +200,28 @@
   </div>
 </div>
 
-<!-- ===== karakter seçimi ===== -->
-<div id="charScreen" class="screen">
-  <div class="card wide panel">
-    <h1 class="title">KARAKTERLERİN</h1>
+<!-- ===== karakter seçimi (Metin2 tarzı: solda karakterler, ortada seçili karakter) ===== -->
+<div id="charScreen" class="screen lobbyscr">
+  <div class="logo small" aria-hidden="true"><span class="logo-a">ATA</span><span class="logo-b">ONLINE</span></div>
+  <div class="slots panel glass">
+    <div class="slotshead">KARAKTERLER</div>
+    <div id="charList" class="slotlist"></div>
     <p class="sub" id="accountName"></p>
-    <div id="charList" class="charlist"></div>
-    <div class="row">
-      <button id="playBtn" class="btn" disabled>Oyuna gir</button>
-    </div>
-    <div class="row">
-      <button id="deleteBtn" class="btn danger" disabled>Seçili karakteri sil</button>
-      <button id="logoutBtn" class="btn danger">Çıkış yap</button>
-    </div>
-    <div id="charMsg" class="msg" role="alert"></div>
   </div>
+  <div class="selinfo"><b id="selName"></b><span id="selSub"></span></div>
+  <div class="selbar">
+    <button id="logoutBtn" class="btn alt">Çıkış</button>
+    <button id="playBtn" class="btn big" disabled>OYUNA GİR</button>
+    <button id="deleteBtn" class="btn danger" disabled>Sil</button>
+  </div>
+  <div id="charMsg" class="msg selmsg" role="alert"></div>
 </div>
 
-<!-- ===== karakter oluşturma ===== -->
-<div id="createScreen" class="screen">
-  <form id="createForm" class="card wide panel">
-    <h1 class="title">YENİ KARAKTER</h1>
-    <label>Sınıf seç</label>
+<!-- ===== karakter oluşturma (seçilen sınıf ortada görünür) ===== -->
+<div id="createScreen" class="screen lobbyscr">
+  <div class="logo small" aria-hidden="true"><span class="logo-a">ATA</span><span class="logo-b">ONLINE</span></div>
+  <form id="createForm" class="slots panel glass createbox">
+    <div class="slotshead">YENİ KARAKTER</div>
     <div id="classList" class="classes"></div>
     <div id="classdesc"></div>
     <label for="charName">Karakter adı</label>
@@ -196,6 +232,7 @@
     </div>
     <div id="createMsg" class="msg" role="alert"></div>
   </form>
+  <div class="selinfo"><b id="newClassName"></b><span id="newClassSub"></span></div>
 </div>
 
 <div id="rotate">Oynamak için telefonunu yan çevir</div>

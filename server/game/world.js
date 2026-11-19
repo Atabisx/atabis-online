@@ -183,9 +183,9 @@ function createWorld(io) {
     try {
       await db.query(
         `UPDATE characters SET level=$2, exp=$3, yang=$4, kills=$5, pos_x=$6, pos_z=$7,
-         inventory=$8, equip=$9, next_uid=$10, map_id=$11, hp=$12, mp=$13, skills=$14, quests=$15, stats=$16, last_played=now() WHERE id=$1`,
+         inventory=$8, equip=$9, next_uid=$10, map_id=$11, hp=$12, mp=$13, skills=$14, quests=$15, stats=$16, friends=$17, last_played=now() WHERE id=$1`,
         [p.charId, p.level, p.exp, p.yang, p.kills, p.x, p.z, JSON.stringify(p.inventory), JSON.stringify(p.equip),
-         p.nextUid, p.zone ? p.zone.id : p.mapId, p.dead ? p.maxHp : p.hp, p.mp, JSON.stringify(p.skills), JSON.stringify(p.quests), JSON.stringify(p.stats || {})]);
+         p.nextUid, p.zone ? p.zone.id : p.mapId, p.dead ? p.maxHp : p.hp, p.mp, JSON.stringify(p.skills), JSON.stringify(p.quests), JSON.stringify(p.stats || {}), JSON.stringify(p.friends || [])]);
     } catch (e) { console.error('Kayıt hatası', p.name, e.message); }
   }
 
@@ -235,6 +235,21 @@ function createWorld(io) {
       }
     },
     announce(text, zone) { (zone ? zone : io).emit('announce', text); },
+    // düello: rakip (geri sayım bittiyse)
+    duelOpponent(p) {
+      const d = p.duel;
+      if (!d || Date.now() < d.start) return null;
+      const o = d.with;
+      return o && !o.dead && o.zone === p.zone && o.duel && o.duel.with === p ? o : null;
+    },
+    pvpDamage(p, t, dmg, crit) {
+      if (t.dead || !p.duel || p.duel.with !== t) return;
+      t.hp = Math.max(0, t.hp - dmg);
+      t.lastHurt = Date.now();
+      if (p.zone) p.zone.emit('hit', { id: t.id, kind: 'player', dmg, crit, hp: t.hp, max: t.maxHp, by: p.id });
+      sendHp(t);
+      if (t.hp <= 0) { t.hp = 1; sendHp(t); endDuel(p, t, 'win'); }
+    },
   };
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
 
@@ -263,6 +278,7 @@ function createWorld(io) {
   function moveToZone(p, mapId, pos) {
     const target = zones[mapId];
     if (!target) return;
+    if (p.duel) endDuel(null, p, 'left');
     if (p.zone) p.zone.removePlayer(p);
     p.fish = null;
     if (target.def.safe) p.mounted = false;
@@ -272,6 +288,35 @@ function createWorld(io) {
     p.lastMove = Date.now();
     target.addPlayer(p);
     p.socket.emit('mapChange', { ...target.snapshot(), you: { x: p.x, z: p.z } });
+  }
+
+  // ---------- düello ----------
+  function endDuel(winner, loser, why) {
+    const a = loser, b = a.duel ? a.duel.with : null;
+    if (a) a.duel = null;
+    if (b) b.duel = null;
+    const z = (winner || a).zone;
+    if (why === 'win' && winner) {
+      notice(winner, `Düelloyu kazandın! (${loser.name})`); notice(loser, `Düelloyu kaybettin. Kazanan: ${winner.name}`);
+      if (z) { z.emit('duelEnd', { a: winner.id, b: loser.id, winner: winner.id }); hooks.announce(`${winner.name}, düelloda ${loser.name} karşısında kazandı!`, z); }
+    } else {
+      for (const o of [a, b]) if (o) { notice(o, 'Düello sona erdi.'); }
+      if (z && b) z.emit('duelEnd', { a: a.id, b: b.id, winner: null });
+    }
+  }
+  const byName = (name) => Object.values(players).find((o) => o.name.toLocaleLowerCase('tr-TR') === String(name || '').toLocaleLowerCase('tr-TR'));
+  function sendFriends(p) {
+    p.socket.emit('friends', (p.friends || []).map((n) => {
+      const o = byName(n);
+      return { name: n, online: !!o, map: o && o.zone ? o.zone.def.name : null, level: o ? o.level : null, cls: o ? o.class : null };
+    }));
+  }
+  // arkadaşlara giriş/çıkış haberi
+  function tellFriends(p, on) {
+    for (const n of p.friends || []) {
+      const o = byName(n);
+      if (o && o !== p && (o.friends || []).includes(p.name)) { notice(o, `Arkadaşın ${p.name} ${on ? 'oyuna girdi' : 'oyundan çıktı'}.`); sendFriends(o); }
+    }
   }
 
   // ---------- bağlantı ----------
@@ -307,10 +352,10 @@ function createWorld(io) {
       inventory: row.inventory || [], equip: row.equip || {}, nextUid: row.next_uid,
       mapId: R.MAPS[row.map_id] ? row.map_id : 0, hp: row.hp, dead: false, zone: null,
       mp: row.mp, skills: row.skills || {}, quests: row.quests || {}, stats: row.stats || {}, buffs: {}, skillCd: {}, mounted: false,
-      fish: null, facing: 0,
+      fish: null, facing: 0, friends: Array.isArray(row.friends) ? row.friends : [], duel: null,
     };
     if (prev) {
-      for (const k of ['level', 'exp', 'yang', 'kills', 'inventory', 'equip', 'nextUid', 'hp', 'mp', 'skills', 'quests', 'stats', 'buffs']) p[k] = prev[k];
+      for (const k of ['level', 'exp', 'yang', 'kills', 'inventory', 'equip', 'nextUid', 'hp', 'mp', 'skills', 'quests', 'stats', 'buffs', 'friends']) p[k] = prev[k];
       if (prev.zone) p.mapId = prev.zone.id;
     }
     for (const s of R.EQUIP_SLOTS) if (p.equip[s] === undefined) p.equip[s] = null;
@@ -330,6 +375,7 @@ function createWorld(io) {
     });
     moveToZone(p, p.mapId, startPos);
     sendInv(p);
+    sendFriends(p); tellFriends(p, true);
     sendHp(p); sendMp(p); sendSkills(p); sendQuests(p); sendBuffs(p);
 
     socket.on('move', (m) => {
@@ -696,6 +742,131 @@ function createWorld(io) {
       sendHp(p);
     });
 
+    // ---------- demirci ----------
+    // eşyayı +1 yükselt (ya da ruh taşının derecesini artır). { slot } | { uid }, scroll: Kutsama Kağıdı kullan
+    socket.on('upgrade', (data) => {
+      const z = p.zone; if (!z || !z.def.shop) { notice(p, 'Demirci sadece köyde.'); return; }
+      let target = null;
+      if (data && data.slot && R.EQUIP_SLOTS.includes(data.slot)) target = p.equip[data.slot];
+      else if (data && data.uid != null) target = p.inventory.find((i) => i.uid === Number(data.uid));
+      const def = target && R.ITEMS[target.key];
+      if (!def) return;
+      // ruh taşı: +0..+4, başarısızsa taş kırılır
+      if (def.stone) {
+        const g = def.stone.grade;
+        if (g >= 4) { notice(p, 'Bu taş zaten en yüksek derecede (+4).'); return; }
+        const cost = R.stoneUpCost(g);
+        if (p.yang < cost) { notice(p, `Yeterli Yang yok (${cost.toLocaleString('tr-TR')} gerekli).`); return; }
+        p.yang -= cost;
+        const ok = Math.random() * 100 < R.STONE_UP_CHANCE[g];
+        // yığından bir taş al
+        if ((target.n || 1) > 1) target.n--; else p.inventory.splice(p.inventory.indexOf(target), 1);
+        const nk = `tas_${def.stone.type}_${g + 1}`;
+        if (ok) addItem(p, nk, 1);
+        notice(p, ok ? `Başarılı! ${R.ITEMS[nk].name} oldu.` : `Başarısız… ${def.name} kırıldı.`);
+        socket.emit('upgraded', { ok, name: ok ? R.ITEMS[nk].name : def.name, stone: true });
+        sendInv(p);
+        return;
+      }
+      if (!R.EQUIP_SLOTS.includes(def.slot)) { notice(p, 'Bu eşya yükseltilemez.'); return; }
+      const up = target.up || 0;
+      if (up >= R.MAX_UP) { notice(p, `${def.name} zaten +${R.MAX_UP}.`); return; }
+      const cost = R.upgradeCost(def, up);
+      if (p.yang < cost) { notice(p, `Yeterli Yang yok (${cost.toLocaleString('tr-TR')} gerekli).`); return; }
+      const scroll = data && data.scroll ? p.inventory.find((i) => i.key === 'kutsama') : null;
+      if (data && data.scroll && !scroll) { notice(p, 'Kutsama Kağıdın yok.'); return; }
+      p.yang -= cost;
+      const ok = Math.random() * 100 < R.UP_CHANCE[up];
+      let msg;
+      if (ok) { target.up = up + 1; msg = `Başarılı! ${def.name} +${target.up} oldu.`; }
+      else if (scroll) { consume(scroll); msg = `Başarısız… Kutsama Kağıdı eşyanı korudu (+${up}).`; }
+      else if (up >= 4) { target.up = up - 1; msg = `Başarısız… ${def.name} +${target.up} seviyesine düştü.`; }
+      else msg = `Başarısız… ${def.name} +${up} olarak kaldı.`;
+      notice(p, msg);
+      socket.emit('upgraded', { ok, name: def.name, up: target.up || 0 });
+      recalc(p); sendInv(p); sendHp(p); sendMp(p);
+      if (ok && target.up >= 7 && p.zone) hooks.announce(`${p.name}, ${def.name} eşyasını +${target.up} yaptı!`, p.zone);
+    });
+    // ruh taşı tak: { stone: uid, slot | uid }
+    socket.on('socketStone', (data) => {
+      const st = p.inventory.find((i) => i.uid === Number(data && data.stone));
+      const sd = st && R.ITEMS[st.key] && R.ITEMS[st.key].stone;
+      if (!sd) return;
+      let target = null;
+      if (data.slot && R.EQUIP_SLOTS.includes(data.slot)) target = p.equip[data.slot];
+      else if (data.uid != null) target = p.inventory.find((i) => i.uid === Number(data.uid));
+      const def = target && R.ITEMS[target.key];
+      if (!def || def.slot !== sd.for) { notice(p, sd.for === 'weapon' ? 'Bu taş sadece silaha takılır.' : 'Bu taş sadece zırha takılır.'); return; }
+      target.sock = target.sock || [];
+      if (target.sock.length >= (R.SOCKETS[def.slot] || 0)) { notice(p, 'Bu eşyanın taş yuvaları dolu.'); return; }
+      if (target.sock.some((k) => R.ITEMS[k] && R.ITEMS[k].stone.type === sd.type)) { notice(p, 'Aynı türden taş bir eşyaya bir kez takılır.'); return; }
+      const ok = Math.random() * 100 < R.STONE_ADD_CHANCE[sd.grade];
+      const name = R.ITEMS[st.key].name;
+      if (ok) target.sock.push(st.key);
+      consume(st);
+      notice(p, ok ? `${name} ${def.name} eşyasına takıldı.` : `Başarısız… ${name} kırıldı.`);
+      socket.emit('socketed', { ok });
+      recalc(p); sendInv(p); sendHp(p); sendMp(p);
+    });
+
+    // ---------- düello, arkadaşlık, fısıltı ----------
+    const other = (id) => { const o = players[String(id)]; return o && o !== p && o.zone === p.zone ? o : null; };
+    socket.on('duelRequest', (id) => {
+      const o = other(id);
+      if (!o) { notice(p, 'Oyuncu bulunamadı.'); return; }
+      if (p.dead || o.dead) return;
+      if (p.zone.def.safe) { notice(p, 'Burada düello yapılamaz.'); return; }
+      if (p.duel || o.duel) { notice(p, 'Biriniz zaten düelloda.'); return; }
+      if (Math.hypot(o.x - p.x, o.z - p.z) > 20) { notice(p, 'Düello için yakın olmalısınız.'); return; }
+      o.duelAsk = { from: p.id, at: Date.now() };
+      o.socket.emit('duelAsk', { id: p.id, name: p.name, level: p.level });
+      notice(p, `${o.name} oyuncusuna düello isteği gönderildi.`);
+    });
+    socket.on('duelAnswer', (data) => {
+      const ask = p.duelAsk; p.duelAsk = null;
+      const o = ask && Date.now() - ask.at < 20000 ? other(ask.from) : null;
+      if (!o || String(data && data.id) !== o.id) return;
+      if (!(data && data.ok)) { notice(o, `${p.name} düelloyu reddetti.`); return; }
+      if (p.duel || o.duel || p.dead || o.dead) return;
+      const start = Date.now() + 3000;
+      p.duel = { with: o, start, until: start + 180000 };
+      o.duel = { with: p, start, until: start + 180000 };
+      p.zone.emit('duelStart', { a: p.id, b: o.id, in: 3 });
+    });
+    socket.on('friendRequest', (id) => {
+      const o = other(id) || players[String(id)];
+      if (!o || o === p) return;
+      if ((p.friends || []).includes(o.name)) { notice(p, `${o.name} zaten arkadaşın.`); return; }
+      if ((p.friends || []).length >= 50) { notice(p, 'Arkadaş listen dolu (50).'); return; }
+      o.friendAsk = { from: p.id, at: Date.now() };
+      o.socket.emit('friendAsk', { id: p.id, name: p.name, level: p.level });
+      notice(p, `${o.name} oyuncusuna arkadaşlık isteği gönderildi.`);
+    });
+    socket.on('friendAnswer', (data) => {
+      const ask = p.friendAsk; p.friendAsk = null;
+      const o = ask && Date.now() - ask.at < 60000 ? players[ask.from] : null;
+      if (!o || String(data && data.id) !== o.id) return;
+      if (!(data && data.ok)) { notice(o, `${p.name} arkadaşlık isteğini reddetti.`); return; }
+      for (const [a, b] of [[p, o], [o, p]]) {
+        a.friends = a.friends || [];
+        if (!a.friends.includes(b.name) && a.friends.length < 50) a.friends.push(b.name);
+        notice(a, `${b.name} artık arkadaşın.`); sendFriends(a); save(a);
+      }
+    });
+    socket.on('friendRemove', (name) => {
+      p.friends = (p.friends || []).filter((n) => n !== String(name));
+      sendFriends(p);
+    });
+    socket.on('friendsGet', () => sendFriends(p));
+    socket.on('whisper', (data) => {
+      const t = String((data && data.text) || '').replace(/[<>&"'\\]/g, '').trim().slice(0, 80);
+      const o = byName(data && data.to);
+      if (!t) return;
+      if (!o) { notice(p, `${String((data && data.to) || '').slice(0, 14)} çevrimiçi değil.`); return; }
+      const msg = { from: p.name, to: o.name, text: t };
+      o.socket.emit('whisper', msg); if (o !== p) socket.emit('whisper', msg);
+    });
+
     socket.on('chat', (text) => {
       const t = String(text || '').replace(/[<>&"'\\]/g, '').trim().slice(0, 80);
       if (p.gm && t.startsWith('/')) { gmCommand(p, t); return; }
@@ -705,7 +876,9 @@ function createWorld(io) {
     socket.on('disconnect', () => {
       if (p.replaced || players[socket.id] !== p) return;
       delete players[socket.id];
+      if (p.duel) endDuel(null, p, 'left');
       if (p.zone) { p.mapId = p.zone.id; p.zone.removePlayer(p); p.zone = null; }
+      tellFriends(p, false);
       save(p);
     });
   });
@@ -723,6 +896,11 @@ function createWorld(io) {
   setInterval(() => {
     const now = Date.now();
     for (const p of Object.values(players)) {
+      // düello: süre doldu ya da çok uzaklaştılar
+      if (p.duel) {
+        const o = p.duel.with;
+        if (!o || o.zone !== p.zone || now > p.duel.until || Math.hypot(o.x - p.x, o.z - p.z) > 45) endDuel(null, p, 'left');
+      }
       if (p.dead) continue;
       if (p.mp < p.maxMp) {
         const rate = now - (p.lastHurt || 0) > 5000 ? 0.04 : 0.015;

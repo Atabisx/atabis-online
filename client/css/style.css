@@ -225,3 +225,111 @@ body.standalone #fsBtn { display: none; }
 /* ustalık: M1 mavi, M2 mor, M3 kızıl – daha güçlü ve hızlı parıltı */
 .skb.m1::before, .skb.m2::before, .skb.m3::before { box-shadow: 0 0 16px 3px var(--c), 0 0 6px var(--c2) inset; animation-duration: 1.1s; }
 .skb.m3::before { animation-duration: 0.7s; }
+
+/* ---------- Metin2 tarzı giriş / karakter seçme ekranları (arkada 3D sahne) ---------- */
+.screen.lobbyscr { background: radial-gradient(ellipse at 50% 120%, rgba(0,0,0,0) 40%, rgba(0,0,0,.55) 100%); pointer-events: none; display: none; flex-direction: column; justify-content: flex-start; padding: max(10px, env(safe-area-inset-top)) 14px 14px; }
+.screen.lobbyscr.show { display: flex; }
+.lobbyscr > * { pointer-events: auto; }
+.lobbyscr .logo, .lobbyscr .selinfo { pointer-events: none; }
+.logo { display: flex; flex-direction: column; align-items: center; line-height: .9; margin: 4vh auto 2vh; filter: drop-shadow(0 4px 10px rgba(0,0,0,.8)); }
+.logo-a, .logo-b { font-family: 'Cinzel Decorative', 'Rubik', serif; font-weight: 900; letter-spacing: .08em;
+  background: linear-gradient(180deg, #fff6d0 0%, #f2cf6b 38%, #b7802a 62%, #ffe9a8 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-text-stroke: 1px rgba(60,30,0,.55); }
+.logo-a { font-size: clamp(44px, 9vw, 92px); }
+.logo-b { font-size: clamp(22px, 4.2vw, 42px); letter-spacing: .42em; margin-top: 2px; padding-left: .42em; }
+.logo-sub { font-style: normal; font-size: 12px; color: #d9c79a; letter-spacing: .3em; margin-top: 10px; text-transform: uppercase; opacity: .85; }
+.logo::after { content: ''; width: min(320px, 60vw); height: 2px; margin-top: 12px; background: linear-gradient(90deg, transparent, #e8b54a, transparent); }
+.logo.small { margin: 0 auto; position: absolute; left: 50%; top: max(10px, env(safe-area-inset-top)); transform: translateX(-50%) scale(.55); transform-origin: top center; }
+.logo.small::after { display: none; }
+.glass { background: linear-gradient(180deg, rgba(24,20,14,.86), rgba(12,12,10,.86)); border: 1px solid rgba(232,181,74,.45); box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 10px 30px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,230,160,.15); }
+#authScreen .card { margin: 0 auto; }
+.slots { position: absolute; left: max(12px, env(safe-area-inset-left)); top: 50%; transform: translateY(-50%); width: min(250px, 42vw); max-height: 86vh; overflow-y: auto; padding: 12px; border-radius: 14px; display: flex; flex-direction: column; gap: 8px; }
+.slotshead { color: #e8b54a; font-weight: 800; letter-spacing: .14em; font-size: 13px; text-align: center; padding-bottom: 6px; border-bottom: 1px solid rgba(232,181,74,.3); }
+.slotlist { display: flex; flex-direction: column; gap: 6px; }
+.slotlist .charcard { min-height: 58px; padding: 8px 10px; flex-direction: row; align-items: center; gap: 10px; background: rgba(26,29,23,.85); }
+.slotlist .charcard .cico { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #1a1408; box-shadow: inset 0 -3px 6px rgba(0,0,0,.35), 0 0 0 2px rgba(0,0,0,.5); }
+.slotlist .charcard .ctext { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.slotlist .charcard.sel { border-color: #e8b54a; box-shadow: 0 0 12px rgba(232,181,74,.45); background: rgba(60,44,14,.85); }
+.slotlist .charcard.new { min-height: 46px; }
+.selinfo { position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; text-shadow: 0 2px 6px #000, 0 0 2px #000; text-align: center; }
+.selinfo b { font-size: 24px; color: #ffe9a8; letter-spacing: .06em; }
+.selinfo span { font-size: 13px; color: #d9c79a; }
+.selbar { position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 10px; align-items: center; }
+.btn.big { min-width: 190px; min-height: 56px; font-size: 18px; letter-spacing: .08em; background: linear-gradient(180deg, #ffd977, #c9922f); box-shadow: 0 0 0 2px #3a2810, 0 0 18px rgba(232,181,74,.5); }
+.selbar .btn.danger { min-height: 48px; background: rgba(20,10,8,.7); }
+.selbar .btn.alt { min-height: 48px; }
+.selmsg { position: absolute; left: 50%; bottom: 150px; transform: translateX(-50%); text-shadow: 0 1px 3px #000; }
+.createbox { gap: 8px; }
+.createbox .classes { grid-template-columns: 1fr 1fr; }
+.createbox .classbtn { min-height: 48px; padding: 8px; background: rgba(26,29,23,.85); }
+.createbox input { font: inherit; font-size: 16px; padding: 10px; border-radius: 10px; border: 2px solid #3a3f35; background: #1a1d17; color: #f4f1e8; }
+.createbox label { font-size: 12px; color: #c9c4b6; }
+#classdesc { font-size: 12px; color: #c9c4b6; line-height: 1.45; }
+@media (max-height: 460px) { .logo { margin: 1vh auto 1vh; } .logo-sub { display: none; } #authScreen .card { padding: 14px; gap: 8px; } .selinfo { bottom: 76px; } .selinfo b { font-size: 19px; } }
+@media (orientation: portrait) { .slots { top: auto; bottom: 150px; transform: none; left: 50%; transform: translateX(-50%); width: min(340px, 92vw); max-height: 34vh; } .selinfo { bottom: auto; top: 70px; } }
+
+/* ---------- demirci, taş yuvaları ---------- */
+.upb { position: absolute; left: 3px; top: 2px; font-style: normal; font-size: 10px; font-weight: 800; color: #ffe08a; text-shadow: 0 1px 2px #000; }
+.upv { color: #7be08f; }
+.socks { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 4px; }
+.sock { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #5a5446; background: #0e0f0c; display: inline-block; }
+.sock.full { border-color: #f4f1e8; background: radial-gradient(circle at 35% 30%, #fff, var(--c) 55%, #000 120%); box-shadow: 0 0 6px var(--c); }
+.socks small { font-size: 10px; }
+#smithList { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+#smithList .warn, .srow small.warn { color: #ff8a7a; }
+.eqtag { color: #e8b54a !important; }
+.smithscroll { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #f2e2a0; }
+.smithscroll input { width: 20px; height: 20px; accent-color: #e8b54a; }
+#smithResult { text-align: center; font-weight: 800; font-size: 0; letter-spacing: .08em; height: 0; transition: none; }
+#smithResult.ok, #smithResult.fail { font-size: 20px; height: auto; padding: 6px; border-radius: 10px; animation: smithpop .5s ease-out; }
+#smithResult.ok { color: #9dff9a; background: rgba(40,90,30,.35); text-shadow: 0 0 10px #4f4; }
+#smithResult.fail { color: #ff8a7a; background: rgba(90,20,15,.35); text-shadow: 0 0 10px #f42; }
+@keyframes smithpop { 0% { transform: scale(1.6); opacity: 0; } 60% { transform: scale(.95); opacity: 1; } 100% { transform: scale(1); } }
+
+/* ---------- sohbet, oyuncu menüsü, arkadaşlar, düello ---------- */
+#chatBtn, #friendBtn { position: fixed; top: 182px; width: 46px; height: 46px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.3); background: rgba(14,16,13,0.78); color: #f4f1e8; display: flex; align-items: center; justify-content: center; }
+#chatBtn { left: 168px; } #friendBtn { left: 220px; }
+body.standalone #chatBtn { left: 116px; } body.standalone #friendBtn { left: 168px; }
+#friendBtn i { position: absolute; right: -5px; top: -5px; min-width: 18px; height: 18px; border-radius: 9px; background: #3fae4a; color: #fff; font-style: normal; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+#chatBar { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); width: min(560px, 94vw); display: none; gap: 6px; padding: 6px; border-radius: 14px; background: rgba(14,16,13,0.92); border: 1px solid rgba(232,181,74,.5); z-index: 18; }
+#chatBar.open { display: flex; }
+#chatBar input { flex: 1; min-width: 0; font: inherit; font-size: 16px; padding: 10px; border-radius: 10px; border: 2px solid #3a3f35; background: #1a1d17; color: #f4f1e8; }
+#chatBar .btn { min-height: 44px; font-size: 14px; }
+#chatTo { font: inherit; font-weight: 700; font-size: 12px; border: 0; border-radius: 10px; background: #3a3f35; color: #c9c4b6; padding: 0 10px; max-width: 30%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#chatTo.w { background: #5a2a5a; color: #ffb3f0; }
+#log .wsp, #log b.wsp { color: #ffb3f0; }
+#pmenu { position: fixed; display: none; flex-direction: column; gap: 6px; width: 180px; padding: 10px; border-radius: 14px; background: rgba(20,22,18,0.96); border: 1px solid rgba(232,181,74,.6); z-index: 17; box-shadow: 0 8px 24px rgba(0,0,0,.6); }
+#pmenu.open { display: flex; }
+#pmenu b { color: #8ec5ff; font-size: 15px; }
+#pmenu small { color: #8b877c; font-size: 11px; margin-top: -4px; }
+#pmenu button { font: inherit; font-weight: 700; font-size: 14px; min-height: 42px; border-radius: 10px; border: 0; background: #3a3f35; color: #f4f1e8; }
+#pmenu .duelbtn { background: #7a2018; color: #ffd9d2; }
+#askBox { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); width: min(360px, 92vw); display: none; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; background: rgba(20,22,18,0.97); border: 2px solid #e8b54a; z-index: 19; box-shadow: 0 10px 30px rgba(0,0,0,.7); }
+#askBox.open { display: flex; animation: smithpop .35s ease-out; }
+#askBox.danger { border-color: #d9443a; }
+#askBox p { margin: 0; font-size: 15px; line-height: 1.4; text-align: center; }
+.label.foe { color: #ff5a4a !important; }
+#duelBanner { position: fixed; left: 50%; top: 30%; transform: translate(-50%, -50%); font-family: 'Cinzel Decorative', Rubik, serif; font-weight: 900; font-size: 64px; color: #ffe9a8; text-shadow: 0 0 20px #ff6a3d, 0 4px 0 #5a1a08; pointer-events: none; opacity: 0; z-index: 14; }
+#duelBanner.show { animation: duelpop 1s ease-out forwards; }
+#duelBanner.fight, #duelBanner.lose { color: #ff8a6a; }
+#duelBanner.win { color: #fff2a8; text-shadow: 0 0 24px #ffd23f, 0 4px 0 #6a4a08; }
+@keyframes duelpop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(2.4); } 25% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(.9); } }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: #5a5446; flex: none; }
+.dot.on { background: #3fd04a; box-shadow: 0 0 6px #3fd04a; }
+@media (max-height: 460px) {
+  .slots { width: 215px; padding: 8px; gap: 5px; }
+  .slotlist { gap: 4px; }
+  .slotlist .charcard { min-height: 44px; padding: 4px 8px; }
+  .slotlist .charcard .cico { width: 28px; height: 28px; font-size: 12px; }
+  .slotlist .charcard.new { min-height: 36px; }
+  .slots .sub { display: none; }
+  .slotshead { padding-bottom: 4px; font-size: 12px; }
+  .selinfo { bottom: 74px; left: calc(50% + 100px); }
+  .selbar { left: calc(50% + 100px); }
+  .selbar .btn.big { min-height: 48px; min-width: 160px; font-size: 16px; }
+  .selmsg { bottom: 120px; }
+  .createbox .classbtn { min-height: 38px; padding: 6px; }
+  .createbox { gap: 5px; }
+  .createbox input { padding: 7px; }
+}
+@media (orientation: portrait) { .slots { max-height: 32vh; bottom: 92px; } .selinfo { top: 66px; } }

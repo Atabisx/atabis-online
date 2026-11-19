@@ -1,5 +1,5 @@
 // Ekran akışı: giriş/kayıt → karakter seçimi/oluşturma → oyun
-import { ready, startGame, modelLoaded } from './game.js';
+import { ready, startGame, modelLoaded, lobbyMode, lobbyShowChar, lobbyRotate, lobbyReplay } from './game.js';
 import './install.js';
 
 const $ = (id) => document.getElementById(id);
@@ -7,6 +7,18 @@ const screens = ['authScreen', 'charScreen', 'createScreen'];
 function show(id) {
   for (const s of screens) $(s).classList.toggle('show', s === id);
   document.body.classList.toggle('ingame', id === null);
+  // arkadaki 3D sahne: girişte kamera döner, seçim ve oluşturmada karakter sunakta
+  if (id === 'authScreen') lobbyMode('login');
+  else if (id === 'charScreen' || id === 'createScreen') lobbyMode('select');
+}
+// boş alana sürükleyince karakter döner, dokununca gösteriyi tekrarlar
+for (const id of ['charScreen', 'createScreen']) {
+  const el = $(id); let drag = null, moved = 0;
+  el.addEventListener('pointerdown', (e) => { if (e.target !== el) return; drag = e.clientX; moved = 0; });
+  el.addEventListener('pointermove', (e) => { if (drag == null) return; lobbyRotate(e.clientX - drag); moved += Math.abs(e.clientX - drag); drag = e.clientX; });
+  const end = () => { if (drag != null && moved < 6) lobbyReplay(); drag = null; };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', () => { drag = null; });
+  el.style.touchAction = 'none';
 }
 
 // ---------- sunucu istekleri ----------
@@ -79,9 +91,10 @@ function renderCharacters() {
     const b = document.createElement('button');
     b.className = 'charcard' + (c.id === selectedChar ? ' sel' : '');
     const cl = CLASSES[c.class] || {};
-    b.innerHTML = `<i style="width:28px;height:6px;border-radius:3px;background:${cl.color || '#888'}"></i><b></b><span></span>`;
+    b.innerHTML = `<i class="cico" style="background:radial-gradient(circle at 40% 30%, #fff8, ${cl.color || '#888'} 60%)"></i><span class="ctext"><b></b><span></span></span>`;
+    b.querySelector('.cico').textContent = String(c.level);
     b.querySelector('b').textContent = c.name;
-    b.querySelector('span').textContent = `${cl.name || c.class} · Sv. ${c.level}`;
+    b.querySelector('.ctext span').textContent = `${cl.name || c.class} · Sv. ${c.level}`;
     b.addEventListener('click', () => { selectedChar = c.id; renderCharacters(); });
     b.addEventListener('dblclick', () => { selectedChar = c.id; enterGame(); });
     list.appendChild(b);
@@ -95,6 +108,10 @@ function renderCharacters() {
   }
   $('playBtn').disabled = !selectedChar;
   $('deleteBtn').disabled = !selectedChar;
+  const c = characters.find((x) => x.id === selectedChar);
+  $('selName').textContent = c ? c.name : '';
+  $('selSub').textContent = c ? `${(CLASSES[c.class] || {}).name || c.class} · Seviye ${c.level}` : '';
+  lobbyShowChar(c || null);
   $('charMsg').textContent = characters.length ? '' : 'Henüz karakterin yok. Yeni bir karakter oluştur.';
 }
 $('playBtn').addEventListener('click', () => enterGame());
@@ -103,12 +120,12 @@ $('deleteBtn').addEventListener('click', async () => {
   const c = characters.find((x) => x.id === selectedChar); if (!c) return;
   if (!deleteArmed) {
     deleteArmed = true;
-    $('deleteBtn').textContent = `${c.name} silinsin mi? Tekrar bas`;
-    setTimeout(() => { deleteArmed = false; $('deleteBtn').textContent = 'Seçili karakteri sil'; }, 4000);
+    $('deleteBtn').textContent = 'Emin misin? Tekrar bas';
+    setTimeout(() => { deleteArmed = false; $('deleteBtn').textContent = 'Sil'; }, 4000);
     return;
   }
   deleteArmed = false;
-  $('deleteBtn').textContent = 'Seçili karakteri sil';
+  $('deleteBtn').textContent = 'Sil';
   try { await api('DELETE', `/api/characters/${c.id}`); selectedChar = null; await openCharacters(); }
   catch (err) { $('charMsg').textContent = err.message; }
 });
@@ -132,11 +149,16 @@ function openCreate() {
     b.addEventListener('click', () => { chosenClass = key; openCreate(); });
     list.appendChild(b);
   }
-  $('classdesc').textContent = CLASSES[chosenClass] ? CLASSES[chosenClass].desc : '';
+  const cl = CLASSES[chosenClass] || {};
+  $('classdesc').textContent = cl.desc || '';
+  $('newClassName').textContent = cl.name || '';
+  $('newClassSub').textContent = 'Yeni karakter · Seviye 1';
   $('createMsg').textContent = '';
   show('createScreen');
+  // seçilen sınıf sunakta başlangıç eşyalarıyla görünür
+  lobbyShowChar({ id: 'yeni', class: chosenClass, level: 1, equip: { weapon: { key: cl.startWeapon }, armor: { key: 'armor0' } } });
 }
-$('createBack').addEventListener('click', () => show('charScreen'));
+$('createBack').addEventListener('click', () => { show('charScreen'); renderCharacters(); });
 $('createForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   try {

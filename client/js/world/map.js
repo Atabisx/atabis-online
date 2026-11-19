@@ -118,11 +118,29 @@ export const NPC_SPOTS = {
   armor: { x: 20, z: 18.8, name: 'Zırhçı', kind: 'armor' },
   teleport: { x: 28.5, z: 33.8, name: 'Işınlayıcı', kind: 'teleport' },
   stable: { x: 15, z: 31, name: 'Seyis', kind: 'stable' },
+  blacksmith: { x: 13.6, z: 19.6, name: 'Demirci', kind: 'blacksmith' },
 };
 const LAKE_NPCS = [
   { x: 31, z: 21, name: 'Işınlayıcı', kind: 'teleport' },
   { x: 19, z: 21, name: 'Balıkçı', kind: 'fisher' },
 ];
+// demirci köşesi: örs, yanan ocak ve kılıç askısı
+function forge(x, z) {
+  const iron = mat('#4a4d52'), stoneM = mat('#6d665c'), woodM = mat('#5a3d24');
+  box(0.9, 0.5, 0.5, '#3a3d42', x + 1.2, 0.75, z + 0.9);                     // örs gövdesi
+  box(1.2, 0.18, 0.45, '#5a5e64', x + 1.2, 1.08, z + 0.9);                   // örs yüzü
+  box(0.5, 0.5, 0.5, '#5a3d24', x + 1.2, 0.25, z + 0.9);                     // kütük
+  const hearth = add(new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, 1.0, 8), stoneM), x - 0.4, 0.5, z - 0.6);
+  void hearth;
+  const coal = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.1, 8), new THREE.MeshBasicMaterial({ color: '#ff6a1f' }));
+  coal.position.set(x - 0.4, 1.02, z - 0.6); group.add(coal);
+  const fire = new THREE.PointLight('#ff7a2a', 6, 9, 1.8); fire.position.set(x - 0.4, 1.8, z - 0.6); group.add(fire);
+  box(0.25, 2.2, 0.25, '#3a3d42', x - 0.4, 2.1, z - 0.6);                    // baca
+  box(1.6, 0.12, 0.1, '#5a3d24', x + 2.6, 1.7, z - 0.4);                     // askı
+  for (let i = 0; i < 3; i++) box(0.08, 1.0, 0.03, '#c9d1d9', x + 2.1 + i * 0.5, 1.15, z - 0.35);
+  void iron; void woodM;
+  circles.push({ x: x - 0.4, z: z - 0.6, r: 1.2 }, { x: x + 1.2, z: z + 0.9, r: 0.8 });
+}
 function buildVillage(th, rnd) {
   const v = th.village;
   area(6.5, 6.5, 13.5, 13.5, th.plaza || '#c7aa78', 0.03);
@@ -138,6 +156,7 @@ function buildVillage(th, rnd) {
   stall(u(13.8), u(7.3), '#3d7fc4', '#f4efe4', ['#c9d1d9', '#b08a5a', '#c9d1d9']);
   stall(18, 14.5, '#6b4a2e', '#e8b54a', ['#9aa3ad', '#e8b54a', '#8a5a34']);
   obelisk(u(11.4), u(12.6));
+  forge(10.2, 17.2);
   for (const [x, z] of [[6.7, 6.7], [13.3, 6.7], [6.7, 13.3], [13.3, 13.3]]) lantern(u(x), u(z));
   if (v.snowRoof) {
     // köy meydanında kardan adamlar ve kar yığınları, evlerin önünde odun yığını
