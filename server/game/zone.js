@@ -243,6 +243,7 @@ class Zone {
       this.emit('stoneDown', { id: best.id, by: p.id, name: p.name, stoneName: best.name });
       const exp = Math.round((20 + best.lv * 9 + best.lv * best.lv * 0.35) * 5);
       this.hooks.giveExp(p, R.expGain(best.lv, p.level, exp));
+      if (this.hooks.onStoneBroken) this.hooks.onStoneBroken(p);
       const own = this.def.stoneDrops;
       const n = best.color === 'purple' ? 2 : 1;
       for (let i = 0; i < n; i++) if (Math.random() < 0.6) this.makeDrop(best.x, best.z, p.id, { key: own[Math.floor(Math.random() * own.length)] });

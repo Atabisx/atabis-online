@@ -360,3 +360,44 @@ body.standalone #chatBtn { left: 116px; } body.standalone #friendBtn { left: 168
 #tradeInfo b { color: #ffe08a; }
 .trow { display: flex; gap: 8px; } .trow .btn { flex: 1; }
 #tradeOk.done { background: #3f7a3a; color: #dfffd6; }
+
+/* ana menü */
+#menuBtn { position: fixed; left: 64px; top: 236px; width: 46px; height: 46px; border-radius: 12px; border: 2px solid rgba(232,181,74,0.7); background: rgba(14,16,13,0.82); color: #e8b54a; display: flex; align-items: center; justify-content: center; }
+#menuBtn i, .menugrid button i { position: absolute; right: -4px; top: -4px; min-width: 20px; height: 18px; padding: 0 4px; border-radius: 9px; background: #b23a24; color: #fff; font-style: normal; font-size: 10px; font-weight: 800; line-height: 18px; }
+.menubox { width: min(520px, 96vw); }
+.menugrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.menugrid button { position: relative; min-height: 84px; border-radius: 14px; border: 2px solid #3a3f35; background: linear-gradient(180deg, #2a2e25, #1a1d17); color: #f4f1e8; font: inherit; font-weight: 700; font-size: 13px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.menugrid button:active { border-color: #e8b54a; }
+.menugrid .mi { font-size: 26px; line-height: 1; }
+.menuhint { color: #8b877c; font-size: 12px; }
+#pmenu .partybtn { background: #2a4a6a; color: #d6ecff; }
+/* grup çerçeveleri */
+#partyFrames { position: fixed; left: 12px; top: 290px; width: 168px; display: flex; flex-direction: column; gap: 5px; z-index: 5; }
+.pf { display: flex; flex-direction: column; gap: 3px; padding: 5px 7px; border-radius: 10px; border: 1px solid rgba(125,255,120,.35); background: rgba(14,16,13,.8); color: #f4f1e8; font: inherit; text-align: left; }
+.pf.dead { opacity: .5; }
+.pf.me { font-size: 11px; color: #8b877c; padding: 4px 7px; min-height: 30px; }
+.pfn { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; } .pfn small { color: #8b877c; font-size: 10px; }
+.pfb { height: 5px; border-radius: 3px; background: #3a1a17; overflow: hidden; } .pfb i { display: block; height: 100%; background: #d9443a; }
+.pfb.mp { height: 3px; background: #172a3a; } .pfb.mp i { background: #3d7fc4; }
+.label.party { color: #7dff78 !important; }
+/* günlük görevler */
+#dailyList { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+.dq { border: 2px solid #3a3f35; border-radius: 12px; padding: 8px 10px; background: rgba(0,0,0,.25); }
+.dq.done { border-color: #e8b54a; } .dq.claimed { opacity: .55; border-color: #3a3f35; }
+.dqh { display: flex; justify-content: space-between; font-size: 15px; } .dqh span { color: #ffe08a; font-weight: 800; }
+.dqt { font-size: 13px; color: #d8d2c0; margin: 2px 0 6px; }
+.dqbar { height: 8px; border-radius: 4px; background: #2a2a22; overflow: hidden; } .dqbar i { display: block; height: 100%; background: linear-gradient(90deg, #b8860b, #ffd36b); }
+.dqr { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px; } .dqr small { color: #a8a290; font-size: 11px; }
+.dqr .btn { min-height: 38px; font-size: 14px; white-space: nowrap; } .dqok { color: #7dff78; font-weight: 800; font-size: 13px; white-space: nowrap; }
+.loginbox { border-top: 1px solid #3a3f35; padding-top: 8px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+#loginDays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.ld { text-align: center; font-size: 11px; padding: 6px 2px; border-radius: 8px; background: #22261e; color: #8b877c; border: 1px solid #3a3f35; }
+.ld.got { background: #3f5a2a; color: #dfffd6; } .ld.today { border-color: #ffd36b; box-shadow: 0 0 8px rgba(255,211,107,.5); }
+#loginInfo .btn { min-height: 34px; font-size: 13px; margin-left: 6px; }
+.rewardbox { width: min(380px, 92vw); align-items: center; text-align: center; border-color: #e8b54a; box-shadow: 0 0 30px rgba(232,181,74,.35); }
+.rwt { font-size: 20px; letter-spacing: .08em; color: #ffd36b; text-shadow: 0 0 12px rgba(255,180,60,.6); }
+#rewardItems { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.rwi { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 76px; padding: 8px; border-radius: 12px; background: rgba(0,0,0,.3); border: 1px solid #5a4a2a; }
+.rwi b { color: #ffe08a; font-size: 18px; } .rwi small { font-size: 11px; color: #d8d2c0; }
+#rewardSub { color: #a8a290; }
+.chatparty { color: #7dff78; } .chatguild { color: #8ec5ff; }

@@ -12,6 +12,7 @@ import * as sfx from './audio.js';
 import * as fx from './fx.js';
 import * as icons from './icons.js';
 import { buildStage, updateStage } from './lobby.js';
+import * as social from './social.js';
 
 let FACE_OFFSET = Math.PI;     // model yüklenince otomatik hesaplanır
 const SPEED = 6;               // metre / saniye
@@ -682,6 +683,7 @@ function createPlayer(p) {
     obj.label.el.insertBefore(b, obj.label.tn);
     obj.label.el.classList.add('gm');
   }
+  if (!p.npc && social.inParty(p.id)) obj.label.el.classList.add('party');
   if (obj.label.hp) { obj.label.hp.parentNode.classList.add('player'); obj.label.hp.style.width = (p.maxHp ? 100 * p.hp / p.maxHp : 100) + '%'; }
   players[p.id] = obj;
   applyLook(obj, p.look);
@@ -1830,6 +1832,7 @@ export const modelLoaded = () => !!gltf;
 // main.js çağırır: sunucuya bağlanmış soketle oyunu başlatır
 export function startGame(sock, opts = {}) {
   socket = sock;
+  social.bind(sock);
   if (opts.onKicked) alertBox = opts.onKicked;
 
   socket.on('welcome', (data) => {
@@ -2007,7 +2010,8 @@ export function startGame(sock, opts = {}) {
     pendingPick.delete(id);
     removeDrop(id);
   });
-  socket.on('chat', ({ name, text, gm }) => log(gm ? `<b class="gmchat">[GM] ${esc(name)}:</b> <span class="gmchat">${esc(text)}</span>` : `<b>${esc(name)}:</b> ${esc(text)}`));
+  socket.on('chat', ({ name, text, gm, channel }) => log(channel === 'party' ? `<b class="chatparty">[Grup] ${esc(name)}:</b> <span class="chatparty">${esc(text)}</span>`
+    : channel === 'guild' ? `<b class="chatguild">[Lonca] ${esc(name)}:</b> <span class="chatguild">${esc(text)}</span>` : gm ? `<b class="gmchat">[GM] ${esc(name)}:</b> <span class="gmchat">${esc(text)}</span>` : `<b>${esc(name)}:</b> ${esc(text)}`));
   socket.on('openTeleport', () => openShop('teleport', 'IŞINLANMA YÜZÜĞÜ'));
   socket.on('revived', ({ x, z }) => {
     amDead = false; deadEl.classList.remove('open'); clearInterval(deadTimer);
@@ -2189,6 +2193,7 @@ pmenu.addEventListener('click', (e) => {
   if (b.dataset.pm === 'friend' && p) socket.emit('friendRequest', p.id);
   if (b.dataset.pm === 'duel' && p) socket.emit('duelRequest', p.id);
   if (b.dataset.pm === 'trade' && p) socket.emit('tradeRequest', p.id);
+  if (b.dataset.pm === 'party' && p) socket.emit('partyInvite', p.id);
   pmenu.classList.remove('open');
 });
 const _proj = new THREE.Vector3();
@@ -2522,4 +2527,22 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ---------- topluluk: menü, grup, görevler ----------
+const MENU_SOON = { guild: 'Lonca', rank: 'Sıralama', stall: 'Pazar tezgâhı', dungeon: 'Zindan', events: 'Etkinlikler', help: 'Rehber' };
+const menuHandlers = {
+  friends: () => document.getElementById('friendBtn').click(),
+  char: () => document.getElementById('charBtn').click(),
+  skills: () => document.getElementById('skillBtn').click(),
+};
+export function onMenu(key, fn) { menuHandlers[key] = fn; }
+function partyLabels(pt) {
+  const ids = new Set(pt ? pt.members.map((m) => m.id) : []);
+  for (const p of Object.values(players)) if (p.label && !p.npc && p.id !== myId) p.label.el.classList.toggle('party', ids.has(p.id));
+}
+social.setup({
+  myId: () => myId, esc, toast, askBox, itemIcon, sfx, get ITEMS() { return ITEMS; },
+  onParty: partyLabels,
+  menuAction: (k) => { if (menuHandlers[k]) menuHandlers[k](); else toast(`${MENU_SOON[k] || k} çok yakında!`); },
 });

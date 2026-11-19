@@ -4,6 +4,7 @@ const { accountFromToken } = require('../auth');
 const R = require('./rules');
 const config = require('../config');
 const { Zone, boundsOf } = require('./zone');
+const { createSocial } = require('./social');
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const VILLAGES = R.MAPS.filter((m) => m.village).map((m) => m.id);
@@ -202,25 +203,30 @@ function createWorld(io) {
     } catch (e) { console.error('Kayıt hatası', p.name, e.message); }
   }
 
+  // ---------- tecrübe, hasar, iyileşme ----------
+  function expRaw(p, amount, kill) {
+    if (kill) p.kills++;
+    if (p.level >= R.MAX_LEVEL) return;
+    p.exp += amount;
+    let up = false;
+    while (p.level < R.MAX_LEVEL && p.exp >= R.expForLevel(p.level)) {
+      p.exp -= R.expForLevel(p.level); p.level++; up = true;
+    }
+    if (up) {
+      recalc(p); p.hp = p.maxHp; p.mp = p.maxMp; sendHp(p); sendMp(p); sendInv(p); sendSkills(p);
+      notice(p, `+${R.STAT_PER_LEVEL || 3} durum puanı kazandın. Karakter penceresinden (K) dağıt.`);
+      levelRewards(p);
+    }
+    sendStats(p, up);
+    p.socket.emit('expGain', amount);
+  }
+
   // ---------- bölgelerin ihtiyaç duyduğu işlemler ----------
   const hooks = {
     publicPlayer,
-    giveExp(p, amount) {
-      p.kills++;
-      if (p.level >= R.MAX_LEVEL) return;
-      p.exp += amount;
-      let up = false;
-      while (p.level < R.MAX_LEVEL && p.exp >= R.expForLevel(p.level)) {
-        p.exp -= R.expForLevel(p.level); p.level++; up = true;
-      }
-      if (up) {
-        recalc(p); p.hp = p.maxHp; p.mp = p.maxMp; sendHp(p); sendMp(p); sendInv(p); sendSkills(p);
-        notice(p, `+${R.STAT_PER_LEVEL || 3} durum puanı kazandın. Karakter penceresinden (K) dağıt.`);
-        levelRewards(p);
-      }
-      sendStats(p, up);
-      p.socket.emit('expGain', amount);
-    },
+    // grup varsa tecrübe yakındaki üyelerle paylaşılır
+    giveExp(p, amount) { social.shareExp(p, amount, expRaw); },
+    onStoneBroken(p) { social.progress(p, 'stone'); },
     damagePlayer(p, dmg) {
       if (p.dead) return;
       p.hp = Math.max(0, p.hp - dmg);
@@ -246,6 +252,7 @@ function createWorld(io) {
         if (q.horseKills >= HORSE_QUEST.count) { q.horse = 'ready'; notice(p, 'At görevi tamamlandı! Ödülünü almak için Seyis\'e git.'); }
         sendQuests(p);
       }
+      social.onMobKilled(p, m);
     },
     announce(text, zone) { (zone ? zone : io).emit('announce', text); },
     // düello: rakip (geri sayım bittiyse)
@@ -269,6 +276,7 @@ function createWorld(io) {
       sendHp(t);
     },
   };
+  const social = createSocial({ players, notice, sendInv, addItem, freeSlotsFor, save, giveExpDirect: (p, n) => expRaw(p, n, false) });
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
 
   // seviye ödülleri: 25'te at görevi, 30'da olta
@@ -374,7 +382,8 @@ function createWorld(io) {
     if (b) b.duel = null;
     const z = (winner || a).zone;
     if (why === 'win' && winner) {
-      notice(winner, `Düelloyu kazandın! (${loser.name})`); notice(loser, `Düelloyu kaybettin. Kazanan: ${winner.name}`);
+      notice(winner, `Düelloyu kazandın! (${loser.name})`);
+      winner.quests.duelWins = (winner.quests.duelWins || 0) + 1; social.progress(winner, 'duel'); notice(loser, `Düelloyu kaybettin. Kazanan: ${winner.name}`);
       if (z) { z.emit('duelEnd', { a: winner.id, b: loser.id, winner: winner.id }); hooks.announce(`${winner.name}, düelloda ${loser.name} karşısında kazandı!`, z); }
     } else {
       for (const o of [a, b]) if (o) { notice(o, 'Düello sona erdi.'); }
@@ -454,6 +463,7 @@ function createWorld(io) {
     sendInv(p);
     sendFriends(p); tellFriends(p, true);
     sendHp(p); sendMp(p); sendSkills(p); sendQuests(p); sendBuffs(p);
+    social.onConnect(p, socket);
 
     socket.on('move', (m) => {
       if (!m || p.dead) return;
@@ -492,7 +502,8 @@ function createWorld(io) {
       const z = p.zone; if (!z || p.dead) return;
       const d = z.drops.get(Number(dropId));
       if (!d || Math.hypot(d.x - p.x, d.z - p.z) > 3) return;
-      if (d.owner !== p.id && Date.now() < d.ownerUntil) { notice(p, 'Bu ganimet başkasına ait. Biraz bekle.'); return; }
+      const owner = d.owner != null ? players[d.owner] : null;
+      if (d.owner !== p.id && Date.now() < d.ownerUntil && !social.sameParty(owner, p)) { notice(p, 'Bu ganimet başkasına ait. Biraz bekle.'); return; }
       if (d.item && !freeSlotsFor(p, d.item.key, d.item.n || 1)) { notice(p, 'Envanterin dolu!'); return; }
       z.drops.delete(d.id);
       z.emit('dropGone', { id: d.id });
@@ -730,6 +741,7 @@ function createWorld(io) {
       if (!addItem(p, key, 1)) { socket.emit('fishEnd', { ok: false, msg: 'Envanterin dolu!' }); return; }
       sendInv(p);
       socket.emit('fishEnd', { ok: true, msg: `${R.ITEMS[key].name} tuttun!`, key });
+      if (!key.startsWith('b_cizme')) social.progress(p, 'fish');
     });
 
     // ---------- at görevi ----------
@@ -868,6 +880,7 @@ function createWorld(io) {
       else msg = `Başarısız… ${def.name} +${up} olarak kaldı.`;
       notice(p, msg);
       socket.emit('upgraded', { ok, name: def.name, up: target.up || 0 });
+      social.progress(p, 'upgrade');
       recalc(p); sendInv(p); sendHp(p); sendMp(p);
       if (ok && target.up >= 7 && p.zone) hooks.announce(`${p.name}, ${def.name} eşyasını +${target.up} yaptı!`, p.zone);
     });
@@ -1004,6 +1017,7 @@ function createWorld(io) {
     socket.on('chat', (text) => {
       const t = String(text || '').replace(/[<>&"'\\]/g, '').trim().slice(0, 80);
       if (p.gm && t.startsWith('/')) { gmCommand(p, t); return; }
+      if (t && social.chat(p, t)) return;
       if (t && p.zone) p.zone.emit('chat', { name: p.name, text: t, gm: !!p.gm });
     });
 
@@ -1012,6 +1026,7 @@ function createWorld(io) {
       delete players[socket.id];
       if (p.duel) endDuel(null, p, 'left');
       if (p.trade) closeTrade(p, `${p.name} oyundan çıktı, ticaret iptal.`);
+      social.onDisconnect(p);
       if (p.zone) { p.mapId = p.zone.id; p.zone.removePlayer(p); p.zone = null; }
       tellFriends(p, false);
       save(p);
@@ -1030,6 +1045,7 @@ function createWorld(io) {
   // her saniye: mana yenilenmesi, biten güçlendirmeler
   setInterval(() => {
     const now = Date.now();
+    social.tick();
     for (const p of Object.values(players)) {
       // düello: süre doldu ya da çok uzaklaştılar
       if (p.duel) {
