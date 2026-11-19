@@ -209,6 +209,31 @@
     </div>
   </div>
   <div id="warHud" style="display:none"></div>
+  <div id="stallwin" class="modal" role="dialog" aria-label="Tezgâh">
+    <div class="modalbox">
+      <div class="mhead"><b id="stTitle" style="color:#ffd36b"></b><span id="stOwner" style="font-size:12px;color:#8ec5ff"></span><button id="stallX" class="xbtn" aria-label="Kapat">×</button></div>
+      <div id="stItems" class="stlist"></div>
+      <small class="gtxt">Satın almak için dokun. Yangın: <b id="stYang"></b></small>
+    </div>
+  </div>
+  <div id="mystallwin" class="modal" role="dialog" aria-label="Pazar tezgâhım">
+    <div class="modalbox">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">PAZAR TEZGÂHIM</b><button id="mystallX" class="xbtn" aria-label="Kapat">×</button></div>
+      <div id="msNone">
+        <p class="gtxt">Bir köyde, meydanın biraz kenarında dur ve tezgâhını kur. Oyundan çıksan da tezgâhın satmaya devam eder. Her satıştan %2 pazar vergisi kesilir.</p>
+        <div class="frow"><input id="msTitle" maxlength="32" placeholder="Tezgâh adı (örn. Ucuz taşlar)" aria-label="Tezgâh adı"></div>
+        <div class="tinvhead">Satılacak eşyaları seç ve fiyat yaz <small>(en fazla 12)</small></div>
+        <div id="msPick" class="stlist"></div>
+        <button id="msOpen" class="btn">Tezgâhı aç</button>
+      </div>
+      <div id="msHas" style="display:none">
+        <div class="gstat"><span>Yer <b id="msMap"></b></span><span>Birikmiş kazanç <b id="msEarn">0</b></span></div>
+        <div id="msItems" class="stlist"></div>
+        <div class="tinvhead">Son satışlar</div><div id="msLog" class="mslog"></div>
+        <div class="frow"><button id="msCollect" class="btn">Kazancı topla</button><button id="msClose" class="btn alt">Tezgâhı kapat</button></div>
+      </div>
+    </div>
+  </div>
   <div id="rewardwin" class="modal" role="dialog" aria-label="Giriş ödülü">
     <div class="modalbox rewardbox">
       <b id="rewardTitle" class="rwt"></b>

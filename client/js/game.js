@@ -713,6 +713,43 @@ function foesList() {
   for (const p of Object.values(players)) if (!p.dead && (p.id === duelFoe || isWarFoe(p))) list.push(p);
   return list;
 }
+// ---------- pazar tezgâhları ----------
+const stallObjs = {};
+const STALL_CLOTH = ['#b23a24', '#2f6fd0', '#3f7a3a', '#8a3ab2', '#c98a1a'];
+function addStall(s) {
+  if (stallObjs[s.id]) { stallObjs[s.id].label.tn.textContent = `${s.title}`; stallObjs[s.id].label.el.querySelector('small').textContent = `${s.owner} · ${s.n} eşya`; return; }
+  const g = new THREE.Group();
+  const wood = mat('#7a5232'), cloth = mat(STALL_CLOTH[s.id % STALL_CLOTH.length]);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.12, 1.1), wood); top.position.y = 0.95; g.add(top);
+  const front = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.8, 0.08), mat('#5e3d22')); front.position.set(0, 0.5, 0.52); g.add(front);
+  for (const [x, z] of [[-1.02, -0.48], [1.02, -0.48], [-1.02, 0.48], [1.02, 0.48]]) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.2, 6), wood); post.position.set(x, 1.1, z); g.add(post);
+  }
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.08, 1.5), cloth); roof.position.set(0, 2.2, 0.1); roof.rotation.x = 0.18; g.add(roof);
+  for (let i = 0; i < 5; i++) {   // perde saçağı
+    const f = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.22, 0.03), i % 2 ? mat('#f4e8c8') : cloth); f.position.set(-1 + i * 0.5, 2.0, 0.83); f.rotation.x = 0.18; g.add(f);
+  }
+  for (const [x, c] of [[-0.6, '#e8b54a'], [0, '#7fb3ff'], [0.6, '#ff8a7a']]) {   // tezgâh üstündeki mallar
+    const b = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.28, 0.32), mat(c)); b.position.set(x, 1.15, 0); b.rotation.y = x; g.add(b);
+  }
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  g.position.set(s.x, 0, s.z);
+  scene.add(g);
+  const label = makeLabel(s.title, '#ffd36b', false);
+  label.el.classList.add('stall');
+  const sm = document.createElement('small'); sm.textContent = `${s.owner} · ${s.n} eşya`; label.el.appendChild(sm);
+  stallObjs[s.id] = { ...s, group: g, label };
+}
+function removeStall(id) { const s = stallObjs[id]; if (!s) return; scene.remove(s.group); s.label.el.remove(); delete stallObjs[id]; }
+function pickStallAt(cx, cy) {
+  let best = null, bd = 70;
+  for (const s of Object.values(stallObjs)) {
+    _proj.set(s.x, 1.2, s.z).project(camera); if (_proj.z > 1) continue;
+    const d = Math.hypot((_proj.x + 1) / 2 * window.innerWidth - cx, (1 - _proj.y) / 2 * window.innerHeight - cy);
+    if (d < bd) { bd = d; best = s; }
+  }
+  return best;
+}
 // lonca adı etiketin üstünde
 function setGuildTag(obj, name) {
   let t = obj.label.el.querySelector('.gtag');
@@ -1814,6 +1851,7 @@ function clearWorld() {
   for (const id of Object.keys(stones)) removeStone(id);
   for (const id of Object.keys(drops)) removeDrop(id);
   for (const p of mapInfo.portals) if (p.label) p.label.el.remove();
+  for (const id of Object.keys(stallObjs)) removeStall(id);
   pendingPick.clear();
   fx.clearFx();
 }
@@ -1876,7 +1914,7 @@ export function startGame(sock, opts = {}) {
     if (opts.onWelcome) opts.onWelcome();
   });
   socket.on('mapChange', (data) => { amDead = false; deadEl.classList.remove('open'); setFishState('idle'); enterMap(data); updateToolButtons(); renderSkillbar(); refreshFoes(); });
-  socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (shopKind) renderShop(); renderSmith(); if (trade) renderTrade(); social.refreshGuild(); });
+  socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (shopKind) renderShop(); renderSmith(); if (trade) renderTrade(); social.refreshGuild(); social.refreshStallWins(); });
   socket.on('upgraded', ({ ok, name, up, stone }) => smithResult(ok, ok ? (stone ? `BAŞARILI · ${name}` : `BAŞARILI · ${name} +${up}`) : (stone ? 'BAŞARISIZ · taş kırıldı' : `BAŞARISIZ · ${name} +${up}`)));
   socket.on('socketed', ({ ok }) => { if (ok) sfx.enchant(); else sfx.hit('stone', false, null); });
   // ---------- sohbet, fısıltı, arkadaşlar, düello ----------
@@ -1928,6 +1966,9 @@ export function startGame(sock, opts = {}) {
   socket.on('mount', ({ id, on }) => { const p = players[id]; if (p) setMount(p, on); });
   socket.on('playerGuild', ({ id, guild }) => { const p = players[id]; if (p) setGuildTag(p, guild); });
   socket.on('playerEmpire', ({ id, empire }) => { const p = players[id]; if (p) setEmpireTag(p, empire); });
+  socket.on('stalls', (list) => { for (const id of Object.keys(stallObjs)) removeStall(id); for (const s of list) addStall(s); });
+  socket.on('stallAdd', (s) => { if (!s.n) removeStall(s.id); else addStall(s); });
+  socket.on('stallRemove', ({ id }) => removeStall(id));
   socket.on('fishing', ({ id, on }) => { const p = players[id]; if (p) setRod(p, on); });
   socket.on('fishWait', () => setFishState('wait'));
   socket.on('fishBite', () => { setFishState('bite'); sfx.fishBite(); if (navigator.vibrate) navigator.vibrate(150); });
@@ -2252,7 +2293,9 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   tapStart = null;
   if (moved > 10 || dur > 450) return;
   const p = pickPlayerAt(e.clientX, e.clientY);
-  if (p) openPlayerMenu(p, e.clientX, e.clientY);
+  if (p) { openPlayerMenu(p, e.clientX, e.clientY); return; }
+  const st = pickStallAt(e.clientX, e.clientY);
+  if (st && socket) { socket.emit('stallView', st.id); sfx.click(); }
 });
 
 // ---------- onay kutusu (düello / arkadaşlık isteği) ----------
@@ -2546,6 +2589,7 @@ function loop() {
   }
   for (const pt of mapInfo.portals) {
     if (pt.label) placeLabel(pt.label, pt.x, 6.2, pt.z);
+  for (const st of Object.values(stallObjs)) placeLabel(st.label, st.x, 3.1, st.z);
     if (pt.field) pt.field.material.opacity = 0.35 + Math.sin(now / 300) * 0.12;
   }
   updateArrows(dt);
@@ -2572,6 +2616,7 @@ const menuHandlers = {
   skills: () => document.getElementById('skillBtn').click(),
   guild: () => social.openGuild(),
   events: () => social.openEvents(),
+  stall: () => social.openMyStall(),
 };
 export function onMenu(key, fn) { menuHandlers[key] = fn; }
 function partyLabels(pt) {
@@ -2579,7 +2624,7 @@ function partyLabels(pt) {
   for (const p of Object.values(players)) if (p.label && !p.npc && p.id !== myId) p.label.el.classList.toggle('party', ids.has(p.id));
 }
 social.setup({
-  myId: () => myId, esc, toast, askBox, itemIcon, sfx, get ITEMS() { return ITEMS; }, inventory: () => inv.inventory,
+  myId: () => myId, esc, toast, askBox, itemIcon, sfx, get ITEMS() { return ITEMS; }, inventory: () => inv.inventory, yang: () => inv.yang,
   onParty: partyLabels,
   inWarMap: () => !!(currentMap && currentMap.war),
   onWar: () => refreshFoes(),

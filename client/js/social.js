@@ -27,6 +27,7 @@ export function setup(ctx) {
   });
   $('rewardOk').addEventListener('click', () => $('rewardwin').classList.remove('open'));
   setupGuild();
+  setupStalls();
   $('empirePick').addEventListener('click', (e) => {
     const b = e.target.closest('[data-emp]'); if (!b || !socket) return;
     const k = Number(b.dataset.emp);
@@ -76,6 +77,53 @@ function renderWarHud() {
   el.innerHTML = [1, 2, 3].map((e) => `<span style="color:${EMPIRES[e].color}">${war.score[e] || 0}</span>`).join('<small>·</small>') + `<small>${fmtLeft(war.ends - Date.now())}</small>`;
 }
 export function refreshWar() { renderWarHud(); }
+
+// ---------- pazar ----------
+let stallSeen = null, myStall = null;
+const stIcon = (it) => { const d = C.ITEMS[it.key] || { name: '?' }; return `<span class="ic">${C.itemIcon(it.key, d, 26)}${it.n > 1 ? `<i class="cnt">${it.n}</i>` : ''}${it.up ? `<i class="upb">+${it.up}</i>` : ''}</span>`; };
+const stName = (it) => { const d = C.ITEMS[it.key] || { name: it.key }; return d.name + (it.up ? ' +' + it.up : '') + (it.n > 1 ? ' x' + it.n : ''); };
+const stSub = (it) => { const d = C.ITEMS[it.key]; if (!d) return ''; const parts = []; if (d.lv > 1) parts.push('Sv. ' + d.lv); if ((it.sock || []).length) parts.push(it.sock.length + ' taş'); if ((it.bon || []).length) parts.push(it.bon.length + ' efsun'); return parts.join(' · ') || (d.desc || '').slice(0, 60); };
+export function openMyStall() { if (socket) socket.emit('stallMine'); renderMyStall(); $('mystallwin').classList.add('open'); }
+function renderStall() {
+  if (!stallSeen) return;
+  $('stTitle').textContent = stallSeen.title; $('stOwner').textContent = stallSeen.owner;
+  $('stYang').textContent = (C.yang() || 0).toLocaleString('tr-TR');
+  $('stItems').innerHTML = stallSeen.items.length ? stallSeen.items.map((it) => `<button class="st buy" data-sid="${it.sid}" data-price="${it.price}">${stIcon(it)}<span class="nm"><b>${C.esc(stName(it))}</b><small>${C.esc(stSub(it))}</small></span><span class="pr">${it.price.toLocaleString('tr-TR')}</span></button>`).join('')
+    : '<p class="gtxt">Tezgâh boş, her şey satılmış.</p>';
+}
+function renderMyStall() {
+  $('msNone').style.display = myStall ? 'none' : ''; $('msHas').style.display = myStall ? '' : 'none';
+  if (myStall) {
+    $('msMap').textContent = myStall.map; $('msEarn').textContent = myStall.earnings.toLocaleString('tr-TR');
+    $('msItems').innerHTML = myStall.items.map((x) => `<div class="st">${stIcon(x.item)}<span class="nm"><b>${C.esc(stName(x.item))}</b></span><span class="pr">${x.price.toLocaleString('tr-TR')}</span></div>`).join('') || '<p class="gtxt">Her şey satıldı! Kazancını topla ve tezgâhı kapat.</p>';
+    $('msLog').innerHTML = myStall.log.map((l) => `<span>${new Date(l.t).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} · ${C.esc(l.name)} → ${C.esc(l.buyer)} · ${l.price.toLocaleString('tr-TR')}</span>`).join('') || '<span>Henüz satış yok.</span>';
+    return;
+  }
+  const keep = {}; for (const el of document.querySelectorAll('#msPick .st')) keep[el.dataset.uid] = { on: el.querySelector('input[type=checkbox]').checked, price: el.querySelector('input[type=number]').value };
+  $('msPick').innerHTML = (C.inventory() || []).map((it) => { const k = keep[it.uid] || {};
+    return `<label class="st" data-uid="${it.uid}"><input type="checkbox" ${k.on ? 'checked' : ''} aria-label="Seç">${stIcon(it)}<span class="nm"><b>${C.esc(stName(it))}</b><small>${C.esc(stSub(it))}</small></span><input type="number" min="1" inputmode="numeric" placeholder="Fiyat" value="${k.price || ''}" aria-label="Fiyat"></label>`; }).join('') || '<p class="gtxt">Çantan boş.</p>';
+}
+export function refreshStallWins() { if ($('stallwin').classList.contains('open')) renderStall(); if ($('mystallwin').classList.contains('open') && !myStall) renderMyStall(); }
+function setupStalls() {
+  $('stallX').addEventListener('click', () => $('stallwin').classList.remove('open'));
+  $('mystallX').addEventListener('click', () => $('mystallwin').classList.remove('open'));
+  for (const id of ['stallwin', 'mystallwin']) $(id).addEventListener('click', (e) => { if (e.target.id === id) $(id).classList.remove('open'); });
+  $('stItems').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-sid]'); if (!b || !socket || !stallSeen) return;
+    const it = stallSeen.items.find((x) => x.sid === Number(b.dataset.sid)); if (!it) return;
+    C.askBox(`${stName(it)} için ${it.price.toLocaleString('tr-TR')} yang ödensin mi?`, (ok) => ok && socket.emit('stallBuy', { id: stallSeen.id, sid: it.sid, price: it.price }), 'Satın al', 'Vazgeç');
+  });
+  $('msPick').addEventListener('input', (e) => { const row = e.target.closest('.st'); if (row && e.target.type === 'number' && e.target.value) row.querySelector('input[type=checkbox]').checked = true; });
+  $('msOpen').addEventListener('click', () => {
+    const items = [...document.querySelectorAll('#msPick .st')].filter((el) => el.querySelector('input[type=checkbox]').checked)
+      .map((el) => ({ uid: Number(el.dataset.uid), price: Number(el.querySelector('input[type=number]').value) }));
+    if (!items.length) { C.toast('Satmak istediğin eşyaları seç.'); return; }
+    if (items.some((x) => !(x.price >= 1))) { C.toast('Seçtiğin her eşyaya fiyat yaz.'); return; }
+    socket.emit('stallOpen', { title: $('msTitle').value, items });
+  });
+  $('msCollect').addEventListener('click', () => socket && socket.emit('stallCollect'));
+  $('msClose').addEventListener('click', () => C.askBox('Tezgâh kapatılsın mı? Satılmayan eşyalar çantana döner.', (ok) => ok && socket.emit('stallClose'), 'Kapat', 'Vazgeç'));
+}
 
 // ---------- lonca ----------
 let guild = null, gTab = 'members';
@@ -150,6 +198,8 @@ export function bind(sock) {
   socket.on('guild', (g) => { guild = g; renderGuild(); });
   socket.on('warState', (w) => { war = w; renderEvents(); renderWarHud(); C.onWar && C.onWar(w); });
   socket.on('events', (list) => { events = list; renderEvents(); });
+  socket.on('stallView', (v) => { stallSeen = v; renderStall(); $('stallwin').classList.add('open'); });
+  socket.on('stallMine', (v) => { myStall = v; renderMyStall(); });
   socket.on('empire', (n) => C.onEmpire && C.onEmpire(n));
   socket.on('guildAsk', ({ name, from }) => C.askBox(`${from} seni "${name}" loncasına davet ediyor.`, (ok) => socket.emit('guildAnswer', { ok })));
 }

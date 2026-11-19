@@ -7,6 +7,7 @@ const { Zone, boundsOf } = require('./zone');
 const { createSocial } = require('./social');
 const { createGuilds } = require('./guild');
 const { createRealm } = require('./realm');
+const { createMarket } = require('./market');
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const VILLAGES = R.MAPS.filter((m) => m.village).map((m) => m.id);
@@ -304,6 +305,7 @@ function createWorld(io) {
   const social = createSocial({ players, notice, sendInv, addItem, freeSlotsFor, save, giveExpDirect: (p, n) => expRaw(p, n, false, false) });
   const guilds = createGuilds({ db, players, notice, sendInv, addItem, save, announce: (t) => io.emit('announce', t) });
   const realm = createRealm({ db, io, players, notice, moveToZone, sendInv, addItem, save, villageFor });
+  const market = createMarket({ db, players, notice, sendInv, addItem, save, zones });
   W.expBonus = (p) => realm.expBonus(p) + (W.eventBonus ? W.eventBonus(p) : 0);
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
 
@@ -343,6 +345,7 @@ function createWorld(io) {
     p.lastMove = Date.now();
     target.addPlayer(p);
     p.socket.emit('mapChange', { ...target.snapshot(), you: { x: p.x, z: p.z } });
+    market.afterMove(p, target);
   }
 
   // ---------- ticaret (Metin2 gibi: iki taraf eşya + yang koyar, ikisi de onaylayınca takas olur) ----------
@@ -495,6 +498,7 @@ function createWorld(io) {
     social.onConnect(p, socket);
     guilds.onConnect(p, socket);
     realm.onConnect(p, socket);
+    market.onConnect(p, socket);
 
     socket.on('move', (m) => {
       if (!m || p.dead) return;
