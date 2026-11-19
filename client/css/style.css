@@ -471,3 +471,5 @@ body.standalone #chatBtn { left: 116px; } body.standalone #friendBtn { left: 168
 .rk .nm { flex: 1; min-width: 0; } .rk .nm small { display: block; color: #8b877c; font-size: 11px; }
 .rk .vl { color: #ffe08a; font-weight: 800; white-space: nowrap; }
 .empbar { height: 10px; border-radius: 5px; margin-top: 4px; }
+
+.eq.cos { border-style: dashed; border-color: #5a4a6a; }

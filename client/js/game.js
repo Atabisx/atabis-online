@@ -13,6 +13,7 @@ import * as fx from './fx.js';
 import * as icons from './icons.js';
 import { buildStage, updateStage } from './lobby.js';
 import * as social from './social.js';
+import { buildWings, buildPet } from './entities/cosmetics.js';
 
 let FACE_OFFSET = Math.PI;     // model yüklenince otomatik hesaplanır
 const SPEED = 6;               // metre / saniye
@@ -583,6 +584,7 @@ function updateAuras(p, dt, t) {
 
 function applyLook(p, look) {
   p.look = look || {};
+  applyCosmetics(p);
   const calib = p.calib || calibBase();
   if (!p.model || !calib) return;
   for (const m of p.equipMeshes) m.parent && m.parent.remove(m);
@@ -590,7 +592,18 @@ function applyLook(p, look) {
   const w = ITEMS[p.look.weapon], a = ITEMS[p.look.armor], h = ITEMS[p.look.helmet];
   let wMesh = null;
   if (w) { wMesh = weaponMesh(w); attach(p, calib.sword, wMesh); }
+  const cos = ITEMS[p.look.costume];
   if (p.custom) {
+    // kostüm: modelin kendi kıyafetini kostüm rengine boyar
+    p.model.traverse((o) => {
+      if (!o.isMesh || o.userData.outline) return;
+      for (const m of [].concat(o.material)) {
+        if (!m.userData.base) continue;
+        m.color.copy(m.userData.base);
+        if (cos && cos.tint) m.color.lerp(new THREE.Color(cos.tint), 0.42);
+        if (m.emissive) m.emissive.set(cos && cos.tint ? cos.tint : '#000000'), m.emissiveIntensity = cos ? 0.08 : 0;
+      }
+    });
     // kendi kıyafeti olan karakter: kostüm parçası ve renk boyası yok; silah takılıysa kendi asası gizlenir
     const helmOk = h && !(p.charCfg && p.charCfg.helmet === false);
     p.model.traverse((o) => { if (o.userData.hideWithWeapon) o.visible = !w; if (o.userData.ownHelmet) o.visible = !helmOk; });
@@ -608,7 +621,7 @@ function applyLook(p, look) {
   if (p.model && p.model.parent && cl) { const base = 1 / calib.k; p.model.parent.scale.set(base * cl.bulk, base, base * cl.bulk); }
   p.capes = [];
   p.robe = null;
-  const outfit = cl ? buildOutfit(p.cls, { metal: a && a.color && a.color !== '#ffffff' ? a.color : null, tier: a ? a.tier : null, legendary: a && a.rarity >= 2, hasHelmet: !!h }) : [];
+  const outfit = cl ? buildOutfit(p.cls, { metal: cos && cos.tint ? cos.tint : a && a.color && a.color !== '#ffffff' ? a.color : null, tier: a ? a.tier : null, legendary: (a && a.rarity >= 2) || !!cos, hasHelmet: !!h }) : [];
   for (const [where, mesh] of outfit) {
     if (!calib[where]) continue;
     attach(p, calib[where], mesh);
@@ -750,6 +763,52 @@ function pickStallAt(cx, cy) {
   }
   return best;
 }
+// ---------- görünüş: kanat ve evcil hayvan ----------
+function applyCosmetics(p) {
+  const wk = p.look.wings, pk = p.look.pet;
+  if (p.wingKey !== wk) {
+    if (p.wings) p.group.remove(p.wings);
+    p.wings = null; p.wingKey = wk;
+    const d = ITEMS[wk];
+    if (d && d.wing) {
+      const w = buildWings(d.wing);
+      // kanat sırtta: karakterin baktığı yönün tersine, omuz hizasında
+      const holder = new THREE.Group();
+      holder.rotation.y = -FACE_OFFSET;
+      w.position.set(0, (p.labelY || 2.2) * 0.58, -0.22);
+      holder.add(w);
+      p.group.add(holder);
+      p.wings = holder; p.wingMesh = w;
+    }
+  }
+  if (p.petKey !== pk) {
+    if (p.pet) scene.remove(p.pet.root);
+    p.pet = null; p.petKey = pk;
+    const d = ITEMS[pk];
+    if (d && d.pet) {
+      const v = buildPet(d);
+      const gp = p.group.position;
+      v.root.position.set(gp.x + 1, 0, gp.z + 1);
+      scene.add(v.root);
+      p.pet = { root: v.root, v, t: Math.random() * 10, fly: d.pet.shape === 'flyer' || d.pet.shape === 'dragon' };
+    }
+  }
+}
+function updateCosmetics(p, dt, t) {
+  if (p.wingMesh) { p.wings.visible = !p.dead; p.wingMesh.userData.flap(t + (p.id.length || 0), p.moving); }
+  const pet = p.pet; if (!pet) return;
+  pet.root.visible = !p.dead && p.group.visible;
+  // sahibinin sol arkasında dur
+  const f = p.group.rotation.y - FACE_OFFSET, gp = p.group.position;
+  const tx = gp.x - Math.sin(f) * 1.4 + Math.cos(f) * 1.0, tz = gp.z - Math.cos(f) * 1.4 - Math.sin(f) * 1.0;
+  const dx = tx - pet.root.position.x, dz = tz - pet.root.position.z, d = Math.hypot(dx, dz);
+  const moving = d > 0.25;
+  if (d > 25) pet.root.position.set(tx, 0, tz);
+  else if (moving) { const k = Math.min(1, dt * (2 + d * 1.6)); pet.root.position.x += dx * k; pet.root.position.z += dz * k; pet.root.rotation.y = angleLerp(pet.root.rotation.y, Math.atan2(dx, dz), 1 - Math.exp(-8 * dt)); }
+  pet.t += dt;
+  pet.root.position.y = pet.fly ? 1.1 + Math.sin(pet.t * 3) * 0.15 : 0;
+  if (pet.v.update) pet.v.update(pet.t, moving, 0, dt);
+}
 // lonca adı etiketin üstünde
 function setGuildTag(obj, name) {
   let t = obj.label.el.querySelector('.gtag');
@@ -811,6 +870,7 @@ function setRod(p, on) {
 }
 function removePlayer(id) {
   const p = players[id]; if (!p) return;
+  if (p.pet) scene.remove(p.pet.root);
   scene.remove(p.group); p.label.el.remove(); delete players[id];
 }
 function setAnim(p, name) {
@@ -1134,7 +1194,7 @@ let selected = null;   // {uid} veya {slot}
 const EQUIP = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring'];
 const BONUS_NAMES = { maxhp: ['Maks. Can', ''], maxmp: ['Maks. Mana', ''], atk: ['Saldırı', ''], def: ['Savunma', ''], crit: ['Kritik', '%'],
   atkspeed: ['Saldırı Hızı', '%'], movespeed: ['Hareket Hızı', '%'], monster: ['Canavarlara Güç', '%'], hpsteal: ['Can Çalma', '%'] };
-const SLOT_NAMES = { stone: 'Ruh taşı', material: 'Malzeme', weapon: 'Silah', armor: 'Zırh', helmet: 'Miğfer', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', potion: 'İksir', use: 'Kullanılır', fish: 'Balık', gem: 'Değerli taş' };
+const SLOT_NAMES = { costume: 'Kostüm', wings: 'Kanat', pet: 'Evcil hayvan', stone: 'Ruh taşı', material: 'Malzeme', weapon: 'Silah', armor: 'Zırh', helmet: 'Miğfer', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', potion: 'İksir', use: 'Kullanılır', fish: 'Balık', gem: 'Değerli taş' };
 const ICONS = {
   weapon: '<path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/>',
   armor: '<path d="M8 3 4 6v5l3 1v9h10v-9l3-1V6l-4-3-2 2h-4z"/>',
@@ -1148,6 +1208,9 @@ const ICONS = {
   gem: '<circle cx="12" cy="12" r="6"/><circle cx="10" cy="10" r="1.5"/>',
   stone: '<path d="M12 3l7 6-3 10H8L5 9z"/>',
   material: '<path d="M12 21c-5-3-7-8-5-14 6 0 9 4 9 9"/><path d="M12 21V9"/>',
+  costume: '<path d="M9 3h6l4 4-3 2v12H8V9L5 7z"/><path d="M12 3v4"/>',
+  wings: '<path d="M12 8C9 3 3 3 2 9c3-1 5 0 6 2-3 0-5 2-5 5 3-2 6-2 9-1z"/><path d="M12 8c3-5 9-5 10 1-3-1-5 0-6 2 3 0 5 2 5 5-3-2-6-2-9-1z"/>',
+  pet: '<circle cx="12" cy="15" r="5"/><circle cx="6" cy="9" r="2"/><circle cx="18" cy="9" r="2"/><circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/>',
 };
 // ---------- gerçekçi 3D simgeler (icons.js) ----------
 function iconBuilder(key, def) {
@@ -2556,6 +2619,7 @@ function loop() {
     skillPoseUpdate(p, dt);
     if (p.swingT > 0) p.swingT = Math.max(0, p.swingT - dt);
     applyBreath(p, clock.elapsedTime);
+    updateCosmetics(p, dt, clock.elapsedTime);
     applyRide(p);
     applySwing(p);
     applyCast(p, dt);

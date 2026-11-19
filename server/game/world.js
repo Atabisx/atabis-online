@@ -31,7 +31,7 @@ function createWorld(io) {
   // ---------- oyuncu yardımcıları ----------
   function looks(p) {
     const l = {};
-    for (const s of ['weapon', 'armor', 'helmet']) l[s] = p.equip[s] ? p.equip[s].key : null;
+    for (const s of ['weapon', 'armor', 'helmet', 'costume', 'wings', 'pet']) l[s] = p.equip[s] ? p.equip[s].key : null;
     return l;
   }
   const publicPlayer = (p) => ({ id: p.id, name: p.name, cls: p.class, x: p.x, z: p.z, ry: p.ry, level: p.level,
@@ -316,7 +316,9 @@ function createWorld(io) {
   const dungeons = createDungeons({ io, players, notice, moveToZone, hooks, villageFor });
   const events = createEvents({ io, zones, notice });
   const ranking = createRanking({ db });
-  W.expBonus = (p) => realm.expBonus(p) + events.expBonus(p);
+  // evcil hayvan tecrübe bonusu
+  const petBonus = (p) => { const it = p.equip.pet, d = it && R.ITEMS[it.key]; return d && d.petExp ? d.petExp / 100 : 0; };
+  W.expBonus = (p) => realm.expBonus(p) + events.expBonus(p) + petBonus(p);
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
 
   // seviye ödülleri: 25'te at görevi, 30'da olta
@@ -659,7 +661,7 @@ function createWorld(io) {
       if (data && data.slot && R.EQUIP_SLOTS.includes(data.slot)) target = p.equip[data.slot];
       else if (data && data.uid != null) target = p.inventory.find((i) => i.uid === Number(data.uid));
       const def = target && R.ITEMS[target.key];
-      if (!def || !R.EQUIP_SLOTS.includes(def.slot)) return null;
+      if (!def || !R.GEAR_SLOTS.includes(def.slot)) return null;
       target.bon = target.bon || [];
       return { target, def };
     }
@@ -813,7 +815,7 @@ function createWorld(io) {
       const key = String(data && data.key);
       const n = clamp(Math.floor(Number(data && data.n) || 1), 1, 200);
       const shop = z.def.shop;
-      if (![...shop.potions, ...shop.weapons, ...shop.armor].includes(key)) return;
+      if (![...shop.potions, ...shop.weapons, ...shop.armor, ...(shop.cosmetics || [])].includes(key)) return;
       const def = R.ITEMS[key];
       const count = def.stack ? n : 1;
       const cost = def.price * count;
@@ -908,7 +910,7 @@ function createWorld(io) {
         sendInv(p);
         return;
       }
-      if (!R.EQUIP_SLOTS.includes(def.slot)) { notice(p, 'Bu eşya yükseltilemez.'); return; }
+      if (!R.GEAR_SLOTS.includes(def.slot)) { notice(p, 'Bu eşya yükseltilemez.'); return; }
       const up = target.up || 0;
       if (up >= R.MAX_UP) { notice(p, `${def.name} zaten +${R.MAX_UP}.`); return; }
       const cost = R.upgradeCost(def, up);

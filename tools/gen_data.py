@@ -171,6 +171,28 @@ def build_items():
                                        'desc': desc.format(v=vals[g]) + (' Silaha takılır.' if target == 'weapon' else ' Zırha takılır.'),
                                        'lv': 1, 'price': 2000 * (g + 1) ** 2, 'rarity': 1 if g < 2 else 2, 'color': color, 'stack': 200}
     # demirci yaprakları: 30. seviye ve üstü eşyaları +6'dan sonra yükseltmek için (metin taşlarından düşer)
+    # görünüş eşyaları: kanat (az stat), kostüm (sadece görünüş, rengi boyar), evcil hayvan (tecrübe bonusu, peşinden gelir)
+    WINGS = [('kanat_melek', 'Melek Kanadı', 'feather', '#f6f2e6', '#fff3c4', 30, 400000, 1, {'hp': 200, 'def': 8}),
+             ('kanat_buz', 'Buz Kanadı', 'crystal', '#9fd8ff', '#bff0ff', 40, 900000, 1, {'def': 18, 'hp': 150}),
+             ('kanat_ates', 'Ateş Kanadı', 'feather', '#ff6a2a', '#ffb347', 45, 1200000, 1, {'atk': 18}),
+             ('kanat_golge', 'Gölge Kanadı', 'bat', '#3a2550', '#b06bff', 50, 1600000, 1, {'atk': 12, 'hp': 250}),
+             ('kanat_ejder', 'Ejder Kanadı', 'bat', '#a8251c', '#ff6a3d', 60, 0, 2, {'atk': 30, 'hp': 400, 'def': 15})]
+    for key, name, kind, color, glow, lv, pr, rar, st in WINGS:
+        items[key] = {'name': name, 'slot': 'wings', 'lv': lv, 'price': pr or 5000000, 'rarity': rar, 'color': color,
+                      'wing': {'kind': kind, 'color': color, 'glow': glow}, 'desc': 'Sırtına takılan kanat. ' + ('Sadece boss\'lardan düşer.' if not pr else 'Kostümcüden alınır, boss\'lardan da düşebilir.'), **st}
+    COSTUMES = [('kostum_altin', 'Altın Kostüm', '#e8b54a', 250000), ('kostum_gece', 'Gece Kostümü', '#2b2445', 250000),
+                ('kostum_kar', 'Kar Kostümü', '#eef4ff', 250000), ('kostum_kizil', 'Kızıl Kostüm', '#b8321f', 250000),
+                ('kostum_orman', 'Orman Kostümü', '#3f7a3a', 250000), ('kostum_gok', 'Gök Kostümü', '#3d8fe0', 250000)]
+    for key, name, color, pr in COSTUMES:
+        items[key] = {'name': name, 'slot': 'costume', 'lv': 1, 'price': pr, 'rarity': 1, 'color': color, 'tint': color,
+                      'desc': 'Zırhının görünüşünü değiştirir (istatistik vermez). Kostümcüden alınır.'}
+    PETS = [('pet_kurt', 'Kurt Yavrusu', 'wolf', '#8a8f99', 3, 300000), ('pet_tilki', 'Tilki Yavrusu', 'dog', '#d9762b', 3, 300000),
+            ('pet_ayi', 'Ayı Yavrusu', 'bear', '#6b4a2e', 4, 600000), ('pet_baykus', 'Baykuş', 'flyer', '#c9b48a', 4, 600000),
+            ('pet_ejder', 'Ejder Yavrusu', 'dragon', '#c0392b', 8, 0)]
+    for key, name, shape, color, bonus, pr in PETS:
+        items[key] = {'name': name, 'slot': 'pet', 'lv': 1, 'price': pr or 5000000, 'rarity': 2 if not pr else 1, 'color': color,
+                      'pet': {'shape': shape, 'color': color}, 'petExp': bonus,
+                      'desc': f'Peşinden gelen evcil hayvan. Tecrübe +%{bonus}. ' + ('Sadece boss\'lardan düşer.' if not pr else 'Kostümcüden alınır.')}
     for key, name, color in [('yaprak_mor', 'Mor Yaprak', '#9b59d0'), ('yaprak_mavi', 'Mavi Yaprak', '#3d8fe0'), ('yaprak_kirmizi', 'Kırmızı Yaprak', '#e0453a')]:
         items[key] = {'name': name, 'slot': 'material', 'desc': "Demircide 30. seviye ve üstü eşyaları +6'dan sonra yükseltmek için gerekir. Metin taşlarından düşer.",
                       'lv': 1, 'price': 400, 'rarity': 1, 'color': color, 'stack': 200}
@@ -342,7 +364,8 @@ def build(items):
             style = dict(style); hit_r = style.pop('hitR', None)   # çok büyük boss'larda gövde yarıçapı
             d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': 0,
                       'speed': 5.2, 'range': min(6.0, 2.6 * scale), 'cd': 2000, 'boss': True, 'respawn': 120,
-                      'drops': [[k, 0.28] for k in own] + [[k, 0.12] for k in nxt] + [[k, 0.035] for k in leg],
+                      'drops': [[k, 0.28] for k in own] + [[k, 0.12] for k in nxt] + [[k, 0.035] for k in leg]
+                               + [['kanat_ejder', 0.003], ['pet_ejder', 0.005], ['kanat_melek', 0.01], ['kanat_golge', 0.006], ['pet_kurt', 0.01]],
                       'potions': [[('p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4'), 1.0],
                                   [('p_mp2' if lv < 40 else 'p_mp3' if lv < 75 else 'p_mp4'), 1.0],
                                   ['p_green', 0.3], ['p_speed', 0.3], ['efsun_degis', 0.2]],
@@ -373,6 +396,7 @@ def build(items):
                 'weapons': [k for k, v in items.items() if v['slot'] == 'weapon' and v.get('tier') in tiers and not k.endswith('_L')],
                 'armor': [k for k, v in items.items() if v['slot'] in ('armor', 'helmet', 'shoes', 'bracelet', 'earring')
                           and v.get('tier') in tiers and not k.endswith('_L')],
+                'cosmetics': [k for k, v in items.items() if v['slot'] in ('costume', 'wings', 'pet') and v['price'] < 5000000],
             }
         maps.append(entry)
     # balık tutma haritası: yaratık yok, sadece ışınlayıcıyla gelinir

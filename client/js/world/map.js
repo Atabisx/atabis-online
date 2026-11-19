@@ -119,6 +119,7 @@ export const NPC_SPOTS = {
   teleport: { x: 28.5, z: 33.8, name: 'Işınlayıcı', kind: 'teleport' },
   stable: { x: 15, z: 31, name: 'Seyis', kind: 'stable' },
   blacksmith: { x: 13.6, z: 19.6, name: 'Demirci', kind: 'blacksmith' },
+  cosmetic: { x: 33.5, z: 31.5, name: 'Kostümcü', kind: 'cosmetics' },
 };
 const LAKE_NPCS = [
   { x: 31, z: 21, name: 'Işınlayıcı', kind: 'teleport' },

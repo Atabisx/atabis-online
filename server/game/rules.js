@@ -7,7 +7,9 @@ const SKILLS = require('../../shared/skills.json');
 
 const MAX_LEVEL = 120;
 const INV_SIZE = 32;
-const EQUIP_SLOTS = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring'];
+const EQUIP_SLOTS = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring', 'costume', 'wings', 'pet'];
+// yükseltilebilen, efsunlanabilen, taş takılabilen ekipman (görünüş eşyaları hariç)
+const GEAR_SLOTS = EQUIP_SLOTS.slice(0, 6);
 const BASE_SPEED = 6;          // m/sn
 const MELEE_RANGE = 4.4;
 const SKILL_UNLOCK = 5;        // beceriler bu seviyede açılır
@@ -173,7 +175,7 @@ function expGain(mobLv, playerLv, base) {
 const skillLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 
 module.exports = { STONE_TYPES, CLASS_KEYS,
-  ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, EQUIP_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
+  ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, EQUIP_SLOTS, GEAR_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
   BONUS_TYPES, rollBonus, maxBonus, MAX_UP, LEAVES, leafNeed, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
   speedMul, attackCooldown, playerDamage, mobDamage, expGain, skillLabel,
 };
