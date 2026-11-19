@@ -178,6 +178,18 @@ function createSocial(W) {
       leaveParty(o, `${p.name} seni gruptan attı.`);
     });
     socket.on('dailyGet', () => sendDaily(p));
+    // öğretici: adımlar istemcide izlenir, bitince bir kez küçük ödül
+    socket.on('tutorial', (step) => {
+      if (step === 'done') {
+        if (p.quests.tutorial === 'done') return;
+        p.quests.tutorial = 'done';
+        addItem(p, potionFor(p.level), 10); p.yang += 3000;
+        notice(p, 'Öğretici tamamlandı! Ödül: 10 iksir ve 3.000 yang. İyi maceralar!');
+        sendInv(p); save(p); W.sendQuests(p);
+        return;
+      }
+      const n = Number(step); if (n > 0 && n < 20 && p.quests.tutorial !== 'done') p.quests.tutorial = n;
+    });
     socket.on('dailyClaim', (i) => claimDaily(p, i));
     socket.on('loginClaim', () => { if ((p.quests.login || {}).pending) checkLogin(p); sendDaily(p); });
     checkLogin(p);

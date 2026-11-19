@@ -213,6 +213,31 @@
   </div>
   <div id="warHud" style="display:none"></div>
   <div id="dunHud" style="display:none"></div>
+  <div id="tutBox" style="display:none" role="status" aria-live="polite"><small id="tutStep"></small><span id="tutText"></span><button id="tutSkip" aria-label="Öğreticiyi geç">Geç</button></div>
+  <div id="helpwin" class="modal" role="dialog" aria-label="Rehber">
+    <div class="modalbox helpbox">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">REHBER</b><button id="helpX" class="xbtn" aria-label="Kapat">×</button></div>
+      <div class="help">
+        <h4>Temel kontroller</h4>
+        <p>Sol alttaki çubukla yürü, sağ alttaki kılıçla saldır. Becerileri kılıcın çevresindeki düğmelerden kullan. Kırmızı ve mavi iksir düğmeleri can ve mana doldurur. Ganimetin üstüne yürüyünce toplanır.</p>
+        <h4>Gelişim</h4>
+        <p>Seviye atladıkça karakter penceresinden (👤) durum puanı dağıt. 5. seviyede beceriler açılır. 25. seviyede Seyis'ten at görevi, 30. seviyede olta gelir.</p>
+        <h4>Demirci, ruh taşları, yapraklar</h4>
+        <p>Demircide eşyalarını +9'a kadar yükseltirsin; başarısız olursa artı düşer, Kutsama Kağıdı bunu engeller. 30. seviye ve üstü eşyalar +6'dan sonra Mor, Mavi ve Kırmızı Yaprak ister (+6→7 için 7'şer). Ruh taşları ve yapraklar metin taşlarından düşer. Taşlar silaha (kritik, delici, güç, çeviklik, sınıf taşları) ya da zırha (can, savunma, hız, kaçınma, büyü) takılır.</p>
+        <h4>Grup ve lonca</h4>
+        <p>Bir oyuncuya dokun: grup, ticaret, lonca daveti, düello, fısıltı. Grupta tecrübe paylaşılır ve kalabalık grup daha çok kazanır. Sohbette <b>#</b> grup, <b>%</b> lonca kanalıdır. Lonca 20. seviye ve 100.000 yang ile kurulur.</p>
+        <h4>Krallık savaşı</h4>
+        <p>Çarşamba ve Cumartesi 21:00'de 20 dakika. Menü › Etkinlikler'den Savaş Meydanı'na katıl (Sv. 20+). Kazanan krallık 24 saat +%20 tecrübe alır.</p>
+        <h4>Zindan</h4>
+        <p>Örümcek Mağarası (Sv. 30+): grup lideri Menü › Zindan'dan girer, yanındaki üyeler de gelir. 3 dalga ve Örümcek Kraliçe; her üyeye ayrı sandık. 30 dakikada bir girilebilir.</p>
+        <h4>Etkinlik saatleri (İstanbul)</h4>
+        <p>Her gün 20:00 Metin Yağmuru, 22:00 Boss İstilası. Cuma, Cumartesi, Pazar 19:00 Tecrübe Şöleni (2 kat). Salı ve Perşembe 20:30 Ganimet Bereketi (2 kat düşme).</p>
+        <h4>Pazar ve görünüş</h4>
+        <p>Menü › Pazar tezgâhı ile köyde tezgâh aç; oyundan çıksan da satar. Köydeki Kostümcü'de kostüm, kanat ve evcil hayvan var; nadir Ejder Kanadı ve Ejder Yavrusu sadece boss'lardan düşer.</p>
+      </div>
+      <button id="tutRestart" class="btn alt">Öğreticiyi baştan oynat</button>
+    </div>
+  </div>
   <div id="rankwin" class="modal" role="dialog" aria-label="Sıralama">
     <div class="modalbox">
       <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">SIRALAMA</b><span id="rankMine" style="font-size:12px;color:#8ec5ff"></span><button id="rankX" class="xbtn" aria-label="Kapat">×</button></div>

@@ -29,6 +29,11 @@ export function setup(ctx) {
   setupGuild();
   setupStalls();
   setupDungeon();
+  $('helpX').addEventListener('click', () => $('helpwin').classList.remove('open'));
+  $('helpwin').addEventListener('click', (e) => { if (e.target.id === 'helpwin') $('helpwin').classList.remove('open'); });
+  $('tutRestart').addEventListener('click', () => { $('helpwin').classList.remove('open'); startTutorial(0); });
+  $('tutSkip').addEventListener('click', () => { tutStep = -1; showTut(); if (socket) socket.emit('tutorial', 'done'); });
+  setInterval(tickTut, 400);
   $('rankX').addEventListener('click', () => $('rankwin').classList.remove('open'));
   $('rankwin').addEventListener('click', (e) => { if (e.target.id === 'rankwin') $('rankwin').classList.remove('open'); });
   document.querySelector('.rtabs').addEventListener('click', (e) => { const b = e.target.closest('[data-rt]'); if (!b) return; rankTab = b.dataset.rt; C.sfx.click(); loadRank(); });
@@ -81,6 +86,38 @@ function renderWarHud() {
   el.innerHTML = [1, 2, 3].map((e) => `<span style="color:${EMPIRES[e].color}">${war.score[e] || 0}</span>`).join('<small>·</small>') + `<small>${fmtLeft(war.ends - Date.now())}</small>`;
 }
 export function refreshWar() { renderWarHud(); }
+
+// ---------- öğretici ----------
+const TUT = [
+  { text: 'Hoş geldin, kahraman! Sol alttaki çubuğu sürükleyerek yürü.', hl: '#joy', done: (s) => s.moved > 6 },
+  { text: 'Sağ üstteki çanta düğmesine bas ve eşyalarına bak.', hl: '#invbtn', done: (s) => s.invOpened },
+  { text: 'Köyün doğusundaki geçitten çık ve bir canavar öldür. Saldırmak için sağ alttaki kılıç düğmesi.', hl: '#atk', done: (s) => s.kills > 0 },
+  { text: '☰ Menü\'yü aç: görevler, lonca, zindan ve sıralama burada.', hl: '#menuBtn', done: () => menuOpened },
+  { text: 'Görevler\'e dokun: her gün yeni görevler ve giriş ödülü var!', hl: '[data-menu="daily"]', done: () => dailyOpened },
+];
+let tutStep = -1, menuOpened = false, dailyOpened = false, tutHl = null;
+export function startTutorial(from = 0) { tutStep = from; menuOpened = false; dailyOpened = false; showTut(); }
+function showTut() {
+  const box = $('tutBox');
+  if (tutHl) { tutHl.classList.remove('tut-hl'); tutHl = null; }
+  if (tutStep < 0 || tutStep >= TUT.length) { box.style.display = 'none'; return; }
+  const st = TUT[tutStep];
+  box.style.display = 'flex';
+  $('tutStep').textContent = `${tutStep + 1}/${TUT.length}`;
+  $('tutText').textContent = st.text;
+  tutHl = document.querySelector(st.hl); if (tutHl) tutHl.classList.add('tut-hl');
+}
+function tickTut() {
+  if (tutStep < 0 || tutStep >= TUT.length) return;
+  if (TUT[tutStep].done(C.tutStats())) {
+    tutStep++;
+    if (socket) socket.emit('tutorial', tutStep >= TUT.length ? 'done' : tutStep + 1);
+    C.sfx.click();
+    if (tutStep >= TUT.length) { tutStep = -1; C.toast('Öğretici tamamlandı! Rehber her zaman Menü › Rehber\'de.'); }
+    showTut();
+  }
+}
+export function openHelp() { $('helpwin').classList.add('open'); }
 
 // ---------- sıralama ----------
 let rankTab = 'level', rankData = null;
@@ -231,7 +268,7 @@ function renderGuild() {
 }
 export function refreshGuild() { if ($('guildwin').classList.contains('open')) renderGuild(); }
 
-function openMenu() { renderMenuBadges(); $('menuwin').classList.add('open'); }
+function openMenu() { menuOpened = true; renderMenuBadges(); $('menuwin').classList.add('open'); if (tutStep >= 0) setTimeout(showTut, 50); }
 function renderMenuBadges() {
   const n = daily ? daily.list.filter((q) => q.have >= q.need && !q.claimed).length : 0;
   const b = document.querySelector('[data-menu="daily"] i'); if (b) { b.textContent = n; b.style.display = n ? '' : 'none'; }
@@ -274,7 +311,7 @@ function renderParty() {
 }
 
 // ---------- günlük görevler ----------
-function openDaily() { if (socket) socket.emit('dailyGet'); renderDaily(); $('dailywin').classList.add('open'); }
+function openDaily() { dailyOpened = true; if (socket) socket.emit('dailyGet'); renderDaily(); $('dailywin').classList.add('open'); }
 function rewardText(q) {
   const parts = [`${q.exp.toLocaleString('tr-TR')} tecrübe`, `${q.yang.toLocaleString('tr-TR')} yang`];
   for (const [k, n] of q.items) parts.push(`${(C.ITEMS[k] || {}).name || k}${n > 1 ? ' x' + n : ''}`);

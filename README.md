@@ -4,7 +4,29 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 4.2 (bu sürüm): Ticaret, müzikler, vuruş sesleri, ruh taşı özellikleri
+### Aşama 5.0 (bu sürüm): Topluluk ve oyunu tutturacak sistemler
+
+Hepsi sol menüdeki **☰ Menü** düğmesinden açılır. Veritabanı tabloları sunucu açılırken kendiliğinden eklenir.
+
+- **Grup:** oyuncuya dokun ve "Gruba davet et"i seç (en fazla 8 kişi). Yakındaki üyeler tecrübeyi seviyeye göre paylaşır, kalabalık grup daha çok kazanır. Üyeler birbirinin ganimetini alabilir. Can çubukları solda görünür, sohbette `#` grup kanalıdır.
+- **Günlük görevler:** her gün 3 görev (canavar, metin, boss, demirci, balık, grup, düello) verilir; ödülleri tecrübe, yang ve eşyadır. **7 günlük giriş ödülü** de var; 7. gün kutsama kağıdı ve ruh taşı verir.
+- **Lonca:** 20. seviye ve 100.000 yang ile kurulur. Rütbeler lider, subay ve üyedir. Lonca sohbeti (`%`), depo (subay ve lider alabilir), kasa ve lonca seviyesi vardır. Seviye başına üyelere +%1 tecrübe verilir (en fazla %15) ve üye yeri artar.
+- **Krallıklar:** Kızıl Ejder, Altın Kartal ve Gök Kurt. Karakter açarken seçilir, eski karakterler ilk girişte seçer. Krallık işareti ismin önünde görünür.
+- **Krallık savaşı:** Çarşamba ve Cumartesi 21:00'de 20 dakika sürer, Savaş Meydanı'nda yapılır. Her galibiyet krallığına puan kazandırır. Kazanan krallık 24 saat +%20 tecrübe alır, katılanlar yang ve kutsama kağıdı kazanır. GM komutları: `/savas`, `/savas bitir`.
+- **Pazar tezgâhı:** köyde tezgâh açılır, eşyalara fiyat konur. Sahibi oyunda olmasa da satış sürer; kazanç Menü'den toplanır. Her satıştan %2 vergi kesilir.
+- **Zindan (Örümcek Mağarası, Sv. 30+):** her grup kendi kopyasına girer. 3 dalga örümceğin ardından Örümcek Kraliçe gelir ve her üyeye ayrı sandık düşer. Süre 25 dakika, bekleme 30 dakikadır.
+- **Etkinlikler (İstanbul saatiyle):**
+  - Metin Yağmuru: her gün 20:00.
+  - Boss İstilası: her gün 22:00.
+  - Tecrübe Şöleni (2 kat): Cuma, Cumartesi ve Pazar 19:00.
+  - Ganimet Bereketi (2 kat düşme): Salı ve Perşembe 20:30.
+  - GM komutu: `/etkinlik <metin|exp|boss|drop> [dakika]`, bitirmek için `/etkinlik bitir <tür>`.
+- **Sıralama:** seviye, canavar avcısı, düello, lonca ve krallık.
+- **Kostüm, kanat ve evcil hayvan:** köydeki Kostümcü'de 6 kostüm (zırhın rengini değiştirir), 4 kanat (biraz istatistik verir) ve 4 evcil hayvan (peşinden gelir, +%3–4 tecrübe) satılır. Ejder Kanadı ve Ejder Yavrusu sadece boss'lardan düşer.
+- **Öğretici ve Rehber:** yeni oyuncular 5 adımlık öğreticiyi görür ve sonunda küçük bir ödül alır. Menü › Rehber'de tüm sistemlerin açıklaması vardır.
+- **Otomatik yedek:** `bash scripts/install-backup.sh` komutu bir kez çalıştırılınca her gece 04:30'da veritabanı yedeği `~/atabis-yedek` klasörüne alınır (en yeni 14 yedek saklanır). Elle yedek almak için `bash scripts/backup.sh`.
+
+### Aşama 4.2: Ticaret, müzikler, vuruş sesleri, ruh taşı özellikleri
 
 - **Ticaret:** oyuncuya dokun → "Ticaret". İki taraf çantasından eşya (en fazla 12) ve yang koyar. Bir taraf teklifini değiştirirse iki tarafın da onayı sıfırlanır. İkisi de "Onayla" deyince takas sunucuda birden yapılır: eşyalar artısı, taşları ve efsunlarıyla geçer. Çanta doluysa, teklif edilen eşya kuşanılır, satılır ya da değişirse, oyuncular uzaklaşırsa, harita değişirse veya biri oyundan çıkarsa ticaret iptal olur.
 - **Müzikler (özgün, `tools/music/compose.py` ile bestelendi):** giriş ve karakter seçme (`giris`), köy ve göl (`koy`), ormanlar ve vadiler (`orman`), çöl ve kanyon (`col`), kar ve buz (`kar`), volkan, kale, harabe, iblis kulesi ve ejder bölgeleri (`karanlik`). Bölge değişince yumuşak geçiş yapılır. Sol menüde müzik aç/kapa düğmesi var; ses düğmesi her şeyi kısar.

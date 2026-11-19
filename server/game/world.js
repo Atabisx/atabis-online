@@ -309,7 +309,7 @@ function createWorld(io) {
     },
   };
   const W = {};      // sonraki aşamaların (krallık, etkinlik) bağlandığı yer
-  const social = createSocial({ players, notice, sendInv, addItem, freeSlotsFor, save, giveExpDirect: (p, n) => expRaw(p, n, false, false) });
+  const social = createSocial({ players, notice, sendInv, addItem, freeSlotsFor, save, sendQuests, giveExpDirect: (p, n) => expRaw(p, n, false, false) });
   const guilds = createGuilds({ db, players, notice, sendInv, addItem, save, announce: (t) => io.emit('announce', t) });
   const realm = createRealm({ db, io, players, notice, moveToZone, sendInv, addItem, save, villageFor });
   const market = createMarket({ db, players, notice, sendInv, addItem, save, zones });

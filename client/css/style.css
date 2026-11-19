@@ -473,3 +473,14 @@ body.standalone #chatBtn { left: 116px; } body.standalone #friendBtn { left: 168
 .empbar { height: 10px; border-radius: 5px; margin-top: 4px; }
 
 .eq.cos { border-style: dashed; border-color: #5a4a6a; }
+
+/* öğretici ve rehber */
+#tutBox { position: fixed; top: 110px; left: 50%; transform: translateX(-50%); max-width: min(520px, 70vw); display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border-radius: 14px; background: rgba(20,22,18,.94); border: 2px solid #e8b54a; box-shadow: 0 0 18px rgba(232,181,74,.35); z-index: 7; font-size: 14px; color: #f4f1e8; animation: tutIn .4s ease-out; }
+#tutBox small { color: #e8b54a; font-weight: 800; white-space: nowrap; }
+#tutBox button { min-height: 34px; border: 0; border-radius: 8px; background: #3a3f35; color: #c9c4b6; font: inherit; font-size: 12px; padding: 0 10px; }
+@keyframes tutIn { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.tut-hl { animation: tutPulse 1s ease-in-out infinite alternate !important; }
+@keyframes tutPulse { from { box-shadow: 0 0 0 0 rgba(255,211,107,.9); } to { box-shadow: 0 0 0 10px rgba(255,211,107,0); } }
+.helpbox { width: min(640px, 96vw); }
+.help { overflow-y: auto; max-height: 62vh; display: flex; flex-direction: column; gap: 2px; }
+.help h4 { margin: 8px 0 2px; color: #ffd36b; font-size: 15px; } .help p { margin: 0; font-size: 13px; line-height: 1.5; color: #d8d2c0; }

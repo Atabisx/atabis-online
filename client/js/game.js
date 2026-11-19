@@ -1353,7 +1353,7 @@ function renderDetail() {
     (EQUIP.includes(def.slot) && inv.inventory.some((x) => x.key === 'efsun') && (it.bon || []).length < 5 ? '<button class="alt" data-act="enchant" style="color:#c86bff">Efsunla</button>' : '') +
     (EQUIP.includes(def.slot) && inv.inventory.some((x) => x.key === 'efsun_degis') && (it.bon || []).length ? '<button class="alt" data-act="reroll" style="color:#4fd1c5">Efsun Değiştir</button>' : '');
 }
-document.getElementById('invbtn').addEventListener('click', () => { selected = null; renderInv(); invEl.classList.add('open'); });
+document.getElementById('invbtn').addEventListener('click', () => { selected = null; renderInv(); invEl.classList.add('open'); tutStats.invOpened = true; });
 document.getElementById('invclose').addEventListener('click', () => invEl.classList.remove('open'));
 invEl.addEventListener('click', (e) => { if (e.target === invEl) invEl.classList.remove('open'); });
 gridEl.addEventListener('click', (e) => {
@@ -2025,7 +2025,12 @@ export function startGame(sock, opts = {}) {
   socket.on('attrs', (a) => { attrs = a; renderChar(); });
   socket.on('skillCd', ({ key, until }) => { skillCdUntil[key] = { until: performance.now() + until * 1000, total: until * 1000 }; });
   socket.on('buffs', (list) => { buffList = list; buffAt = performance.now(); renderBuffs(); });
-  socket.on('quests', (q) => { quests = q; if (shopKind === 'stable') renderShop(); });
+  socket.on('quests', (q) => {
+    const first = !quests.__seen; quests = q; quests.__seen = true;
+    if (shopKind === 'stable') renderShop();
+    // yeni oyuncu: öğretici (bitmediyse kaldığı adımdan)
+    if (first && q.tutorial !== 'done' && myLevel < 15 && !myGm) setTimeout(() => social.startTutorial(Math.max(0, (Number(q.tutorial) || 1) - 1)), 2500);
+  });
   socket.on('mount', ({ id, on }) => { const p = players[id]; if (p) setMount(p, on); });
   socket.on('playerGuild', ({ id, guild }) => { const p = players[id]; if (p) setGuildTag(p, guild); });
   socket.on('playerEmpire', ({ id, empire }) => { const p = players[id]; if (p) setEmpireTag(p, empire); });
@@ -2118,7 +2123,7 @@ export function startGame(sock, opts = {}) {
     const dm = mobs[id];
     sfx.die(boss, dm ? dm.v.root.position : null);
     if (dm) killMobVisual(dm, boss); else removeMob(id);
-    if (by === myId) log(`<b>Sistem:</b> ${esc(mobName)} yenildi.`);
+    if (by === myId) { log(`<b>Sistem:</b> ${esc(mobName)} yenildi.`); tutStats.kills++; }
     else if (boss) log(`<b>${esc(name)}</b> ${esc(mobName)} adlı boss'u yendi!`);
   });
   socket.on('mobAttack', ({ id, target, dmg, miss }) => {
@@ -2582,6 +2587,8 @@ function loop() {
     me.moving = moving;
     if (now - lastSent > 100 && (moving || lastMoving || now - lastSent > 1000)) {
       socket.emit('move', { x: me.group.position.x, z: me.group.position.z, ry: me.ry, f: me.ry - FACE_OFFSET, moving });
+      if (tutLast) tutStats.moved += Math.hypot(me.group.position.x - tutLast.x, me.group.position.z - tutLast.z);
+      tutLast = { x: me.group.position.x, z: me.group.position.z };
       lastSent = now; lastMoving = moving;
     }
     // yakındaki ganimeti otomatik topla
@@ -2675,7 +2682,10 @@ window.addEventListener('resize', () => {
 });
 
 // ---------- topluluk: menü, grup, görevler ----------
-const MENU_SOON = { rank: 'Sıralama', stall: 'Pazar tezgâhı', dungeon: 'Zindan', events: 'Etkinlikler', help: 'Rehber' };
+const MENU_SOON = {};
+// öğretici için küçük sayaçlar
+const tutStats = { moved: 0, invOpened: false, kills: 0 };
+let tutLast = null;
 const menuHandlers = {
   friends: () => document.getElementById('friendBtn').click(),
   char: () => document.getElementById('charBtn').click(),
@@ -2685,6 +2695,7 @@ const menuHandlers = {
   stall: () => social.openMyStall(),
   dungeon: () => social.openDungeon(),
   rank: () => social.openRank(),
+  help: () => social.openHelp(),
 };
 export function onMenu(key, fn) { menuHandlers[key] = fn; }
 function partyLabels(pt) {
@@ -2692,7 +2703,7 @@ function partyLabels(pt) {
   for (const p of Object.values(players)) if (p.label && !p.npc && p.id !== myId) p.label.el.classList.toggle('party', ids.has(p.id));
 }
 social.setup({
-  myId: () => myId, esc, toast, askBox, itemIcon, sfx, get ITEMS() { return ITEMS; }, inventory: () => inv.inventory, yang: () => inv.yang, myName: () => myName,
+  myId: () => myId, esc, toast, askBox, itemIcon, sfx, get ITEMS() { return ITEMS; }, inventory: () => inv.inventory, yang: () => inv.yang, myName: () => myName, tutStats: () => tutStats,
   onParty: partyLabels,
   inWarMap: () => !!(currentMap && currentMap.war),
   onWar: () => refreshFoes(),
