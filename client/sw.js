@@ -2,7 +2,7 @@
 // Oyun kodu (html/js/css/json) her zaman önce sunucudan istenir, böylece güncellemeler hemen gelir;
 // ağ yoksa son kopya kullanılır. 3D modeller ve resimler bir kez indirilip saklanır.
 const VERSION = 'atabis-v1';
-const ASSETS = /\.(glb|png|jpg|jpeg|webp|woff2?)$/i;
+const ASSETS = /\.(glb|png|jpg|jpeg|webp|woff2?|wav)$/i;
 
 self.addEventListener('install', (e) => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => {
@@ -16,6 +16,7 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/socket.io/')) return;   // oyun bağlantısı önbelleğe girmez
+  if (/\.mp3$/i.test(url.pathname)) return;   // müzik parça parça (Range) iner, tarayıcının kendi önbelleği yeter
   if (url.origin === location.origin && ASSETS.test(url.pathname)) {
     // önce önbellek (modeller büyük, bir kez inmesi yeter)
     e.respondWith((async () => {

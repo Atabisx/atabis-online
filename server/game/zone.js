@@ -248,7 +248,7 @@ class Zone {
       for (let i = 0; i < n; i++) if (Math.random() < 0.6) this.makeDrop(best.x, best.z, p.id, { key: own[Math.floor(Math.random() * own.length)] });
       if (Math.random() < 0.15) this.makeDrop(best.x, best.z, p.id, { key: 'efsun', n: 1 });   // efsun nesnesi sadece taşlardan
       // ruh taşları (Metin2 gibi sadece metinlerden): üst haritalarda daha yüksek dereceli
-      const STONE_TYPES = ['kirma', 'delme', 'savasci', 'ninja', 'sura', 'saman', 'okcu', 'hayat', 'savunma', 'hiz', 'kacinma', 'buyu'];
+      const STONE_TYPES = R.STONE_TYPES;
       if (Math.random() < (best.color === 'purple' ? 0.55 : 0.35)) {
         const tier = this.def.tier || 0;
         let g = 0; const r = Math.random();

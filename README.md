@@ -4,7 +4,15 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 4.1 (bu sürüm): Düelloda ölüm, yere düşen yaratıklar, demirci yaprakları
+### Aşama 4.2 (bu sürüm): Ticaret, müzikler, vuruş sesleri, ruh taşı özellikleri
+
+- **Ticaret:** oyuncuya dokun → "Ticaret". İki taraf çantasından eşya (en fazla 12) ve yang koyar. Bir taraf teklifini değiştirirse iki tarafın da onayı sıfırlanır. İkisi de "Onayla" deyince takas sunucuda birden yapılır: eşyalar artısı, taşları ve efsunlarıyla geçer. Çanta doluysa, teklif edilen eşya kuşanılır, satılır ya da değişirse, oyuncular uzaklaşırsa, harita değişirse veya biri oyundan çıkarsa ticaret iptal olur.
+- **Müzikler (özgün, `tools/music/compose.py` ile bestelendi):** giriş ve karakter seçme (`giris`), köy ve göl (`koy`), ormanlar ve vadiler (`orman`), çöl ve kanyon (`col`), kar ve buz (`kar`), volkan, kale, harabe, iblis kulesi ve ejder bölgeleri (`karanlik`). Bölge değişince yumuşak geçiş yapılır. Sol menüde müzik aç/kapa düğmesi var; ses düğmesi her şeyi kısar.
+- **Vuruş sesleri (`tools/music/sfx.py`):** silaha göre savurma sesi (kılıç, ağır balta kombosu, hançer, asa, yay), et ve kesik sesli isabet, kritikte metal "şiing" ve gümleme, oyuncuya isabette zırh şangırtısı, metin taşında kaya çatırtısı.
+- **Ruh taşları:** yeni Güç Taşı (saldırı +6…+42), Çeviklik Taşı (saldırı hızı) ve Avcı Taşı (canavarlara karşı güç). Var olanlar: Kırma (kritik), Delme (delici), sınıf taşları, Hayat, Savunma, Hız, Kaçınma, Büyü. Karakter penceresi artık delici vuruş, kaçınma, canavarlara ve sınıflara karşı güç değerlerini de gösteriyor.
+- **At:** binici artık atın baktığı yöne oturuyor (önceden ters biniyordu).
+
+### Aşama 4.1: Düelloda ölüm, yere düşen yaratıklar, demirci yaprakları
 
 - **Düello:** canı biten oyuncu artık gerçekten ölür (ölüm ekranı, yeniden doğma). Kazanan duyurulur.
 - **Ölen yaratıklar yere yatar:** yan yatarak devrilir, yere çarpınca toz kalkar. Normal yaratıklar 3 saniye, boss'lar 12 saniye yerde kalır, sonra toprağa gömülerek kaybolur. Boss'lar daha yavaş ve gürültülü düşer.

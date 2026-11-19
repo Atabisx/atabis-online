@@ -74,6 +74,9 @@
   <button id="sndBtn" aria-label="Sesi kapat">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path class="wave" d="M15.5 8.5a5 5 0 0 1 0 7"/><path class="wave" d="M18.5 5.5a9 9 0 0 1 0 13"/><path class="mute" d="m16 9 6 6"/><path class="mute" d="m22 9-6 6"/></svg>
   </button>
+  <button id="musicBtn" aria-label="Müziği kapat">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path class="mute" d="M3 3l18 18"/></svg>
+  </button>
   <button id="fishBtn" style="display:none">Olta at</button>
   <button id="talkBtn" style="display:none">Konuş</button>
   <div id="labels"></div>
@@ -127,6 +130,20 @@
       <div id="smithList"></div>
     </div>
   </div>
+  <div id="tradewin" class="modal" role="dialog" aria-label="Ticaret">
+    <div class="modalbox tradebox">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">TİCARET</b><span id="tradeWith" style="font-size:13px;color:#8ec5ff"></span><button id="tradeX" class="xbtn" aria-label="Ticareti iptal et">×</button></div>
+      <div class="tside them"><div class="thead"><span id="tradeThemName">Karşı taraf</span><span class="tok" id="tradeThemOk"></span></div>
+        <div class="tgrid" id="tradeThem"></div><div class="tyang">Yang: <b id="tradeThemYang">0</b></div></div>
+      <div class="tside me"><div class="thead"><span>Senin teklifin <small>(çıkarmak için dokun)</small></span><span class="tok" id="tradeMeOk"></span></div>
+        <div class="tgrid" id="tradeMe"></div>
+        <div class="tyang">Yang: <input id="tradeYang" type="number" min="0" inputmode="numeric" placeholder="0" aria-label="Verilecek yang"><button id="tradeYangSet" class="btn alt">Koy</button></div></div>
+      <div id="tradeInfo"></div>
+      <div class="tinvhead">Çantan <small>(koymak için dokun)</small></div>
+      <div class="tgrid inv" id="tradeInv"></div>
+      <div class="row trow"><button id="tradeCancel" class="btn alt">İptal</button><button id="tradeOk" class="btn">Onayla</button></div>
+    </div>
+  </div>
   <div id="friendwin" class="modal" role="dialog" aria-label="Arkadaşlar">
     <div class="modalbox" style="width:min(420px,94vw)">
       <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">ARKADAŞLAR</b><button id="friendClose" class="xbtn" aria-label="Kapat">×</button></div>
@@ -136,6 +153,7 @@
   <div id="pmenu" role="menu">
     <b id="pmName"></b><small id="pmSub"></small>
     <button data-pm="whisper">Fısılda</button>
+    <button data-pm="trade" class="tradebtn">Ticaret</button>
     <button data-pm="friend">Arkadaş ekle</button>
     <button data-pm="duel" class="duelbtn">Düello iste</button>
   </div>

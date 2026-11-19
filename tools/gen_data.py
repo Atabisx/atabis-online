@@ -62,6 +62,9 @@ def price(i, factor):
 STONES = [
     ('kirma', 'Kırma Taşı', 'weapon', 'crit', [1, 2, 3, 4, 5], '#ff6a5a', 'Kritik vuruş şansı +%{v}.'),
     ('delme', 'Delme Taşı', 'weapon', 'pierce', [1, 2, 3, 4, 5], '#f2c94c', '%{v} şansla savunmayı deler.'),
+    ('guc', 'Güç Taşı', 'weapon', 'atk', [6, 12, 20, 30, 42], '#e67e22', 'Saldırı gücü +{v}.'),
+    ('ceviklik', 'Çeviklik Taşı', 'weapon', 'atkspeed', [2, 4, 6, 8, 10], '#16a085', 'Saldırı hızı +%{v}.'),
+    ('avci', 'Avcı Taşı', 'weapon', 'monster', [2, 4, 6, 8, 10], '#8d6e63', 'Canavarlara karşı güç +%{v}.'),
     ('savasci', 'Savaşçı Taşı', 'weapon', 'vs_savasci', [2, 4, 6, 8, 10], '#c0392b', 'Savaşçılara karşı güç +%{v}.'),
     ('ninja', 'Ninja Taşı', 'weapon', 'vs_ninja', [2, 4, 6, 8, 10], '#5a5f73', 'Ninjalara karşı güç +%{v}.'),
     ('sura', 'Sura Taşı', 'weapon', 'vs_sura', [2, 4, 6, 8, 10], '#8e44ad', 'Suralara karşı güç +%{v}.'),

@@ -1,4 +1,5 @@
-// Oyun sesleri: hepsi WebAudio ile anında üretilir, indirilecek ses dosyası yoktur.
+// Oyun sesleri: vuruşlar audio/sfx içindeki kısa örneklerden (tools/music/sfx.py ile üretilir), yoksa WebAudio ile anında üretilir.
+// Müzik: audio/music içindeki parçalar (tools/music/compose.py ile bestelenir), bölgeye göre yumuşak geçişle değişir.
 // Tarayıcılar sesi ancak ilk dokunuştan sonra açtığı için unlock() ilk dokunuşta çağrılır.
 
 let ctx = null, master = null, noiseBuf = null;
@@ -19,18 +20,87 @@ function init() {
   noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
   const d = noiseBuf.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  loadSamples();
   return ctx;
 }
+
+// ---------- örnek sesler ----------
+const SAMPLE_NAMES = ['swing_sword0', 'swing_sword1', 'swing_sword2', 'swing_heavy0', 'swing_heavy1', 'swing_dagger0', 'swing_dagger1', 'swing_staff',
+  'bow_shot', 'hit_flesh0', 'hit_flesh1', 'hit_flesh2', 'hit_crit', 'hit_stone', 'hit_armor', 'hit_arrow'];
+const samples = {};
+function loadSamples() {
+  for (const n of SAMPLE_NAMES) {
+    fetch(`audio/sfx/${n}.wav`).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(r.status)))
+      .then((b) => new Promise((res, rej) => ctx.decodeAudioData(b, res, rej)))
+      .then((buf) => { samples[n] = buf; }).catch(() => { /* yoksa sentez kullanılır */ });
+  }
+}
+const pick = (base, n) => { const k = base + Math.floor(Math.random() * n); return samples[k] ? k : null; };
+// örnek çal: hafif perde ve ses farkıyla her vuruş biraz değişik duyulur
+function play(name, vol, t = 0, rate = 1) {
+  const buf = name && samples[name]; if (!buf) return false;
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  src.playbackRate.value = rate * (0.94 + Math.random() * 0.12);
+  const g = ctx.createGain(); g.gain.value = vol * (0.9 + Math.random() * 0.2);
+  src.connect(g); g.connect(master); src.start(ctx.currentTime + t);
+  return true;
+}
+
+// ---------- müzik ----------
+// HTML ses öğesiyle çalınır (uzun parçalar için daha az bellek); iki öğe arasında yumuşak geçiş yapılır
+let musicOn = true;
+try { musicOn = localStorage.getItem('atabis_music') !== '0'; } catch (e) { /* yok say */ }
+const MUSIC_VOL = 0.38;
+let curTrack = null, curEl = null, fadeTimer = null;
+const els = [];
+function musicTarget() { return muted || !musicOn ? 0 : MUSIC_VOL; }
+function fadeTo(el, to, ms, done) {
+  const from = el.volume, t0 = performance.now();
+  const step = () => {
+    const k = Math.min(1, (performance.now() - t0) / ms);
+    el.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+    if (k < 1) el._fade = setTimeout(step, 40); else if (done) done();
+  };
+  clearTimeout(el._fade); step();
+}
+export function music(track) {
+  if (track === curTrack) { if (curEl && curEl.paused && musicTarget() > 0) curEl.play().catch(() => {}); return; }
+  curTrack = track;
+  const old = curEl;
+  if (old) fadeTo(old, 0, 1500, () => { old.pause(); });
+  if (!track) { curEl = null; return; }
+  const el = new Audio(`audio/music/${track}.mp3`);
+  el.loop = true; el.volume = 0; el.preload = 'auto';
+  curEl = el; els.push(el); if (els.length > 3) els.shift();
+  if (musicTarget() > 0) el.play().then(() => fadeTo(el, musicTarget(), 2000)).catch(() => { /* ilk dokunuşta yeniden denenir */ });
+}
+function refreshMusic() {
+  if (!curEl) return;
+  if (musicTarget() > 0) { if (curEl.paused) curEl.play().catch(() => {}); fadeTo(curEl, musicTarget(), 600); }
+  else fadeTo(curEl, 0, 400, () => curEl && curEl.pause());
+}
+export function isMusicOn() { return musicOn; }
+export function setMusicOn(on) {
+  musicOn = on;
+  try { localStorage.setItem('atabis_music', on ? '1' : '0'); } catch (e) { /* yok say */ }
+  refreshMusic();
+}
+// haritanın türüne göre müzik
+const MAP_MUSIC = { village_winter: 'koy', lake: 'koy', pine_forest: 'orman', forest_mist: 'orman', rocky: 'orman', swamp: 'orman',
+  desert_dunes: 'col', desert_canyon: 'col', snow: 'kar', ice_cave: 'kar' };
+export function musicForMap(theme) { return MAP_MUSIC[theme] || 'karanlik'; }
 
 export function unlock() {
   const c = init();
   if (c && c.state === 'suspended') c.resume();
+  if (curEl && curEl.paused && musicTarget() > 0) curEl.play().then(() => fadeTo(curEl, musicTarget(), 1500)).catch(() => {});
 }
 export function isMuted() { return muted; }
 export function setMuted(m) {
   muted = m;
   try { localStorage.setItem('atabis_mute', m ? '1' : '0'); } catch (e) { /* yok say */ }
   if (master) master.gain.setTargetAtTime(m ? 0 : 0.55, ctx.currentTime, 0.02);
+  refreshMusic();
 }
 
 // uzaklığa göre ses seviyesi (dinleyici = kendi karakterin)
@@ -85,6 +155,9 @@ function ring(base, vol, dur, t = 0) {
 export function swing(cls, pos, combo = 0) {
   if (!ready()) return;
   const v = near(pos); if (v <= 0) return;
+  const smp = cls === 'okcu' ? 'bow_shot' : cls === 'saman' ? 'swing_staff' : cls === 'ninja' ? pick('swing_dagger', 2)
+    : combo >= 2 ? pick('swing_heavy', 2) : pick('swing_sword', 3);
+  if (play(smp, (0.55 + combo * 0.08) * v, 0, cls === 'sura' ? 0.92 : 1)) return;
   if (cls === 'okcu') {
     tone({ type: 'triangle', f0: vary(190), f1: 110, dur: 0.16, vol: 0.28 * v });
     noise({ dur: 0.1, vol: 0.22 * v, f0: 4200, f1: 1500, q: 2.5 });
@@ -106,6 +179,10 @@ export function swing(cls, pos, combo = 0) {
 export function hit(kind, crit, pos) {
   if (!ready()) return;
   const v = near(pos); if (v <= 0) return;
+  if (kind === 'stone' && play('hit_stone', 0.75 * v, 0, crit ? 0.9 : 1)) { if (crit) play('hit_crit', 0.4 * v, 0.01); return; }
+  if (kind === 'arrow' && play('hit_arrow', 0.7 * v)) { if (crit) play('hit_crit', 0.6 * v, 0.01); return; }
+  if (kind === 'player' && play('hit_armor', 0.55 * v)) { play(crit ? 'hit_crit' : pick('hit_flesh', 3), (crit ? 0.8 : 0.55) * v, 0.005); return; }
+  if (kind !== 'stone' && play(crit ? 'hit_crit' : pick('hit_flesh', 3), (crit ? 0.95 : 0.75) * v)) return;
   if (kind === 'stone') {
     ring(vary(620, 0.05), 0.09 * v, 0.35);
     noise({ dur: 0.06, vol: 0.35 * v, type: 'highpass', f0: 1800 });

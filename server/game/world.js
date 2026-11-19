@@ -42,6 +42,7 @@ function createWorld(io) {
       crit: Math.round(((R.classOf(p).crit || 0.12) * 100) + t.crit), atkspeed: t.atkspeed, movespeed: t.movespeed,
       speed: R.speedMul(p), atkCd: R.attackCooldown(p), mounted: !!p.mounted });
     sendAttrs(p);
+    if (p.trade) tradeCheck(p);
   }
   function sendMp(p) { p.socket.emit('mp', { mp: p.mp, max: p.maxMp }); }
   // karakter penceresi: özellikler, boş puan ve hesaplanmış değerler
@@ -50,7 +51,8 @@ function createWorld(io) {
     p.socket.emit('attrs', { values: R.statValues(p), base: R.BASE_STATS[p.class], free: R.statPointsFree(p), max: R.STAT_MAX,
       main: R.MAIN_STAT[p.class], bonus: R.statBonus(p),
       atk: R.attackPower(p), def: R.defense(p), maxHp: p.maxHp, maxMp: p.maxMp,
-      crit: Math.round(((R.classOf(p).crit || 0.12) * 100) + t.crit), skill: t.skill, atkspeed: t.atkspeed, movespeed: t.movespeed });
+      crit: Math.round(((R.classOf(p).crit || 0.12) * 100) + t.crit), skill: t.skill, atkspeed: t.atkspeed, movespeed: t.movespeed,
+      pierce: t.pierce, dodge: t.dodge, monster: t.monster, hpsteal: t.hpsteal, vs: Object.fromEntries(R.CLASS_KEYS.map((c) => [c, t['vs_' + c] || 0])) });
   }
   function sendSkills(p) {
     p.socket.emit('skills', { levels: p.skills, points: R.skillPoints(p), unlock: R.SKILL_UNLOCK });
@@ -292,6 +294,7 @@ function createWorld(io) {
 
   // oyuncuyu başka haritaya taşı
   function moveToZone(p, mapId, pos) {
+    if (p.trade) closeTrade(p, 'Ticaret iptal: harita değişti.');
     const target = zones[mapId];
     if (!target) return;
     if (p.duel) endDuel(null, p, 'left');
@@ -304,6 +307,64 @@ function createWorld(io) {
     p.lastMove = Date.now();
     target.addPlayer(p);
     p.socket.emit('mapChange', { ...target.snapshot(), you: { x: p.x, z: p.z } });
+  }
+
+  // ---------- ticaret (Metin2 gibi: iki taraf eşya + yang koyar, ikisi de onaylayınca takas olur) ----------
+  const TRADE_MAX = 12;
+  const tradeView = (side) => ({ items: side.items.map((x) => {
+    const it = side.p.inventory.find((i) => i.uid === x.uid) || {};
+    return { uid: x.uid, key: x.key, n: x.n, up: it.up || 0, sock: it.sock || [], bon: it.bon || [] };
+  }), yang: side.yang, ok: side.ok });
+  function sendTrade(t) {
+    for (const [me, them] of [[t.a, t.b], [t.b, t.a]]) me.p.socket.emit('tradeState', { me: tradeView(me), them: tradeView(them) });
+  }
+  function closeTrade(p, msg, done = false) {
+    const t = p && p.trade; if (!t) return;
+    for (const s of [t.a, t.b]) { s.p.trade = null; s.p.socket.emit('tradeClose', { done, msg }); }
+  }
+  const sameOffer = (it, x) => it.key === x.key && (it.n || 1) === x.n && (it.up || 0) === x.up && (it.sock || []).length === x.sk;
+  // ticaret açıkken çantası değişirse (eşya kuşanıldı, satıldı, yükseltildi) teklif güncellenir ve onaylar sıfırlanır
+  function tradeCheck(p) {
+    const t = p.trade; if (!t) return;
+    const me = t.a.p === p ? t.a : t.b;
+    const keep = me.items.filter((x) => { const it = p.inventory.find((i) => i.uid === x.uid); return it && sameOffer(it, x); });
+    if (me.yang > p.yang) me.yang = p.yang;
+    if (keep.length !== me.items.length || me.yang !== me._y) { me.items = keep; me._y = me.yang; tradeChanged(t); }
+  }
+  const sideOf = (p) => (p.trade.a.p === p ? p.trade.a : p.trade.b);
+  function tradeChanged(t) { t.a.ok = false; t.b.ok = false; sendTrade(t); }
+  // takası uygula: önce her şey doğrulanır, sonra iki çanta birden değişir
+  function doTrade(t) {
+    const sides = [t.a, t.b];
+    for (const s of sides) {
+      for (const x of s.items) {
+        const it = s.p.inventory.find((i) => i.uid === x.uid);
+        if (!it || !sameOffer(it, x)) { closeTrade(s.p, 'Ticaret iptal: teklif edilen eşya değişti.'); return; }
+      }
+      if (s.yang > s.p.yang) { closeTrade(s.p, 'Ticaret iptal: yeterli yang yok.'); return; }
+    }
+    const next = sides.map((s) => {
+      const give = new Set(s.items.map((x) => x.uid));
+      return { inventory: s.p.inventory.filter((i) => !give.has(i.uid)).map((i) => ({ ...i })), nextUid: s.p.nextUid };
+    });
+    for (let k = 0; k < 2; k++) {
+      const to = next[k], from = sides[1 - k];
+      for (const x of from.items) {
+        const it = from.p.inventory.find((i) => i.uid === x.uid), def = R.ITEMS[it.key];
+        if (def && def.stack) { if (!addItem(to, it.key, it.n || 1)) { closeTrade(sides[k].p, `Ticaret iptal: ${sides[k].p.name} oyuncusunun çantası dolu.`); return; } }
+        else { if (to.inventory.length >= R.INV_SIZE) { closeTrade(sides[k].p, `Ticaret iptal: ${sides[k].p.name} oyuncusunun çantası dolu.`); return; }
+          to.inventory.push({ ...it, uid: to.nextUid++ }); }
+      }
+    }
+    for (let k = 0; k < 2; k++) {
+      const s = sides[k], o = sides[1 - k];
+      s.p.inventory = next[k].inventory; s.p.nextUid = next[k].nextUid;
+      s.p.yang = s.p.yang - s.yang + o.yang;
+    }
+    const names = (s) => s.items.map((x) => (R.ITEMS[x.key] || {}).name + (x.n > 1 ? ` x${x.n}` : '')).join(', ') || '-';
+    console.log(`Ticaret: ${t.a.p.name} [${names(t.a)} + ${t.a.yang} yang] <-> ${t.b.p.name} [${names(t.b)} + ${t.b.yang} yang]`);
+    closeTrade(t.a.p, 'Ticaret tamamlandı.', true);
+    for (const s of sides) { sendInv(s.p); save(s.p); }
   }
 
   // ---------- düello ----------
@@ -834,6 +895,56 @@ function createWorld(io) {
 
     // ---------- düello, arkadaşlık, fısıltı ----------
     const other = (id) => { const o = players[String(id)]; return o && o !== p && o.zone === p.zone ? o : null; };
+    // ---------- ticaret ----------
+    socket.on('tradeRequest', (id) => {
+      const o = other(id);
+      if (!o) { notice(p, 'Oyuncu bulunamadı.'); return; }
+      if (p.dead || o.dead) return;
+      if (p.trade || o.trade) { notice(p, p.trade ? 'Zaten ticaret yapıyorsun.' : `${o.name} şu an başkasıyla ticaret yapıyor.`); return; }
+      if (p.duel || o.duel) { notice(p, 'Düello sırasında ticaret yapılamaz.'); return; }
+      if (Math.hypot(o.x - p.x, o.z - p.z) > 10) { notice(p, 'Ticaret için yakın olmalısınız.'); return; }
+      o.tradeAsk = { from: p.id, at: Date.now() };
+      o.socket.emit('tradeAsk', { id: p.id, name: p.name, level: p.level });
+      notice(p, `${o.name} oyuncusuna ticaret isteği gönderildi.`);
+    });
+    socket.on('tradeAnswer', (data) => {
+      const ask = p.tradeAsk; p.tradeAsk = null;
+      const o = ask && Date.now() - ask.at < 20000 ? other(ask.from) : null;
+      if (!o) return;
+      if (!(data && data.ok)) { notice(o, `${p.name} ticaret isteğini reddetti.`); return; }
+      if (p.trade || o.trade || p.dead || o.dead || p.duel || o.duel) { notice(p, 'Ticaret başlatılamadı.'); return; }
+      const t = { a: { p: o, items: [], yang: 0, _y: 0, ok: false }, b: { p, items: [], yang: 0, _y: 0, ok: false } };
+      o.trade = p.trade = t;
+      o.socket.emit('tradeOpen', { id: p.id, name: p.name, level: p.level });
+      socket.emit('tradeOpen', { id: o.id, name: o.name, level: o.level });
+      sendTrade(t);
+    });
+    socket.on('tradeAdd', (uid) => {
+      if (!p.trade) return;
+      const me = sideOf(p), it = p.inventory.find((i) => i.uid === Number(uid));
+      if (!it || me.items.some((x) => x.uid === it.uid)) return;
+      if (me.items.length >= TRADE_MAX) { notice(p, `En fazla ${TRADE_MAX} eşya koyabilirsin.`); return; }
+      me.items.push({ uid: it.uid, key: it.key, n: it.n || 1, up: it.up || 0, sk: (it.sock || []).length });
+      tradeChanged(p.trade);
+    });
+    socket.on('tradeRemove', (uid) => {
+      if (!p.trade) return;
+      const me = sideOf(p), i = me.items.findIndex((x) => x.uid === Number(uid));
+      if (i < 0) return;
+      me.items.splice(i, 1); tradeChanged(p.trade);
+    });
+    socket.on('tradeYang', (n) => {
+      if (!p.trade) return;
+      const v = Math.max(0, Math.min(p.yang, Math.floor(Number(n) || 0)));
+      const me = sideOf(p); if (me.yang === v) { sendTrade(p.trade); return; }
+      me.yang = v; me._y = v; tradeChanged(p.trade);
+    });
+    socket.on('tradeAccept', () => {
+      const t = p.trade; if (!t) return;
+      sideOf(p).ok = true;
+      if (t.a.ok && t.b.ok) doTrade(t); else sendTrade(t);
+    });
+    socket.on('tradeCancel', () => { if (p.trade) closeTrade(p, `${p.name} ticareti iptal etti.`); });
     socket.on('duelRequest', (id) => {
       const o = other(id);
       if (!o) { notice(p, 'Oyuncu bulunamadı.'); return; }
@@ -900,6 +1011,7 @@ function createWorld(io) {
       if (p.replaced || players[socket.id] !== p) return;
       delete players[socket.id];
       if (p.duel) endDuel(null, p, 'left');
+      if (p.trade) closeTrade(p, `${p.name} oyundan çıktı, ticaret iptal.`);
       if (p.zone) { p.mapId = p.zone.id; p.zone.removePlayer(p); p.zone = null; }
       tellFriends(p, false);
       save(p);
@@ -923,6 +1035,10 @@ function createWorld(io) {
       if (p.duel) {
         const o = p.duel.with;
         if (!o || o.zone !== p.zone || now > p.duel.until || Math.hypot(o.x - p.x, o.z - p.z) > 45) endDuel(null, p, 'left');
+      }
+      if (p.trade) {
+        const o = (p.trade.a.p === p ? p.trade.b : p.trade.a).p;
+        if (p.dead || o.dead || o.zone !== p.zone || Math.hypot(o.x - p.x, o.z - p.z) > 15) closeTrade(p, 'Ticaret iptal: oyuncular uzaklaştı.');
       }
       if (p.dead) continue;
       if (p.mp < p.maxMp) {

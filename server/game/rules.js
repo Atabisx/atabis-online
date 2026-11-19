@@ -90,6 +90,8 @@ const SOCKETS = { weapon: 3, armor: 3 };
 function upgradeCost(def, up) { return Math.round((2000 + (def.lv || 1) * 300) * (up + 1) * (1 + up * 0.35)); }
 function stoneUpCost(g) { return 5000 * (g + 1) * (g + 1); }
 // 30. seviye ve üstü eşyalarda +6'dan sonra her yükseltme üç renk yapraktan istenir: +6→+7 7'şer, +7→+8 8'er, +8→+9 9'ar
+// metin taşlarından düşen ruh taşı türleri (items.json'daki tüm taşlar)
+const STONE_TYPES = [...new Set(Object.values(ITEMS).filter((d) => d.stone).map((d) => d.stone.type))];
 const LEAVES = ['yaprak_mor', 'yaprak_mavi', 'yaprak_kirmizi'];
 function leafNeed(def, up) { return (def.lv || 1) >= 30 && up >= 6 ? up + 1 : 0; }
 // yükseltmenin eşyaya kattığı değerler
@@ -170,7 +172,7 @@ function expGain(mobLv, playerLv, base) {
 }
 const skillLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 
-module.exports = {
+module.exports = { STONE_TYPES, CLASS_KEYS,
   ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, EQUIP_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
   BONUS_TYPES, rollBonus, maxBonus, MAX_UP, LEAVES, leafNeed, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
   speedMul, attackCooldown, playerDamage, mobDamage, expGain, skillLabel,

@@ -697,7 +697,8 @@ function setMount(p, on) {
     p.horse.onModel = () => { if (p.mounted) seatRider(p); };
     attachMountModel(p.horse);
   }
-  if (p.horse) p.horse.root.visible = on;
+  // at, binicinin baktığı yöne baksın (karakter modelleri FACE_OFFSET kadar dönük)
+  if (p.horse) { p.horse.root.visible = on; p.horse.root.rotation.y = -FACE_OFFSET; }
   seatRider(p);
 }
 function riderBaseY(p) {
@@ -1453,7 +1454,9 @@ function renderChar() {
   }).join('');
   const row = (n, v) => `<span>${n}<b>${v}</b></span>`;
   document.getElementById('charDerived').innerHTML = row('Saldırı', attrs.atk) + row('Savunma', attrs.def) + row('Azami can', attrs.maxHp) + row('Azami mana', attrs.maxMp) +
-    row('Kritik', attrs.crit + '%') + row('Beceri hasarı', '+' + (attrs.skill || 0) + '%') + row('Saldırı hızı', '+' + (attrs.atkspeed || 0) + '%') + row('Hareket hızı', '+' + (attrs.movespeed || 0) + '%');
+    row('Kritik', attrs.crit + '%') + row('Beceri hasarı', '+' + (attrs.skill || 0) + '%') + row('Saldırı hızı', '+' + (attrs.atkspeed || 0) + '%') + row('Hareket hızı', '+' + (attrs.movespeed || 0) + '%') +
+    row('Delici vuruş', (attrs.pierce || 0) + '%') + row('Kaçınma', (attrs.dodge || 0) + '%') + row('Canavarlara karşı', '+' + (attrs.monster || 0) + '%') + row('Can çalma', (attrs.hpsteal || 0) + '%') +
+    Object.entries(attrs.vs || {}).filter(([, v]) => v > 0).map(([c, v]) => row(((CLASSES[c] || {}).name || c) + 'lara karşı', '+' + v + '%')).join('');
 }
 document.getElementById('charBtn').addEventListener('click', () => { charwinEl.classList.add('open'); renderChar(); });
 document.getElementById('charClose').addEventListener('click', () => charwinEl.classList.remove('open'));
@@ -1789,6 +1792,7 @@ function enterMap(data) {
   // açık renkli gökyüzü (kar, çöl): efektler normal karışımla çizilsin ki renkleri seçilsin
   { const c = scene.background; fx.setBright(c && (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) > 0.62); }
   setWeather(mapInfo.weather);
+  sfx.music(sfx.musicForMap(currentMap.theme));
   for (const p of mapInfo.portals) {
     const target = MAPS[p.to];
     p.label = makeLabel(`${target.name} · Sv. ${target.minLevel}+`, '#9fd8ff', false);
@@ -1837,7 +1841,7 @@ export function startGame(sock, opts = {}) {
     if (opts.onWelcome) opts.onWelcome();
   });
   socket.on('mapChange', (data) => { amDead = false; deadEl.classList.remove('open'); setFishState('idle'); enterMap(data); updateToolButtons(); renderSkillbar(); });
-  socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (shopKind) renderShop(); renderSmith(); });
+  socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (shopKind) renderShop(); renderSmith(); if (trade) renderTrade(); });
   socket.on('upgraded', ({ ok, name, up, stone }) => smithResult(ok, ok ? (stone ? `BAŞARILI · ${name}` : `BAŞARILI · ${name} +${up}`) : (stone ? 'BAŞARISIZ · taş kırıldı' : `BAŞARISIZ · ${name} +${up}`)));
   socket.on('socketed', ({ ok }) => { if (ok) sfx.enchant(); else sfx.hit('stone', false, null); });
   // ---------- sohbet, fısıltı, arkadaşlar, düello ----------
@@ -1848,6 +1852,10 @@ export function startGame(sock, opts = {}) {
   });
   socket.on('friends', (list) => { friendList = list; renderFriends(); });
   socket.on('friendAsk', ({ id, name, level }) => askBox(`${name} (Sv. ${level}) seni arkadaş olarak eklemek istiyor.`, (ok) => socket.emit('friendAnswer', { id, ok })));
+  socket.on('tradeAsk', ({ name, level }) => askBox(`${name} (Sv. ${level}) seninle ticaret yapmak istiyor.`, (ok) => socket.emit('tradeAnswer', { ok })));
+  socket.on('tradeOpen', ({ id, name }) => { trade = { id, name, me: null, them: null }; document.getElementById('tradeInfo').innerHTML = ''; tradeEl.classList.add('open'); sfx.click(); });
+  socket.on('tradeState', (st) => { if (!trade) return; trade.me = st.me; trade.them = st.them; renderTrade(); });
+  socket.on('tradeClose', ({ done, msg }) => { trade = null; tradeEl.classList.remove('open'); if (msg) toast(msg); if (done) sfx.pickup(true); });
   socket.on('duelAsk', ({ id, name, level }) => askBox(`${name} (Sv. ${level}) seni düelloya davet ediyor!`, (ok) => socket.emit('duelAnswer', { id, ok }), 'Kabul et', 'Reddet', true));
   socket.on('duelStart', ({ a, b, in: sec }) => {
     for (const id of [a, b]) { const p = players[id]; if (p) p.duelWith = id === a ? b : a; }
@@ -1946,7 +1954,7 @@ export function startGame(sock, opts = {}) {
       const pos = p.group.position;
       if (p.label.hp && max) p.label.hp.style.width = Math.max(0, 100 * hp / max) + '%';
       floatText(miss ? 'ISKA' : (crit ? 'KRİTİK ' : '') + '-' + dmg, pos.x, 2.6, pos.z, crit);
-      if (!miss) { sfx.hit('mob', crit, pos); fx.hitSpark({ x: pos.x, y: 1.2, z: pos.z }, crit, 'mob'); }
+      if (!miss) { sfx.hit('player', crit, pos); fx.hitSpark({ x: pos.x, y: 1.2, z: pos.z }, crit, 'mob'); }
       if (id === myId && !miss) { document.body.classList.add('hurt'); setTimeout(() => document.body.classList.remove('hurt'), 180); }
       return;
     }
@@ -2126,6 +2134,10 @@ const sndBtn = document.getElementById('sndBtn');
 function updateSndBtn() { if (sndBtn) { sndBtn.classList.toggle('off', sfx.isMuted()); sndBtn.setAttribute('aria-label', sfx.isMuted() ? 'Sesi aç' : 'Sesi kapat'); } }
 if (sndBtn) sndBtn.addEventListener('click', () => { sfx.unlock(); sfx.setMuted(!sfx.isMuted()); updateSndBtn(); sfx.click(); });
 updateSndBtn();
+const musicBtn = document.getElementById('musicBtn');
+function updateMusicBtn() { if (musicBtn) { musicBtn.classList.toggle('off', !sfx.isMusicOn()); musicBtn.setAttribute('aria-label', sfx.isMusicOn() ? 'Müziği kapat' : 'Müziği aç'); } }
+if (musicBtn) musicBtn.addEventListener('click', () => { sfx.unlock(); sfx.setMusicOn(!sfx.isMusicOn()); updateMusicBtn(); sfx.click(); });
+updateMusicBtn();
 // tarayıcılar sesi ancak bir dokunuştan sonra açar
 for (const ev of ['pointerdown', 'keydown', 'touchstart']) window.addEventListener(ev, () => sfx.unlock(), { passive: true });
 
@@ -2176,6 +2188,7 @@ pmenu.addEventListener('click', (e) => {
   if (b.dataset.pm === 'whisper' && p) openChat(p.name);
   if (b.dataset.pm === 'friend' && p) socket.emit('friendRequest', p.id);
   if (b.dataset.pm === 'duel' && p) socket.emit('duelRequest', p.id);
+  if (b.dataset.pm === 'trade' && p) socket.emit('tradeRequest', p.id);
   pmenu.classList.remove('open');
 });
 const _proj = new THREE.Vector3();
@@ -2220,6 +2233,61 @@ function answerAsk(ok) { const cb = askCb; askCb = null; askEl.classList.remove(
 document.getElementById('askYes').addEventListener('click', () => answerAsk(true));
 document.getElementById('askNo').addEventListener('click', () => answerAsk(false));
 
+// ---------- ticaret ----------
+const tradeEl = document.getElementById('tradewin');
+let trade = null;   // { id, name, me: {items, yang, ok}, them: {...} }
+function tradeSlot(x, used) {
+  const def = ITEMS[x.key] || { name: '?', rarity: 0 };
+  return `<button class="slot${used ? ' used' : ''}" data-uid="${x.uid}" aria-label="${esc(itemName(x, def))}" style="border-color:${RARITY[def.rarity]}66">${itemIcon(x.key, def)}` +
+    `${x.n > 1 ? `<i class="cnt">${x.n}</i>` : ''}${x.up ? `<i class="upb">+${x.up}</i>` : ''}</button>`;
+}
+function renderTrade() {
+  if (!trade || !trade.me) return;
+  const { me, them } = trade;
+  document.getElementById('tradeWith').textContent = trade.name;
+  document.getElementById('tradeThemName').textContent = `${trade.name} teklifi`;
+  document.getElementById('tradeThem').innerHTML = them.items.map((x) => tradeSlot(x)).join('') || '<small style="color:#8b877c">Henüz bir şey koymadı</small>';
+  document.getElementById('tradeMe').innerHTML = me.items.map((x) => tradeSlot(x)).join('') || '<small style="color:#8b877c">Aşağıdan eşya seç</small>';
+  document.getElementById('tradeThemYang').textContent = them.yang.toLocaleString('tr-TR');
+  const yi = document.getElementById('tradeYang'); if (document.activeElement !== yi) yi.value = me.yang || '';
+  tradeEl.querySelector('.tside.them').classList.toggle('ok', them.ok);
+  tradeEl.querySelector('.tside.me').classList.toggle('ok', me.ok);
+  document.getElementById('tradeThemOk').textContent = them.ok ? '✔ Onayladı' : 'Bekliyor';
+  document.getElementById('tradeMeOk').textContent = me.ok ? '✔ Onayladın' : '';
+  const okb = document.getElementById('tradeOk');
+  okb.textContent = me.ok ? (them.ok ? 'Takas ediliyor…' : 'Karşı taraf bekleniyor') : 'Onayla'; okb.classList.toggle('done', me.ok); okb.disabled = me.ok;
+  const offered = new Set(me.items.map((x) => x.uid));
+  document.getElementById('tradeInv').innerHTML = inv.inventory.map((it) => tradeSlot({ ...it, n: it.n || 1 }, offered.has(it.uid))).join('');
+}
+function tradeInfo(x) {
+  const def = ITEMS[x.key]; if (!def) return;
+  const st = def.atk || def.def ? statTextIt(x, def) : esc(def.desc || '');
+  document.getElementById('tradeInfo').innerHTML = `<b style="color:${RARITY[def.rarity]}">${esc(itemName(x, def))}</b>${x.n > 1 ? ' x' + x.n : ''} · ${st}` +
+    ((x.sock || []).length ? ' · Taşlar: ' + x.sock.map((k) => esc((ITEMS[k] || {}).name || k)).join(', ') : '');
+}
+document.getElementById('tradeThem').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-uid]'); if (!b || !trade) return;
+  const x = trade.them.items.find((i) => i.uid === Number(b.dataset.uid)); if (x) { tradeInfo(x); sfx.click(); }
+});
+document.getElementById('tradeMe').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-uid]'); if (!b || !socket) return;
+  socket.emit('tradeRemove', Number(b.dataset.uid)); sfx.click();
+});
+document.getElementById('tradeInv').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-uid]'); if (!b || !socket || b.classList.contains('used')) return;
+  const it = inv.inventory.find((i) => i.uid === Number(b.dataset.uid)); if (it) tradeInfo({ ...it, n: it.n || 1 });
+  socket.emit('tradeAdd', Number(b.dataset.uid)); sfx.click();
+});
+document.getElementById('tradeYangSet').addEventListener('click', () => { if (socket) socket.emit('tradeYang', Number(document.getElementById('tradeYang').value) || 0); });
+document.getElementById('tradeYang').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('tradeYangSet').click(); });
+document.getElementById('tradeOk').addEventListener('click', () => {
+  if (!socket || !trade) return;
+  const yi = Number(document.getElementById('tradeYang').value) || 0;
+  if (yi !== (trade.me.yang || 0)) { socket.emit('tradeYang', yi); toast('Yang miktarı güncellendi, kontrol edip tekrar onayla.'); return; }
+  socket.emit('tradeAccept'); sfx.click();
+});
+for (const id of ['tradeCancel', 'tradeX']) document.getElementById(id).addEventListener('click', () => { if (socket) socket.emit('tradeCancel'); });
+
 // ---------- arkadaş listesi ----------
 let friendList = [];
 const friendsEl = document.getElementById('friendwin');
@@ -2258,6 +2326,7 @@ const lobby = { st: null, mode: 'off', char: null, charKey: null, show: [], t: 0
 // mode: 'login' (kamera sunağın çevresinde döner), 'select' (seçili karakter sunakta), 'off'
 export function lobbyMode(mode) {
   if (mode === lobby.mode) return;
+  if (mode !== 'off') sfx.music('giris');   // giriş ve karakter seçme müziği
   if (mode === 'off') {
     if (lobby.st) { scene.remove(lobby.st.group); }
     lobbyShowChar(null);
