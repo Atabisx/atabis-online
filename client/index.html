@@ -239,10 +239,21 @@
         <small class="gtxt">Çarşamba ve Cumartesi 21:00'de 20 dakika. Savaş Meydanı'nda düşman krallıkları yen; her galibiyet krallığına puan. Kazanan krallık 24 saat +%20 tecrübe alır. Sv. 20+.</small>
         <button id="warJoin" class="btn">Savaş Meydanı'na git</button>
       </div>
+      <div class="evcard wb">
+        <div class="evh"><b>🐉 Dünya Boss'u: Kadim Lav Ejderi</b><span id="wbStatus"></span></div>
+        <small class="gtxt">Her Pazar 21:00'de Ejder Yuvası'nda uyanır, 30 dakika kalır. Bütün sunucu birlikte vurur; canı katılanların gücüne göre büyür. Kırmızı daireler büyük saldırının geleceği yer: dışına kaç! Herkes hasar payına göre ödül alır; ilk 3, ilk 10 ve son vuruşa ek ödül (Pet Sandığı, Ejder Kanadı şansı). Sv. 10+.</small>
+        <div id="wbLast"></div>
+        <button id="wbJoinBtn" class="btn">Ejder Yuvası'na git</button>
+      </div>
       <div id="eventList"></div>
     </div>
   </div>
   <div id="warHud" style="display:none"></div>
+  <div id="wbHud" style="display:none" aria-live="polite">
+    <div class="wbname"><b id="wbName">Kadim Lav Ejderi</b><small id="wbTime"></small><button id="wbLeave" type="button">Köye dön</button></div>
+    <div class="wbbar"><i id="wbBar"></i><span id="wbPct"></span></div>
+    <div id="wbRank"><span id="wbTop"></span><span id="wbMe"></span><small id="wbN"></small></div>
+  </div>
   <div id="dunHud" style="display:none"></div>
   <div id="tutBox" style="display:none" role="status" aria-live="polite"><small id="tutStep"></small><span id="tutText"></span><button id="tutSkip" aria-label="Öğreticiyi geç">Geç</button></div>
   <div id="helpwin" class="modal" role="dialog" aria-label="Rehber">

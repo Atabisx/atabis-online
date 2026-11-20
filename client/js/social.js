@@ -27,6 +27,9 @@ export function setup(ctx) {
     if (e.target.closest('#loginClaim') && socket) socket.emit('loginClaim');
   });
   $('rewardOk').addEventListener('click', () => $('rewardwin').classList.remove('open'));
+  $('wbJoinBtn').addEventListener('click', () => { if (socket) socket.emit('wbJoin'); $('eventwin').classList.remove('open'); C.sfx.click(); });
+  $('wbLeave').addEventListener('click', () => { if (socket) socket.emit('wbLeave'); C.sfx.click(); });
+  setInterval(() => { if (wbs && wbs.active) { renderWbHud(); if ($('eventwin').classList.contains('open')) renderWb(); } }, 1000);
   setupGuild();
   setupStalls();
   setupDungeon();
@@ -69,7 +72,7 @@ export function askEmpire() {
   $('empirewin').classList.add('open');
 }
 const EMP_TEXT = { 1: 'Ateşin ve cesaretin krallığı', 2: 'Bilgeliğin ve zenginliğin krallığı', 3: 'Göklerin ve bozkırın krallığı' };
-export function openEvents() { if (socket) { socket.emit('warGet'); socket.emit('eventsGet'); } renderEvents(); $('eventwin').classList.add('open'); }
+export function openEvents() { if (socket) { socket.emit('warGet'); socket.emit('eventsGet'); socket.emit('wbGet'); } renderEvents(); $('eventwin').classList.add('open'); }
 const fmtLeft = (ms) => { const m = Math.max(0, Math.round(ms / 60000)); return m >= 60 * 24 ? `${Math.floor(m / 1440)} gün ${Math.floor((m % 1440) / 60)} sa` : m >= 60 ? `${Math.floor(m / 60)} sa ${m % 60} dk` : `${m} dk`; };
 function renderEvents() {
   if (war) {
@@ -80,6 +83,41 @@ function renderEvents() {
     $('warJoin').style.display = war.active ? '' : 'none';
   }
   $('eventList').innerHTML = (events || []).map((e) => `<div class="evcard${e.active ? ' on' : ''}"><div class="evh"><b>${C.esc(e.icon + ' ' + e.name)}</b><span>${e.active ? `<b style="color:#ff6a3d">SÜRÜYOR</b> · ${fmtLeft(e.ends - Date.now())} kaldı` : e.next ? `Sonraki: ${fmtLeft(e.next - Date.now())} sonra` : ''}</span></div><small class="gtxt">${C.esc(e.desc)}</small></div>`).join('');
+}
+// ---------- dünya boss'u ----------
+let wbs = null, wbr = null;
+export const wbState = () => wbs;
+function renderWb() {
+  if (!wbs) return;
+  const now = Date.now();
+  document.querySelector('.evcard.wb').classList.toggle('on', wbs.active);
+  $('wbStatus').innerHTML = wbs.active ? `<b style="color:#ff6a3d">UYANDI</b> · ${fmtLeft(wbs.ends - now)} kaldı · ${wbs.count} kahraman` : wbs.next ? `Sonraki: ${fmtLeft(wbs.next - now)} sonra` : '';
+  $('wbJoinBtn').style.display = wbs.active && !C.inWbMap() ? '' : 'none';
+  const l = wbs.last;
+  $('wbLast').innerHTML = l ? `<b>Geçen hafta:</b> ${l.killed ? 'yenildi' : 'kaçtı'} (${l.count} kahraman). ` +
+    (l.top || []).slice(0, 3).map((r, i) => `${i + 1}. ${C.esc(r.name)} <small>%${r.pct}</small>`).join(' · ') + (l.lastHit ? ` · Son vuruş: ${C.esc(l.lastHit)}` : '') : '';
+}
+function renderWbHud() {
+  const on = !!(wbs && wbs.active && C.inWbMap() && wbr);
+  $('wbHud').style.display = on ? 'flex' : 'none';
+  if (!on) return;
+  const pct = wbr.max ? 100 * wbr.hp / wbr.max : 0;
+  $('wbBar').style.width = pct.toFixed(2) + '%';
+  $('wbPct').textContent = `${wbr.hp.toLocaleString('tr-TR')} / ${wbr.max.toLocaleString('tr-TR')} (%${pct.toFixed(1)})`;
+  $('wbTime').textContent = fmtLeft(wbr.ends - Date.now()) + ' kaldı';
+  $('wbN').textContent = `${wbr.n} kahraman`;
+  $('wbTop').innerHTML = wbr.top.slice(0, 3).map((r, i) => `<span>${i + 1}. <span style="color:${CLS_COLORS[r.cls] || '#f4f1e8'}">${C.esc(r.name)}</span> <small>%${r.pct}</small></span>`).join('');
+  $('wbMe').textContent = wbr.me ? `Sen: ${wbr.me.rank}. (%${wbr.me.pct})` : 'Vur ve sıralamaya gir!';
+}
+export function refreshWb() { renderWb(); renderWbHud(); }
+function showWbReward(r) {
+  $('rewardTitle').textContent = r.killed ? 'KADİM LAV EJDERİ YENİLDİ!' : 'EJDER KAÇTI';
+  $('rewardItems').innerHTML = `<div class="rwi"><b>${r.yang.toLocaleString('tr-TR')}</b><small>Yang</small></div>` +
+    (r.exp ? `<div class="rwi"><b>${r.exp.toLocaleString('tr-TR')}</b><small>Tecrübe</small></div>` : '') +
+    r.items.map(([k, n]) => { const d = C.ITEMS[k]; return `<div class="rwi">${C.itemIcon(k, d, 30)}<small>${C.esc(d ? d.name : k)}${n > 1 ? ' x' + n : ''}</small></div>`; }).join('');
+  $('rewardSub').textContent = `Hasar sıran: ${r.rank}. (%${r.share} · ${r.dmg.toLocaleString('tr-TR')} hasar)${r.lastHit ? ' · SON VURUŞ SENİN!' : ''}`;
+  $('rewardwin').classList.add('open');
+  C.sfx.levelUp && C.sfx.levelUp();
 }
 function renderWarHud() {
   const el = $('warHud');
@@ -292,6 +330,13 @@ export function bind(sock) {
   socket.on('guild', (g) => { guild = g; renderGuild(); });
   socket.on('warState', (w) => { war = w; renderEvents(); renderWarHud(); C.onWar && C.onWar(w); });
   socket.on('events', (list) => { events = list; renderEvents(); });
+  socket.on('wbState', (w) => { wbs = w; if (!w.active) wbr = null; renderWb(); renderWbHud(); });
+  socket.on('wbRank', (r) => { wbr = r; renderWbHud(); });
+  socket.on('wbEnd', (r) => { wbr = null; renderWbHud(); showWbReward(r); });
+  socket.on('wbStart', (w) => {
+    wbs = w; renderWb();
+    if (C.myLevel() >= w.minLevel && !C.inWbMap() && !C.inWarMap()) C.askBox(`${w.name} uyandı! Bütün sunucu Ejder Yuvası'nda toplanıyor. Katılmak ister misin?`, (ok) => { if (ok && socket) socket.emit('wbJoin'); }, 'Katıl', 'Sonra', true);
+  });
   socket.on('rank', (d) => { rankData = d; renderRank(); });
   socket.on('dungeon', (d) => { dun = d; renderDunHud(); });
   socket.on('dungeonInfo', (d) => { dunInfo = d; renderDungeon(); });

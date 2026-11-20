@@ -2022,6 +2022,24 @@ function useSkill(key) {
   socket.emit('skill', { key, f: me.ry - FACE_OFFSET });
 }
 
+// ---------- dünya boss'u: büyük saldırı uyarısı ----------
+// yerde kırmızı daire dolar; dolunca ateş patlar (dairenin dışına kaçan kurtulur)
+function teleDisc(x, z, r, delay, onDone) {
+  const g = new THREE.Group(); g.position.set(x, 0.08, z);
+  const edge = new THREE.Mesh(new THREE.RingGeometry(r - 0.18, r, 48), new THREE.MeshBasicMaterial({ color: '#ff3a1a', transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }));
+  const fill = new THREE.Mesh(new THREE.CircleGeometry(r, 48), new THREE.MeshBasicMaterial({ color: '#ff2a0a', transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide }));
+  edge.rotation.x = fill.rotation.x = -Math.PI / 2;
+  g.add(fill, edge); scene.add(g);
+  const dur = delay / 1000;
+  effects.push({ m: g, t: 0, dur, update(k) { const s = Math.max(0.02, k); fill.scale.set(s, s, s); fill.material.opacity = 0.18 + k * 0.25; edge.material.opacity = 0.6 + 0.4 * Math.sin(k * 30); if (k >= 1 && onDone) { onDone(); onDone = null; } } });
+}
+function wbCastFx(c) {
+  if (c.kind === 'slam') {
+    teleDisc(c.x, c.z, c.r, c.delay, () => { fx.groundSlam(c.x, c.z, '#ff6a2a', c.r, 1.6); sfx.hit('stone', true, { x: c.x, z: c.z }); });
+  } else {
+    for (const [x, z] of c.spots) teleDisc(x, z, c.r, c.delay, () => { fx.groundSlam(x, z, '#ff8a3a', c.r, 0.7); });
+  }
+}
 // ---------- görsel efektler ----------
 const effects = [];
 function ringFx(x, z, r, color, dur = 0.5, y = 0.15) {
@@ -2051,7 +2069,7 @@ function updateEffects(dt) {
     e.t += dt;
     const k = Math.min(1, e.t / e.dur);
     e.update(k);
-    if (k >= 1) { scene.remove(e.m); e.m.geometry.dispose(); e.m.material.dispose(); effects.splice(i, 1); }
+    if (k >= 1) { scene.remove(e.m); e.m.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); effects.splice(i, 1); }
   }
 }
 function showLevelBanner(level) {
@@ -2146,7 +2164,8 @@ export function startGame(sock, opts = {}) {
     if (!myEmpire && !myGm) setTimeout(() => social.askEmpire(), 1500);
     if (opts.onWelcome) opts.onWelcome();
   });
-  socket.on('mapChange', (data) => { amDead = false; auto.target = null; auto.skip.clear(); if (auto.on && data && MAPS[data.map] && (MAPS[data.map].safe || MAPS[data.map].war)) setAuto(false); deadEl.classList.remove('open'); setFishState('idle'); enterMap(data); updateToolButtons(); renderSkillbar(); refreshFoes(); if (!(currentMap && currentMap.dungeon)) social.clearDungeon(); });
+  socket.on('mapChange', (data) => { setTimeout(() => social.refreshWb(), 50); if (MAPS[data.map] && MAPS[data.map].worldBoss) camYaw = Math.PI;   // ejder yuvasında kamera boss'a bakar
+  amDead = false; auto.target = null; auto.skip.clear(); if (auto.on && data && MAPS[data.map] && (MAPS[data.map].safe || MAPS[data.map].war)) setAuto(false); deadEl.classList.remove('open'); setFishState('idle'); enterMap(data); updateToolButtons(); renderSkillbar(); refreshFoes(); if (!(currentMap && currentMap.dungeon)) social.clearDungeon(); });
   socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (depotWin.classList.contains('open')) renderDepot(); if (shopKind) renderShop(); renderSmith(); if (trade) renderTrade(); social.refreshGuild(); social.refreshStallWins(); });
   socket.on('upgraded', ({ ok, name, up, stone }) => smithResult(ok, ok ? (stone ? `BAŞARILI · ${name}` : `BAŞARILI · ${name} +${up}`) : (stone ? 'BAŞARISIZ · taş kırıldı' : `BAŞARISIZ · ${name} +${up}`)));
   socket.on('socketed', ({ ok }) => { if (ok) sfx.enchant(); else sfx.hit('stone', false, null); });
@@ -2317,7 +2336,8 @@ export function startGame(sock, opts = {}) {
     if (p) floatText('-' + dmg, p.group.position.x, 2.4, p.group.position.z, false);
     if (target === myId) document.body.classList.add('hurt'), setTimeout(() => document.body.classList.remove('hurt'), 180);
   });
-  socket.on('mobHeal', ({ id, hp }) => { const m = mobs[id]; if (m) { m.hp = hp; m.label.hp.style.width = '100%'; } });
+  socket.on('mobHeal', ({ id, hp, max }) => { const m = mobs[id]; if (m) { m.hp = hp; if (max) m.max = max; m.label.hp.style.width = (100 * hp / (m.max || hp)) + '%'; } });
+  socket.on('wbCast', (c) => wbCastFx(c));
   socket.on('stoneSpawn', (s) => createStone(s));
   socket.on('stoneGone', ({ id }) => removeStone(id));
   socket.on('mobGone', ({ id }) => removeMob(id));
@@ -2921,6 +2941,8 @@ social.setup({
   myId: () => myId, esc, toast, askBox, itemIcon, sfx, get ITEMS() { return ITEMS; }, inventory: () => inv.inventory, yang: () => inv.yang, myName: () => myName, tutStats: () => tutStats,
   onParty: partyLabels,
   inWarMap: () => !!(currentMap && currentMap.war),
+  inWbMap: () => !!(currentMap && currentMap.worldBoss),
+  myLevel: () => myLevel,
   onWar: () => refreshFoes(),
   onEmpire: (n) => { myEmpire = n; const me = players[myId]; if (me) setEmpireTag(me, n); refreshFoes(); },
   menuAction: (k) => { if (menuHandlers[k]) menuHandlers[k](); else toast(`${MENU_SOON[k] || k} çok yakında!`); },

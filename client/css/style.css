@@ -541,3 +541,22 @@ body.ingame #autoBtn { display: flex; }
 .depotyang { align-items: center; flex-wrap: wrap; }
 .depotyang input { width: 120px; }
 @media (max-width: 640px) { .depotcols { flex-direction: column; } }
+/* dünya boss'u */
+.evcard.wb.on { border-color: #ff5a1a; box-shadow: 0 0 0 1px #ff5a1a inset; }
+#wbLast { font-size: 12px; color: #c9c4b6; line-height: 1.5; }
+#wbLast b { color: #ffd98a; }
+#wbHud { position: fixed; top: 62px; left: 50%; transform: translateX(-50%); width: min(460px, 52vw); z-index: 6; flex-direction: column; gap: 3px; pointer-events: none; }
+#wbHud .wbname { display: flex; justify-content: space-between; align-items: baseline; text-shadow: 0 2px 6px #000; }
+#wbHud .wbname b { color: #ffb36b; font-size: 15px; letter-spacing: .04em; }
+#wbHud .wbname small { color: #f4f1e8; font-size: 12px; font-weight: 700; }
+#wbHud .wbbar { position: relative; height: 16px; border-radius: 8px; background: rgba(20,8,4,.85); border: 1px solid #ff6a3d; overflow: hidden; }
+#wbHud .wbbar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #8a1a0a, #ff4a1a 60%, #ffb347); transition: width .4s; }
+#wbHud .wbbar span { position: absolute; inset: 0; text-align: center; font-size: 11px; font-weight: 800; line-height: 15px; color: #fff; text-shadow: 0 1px 3px #000; }
+#wbHud .wbname { gap: 8px; }
+#wbHud .wbname small { margin-left: auto; }
+#wbLeave { pointer-events: auto; min-height: 26px; padding: 2px 10px; border-radius: 8px; border: 1px solid #ff6a3d; background: rgba(40,14,6,.9); color: #ffd9c8; font: inherit; font-size: 11px; font-weight: 700; }
+#wbRank { display: flex; gap: 10px; align-items: baseline; justify-content: center; flex-wrap: wrap; font-size: 11px; font-weight: 700; text-shadow: 0 1px 4px #000; }
+#wbTop { display: flex; gap: 10px; }
+#wbTop small { color: #c9c4b6; font-weight: 600; }
+#wbMe { color: #8ec5ff; }
+#wbN { color: #c9c4b6; font-weight: 600; }

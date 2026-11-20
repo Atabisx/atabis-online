@@ -400,6 +400,7 @@ class Zone {
       }
       let tx = null, tz = null, speed = d.speed;
       if (m.stunUntil && now < m.stunUntil) { if (m.moving) { m.moving = false; } continue; }
+      if (d.worldBoss) continue;   // dünya boss'unun yapay zekâsı worldboss.js'te
       // saldırgan yaratık yakındaki oyuncuyu fark eder
       if (m.state === 'idle' && d.aggro > 0) {
         let best = null, bd = d.aggro;

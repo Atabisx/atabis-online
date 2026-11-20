@@ -435,6 +435,15 @@ def build(items):
     maps.append({'id': len(maps), 'name': 'Örümcek Mağarası', 'minLevel': 30, 'theme': 'swamp', 'village': False, 'hidden': True, 'dungeon': True,
                  'tier': 4, 'seed': 6161, 'bounds': [-15, 65], 'spawns': [], 'bosses': [], 'stoneDrops': [], 'stones': 0,
                  'spawn': [25, -8], 'portals': []})
+    # dünya boss'u: haftada bir (Pazar 21:00) bütün sunucu birlikte vurur; can katılanların gücüne göre büyür
+    w = mob_stats(70, boss=True)
+    w.update({'name': 'Kadim Lav Ejderi', 'shape': 'bear', 'color': '#5a2a1a', 'scale': 6.5, 'aggro': 0, 'speed': 0, 'range': 9.0, 'cd': 2200,
+              'boss': True, 'respawn': 0, 'hitR': 5.2, 'drops': [], 'potions': [], 'worldBoss': True,
+              'style': {'model': 'lav_canavari', 'aura': '#ff5a1a', 'breath': '#ff7a2a'}})
+    mobs['dunyaboss'] = w
+    maps.append({'id': len(maps), 'name': 'Ejder Yuvası', 'minLevel': 10, 'theme': 'volcanic', 'village': False, 'hidden': True, 'worldBoss': True,
+                 'tier': 10, 'seed': 7171, 'bounds': [-25, 75], 'spawns': [], 'bosses': [], 'stoneDrops': [], 'stones': 0,
+                 'spawn': [25, -14], 'portals': []})
     return mobs, maps
 
 

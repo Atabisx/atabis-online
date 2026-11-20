@@ -4,7 +4,28 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 5.3 (bu sürüm): Depo, envanter sayfaları, savaş atı, bağırışlar, +9 parlaması
+### Aşama 5.4 (bu sürüm): Dünya boss'u
+
+- **Kadim Lav Ejderi** her **Pazar 21:00**'de (İstanbul) gizli **Ejder Yuvası** haritasında uyanır ve 30 dakika kalır.
+  - 10 dakika ve 1 dakika kala duyuru yapılır.
+  - Uyanınca herkese "Katıl" sorusu gelir. Sonradan Menü › Etkinlikler'den de katılabilirsin (Sv. 10+).
+- **Can katılanlara göre büyür:** her yeni oyuncu, boss'un canını kendi vuruş gücüyle yaklaşık 7 dakikalık hasar kadar artırır. Az kişiyle de çok kişiyle de dövüş benzer sürer.
+- **Saldırılar oyuncunun canının yüzdesi kadar vurur.** Böylece 10. seviye de katılabilir; savunma en fazla %35 korur.
+  - Pençe: en çok hasar verene canının %9'u, yanındakilere %5'i.
+  - **Yere vuruş:** boss'un çevresinde 10 metrelik kırmızı daire çıkar; 1,6 saniye sonra içindekilere %32 hasar.
+  - **Ateş yağmuru:** oyuncuların ayağına ve alana küçük daireler düşer; içindekilere %20 hasar.
+  - Canı %30'un altına inince saldırılar sıklaşır.
+- **Ekranda:** boss'un can çubuğu, kalan süre, hasar sıralamasının ilk 3'ü, senin sıran ve "Köye dön" düğmesi. Yuvaya girince kamera boss'a döner. Ölünce yuvanın girişinde yeniden doğabilirsin.
+- **Ödüller (boss yenilirse):**
+  - Herkes: hasar payına göre yang ve tecrübe, Kutsama Kağıdı, Efsun Nesnesi, yaprak.
+  - 1.: 2 Pet Sandığı, 5 Efsun Değiştirme, %25 Ejder Kanadı, +1,5 milyon yang.
+  - 2.-3.: Pet Sandığı, 3 Efsun Değiştirme, +700 bin yang.
+  - 4.-10.: Efsun nesneleri, +250 bin yang.
+  - **Son vuruş:** ek Pet Sandığı.
+  - Yenilemezse katılanlara küçük bir teselli ödülü verilir. Sonuç Etkinlikler'de "Geçen hafta" olarak görünür.
+- **GM:** `/dunyaboss` boss'u hemen uyandırır ve seni yuvaya götürür. `/dunyaboss bitir` dövüşü bitirir (boss kaçmış sayılır).
+
+### Aşama 5.3: Depo, envanter sayfaları, savaş atı, bağırışlar, +9 parlaması
 
 - **Yeni sınıf adları:** Savaşçı → **Alp**, Ninja → **Akıncı**, Sura → **Yalaz**, Şaman → **Kam**, Okçu → **Avcı**. Kodlardaki anahtarlar aynı kaldı, eski karakterler etkilenmez.
 - **Metin2'yi andıran beceri adları değişti:**

@@ -11,6 +11,7 @@ const { createMarket } = require('./market');
 const { createDungeons } = require('./dungeon');
 const { createMainQuests } = require('./mainq');
 const { createDepot } = require('./depot');
+const { createWorldBoss } = require('./worldboss');
 const { createEvents } = require('./events');
 const { createRanking } = require('./ranking');
 
@@ -219,9 +220,10 @@ function createWorld(io) {
     }
     if (cmd === 'savas') { realm.gm(p, args); return; }
     if (cmd === 'etkinlik') { events.gm(p, args); return; }
+    if (cmd === 'dunyaboss') { worldboss.gm(p, args); return; }
     if (cmd === 'petler') { const n = giveAllPets(p); sendInv(p); notice(p, n ? `${n} evcil hayvan çantana kondu.` : 'Bütün petler zaten sende (ya da çanta dolu).'); return; }
     if (cmd === 'iyiles') { p.hp = p.maxHp; p.mp = p.maxMp; sendHp(p); sendMp(p); return; }
-    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /petler, /iyiles, /savas [bitir], /etkinlik <metin|exp|boss|drop> [dk]');
+    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /petler, /iyiles, /savas [bitir], /dunyaboss [bitir], /etkinlik <metin|exp|boss|drop> [dk]');
   }
 
   // zindan ve savaş meydanı kaydedilmez: oyuncu tekrar girince köyde başlar
@@ -343,6 +345,7 @@ function createWorld(io) {
   const ranking = createRanking({ db });
   W.expBonus = (p) => realm.expBonus(p) + events.expBonus(p);
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
+  const worldboss = createWorldBoss({ db, io, players, zones, notice, moveToZone, sendInv, addItem, save, villageFor, hooks, giveExp: (p, n) => expRaw(p, n, false, false) });
 
   // seviye ödülleri: 25'te at görevi, 30'da olta
   function levelRewards(p) {
@@ -534,6 +537,7 @@ function createWorld(io) {
     social.onConnect(p, socket);
     mainq.onConnect(p, socket);
     depot.onConnect(p, socket);
+    worldboss.onConnect(p, socket);
     guilds.onConnect(p, socket);
     realm.onConnect(p, socket);
     market.onConnect(p, socket);
@@ -907,7 +911,7 @@ function createWorld(io) {
       const here = opt && opt.here;
       if (here && Date.now() - (p.diedAt || 0) < 5000) { notice(p, 'Burada başlamak için biraz bekle.'); return; }
       p.dead = false; p.mounted = false;
-      const warPos = realm.respawnPos(p);
+      const warPos = realm.respawnPos(p) || worldboss.respawnPos(p);   // savaş meydanı ve ejder yuvası kendi başlangıcında
       if (warPos) { p.x = warPos[0]; p.z = warPos[1]; }
       if ((here || warPos) && p.zone) {
         p.hp = Math.round(p.maxHp * (warPos ? 1 : 0.5)); p.mp = Math.round(p.maxMp * (warPos ? 1 : 0.5));
