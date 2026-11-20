@@ -97,7 +97,8 @@ export function setMusicOn(on) {
 // haritanın türüne göre müzik
 const MAP_MUSIC = { village_winter: 'koy', lake: 'koy', pine_forest: 'orman', forest_mist: 'orman', rocky: 'orman', swamp: 'orman',
   desert_dunes: 'col', desert_canyon: 'col', snow: 'kar', ice_cave: 'kar' };
-export function musicForMap(theme) { return MAP_MUSIC[theme] || 'karanlik'; }
+// Atabis Köyü (ilk harita) kendi müziğini çalar
+export function musicForMap(theme, id) { return id === 0 ? 'koy1' : (MAP_MUSIC[theme] || 'karanlik'); }
 
 export function unlock() {
   const c = init();

@@ -45,6 +45,7 @@
   <div id="yang" class="panel">0 Yang</div>
   <div id="log"></div>
   <div id="joy" aria-hidden="true"><div id="knob"></div></div>
+  <button id="autoBtn" aria-label="Otomatik av" aria-pressed="false"><b>OTO</b><small>AV</small></button>
   <button id="atk" aria-label="Saldır">
     <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg>
   </button>
@@ -292,10 +293,9 @@
       <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">PAZAR TEZGÂHIM</b><button id="mystallX" class="xbtn" aria-label="Kapat">×</button></div>
       <div id="msNone">
         <p class="gtxt">Bir köyde, meydanın biraz kenarında dur ve tezgâhını kur. Oyundan çıksan da tezgâhın satmaya devam eder. Her satıştan %2 pazar vergisi kesilir.</p>
-        <div class="frow"><input id="msTitle" maxlength="32" placeholder="Tezgâh adı (örn. Ucuz taşlar)" aria-label="Tezgâh adı"></div>
+        <div class="frow"><input id="msTitle" maxlength="32" placeholder="Tezgâh adı (örn. Ucuz taşlar)" aria-label="Tezgâh adı"><button id="msOpen" class="btn">Tezgâhı aç</button></div>
         <div class="tinvhead">Satılacak eşyaları seç ve fiyat yaz <small>(en fazla 12)</small></div>
         <div id="msPick" class="stlist"></div>
-        <button id="msOpen" class="btn">Tezgâhı aç</button>
       </div>
       <div id="msHas" style="display:none">
         <div class="gstat"><span>Yer <b id="msMap"></b></span><span>Birikmiş kazanç <b id="msEarn">0</b></span></div>

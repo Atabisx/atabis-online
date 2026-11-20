@@ -503,3 +503,15 @@ body.standalone #chatBtn { left: 116px; } body.standalone #friendBtn { left: 168
 .setbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
 .setbtns .btn { min-height: 46px; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none; }
 #stallBtn { position: fixed; left: 174px; top: 130px; width: 46px; height: 46px; border-radius: 12px; border: 2px solid #ffd36b; background: rgba(40,28,10,0.82); color: #ffd36b; display: flex; align-items: center; justify-content: center; }
+/* pazar tezgâhı: yatay telefonda da "Tezgâhı aç" görünsün; uzun pencereler kaydırılabilir */
+.modalbox { max-height: 96vh; max-height: 96dvh; overflow-y: auto; }
+#msNone, #msHas { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+#msTitle { flex: 1; min-width: 0; }
+#msOpen { flex: none; }
+#msPick, #msItems { max-height: 42vh; max-height: 42dvh; }
+/* otomatik av */
+#autoBtn { position: fixed; left: 26px; bottom: 150px; width: 54px; height: 54px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.35); background: rgba(14,16,13,0.8); color: #f4f1e8; display: none; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
+body.ingame #autoBtn { display: flex; }
+#autoBtn b { font-size: 14px; letter-spacing: .04em; } #autoBtn small { font-size: 9px; opacity: .8; margin-top: 2px; }
+#autoBtn.on { border-color: #ffd36b; background: radial-gradient(circle, #6b4a0e, #2a1c06); color: #ffe08a; box-shadow: 0 0 14px rgba(255,200,80,.7); animation: autopulse 1.6s ease-in-out infinite; }
+@keyframes autopulse { 50% { box-shadow: 0 0 4px rgba(255,200,80,.3); } }

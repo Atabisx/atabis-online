@@ -1584,6 +1584,7 @@ document.getElementById('shopClose').addEventListener('click', () => { shopEl.cl
 // ---------- can barı, iksir, konuşma, ölüm ----------
 const hpBar = document.getElementById('hpbar'), hpText = document.getElementById('hptext');
 function setHp(hp, max) {
+  myHpFrac = max ? hp / max : 1;
   hpBar.style.width = Math.max(0, Math.min(100, 100 * hp / max)) + '%';
   hpText.textContent = `${hp} / ${max}`;
 }
@@ -1604,7 +1605,7 @@ const mpBarEl = document.getElementById('mpbar'), mpTextEl = document.getElement
 function setMp(mp, max) {
   mpBarEl.style.width = Math.max(0, Math.min(100, 100 * mp / max)) + '%';
   mpTextEl.textContent = `${mp} / ${max}`;
-  myMp = mp;
+  myMp = mp; myMpMax = max || 1;
 }
 let myMp = 0;
 let quests = {};
@@ -1830,10 +1831,85 @@ atkBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); atkHeld = tr
 const atkUp = () => { atkHeld = false; };
 atkBtn.addEventListener('pointerup', atkUp); atkBtn.addEventListener('pointercancel', atkUp); atkBtn.addEventListener('pointerleave', atkUp);
 
+// ---------- otomatik av (Metin2 tarzı) ----------
+// Açıkken en yakın yaratığa (ve metin taşına) yürür, vurur, hazır becerileri kullanır, canı azalınca iksir içer.
+// Joystick'e dokununca o an sen yönetirsin; bırakınca kaldığı yerden devam eder.
+const auto = { on: false, target: null, pick: 0, skill: 0, pot: 0, mpPot: 0, best: Infinity, stuckT: 0, skip: new Map() };
+const autoBtn = document.getElementById('autoBtn');
+function setAuto(on) {
+  auto.on = on; auto.target = null; auto.skip.clear();
+  autoBtn.classList.toggle('on', on); autoBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  toast(on ? 'Otomatik av açık' : 'Otomatik av kapalı');
+}
+autoBtn.addEventListener('click', () => { sfx.click(); if (!auto.on && currentMap && currentMap.safe) { toast('Burada av yok.'); return; } setAuto(!auto.on); });
+let myHpFrac = 1, myMpMax = 1;
+// hedefin konumu ve gövde yarıçapı
+function autoTargetPos(t) {
+  if (t.kind === 'mob') { const m = mobs[t.id]; return m && m.hp > 0 ? { x: m.v.root.position.x, z: m.v.root.position.z, r: (m.def && (m.def.hitR || m.def.scale * 0.6)) || 0.6 } : null; }
+  const st = stones[t.id]; return st ? { x: st.x, z: st.z, r: 1.2 } : null;
+}
+function autoPickTarget(pos, now) {
+  let best = null, bestD = 34;
+  for (const m of Object.values(mobs)) {
+    if (!(m.hp > 0) || (auto.skip.get('m' + m.id) || 0) > now) continue;
+    const def = m.def || {};
+    if (def.boss && (def.lv || 0) > myLevel + 3) continue;          // kendinden çok güçlü boss'a dalma
+    const p = m.v.root.position, d = Math.hypot(p.x - pos.x, p.z - pos.z) - (def.boss ? 4 : 0);
+    if (d < bestD) { best = { kind: 'mob', id: m.id }; bestD = d; }
+  }
+  for (const [id, st] of Object.entries(stones)) {
+    if ((auto.skip.get('s' + id) || 0) > now) continue;
+    const d = Math.hypot(st.x - pos.x, st.z - pos.z) + 3;              // taşlar biraz geride kalsın
+    if (d < bestD) { best = { kind: 'stone', id }; bestD = d; }
+  }
+  return best;
+}
+// her karede: yürünecek yönü (dünya ekseninde) döndürür, menzildeyse vurur
+function autoStep(me, now, dt) {
+  if (!auto.on || amDead || !me) return null;
+  const pos = me.group.position;
+  // iksirler
+  if (myHpFrac < 0.4 && now - auto.pot > 1500 && !potBtn.classList.contains('empty')) { auto.pot = now; socket.emit('usePotion', 'hp'); sfx.potion(); }
+  if (myMp / myMpMax < 0.15 && now - auto.mpPot > 2500 && !mpBtn.classList.contains('empty')) { auto.mpPot = now; socket.emit('usePotion', 'mp'); }
+  let tp = auto.target && autoTargetPos(auto.target);
+  if (!tp || now - auto.pick > 2500) {
+    const nt = autoPickTarget(pos, now);
+    if (!tp || (nt && (nt.kind !== auto.target.kind || nt.id !== auto.target.id) && !(auto.target.kind === 'mob' && mobs[auto.target.id] && mobs[auto.target.id].hp < mobs[auto.target.id].max))) {
+      auto.target = nt; auto.best = Infinity; auto.stuckT = 0;
+    }
+    auto.pick = now; tp = auto.target && autoTargetPos(auto.target);
+  }
+  if (!tp) return null;
+  const d = Math.hypot(tp.x - pos.x, tp.z - pos.z);
+  const reach = CLASS_RANGE() + tp.r - 0.4;
+  if (d > reach) {
+    // takıldıysa (yaklaşamıyorsa) bu hedefi bir süre atla
+    if (d < auto.best - 0.3) { auto.best = d; auto.stuckT = 0; } else if ((auto.stuckT += dt) > 2.5) {
+      auto.skip.set((auto.target.kind === 'mob' ? 'm' : 's') + auto.target.id, now + 12000); auto.target = null; return null;
+    }
+    return new V3(tp.x - pos.x, 0, tp.z - pos.z).normalize();
+  }
+  auto.best = d; auto.stuckT = 0;
+  if (me.swingT <= 0) attack();
+  // hazır becerileri sırayla kullan (iyileştirme sadece can azken)
+  if (now - auto.skill > 700) {
+    auto.skill = now;
+    for (const sk of mySkills()) {
+      const lv = skillState.levels[sk.key] || 0; if (!lv) continue;
+      const c = skillCdUntil[sk.key]; if (c && c.until > now) continue;
+      if (myMp < (sk.mp || 0) + (sk.mpLv || 0) * (lv - 1)) continue;
+      if (sk.target === 'heal' && myHpFrac > 0.6) continue;
+      useSkill(sk.key); break;
+    }
+  }
+  return null;
+}
+
 
 // ---------- kamera: tek parmakla döndür, iki parmakla yakınlaştır ----------
 let camYaw = Math.PI / 4, camZoom = 1;
-const CAM_H = 12, CAM_D = 12.7;
+// daha yatık açı ve karakterin önüne bakış: ileride ne olduğu daha uzaktan görünür
+const CAM_H = 9.6, CAM_D = 14.2, CAM_AHEAD = 4.2;
 const camTouches = new Map();
 let pinchStart = null;
 renderer.domElement.addEventListener('pointerdown', (e) => {
@@ -1989,7 +2065,7 @@ function enterMap(data) {
   // açık renkli gökyüzü (kar, çöl): efektler normal karışımla çizilsin ki renkleri seçilsin
   { const c = scene.background; fx.setBright(c && (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) > 0.62); }
   setWeather(mapInfo.weather);
-  sfx.music(sfx.musicForMap(currentMap.theme));
+  sfx.music(sfx.musicForMap(currentMap.theme, currentMap.id));
   for (const p of mapInfo.portals) {
     const target = MAPS[p.to];
     p.label = makeLabel(`${target.name} · Sv. ${target.minLevel}+`, '#9fd8ff', false);
@@ -2040,7 +2116,7 @@ export function startGame(sock, opts = {}) {
     if (!myEmpire && !myGm) setTimeout(() => social.askEmpire(), 1500);
     if (opts.onWelcome) opts.onWelcome();
   });
-  socket.on('mapChange', (data) => { amDead = false; deadEl.classList.remove('open'); setFishState('idle'); enterMap(data); updateToolButtons(); renderSkillbar(); refreshFoes(); if (!(currentMap && currentMap.dungeon)) social.clearDungeon(); });
+  socket.on('mapChange', (data) => { amDead = false; auto.target = null; auto.skip.clear(); if (auto.on && data && MAPS[data.map] && (MAPS[data.map].safe || MAPS[data.map].war)) setAuto(false); deadEl.classList.remove('open'); setFishState('idle'); enterMap(data); updateToolButtons(); renderSkillbar(); refreshFoes(); if (!(currentMap && currentMap.dungeon)) social.clearDungeon(); });
   socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (shopKind) renderShop(); renderSmith(); if (trade) renderTrade(); social.refreshGuild(); social.refreshStallWins(); });
   socket.on('upgraded', ({ ok, name, up, stone }) => smithResult(ok, ok ? (stone ? `BAŞARILI · ${name}` : `BAŞARILI · ${name} +${up}`) : (stone ? 'BAŞARISIZ · taş kırıldı' : `BAŞARISIZ · ${name} +${up}`)));
   socket.on('socketed', ({ ok }) => { if (ok) sfx.enchant(); else sfx.hit('stone', false, null); });
@@ -2134,6 +2210,7 @@ export function startGame(sock, opts = {}) {
   socket.on('playerDied', ({ id }) => { const p = players[id]; if (p) p.dead = true; });
   socket.on('died', ({ village }) => {
     amDead = true;
+    if (auto.on) setAuto(false);   // ölünce otomatik av durur
     document.getElementById('deadText').textContent = `Köyde başlarsan ${village} içinde tam canla, burada başlarsan yarım canla doğarsın.`;
     deadEl.classList.add('open');
     startDeadCountdown();
@@ -2639,10 +2716,13 @@ function loop() {
     let ix = input.x, iy = input.y;
     if (keys.w || keys.arrowup) iy = -1; if (keys.s || keys.arrowdown) iy = 1;
     if (keys.a || keys.arrowleft) ix = -1; if (keys.d || keys.arrowright) ix = 1;
-    const mag = Math.min(1, Math.hypot(ix, iy));
+    let mag = Math.min(1, Math.hypot(ix, iy));
+    // otomatik av: elle yönetmiyorsan hedefe kendisi yürür
+    const autoDir = mag > 0.15 ? null : autoStep(me, now, dt);
+    if (autoDir) mag = 1;
     const moving = !amDead && mag > 0.15 && me.swingT <= 0;   // saldırırken yürünmez
     if (moving) {
-      const dir = new V3().addScaledVector(camRight, ix).addScaledVector(camFwd, -iy).normalize();
+      const dir = autoDir || new V3().addScaledVector(camRight, ix).addScaledVector(camFwd, -iy).normalize();
       me.group.position.addScaledVector(dir, SPEED * CLASS_SPEED() * mag * dt);
       collide(me.group.position);
       me.ry = Math.atan2(dir.x, dir.z) + FACE_OFFSET;
@@ -2669,7 +2749,7 @@ function loop() {
     }
     camPos.copy(me.group.position).add(camOffset);
     camera.position.lerp(camPos, 1 - Math.exp(-8 * dt));
-    camera.lookAt(camera.position.x - camOffset.x, 1.2, camera.position.z - camOffset.z);
+    camera.lookAt(camera.position.x - camOffset.x + camFwd.x * CAM_AHEAD * camZoom, 1.2, camera.position.z - camOffset.z + camFwd.z * CAM_AHEAD * camZoom);
     if (shake.t > 0) { shake.t = Math.max(0, shake.t - dt); const a = shake.amp * (shake.t / shake.dur); camera.position.x += (Math.random() - 0.5) * a; camera.position.y += (Math.random() - 0.5) * a; }
     sun.position.set(me.group.position.x + 12, 25, me.group.position.z + 6);
     sun.target.position.copy(me.group.position);

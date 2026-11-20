@@ -236,12 +236,17 @@ MAPS = [
     {'name': 'Atabis Köyü', 'lv': 1, 'theme': 'village_winter', 'village': True,
      # köy hayvanları: gerçek boylarında, uysal (sen vurmadan saldırmazlar)
      # 9. alan: {'model': client/models/mobs/<ad>.glb} – kullanıcının eklediği modeller
-     'mobs': [('tavuk', 'Tavuk', 1, 'frog', '#f4f1e8', 1.5, 0, 3.4, {'model': 'tavuk'}),
-              ('horoz', 'Horoz', 2, 'frog', '#c0392b', 2.0, 0, 3.8, {'model': 'horoz'}),
+     # tavuk ve horoz modelleri küçük olduğu için büyütüldü; vuruş menzili boydan bağımsız ('range')
+     'mobs': [('tavuk', 'Tavuk', 1, 'frog', '#f4f1e8', 3.0, 0, 3.4, {'model': 'tavuk', 'range': 2.6}),
+              ('horoz', 'Horoz', 2, 'frog', '#c0392b', 3.6, 0, 3.8, {'model': 'horoz', 'range': 2.8}),
               ('domuz', 'Domuz', 3, 'boar', '#e8a0a0', 1.0, 0, 4.0, {'model': 'domuz'}),
               ('inek', 'İnek', 5, 'bear', '#a0522d', 1.0, 0, 3.2, {'model': 'inek'})],
-     'bosses': [('devhoroz', 'Dev Horoz', 8, 'frog', '#c0392b', 18.0, {'model': 'horoz', 'aura': '#ffb347', 'hitR': 4.5}),
-                ('deliboga', 'Deli Boğa', 12, 'bear', '#6b3a1e', 8.0, {'model': 'inek', 'aura': '#ff3b2f', 'hitR': 6.5})]},
+     # köprünün ötesinde bol boss: her birinden 2 tane ('n')
+     'bosses': [('devtavuk', 'Dev Tavuk', 5, 'frog', '#f4f1e8', 15.0, {'model': 'tavuk', 'aura': '#fff1b0', 'hitR': 3.6, 'n': 2}),
+                ('devhoroz', 'Dev Horoz', 8, 'frog', '#c0392b', 18.0, {'model': 'horoz', 'aura': '#ffb347', 'hitR': 4.5, 'n': 2}),
+                ('domuzreis', 'Yaban Domuzu Reisi', 10, 'boar', '#7a4a3a', 4.6, {'model': 'domuz', 'aura': '#ff8a3d', 'hitR': 3.6, 'n': 2}),
+                ('deliboga', 'Deli Boğa', 12, 'bear', '#6b3a1e', 3.6, {'model': 'inek', 'aura': '#ff3b2f', 'hitR': 3.8, 'n': 2}),
+                ('kuduzkopek', 'Kuduz Çoban Köpeği', 14, 'wolf', '#5a4636', 4.4, {'model': 'kopek', 'aura': '#b04aff', 'hitR': 3.2, 'n': 2})]},
     {'name': 'Kızılçam Ormanı', 'lv': 15, 'theme': 'pine_forest',
      # sadece kullanıcının modelleri (kodla çizilen yaratık yok)
      'mobs': [('vkurt', 'Vahşi Kurt', 15, 'wolf', '#5a4a3a', 1.15, 10, 5.8, {'model': 'kurt'}),
@@ -331,7 +336,7 @@ SHOPS = {
 }
 
 # harita sınırları: köy haritası orta boy, vahşi haritalar büyük
-VILLAGE_BOUNDS = [-110, 160]
+VILLAGE_BOUNDS = [-150, 210]   # ilk köy haritası (diğerlerinden büyük)
 # köy haritası: köyün doğusunda köprülü nehir; boss'lar köprünün ötesinde
 VILLAGE_RIVER = {'x': 100, 'w': 12, 'bridge': [20, 30]}
 VILLAGE_RADIUS = 62
@@ -354,18 +359,21 @@ def build(items):
         for t in m['mobs']:
             key, name, lv, shape, color, scale, aggro, speed = t[:8]
             d = mob_stats(lv)
-            if len(t) > 8:
-                d['style'] = t[8]
+            style = dict(t[8]) if len(t) > 8 else None
+            rng = style.pop('range', None) if style else None
+            if style:
+                d['style'] = style
             d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': aggro,
-                      'speed': speed, 'range': 2.4 * max(1, scale), 'cd': 1600, 'boss': False,
+                      'speed': speed, 'range': rng or 2.4 * max(1, scale), 'cd': 1600, 'boss': False,
                       'drops': [[k, 0.012] for k in own] + [[k, 0.02] for k in low],
                       'potions': [[('p_hp1' if lv < 15 else 'p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4'), 0.08],
                                   [('p_mp1' if lv < 15 else 'p_mp2' if lv < 40 else 'p_mp3' if lv < 75 else 'p_mp4'), 0.05]]})
             mobs[key] = d
-            spawns.append({'mob': key, 'count': 16 if i == 0 else 20})
+            spawns.append({'mob': key, 'count': 26 if i == 0 else 20})
         for key, name, lv, shape, color, scale, style in m['bosses']:
             d = mob_stats(lv, boss=True)
             style = dict(style); hit_r = style.pop('hitR', None)   # çok büyük boss'larda gövde yarıçapı
+            copies = style.pop('n', 1)                              # haritada kaç tane
             d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': 0,
                       'speed': 5.2, 'range': min(6.0, 2.6 * scale), 'cd': 2000, 'boss': True, 'respawn': 120,
                       'drops': [[k, 0.28] for k in own] + [[k, 0.12] for k in nxt] + [[k, 0.035] for k in leg]
@@ -378,7 +386,7 @@ def build(items):
                 d['hitR'] = hit_r
                 d['range'] = hit_r + 3.0
             mobs[key] = d
-            bosses.append(key)
+            bosses.extend([key] * copies)
         lo, hi = VILLAGE_BOUNDS if m.get('village') else WILD_BOUNDS
         entry = {
             'id': i, 'name': m['name'], 'minLevel': m['lv'], 'theme': m['theme'],

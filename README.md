@@ -4,7 +4,21 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 5.1 (bu sürüm): Yeni karakterler, petler, ayarlar, beceri hareketleri, Android uygulaması
+### Aşama 5.2 (bu sürüm): Otomatik av, büyük ilk köy, yeni müzikler
+
+- **Otomatik av:** joystick'in üstündeki **OTO** düğmesi. Karakter en yakın yaratığa ya da metin taşına yürür ve vurur. Hazır becerileri kendisi kullanır; can %40'ın altına inince kırmızı, mana azalınca mavi iksir içer. Ganimeti zaten otomatik toplar. Joystick'e dokunduğunda kontrol sende olur, bırakınca av devam eder. Senden 3 seviyeden fazla güçlü boss'lara saldırmaz. Ölünce kapanır.
+- **Atabis Köyü büyüdü:** harita 270'ten 360 birime çıktı. Her yaratıktan 26 tane var. Köprünün ötesinde 10 boss bulunur (her birinden 2 tane):
+  - Dev Tavuk (Sv. 5)
+  - Dev Horoz (Sv. 8)
+  - Yaban Domuzu Reisi (Sv. 10)
+  - Deli Boğa (Sv. 12)
+  - Kuduz Çoban Köpeği (Sv. 14)
+- **Boylar:** Deli Boğa küçüldü; tavuk ve horoz büyüdü.
+- **Kamera:** daha yatık bir açıyla karakterin önüne bakıyor. Karakter ekranın alt kısmında durur ve ileride ne olduğu daha uzaktan görünür.
+- **Pazar tezgâhı:** "Tezgâhı aç" düğmesi tezgâh adının yanına taşındı. Yatay telefon ekranında artık görünüyor. Uzun pencereler kaydırılabiliyor.
+- **Müzikler:** giriş ve karakter seçme ekranında *Whispers of the Starting* (`giris`), Atabis Köyü'nde *Starting Village* (`koy1`) çalar.
+
+### Aşama 5.1: Yeni karakterler, petler, ayarlar, beceri hareketleri, Android uygulaması
 
 - **Yeni karakter modelleri:** Savaşçı = barbar kız (kılıç), Ninja = yelpazeli dansçı, Sura = melek kanatlı kız (mızrak), Okçu = iblis avcısı (arbalet). Şaman aynı kaldı.
 - **Petler artık metin taşlarından düşer** (her kırılan taşta %1,5; Ejder Yavrusu bunların %5'i). Dükkânda satılmaz. Her pet karaktere özellik verir:
