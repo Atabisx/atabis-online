@@ -2240,7 +2240,7 @@ export function startGame(sock, opts = {}) {
     if (p) startMove(p, sk);
     const from = p ? p.group.position : { x, z };
     sfx.skill(sk, from);
-    if (p && sk.target !== 'heal') sfx.shout(p.cls, true, from);
+    if (p) { const spec = MOVES[sk.key]; sfx.shout(p.cls, (spec && spec.cast) || sk.target === 'heal' || sk.target === 'self' ? 'magic' : 'strong', from); }
     // Metin2 tarzı beceri görüntüsü (fx.js) + karakterin dönmesi/sıçraması
     const tl = [];
     for (const t of targets) { const tp = targetPos(t); if (tp) tl.push({ x: tp.x, y: 0, z: tp.z, obj: players[t] || null }); }
@@ -2287,7 +2287,7 @@ export function startGame(sock, opts = {}) {
     sfx.swing(p.cls, p.group.position, combo || 0);
     // Metin2 gibi bağırış: 3. kombo vuruşunda güçlü, diğerlerinde ara sıra kısa
     if (combo >= 2) sfx.shout(p.cls, true, p.group.position);
-    else if (Math.random() < 0.3) sfx.shout(p.cls, false, p.group.position);
+    else if (Math.random() < 0.5) sfx.shout(p.cls, false, p.group.position);
     p.swingT = SWING_T; p.combo = combo || 0;
     if (p.cls !== 'okcu') p.slashT = 0.3;
   });

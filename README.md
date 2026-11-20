@@ -33,9 +33,11 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
   - Yaşam Suyu, Gök Gürültüsü, Ata Duası, Bozkurt Uluması
 - **Hedefsiz beceri çıkmaz:** menzilde hedef yoksa "Hedef yok." yazar; mana ve bekleme süresi harcanmaz.
 - **Becerilerde zıplayıp vurma:** Kasırga, Hançer Yağmuru, Kara Alev, Karanlık Kılıç, Kartal Pençesi ve okçu atışlarında karakter havadayken ve inerken vurur. İnişte toz kalkar.
-- **Vuruş bağırışları:** "kia!", "hiya!", "eya!", "ha!" (`tools/music/voice.py` ile sentezlendi).
-  - Kombonun 3. vuruşunda ve becerilerde güçlü bağırış, diğer vuruşlarda ara sıra kısa bağırış.
-  - Her sınıfın sesi farklı perdede.
+- **Vuruş bağırışları (gerçek ses kayıtları):** kullanıcının getirdiği 4 kayıttan 21 ayrı bağırış kesildi (`client/audio/sfx/voice_*.wav`): 9 "ha!", 8 "hyaa!", 2 keskin bağırış, 2 büyülü ses.
+  - Sıradan vuruşların yarısında kısa "ha!".
+  - Kombonun 3. vuruşunda ve saldırı becerilerinde güçlü "hyaa!".
+  - Büyü, iyileştirme ve güçlendirme becerilerinde büyülü ses.
+  - Kayıtlar sınıflara bölüştürüldü: her sınıfın kendi bağırış seti ve biraz farklı perdesi var.
 - **+9 parlaması:** +9 silah ve zırh, kademesi ne olursa olsun parlar. Parıltısı olan kademelerde parıltı güçlenir. Herkes görür.
 - **Envanter sayfaları:** çantanın üstünde I, II, III sekmeleri var. II ve III görevle açılır:
   - **Çanta Ustası I** (Sv. 10): 150 canavar yen.

@@ -27,7 +27,8 @@ function init() {
 // ---------- örnek sesler ----------
 const SAMPLE_NAMES = ['swing_sword0', 'swing_sword1', 'swing_sword2', 'swing_heavy0', 'swing_heavy1', 'swing_dagger0', 'swing_dagger1', 'swing_staff',
   'bow_shot', 'hit_flesh0', 'hit_flesh1', 'hit_flesh2', 'hit_crit', 'hit_stone', 'hit_armor', 'hit_arrow',
-  'shout_kia', 'shout_ha', 'shout_hiya', 'shout_ya', 'shout_hah', 'shout_eya'];
+  ...Array.from({ length: 9 }, (_, i) => 'voice_ha' + i), ...Array.from({ length: 8 }, (_, i) => 'voice_hya' + i),
+  'voice_sharp0', 'voice_sharp1', 'voice_myst0', 'voice_myst1'];
 const samples = {};
 function loadSamples() {
   for (const n of SAMPLE_NAMES) {
@@ -211,19 +212,28 @@ export function hit(kind, crit, pos) {
     noise({ dur: 0.25, vol: 0.22 * v, type: 'lowpass', f0: 1200, f1: 150 });
   }
 }
-// Metin2 tarzı vuruş bağırışı: güçlü (beceri, 3. kombo) "kia!/hiya!/eya!", sıradan "ha!/hah!/ya!"
-// her sınıfın sesi biraz farklı perdede; üst üste gelmesin diye kısa bekleme
-const SHOUT_RATE = { savasci: 0.9, ninja: 1.08, sura: 0.95, saman: 1.02, okcu: 1.0 };
+// Metin2 tarzı vuruş bağırışları (gerçek ses kayıtları, audio/sfx/voice_*.wav):
+// 'light' sıradan vuruşta ara sıra kısa "ha!", 'strong' 3. kombo ve becerilerde "hyaa!", 'magic' büyülerde.
+// Kayıtlar sınıflara bölüştürüldü; her sınıfın kendi bağırışları ve biraz farklı perdesi var.
+const VOICES = {
+  savasci: { light: ['ha0', 'ha2', 'ha3'], strong: ['sharp0', 'sharp1', 'hya3', 'hya7'], magic: ['sharp1', 'hya7'], rate: 0.95 },
+  ninja: { light: ['ha4', 'ha6', 'ha7'], strong: ['hya0', 'hya1', 'hya4', 'hya5'], magic: ['hya5'], rate: 1.06 },
+  sura: { light: ['ha5', 'ha8', 'ha1'], strong: ['hya2', 'hya6', 'sharp1'], magic: ['myst0', 'myst1'], rate: 0.97 },
+  saman: { light: ['ha1', 'ha4', 'ha7'], strong: ['myst1', 'hya2'], magic: ['myst0', 'myst1'], rate: 1.02 },
+  okcu: { light: ['ha0', 'ha5', 'ha8'], strong: ['hya0', 'hya4', 'hya5', 'sharp0'], magic: ['hya4'], rate: 1.0 },
+};
 let lastShout = 0;
-export function shout(cls, strong = false, pos = null) {
+export function shout(cls, kind = 'light', pos = null) {
   if (!ready()) return;
+  if (kind === true) kind = 'strong'; else if (kind === false) kind = 'light';
   const v = near(pos, 26); if (v <= 0) return;
   const now = ctx.currentTime;
-  if (now - lastShout < (strong ? 0.35 : 0.7)) return;
+  if (now - lastShout < (kind === 'light' ? 0.7 : 0.35)) return;
+  const set = VOICES[cls] || VOICES.savasci;
+  const list = (set[kind] || set.strong).map((n) => 'voice_' + n).filter((n) => samples[n]);
+  if (!list.length) return;
   lastShout = now;
-  const list = strong ? ['shout_kia', 'shout_hiya', 'shout_eya'] : ['shout_ha', 'shout_hah', 'shout_ya'];
-  const name = list[Math.floor(Math.random() * list.length)];
-  play(name, (strong ? 0.62 : 0.45) * v, 0, SHOUT_RATE[cls] || 1);
+  play(list[Math.floor(Math.random() * list.length)], (kind === 'light' ? 0.5 : 0.7) * v, 0, set.rate);
 }
 // beceri kullanırken kısa "hah!" (tonlu, ağız boşluğu gibi süzülmüş)
 export function grunt(pos, female = false) {
