@@ -186,13 +186,17 @@ def build_items():
     for key, name, color, pr in COSTUMES:
         items[key] = {'name': name, 'slot': 'costume', 'lv': 1, 'price': pr, 'rarity': 1, 'color': color, 'tint': color,
                       'desc': 'Zırhının görünüşünü değiştirir (istatistik vermez). Kostümcüden alınır.'}
-    PETS = [('pet_kurt', 'Kurt Yavrusu', 'wolf', '#8a8f99', 3, 300000), ('pet_tilki', 'Tilki Yavrusu', 'dog', '#d9762b', 3, 300000),
-            ('pet_ayi', 'Ayı Yavrusu', 'bear', '#6b4a2e', 4, 600000), ('pet_baykus', 'Baykuş', 'flyer', '#c9b48a', 4, 600000),
-            ('pet_ejder', 'Ejder Yavrusu', 'dragon', '#c0392b', 8, 0)]
-    for key, name, shape, color, bonus, pr in PETS:
-        items[key] = {'name': name, 'slot': 'pet', 'lv': 1, 'price': pr or 5000000, 'rarity': 2 if not pr else 1, 'color': color,
-                      'pet': {'shape': shape, 'color': color}, 'petExp': bonus,
-                      'desc': f'Peşinden gelen evcil hayvan. Tecrübe +%{bonus}. ' + ('Sadece boss\'lardan düşer.' if not pr else 'Kostümcüden alınır.')}
+    # evcil hayvanlar metin taşlarından düşer; her biri farklı bir güç verir
+    PETS = [('pet_kurt', 'Kurt Yavrusu', 'wolf', '#8a8f99', {'crit': 5}, 'Kritik vuruş +%5'),
+            ('pet_tilki', 'Tilki Yavrusu', 'dog', '#d9762b', {'pierce': 5}, 'Delici vuruş +%5'),
+            ('pet_ayi', 'Ayı Yavrusu', 'bear', '#6b4a2e', {'hp': 600, 'def': 12}, 'Can +600, savunma +12'),
+            ('pet_baykus', 'Baykuş', 'flyer', '#c9b48a', {'atkspeed': 6, 'mp': 300}, 'Saldırı hızı +%6, mana +300'),
+            ('pet_yilan', 'Yılan', 'snake', '#4f7a2a', {'dodge': 5, 'pierce': 3}, 'Kaçınma +%5, delici +%3'),
+            ('pet_ejder', 'Ejder Yavrusu', 'dragon', '#c0392b', {'atk': 40, 'crit': 4, 'hp': 400}, 'Saldırı +40, kritik +%4, can +400')]
+    for key, name, shape, color, bonus, text in PETS:
+        items[key] = {'name': name, 'slot': 'pet', 'lv': 1, 'price': 5000000, 'rarity': 2 if key == 'pet_ejder' else 1, 'color': color,
+                      'pet': {'shape': 'worm' if shape == 'snake' else shape, 'color': color, 'model': {'pet_kurt': 'kurt', 'pet_tilki': 'kopek', 'pet_yilan': 'yilan'}.get(key)}, 'bonus': bonus,
+                      'desc': f'Peşinden gelen evcil hayvan. {text}. Metin taşlarından düşer' + (' (çok nadir).' if key == 'pet_ejder' else '.')}
     for key, name, color in [('yaprak_mor', 'Mor Yaprak', '#9b59d0'), ('yaprak_mavi', 'Mavi Yaprak', '#3d8fe0'), ('yaprak_kirmizi', 'Kırmızı Yaprak', '#e0453a')]:
         items[key] = {'name': name, 'slot': 'material', 'desc': "Demircide 30. seviye ve üstü eşyaları +6'dan sonra yükseltmek için gerekir. Metin taşlarından düşer.",
                       'lv': 1, 'price': 400, 'rarity': 1, 'color': color, 'stack': 200}

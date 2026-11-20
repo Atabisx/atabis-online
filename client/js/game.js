@@ -1296,6 +1296,8 @@ function statTextIt(it, def) {
   if (def.atk) parts.push(`Saldırı ${def.atk + b.atk}${b.atk ? ` <span class="upv">(+${b.atk})</span>` : ''}`);
   if (def.def) parts.push(`Savunma ${def.def + b.def}${b.def ? ` <span class="upv">(+${b.def})</span>` : ''}`);
   if (def.hp) parts.push(`Can ${def.hp + b.hp}${b.hp ? ` <span class="upv">(+${b.hp})</span>` : ''}`);
+  const BN = { crit: 'Kritik', pierce: 'Delici', dodge: 'Kaçınma', atkspeed: 'Saldırı hızı', movespeed: 'Hareket hızı', mp: 'Mana', monster: 'Canavarlara karşı' };
+  for (const [k, v] of Object.entries(def.bonus || {})) if (BN[k]) parts.push(`${BN[k]} +${['mp'].includes(k) ? '' : '%'}${v}`);
   return parts.length ? parts.join(' · ') : statText(def);
 }
 // silah/zırhın taş yuvaları: dolu yuva taşın renginde

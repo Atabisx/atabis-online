@@ -117,6 +117,8 @@ function totals(p) {
     const def = it && ITEMS[it.key];
     if (!def) continue;
     s.atk += def.atk || 0; s.def += def.def || 0; s.hp += def.hp || 0;
+    // evcil hayvan ve kanat gibi eşyaların özel bonusları (kritik, delici, mana, hız…)
+    if (def.bonus) for (const [k, v] of Object.entries(def.bonus)) s[k] = (s[k] || 0) + v;
     const ub = upBonus(def, it.up || 0);
     s.atk += ub.atk; s.def += ub.def; s.hp += ub.hp;
     for (const sk of it.sock || []) {

@@ -2,6 +2,7 @@
 // Hepsi kodla üretilir; dışarıdan model gerekmez.
 import * as THREE from 'three';
 import { buildMob } from './mobs.js';
+import { attachMobModel } from './models.js';
 
 const mats = new Map();
 function wingMat(color, glow, opts = {}) {
@@ -93,6 +94,8 @@ export function buildWings(w) {
 export function buildPet(def) {
   const p = def.pet || {};
   const v = buildMob({ shape: p.shape || 'dog', color: p.color || def.color || '#999', scale: p.shape === 'dragon' ? 0.42 : p.shape === 'flyer' ? 0.38 : 0.5 });
+  // gerçek modeli olan hayvanlar (kurt, köpek/tilki, yılan) küçültülmüş modelle gösterilir
+  if (p.model) attachMobModel(v, { style: { model: p.model }, scale: 0.45, color: p.color });
   v.root.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return v;
 }

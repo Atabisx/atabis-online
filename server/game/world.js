@@ -316,9 +316,7 @@ function createWorld(io) {
   const dungeons = createDungeons({ io, players, notice, moveToZone, hooks, villageFor });
   const events = createEvents({ io, zones, notice });
   const ranking = createRanking({ db });
-  // evcil hayvan tecrübe bonusu
-  const petBonus = (p) => { const it = p.equip.pet, d = it && R.ITEMS[it.key]; return d && d.petExp ? d.petExp / 100 : 0; };
-  W.expBonus = (p) => realm.expBonus(p) + events.expBonus(p) + petBonus(p);
+  W.expBonus = (p) => realm.expBonus(p) + events.expBonus(p);
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
 
   // seviye ödülleri: 25'te at görevi, 30'da olta
