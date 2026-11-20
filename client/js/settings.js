@@ -47,7 +47,7 @@ export function setup(ctx) {
     location.reload();
   }, 'Çıkış yap', 'Vazgeç', true));
   // uygulamanın içindeyken indirme düğmesi gerekmez
-  if (/AtabisApp/i.test(navigator.userAgent) || document.body.classList.contains('standalone')) $('setApk').style.display = 'none';
+  if (/AtabisApp/i.test(navigator.userAgent) || window.Capacitor || document.body.classList.contains('standalone')) $('setApk').style.display = 'none';
 }
 function refresh() {
   const v = C.sfx.volumes();

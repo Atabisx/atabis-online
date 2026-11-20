@@ -219,6 +219,18 @@ db/schema.sql      veritabanı tabloları
 scripts/update.sh  tek komutla güncelleme
 ```
 
+## Android uygulaması (APK)
+
+Telefona kurulan uygulama oyunu doğrudan senin sunucundan açar; oyun güncellenince uygulamayı yeniden kurman gerekmez.
+
+1. GitHub'da depoyu aç, **Actions** sekmesine gir.
+2. Soldan **Android APK**'yı seç ve **Run workflow**'a bas.
+3. Sunucu adresini yaz (ör. `http://1.2.3.4:3100`) ve **Run workflow**'a bas. Derleme yaklaşık 5–8 dakika sürer.
+4. Bittiğinde APK **Releases** sayfasında `AtabisOnline.apk` olarak durur. Oyundaki Ayarlar › "📱 Android uygulaması" düğmesi de en son APK'yı indirir.
+5. Telefonda dosyayı aç ve kur. "Bilinmeyen kaynaklar" izni istenirse ver.
+
+Sunucunun adresi değişirse işlemi yeni adresle bir kez daha çalıştır.
+
 ## İlk kurulum (sunucuda bir kez)
 
 ```bash

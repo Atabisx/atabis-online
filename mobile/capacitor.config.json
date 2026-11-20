@@ -1,0 +1,15 @@
+{
+  "appId": "com.atabisx.atabisonline",
+  "appName": "Atabis Online",
+  "webDir": "www",
+  "server": {
+    "url": "http://SUNUCU_IP:3100",
+    "cleartext": true,
+    "errorPath": "index.html"
+  },
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#120c08"
+  },
+  "appendUserAgent": "AtabisApp"
+}

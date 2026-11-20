@@ -1,0 +1,83 @@
+# Android uygulamasını (APK) üretir.
+# GitHub > Actions > "Android APK" > Run workflow > sunucu adresini yaz (ör. http://1.2.3.4:3100) > Run.
+# Bitince APK hem "Artifacts" altında hem de Releases sayfasında AtabisOnline.apk olarak durur.
+name: Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: "Oyun sunucusunun adresi (ör. http://1.2.3.4:3100)"
+        required: true
+        default: "http://SUNUCU_IP:3100"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Sunucu adresini yaz
+        env:
+          SERVER_URL: ${{ inputs.server_url }}
+        run: |
+          node -e "const f='capacitor.config.json';const c=require('./'+f);c.server.url=process.env.SERVER_URL.trim().replace(/\/+$/,'');require('fs').writeFileSync(f,JSON.stringify(c,null,2));console.log(c.server.url)"
+
+      - name: Capacitor kur
+        run: |
+          npm install --no-audit --no-fund
+          npx cap add android
+          npx cap sync android
+
+      - name: Yatay ekran, http izni, simge
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i -E 's/<activity( |$)/<activity android:screenOrientation="sensorLandscape"\1/' $M
+          grep -q usesCleartextTraffic $M || sed -i -E 's/<application( |$)/<application android:usesCleartextTraffic="true"\1/' $M
+          grep -n "screenOrientation\|usesCleartextTraffic" $M
+          command -v convert >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick)
+          RES=android/app/src/main/res
+          rm -rf $RES/mipmap-anydpi-v26
+          for d in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
+            n=${d%%:*}; s=${d##*:}
+            mkdir -p $RES/mipmap-$n
+            convert ../client/icons/icon-512.png -resize ${s}x${s} $RES/mipmap-$n/ic_launcher.png
+            cp $RES/mipmap-$n/ic_launcher.png $RES/mipmap-$n/ic_launcher_round.png
+            convert ../client/icons/icon-512.png -resize ${s}x${s} $RES/mipmap-$n/ic_launcher_foreground.png
+          done
+
+      - name: APK derle
+        working-directory: mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk ../AtabisOnline.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AtabisOnline-apk
+          path: mobile/AtabisOnline.apk
+
+      - name: Releases sayfasına koy
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-${{ github.run_number }}
+          name: Atabis Online Android ${{ github.run_number }}
+          body: "Telefona indir, aç ve kur (bilinmeyen kaynaklara izin vermen gerekebilir). Sunucu: ${{ inputs.server_url }}"
+          files: mobile/AtabisOnline.apk
+          make_latest: true
