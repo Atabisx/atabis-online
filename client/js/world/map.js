@@ -2,6 +2,8 @@
 // Her harita tohumlu rastgele sayıyla kurulur, yani herkes aynı haritayı görür.
 import * as THREE from 'three';
 import { mat, glowMat, seededRandom } from '../util.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { groundTex, cobbleTex, plasterTex, woodTex, roofTex, stoneTex, boxGeo, planeGeo, texMat } from './textures.js';
 
 const S = 2.5;
 const u = (v) => v * S;
@@ -13,7 +15,7 @@ export const circles = [];     // {x,z,r}
 const THEMES = {
   // tek köy: karlı kış köyü, üzerine kar yağar
   village_winter: { ground: '#eef3f6', ground2: '#e6edf1', path: '#b9c3cc', plaza: '#cfd8df', sky: '#c9d6e2', fog: [40, 100], snow: true,
-    village: { wall: '#d9c39a', roofs: ['#f4f8fb', '#eaf1f6'], snowRoof: true }, props: { snowpine: 34, rock: 6, snowman: 4, snowpile: 14 } },
+    village: { wall: '#e4d6bc', roofs: ['#7a3b2a', '#4a5868', '#6a4a32'], snowRoof: true }, props: { snowpine: 34, rock: 6, snowman: 4, snowpile: 14 } },
   pine_forest: { ground: '#5e8a45', ground2: '#5a8642', path: '#8a7a55', sky: '#a8c8dc', fog: [35, 95], props: { pine: 70, tree: 12, rock: 14, mushroom: 14, log: 10 } },
   // iki ayrı çöl: sarı kum tepeleri ve kızıl kanyon
   desert_dunes: { ground: '#e6c27a', ground2: '#e0bc74', path: '#cfa860', sky: '#f6e3b4', fog: [50, 125], props: { dune: 26, cactus: 34, bones: 14, sandrock: 10, palm: 6 } },
@@ -47,13 +49,13 @@ function add(mesh, x, y, z, cast = true) {
 function box(w, h, d, color, x, y, z, cast = true) {
   return add(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color)), x, y, z, cast);
 }
-function plane(x0, z0, x1, z1, color, y) {
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), mat(color));
+function plane(x0, z0, x1, z1, color, y, material = null) {
+  const m = new THREE.Mesh(material ? planeGeo(x1 - x0, z1 - z0) : new THREE.PlaneGeometry(x1 - x0, z1 - z0), material || mat(color));
   m.rotation.x = -Math.PI / 2;
   add(m, (x0 + x1) / 2, y, (z0 + z1) / 2, false);
   return m;
 }
-const area = (x0, z0, x1, z1, color, y) => plane(u(x0), u(z0), u(x1), u(z1), color, y);
+const area = (x0, z0, x1, z1, color, y, material) => plane(u(x0), u(z0), u(x1), u(z1), color, y, material);
 
 function roofPrism(len, depth, rh, color) {
   const sh = new THREE.Shape();
@@ -65,33 +67,148 @@ function roofPrism(len, depth, rh, color) {
 const darker = (hex, k = 0.75) => '#' + new THREE.Color(hex).multiplyScalar(k).getHexString();
 
 // ---------- köy yapıları ----------
-function house(x, z, w, d, h, rh, roof, wall) {
-  const X = u(x), Z = u(z), W = u(w), D = u(d), H = u(h), RH = u(rh), o = 0.8;
-  box(W + 0.4, 0.6, D + 0.4, '#8d8a82', X + W / 2, 0.3, Z + D / 2);
-  box(W, H, D, wall, X + W / 2, 0.6 + H / 2, Z + D / 2);
-  for (const [cx, cz] of [[X, Z], [X + W, Z], [X, Z + D], [X + W, Z + D], [X + W / 2, Z + D]]) box(0.3, H, 0.3, '#6b4a2e', cx, 0.6 + H / 2, cz);
-  box(W + 0.1, 0.3, D + 0.1, '#6b4a2e', X + W / 2, 0.6 + H - 0.15, Z + D / 2);
-  box(1.4, 2.4, 0.08, '#4a3221', X + W * 0.25, 1.8, Z + D + 0.05, false);
-  box(1.3, 1.0, 0.08, '#2d2a26', X + W * 0.72, 0.6 + H * 0.6, Z + D + 0.05, false);
-  box(0.08, 1.0, 1.3, '#2d2a26', X + W + 0.05, 0.6 + H * 0.6, Z + D / 2, false);
-  add(roofPrism(W + 2 * o, D + 2 * o, RH, roof), X - o, 0.6 + H - 0.1, Z + D / 2);
-  const rd = darker(roof);
-  box(W + 2 * o + 0.2, 0.35, 0.35, rd, X + W / 2, 0.6 + H - 0.1 + RH, Z + D / 2);
-  for (const [cx, cz] of [[X - o, Z - o], [X + W + o, Z - o], [X - o, Z + D + o], [X + W + o, Z + D + o]]) {
-    add(new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.9, 5), mat(rd)), cx, 0.6 + H + 0.25, cz);
+// dokulu kutu (UV metre cinsinden)
+function tbox(w, h, d, material, x, y, z, cast = true) {
+  return add(new THREE.Mesh(boxGeo(w, h, d), material), x, y, z, cast);
+}
+const WOOD = () => texMat(woodTex('#5a3d24', 2));
+const WINDOW_GLASS = () => glowMat('#ffcf7a', 0.55);
+// pencere: çerçeve, ışıklı cam, kayıt, panjur ve çiçeklik; nx/nz: duvarın dışa bakan yönü
+function windowAt(x, y, z, nx, nz, shutter, snow) {
+  const rot = Math.atan2(nx, nz), g = new THREE.Group();
+  g.position.set(x, y, z); g.rotation.y = rot; group.add(g);
+  const put = (m, px, py, pz) => { m.position.set(px, py, pz); m.castShadow = false; m.receiveShadow = true; g.add(m); return m; };
+  put(new THREE.Mesh(boxGeo(1.05, 1.25, 0.14), WOOD()), 0, 0, 0.02);
+  put(new THREE.Mesh(new THREE.BoxGeometry(0.82, 1.02, 0.06), WINDOW_GLASS()), 0, 0, 0.07);
+  put(new THREE.Mesh(new THREE.BoxGeometry(0.07, 1.02, 0.08), WOOD()), 0, 0, 0.1);
+  put(new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.07, 0.08), WOOD()), 0, 0.05, 0.1);
+  const sh = texMat(woodTex(shutter, 3));
+  for (const sx of [-1, 1]) { const m = put(new THREE.Mesh(boxGeo(0.45, 1.2, 0.06), sh), sx * 0.78, 0, 0.08); m.rotation.y = sx * 0.25; }
+  put(new THREE.Mesh(boxGeo(1.15, 0.22, 0.32), WOOD()), 0, -0.72, 0.18);
+  if (snow) put(new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.08, 0.34), mat('#f4f8fb')), 0, -0.57, 0.18);
+  else for (let k = 0; k < 4; k++) put(new THREE.Mesh(new THREE.SphereGeometry(0.13, 6, 5), mat(['#d9534f', '#f2c14e', '#e86aa6'][k % 3])), -0.4 + k * 0.27, -0.55, 0.2);
+}
+// eğik çatı: iki dokulu levha + üçgen alınlıklar + mahya + baca
+function roofOn(X, Z, W, D, baseY, RH, roofColor, wall, snow, rnd) {
+  const o = 0.7, half = D / 2 + o, sw = Math.hypot(half, RH) + 0.1, ang = Math.atan2(RH, half), L = W + 2 * o;
+  const rm = texMat(roofTex(roofColor, snow));
+  for (const sgn of [1, -1]) {
+    const slab = tbox(L, 0.2, sw, rm, X + W / 2, baseY + RH / 2 + 0.05, Z + D / 2 + sgn * half / 2);
+    slab.rotation.x = sgn * ang;
+    // saçak tahtası
+    const fas = tbox(L, 0.28, 0.12, WOOD(), X + W / 2, baseY - 0.05, Z + D / 2 + sgn * (half - 0.02), false);
+    void fas;
   }
+  tbox(L + 0.1, 0.26, 0.3, snow ? mat('#f4f8fb') : WOOD(), X + W / 2, baseY + RH + 0.1, Z + D / 2);
+  // alınlıklar (sıva + çapraz kiriş)
+  const tri = new THREE.Shape(); tri.moveTo(-D / 2, 0); tri.lineTo(D / 2, 0); tri.lineTo(0, RH); tri.lineTo(-D / 2, 0);
+  const tg = new THREE.ExtrudeGeometry(tri, { depth: 0.2, bevelEnabled: false });
+  for (const ex of [X, X + W - 0.2]) {
+    const m = add(new THREE.Mesh(tg, texMat(plasterTex(wall))), ex, baseY, Z + D / 2);
+    m.rotation.y = Math.PI / 2;
+    const beam = tbox(0.16, RH * 0.9, 0.16, WOOD(), ex + 0.1 + (ex === X ? -0.05 : 0.15), baseY + RH * 0.45, Z + D / 2, false);
+    void beam;
+  }
+  // baca
+  const cx = X + W * (rnd() < 0.5 ? 0.22 : 0.78), cz = Z + D / 2 - half * 0.35;
+  tbox(0.75, RH + 1.2, 0.75, texMat(stoneTex('#8a8278')), cx, baseY + (RH + 1.2) / 2 + 0.2, cz);
+  tbox(0.95, 0.15, 0.95, mat(snow ? '#f4f8fb' : '#5a5650'), cx, baseY + RH + 1.45, cz);
+}
+// iki katlı yarı ahşap ev: taş temel, sıvalı duvar, ahşap kirişler, ışıklı pencereler, kapı, karlı/kiremitli çatı
+function house(x, z, w, d, h, rh, roof, wall, opts = {}) {
+  const X = u(x), Z = u(z), W = u(w), D = u(d), H = u(h) * 1.25, RH = u(rh) * 0.95;
+  const rnd = opts.rnd || Math.random, snow = !!opts.snow, shutter = opts.shutter || '#3d6a4a';
+  const plaster = texMat(plasterTex(wall)), wood = WOOD(), stoneM = texMat(stoneTex('#8d8a82'));
+  const F = 0.7;                               // temel yüksekliği
+  tbox(W + 0.4, F, D + 0.4, stoneM, X + W / 2, F / 2, Z + D / 2);
+  const two = H >= 3.2, h1 = two ? H * 0.52 : H, h2 = H - h1, jet = two ? 0.25 : 0;
+  tbox(W, h1, D, plaster, X + W / 2, F + h1 / 2, Z + D / 2);
+  if (two) tbox(W, h2, D + jet * 2, plaster, X + W / 2, F + h1 + h2 / 2, Z + D / 2);
+  const top = F + H;
+  // kirişler: köşe dikmeleri, kat ve üst kuşak, ön ve arka yüzde çaprazlar
+  const posts = Math.max(2, Math.round(W / 2.2));
+  for (const zz of [Z - 0.02 - jet * 0, Z + D + 0.02]) {
+    for (let i = 0; i <= posts; i++) tbox(0.2, h1, 0.12, wood, X + (W * i) / posts, F + h1 / 2, zz, false);
+    tbox(W + 0.1, 0.22, 0.14, wood, X + W / 2, F + h1, zz + (zz > Z ? jet : -jet), false);
+    if (two) {
+      for (let i = 0; i <= posts; i++) tbox(0.2, h2, 0.12, wood, X + (W * i) / posts, F + h1 + h2 / 2, zz + (zz > Z ? jet + 0.02 : -jet - 0.02), false);
+      for (let i = 0; i < posts; i += 2) {
+        const bw = W / posts, br = tbox(0.14, Math.hypot(bw, h2) * 0.9, 0.1, wood, X + bw * (i + 0.5), F + h1 + h2 / 2, zz + (zz > Z ? jet + 0.03 : -jet - 0.03), false);
+        br.rotation.z = Math.atan2(bw, h2) * (i % 4 ? -1 : 1);
+      }
+    }
+  }
+  for (const xx of [X - 0.02, X + W + 0.02]) for (const zz of [Z, Z + D]) tbox(0.16, H, 0.16, wood, xx, F + H / 2, zz, false);
+  tbox(W + 0.2, 0.22, D + jet * 2 + 0.2, wood, X + W / 2, top - 0.1, Z + D / 2, false);
+  // ön kapı: çerçeve, kapı, basamak, kapı feneri
+  const doorX = X + Math.min(W * 0.28, 1.6);
+  tbox(1.5, 2.45, 0.16, wood, doorX, F + 1.2, Z + D + 0.06, false);
+  tbox(1.2, 2.2, 0.12, texMat(woodTex('#7a4a2a', 3)), doorX, F + 1.1, Z + D + 0.12, false);
+  tbox(1.7, 0.25, 0.8, stoneM, doorX, F - 0.12, Z + D + 0.55);
+  add(new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.4, 0.3), glowMat('#ffb347', 0.9)), doorX + 1.0, F + 2.3, Z + D + 0.25, false);
+  // pencereler
+  const nwin = Math.max(1, Math.floor((W - 2.4) / 2.2));
+  for (let i = 0; i < nwin; i++) windowAt(X + 2.6 + i * 2.2 + 0.4, F + h1 * 0.55, Z + D + 0.08, 0, 1, shutter, snow);
+  if (two) {
+    const n2 = Math.max(1, Math.floor(W / 2.3));
+    for (let i = 0; i < n2; i++) windowAt(X + W * (i + 0.5) / n2, F + h1 + h2 * 0.5, Z + D + jet + 0.08, 0, 1, shutter, snow);
+    for (let i = 0; i < n2; i++) windowAt(X + W * (i + 0.5) / n2, F + h1 + h2 * 0.5, Z - jet - 0.08, 0, -1, shutter, snow);
+  }
+  windowAt(X + W + 0.08, F + h1 * 0.55, Z + D / 2, 1, 0, shutter, snow);
+  windowAt(X - 0.08, F + h1 * 0.55, Z + D / 2, -1, 0, shutter, snow);
+  roofOn(X, Z - jet, W, D + jet * 2, top, RH, roof, wall, snow, rnd);
   colliders.push({ x0: X - 0.5, z0: Z - 0.5, x1: X + W + 0.5, z1: Z + D + 0.5 });
 }
-function well(X, Z) {
-  add(new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.85, 1.5, 12), mat('#85827a')), X, 0.75, Z);
-  add(new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.1, 12), mat('#2e5f73')), X, 1.45, Z, false);
-  box(0.3, 4, 0.3, '#6b4a2e', X - 1.5, 2, Z); box(0.3, 4, 0.3, '#6b4a2e', X + 1.5, 2, Z);
-  add(roofPrism(4.4, 2.8, 1.2, '#3d5a80'), X - 2.2, 4, Z);
+// sokak süsleri
+function barrel(X, Z, snow) {
+  const m = add(new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.0, 12), texMat(woodTex('#7a5232', 6))), X, 0.5, Z);
+  for (const y of [0.18, 0.82]) add(new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.07, 12), mat('#3a3a3a')), X, y, Z, false);
+  if (snow) add(new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.42, 0.08, 12), mat('#f4f8fb')), X, 1.04, Z, false);
+  circles.push({ x: X, z: Z, r: 0.55 }); return m;
+}
+function crate(X, Z, s, snow) {
+  tbox(s, s, s, texMat(woodTex('#8a6440', 4)), X, s / 2, Z);
+  if (snow) box(s, 0.06, s, '#f4f8fb', X, s + 0.03, Z, false);
+  circles.push({ x: X, z: Z, r: s * 0.7 });
+}
+function cart(X, Z, rot) {
+  const g = new THREE.Group(); g.position.set(X, 0, Z); g.rotation.y = rot; group.add(g);
+  const put = (m, px, py, pz) => { m.position.set(px, py, pz); m.castShadow = true; m.receiveShadow = true; g.add(m); return m; };
+  const wd = texMat(woodTex('#7a5232', 5));
+  put(new THREE.Mesh(boxGeo(2.4, 0.15, 1.3), wd), 0, 0.85, 0);
+  for (const sz of [-1, 1]) put(new THREE.Mesh(boxGeo(2.4, 0.45, 0.08), wd), 0, 1.1, sz * 0.62);
+  for (const sx of [-1, 1]) put(new THREE.Mesh(boxGeo(0.08, 0.45, 1.3), wd), sx * 1.18, 1.1, 0);
+  for (const sz of [-1, 1]) { const w = put(new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.1, 14), texMat(woodTex('#5a3d24', 8))), 0.3, 0.5, sz * 0.72); w.rotation.x = Math.PI / 2; }
+  const shaft = put(new THREE.Mesh(boxGeo(1.8, 0.1, 0.1), wd), 2.0, 0.75, 0.3); shaft.rotation.z = 0.2;
+  const shaft2 = put(new THREE.Mesh(boxGeo(1.8, 0.1, 0.1), wd), 2.0, 0.75, -0.3); shaft2.rotation.z = 0.2;
+  for (let k = 0; k < 3; k++) put(new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.5, 8), mat('#d9b55a')), -0.6 + k * 0.6, 1.15, 0).rotation.x = Math.PI / 2;
+  circles.push({ x: X, z: Z, r: 1.4 });
+}
+function bench(X, Z, rot, snow) {
+  const g = new THREE.Group(); g.position.set(X, 0, Z); g.rotation.y = rot; group.add(g);
+  const wd = texMat(woodTex('#6b4a2e', 3));
+  const seat = new THREE.Mesh(boxGeo(2.0, 0.1, 0.5), wd); seat.position.y = 0.5; g.add(seat);
+  const back = new THREE.Mesh(boxGeo(2.0, 0.5, 0.08), wd); back.position.set(0, 0.85, -0.22); g.add(back);
+  for (const sx of [-0.85, 0.85]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.45), mat('#3a3a3a')); l.position.set(sx, 0.25, 0); g.add(l); }
+  if (snow) { const c = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.06, 0.5), mat('#f4f8fb')); c.position.y = 0.58; g.add(c); }
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  circles.push({ x: X, z: Z, r: 1.0 });
+}
+function well(X, Z, snow) {
+  add(new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.85, 1.5, 16), texMat(stoneTex('#8a857c'))), X, 0.75, Z);
+  add(new THREE.Mesh(new THREE.TorusGeometry(1.75, 0.16, 6, 20), mat(snow ? '#f4f8fb' : '#6d685f')), X, 1.5, Z).rotation.x = Math.PI / 2;
+  add(new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.1, 16), new THREE.MeshLambertMaterial({ color: '#2e5f73', emissive: '#0d2a3a', emissiveIntensity: 0.3 })), X, 1.35, Z, false);
+  tbox(0.3, 4, 0.3, WOOD(), X - 1.5, 2, Z); tbox(0.3, 4, 0.3, WOOD(), X + 1.5, 2, Z);
+  const ax = add(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 3.2, 8), WOOD()), X, 3.3, Z); ax.rotation.z = Math.PI / 2;
+  add(new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.4, 10), texMat(woodTex('#7a5232', 6))), X, 2.4, Z);
+  const rm = texMat(roofTex('#4a5868', snow));
+  for (const sg of [1, -1]) { const sl = tbox(4.4, 0.16, 1.9, rm, X, 4.55, Z + sg * 0.75); sl.rotation.x = sg * 0.62; }
   circles.push({ x: X, z: Z, r: 2.3 });
 }
 function stall(X, Z, c1, c2, goods) {
-  box(3.5, 1.75, 2.2, '#8a6440', X + 1.75, 0.875, Z + 1.1);
-  for (const [dx, dz] of [[0.1, 0.1], [3.4, 0.1], [0.1, 2.1], [3.4, 2.1]]) box(0.22, 4, 0.22, '#5a3d24', X + dx, 2, Z + dz);
+  tbox(3.5, 1.75, 2.2, texMat(woodTex('#8a6440', 5)), X + 1.75, 0.875, Z + 1.1);
+  tbox(3.7, 0.12, 2.4, WOOD(), X + 1.75, 1.8, Z + 1.1);
+  for (const [dx, dz] of [[0.1, 0.1], [3.4, 0.1], [0.1, 2.1], [3.4, 2.1]]) tbox(0.22, 4, 0.22, WOOD(), X + dx, 2, Z + dz);
   for (let k = 0; k < 5; k++) {
     const s = box(0.8, 0.12, 3.2, k % 2 ? c2 : c1, X + 0.25 + k * 0.85, 4.05, Z + 1.1);
     s.rotation.x = -0.25;
@@ -100,8 +217,11 @@ function stall(X, Z, c1, c2, goods) {
   colliders.push({ x0: X - 0.3, z0: Z - 0.3, x1: X + 3.8, z1: Z + 2.5 });
 }
 function lantern(X, Z) {
-  box(0.2, 3.4, 0.2, '#3a2a1c', X, 1.7, Z);
-  add(new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.7, 0.55), glowMat('#ff9b3d')), X, 3.6, Z);
+  add(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.16, 3.4, 8), mat('#2a2a2e')), X, 1.7, Z);
+  add(new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.22, 0.25, 8), mat('#2a2a2e')), X, 0.12, Z);
+  add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.5), glowMat('#ffb347', 1)), X, 3.65, Z, false);
+  add(new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.4, 4), mat('#2a2a2e')), X, 4.15, Z).rotation.y = Math.PI / 4;
+  circles.push({ x: X, z: Z, r: 0.35 });
 }
 function obelisk(X, Z) {
   add(new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.8, 0.4, 8), mat('#5a5e6a')), X, 0.2, Z);
@@ -144,15 +264,26 @@ function forge(x, z) {
 }
 function buildVillage(th, rnd) {
   const v = th.village;
-  area(6.5, 6.5, 13.5, 13.5, th.plaza || '#c7aa78', 0.03);
-  area(9.2, 13, 10.8, 26, th.path, 0.02); area(9.2, -6, 10.8, 7, th.path, 0.02);
+  const snow = !!v.snowRoof, cob = texMat(cobbleTex('#9a948a', snow));
+  area(6.5, 6.5, 13.5, 13.5, '#9a948a', 0.03, cob);
+  area(9.2, 13, 10.8, 26, th.path, 0.02, cob); area(9.2, -6, 10.8, 7, th.path, 0.02, cob);
+  area(-6, 9.2, 6.5, 10.8, th.path, 0.02, cob); area(13.5, 9.2, 26, 10.8, th.path, 0.02, cob);
   const r = (i) => v.roofs[i % v.roofs.length];
-  house(7, 2.8, 3.2, 2.2, 1.4, 1.1, r(0), v.wall);
-  house(11.8, 3.2, 2.6, 2.0, 1.2, 1.0, r(1), v.wall);
-  house(2.6, 11.6, 2.6, 2.2, 1.3, 1.0, r(1), v.wall);
-  house(12.6, 13.6, 3.0, 2.2, 1.3, 1.1, r(0), v.wall);
-  house(4.0, 15.4, 2.4, 1.9, 1.1, 0.9, r(0), v.wall);
-  well(u(10), u(10));
+  const SH = ['#3d6a4a', '#7a2f2a', '#2f4f7a'], o = (i) => ({ rnd, snow, shutter: SH[i % SH.length] });
+  house(7, 2.8, 3.2, 2.2, 1.4, 1.1, r(0), v.wall, o(0));
+  house(11.8, 3.2, 2.6, 2.0, 1.2, 1.0, r(1), v.wall, o(1));
+  house(2.6, 11.6, 2.6, 2.2, 1.3, 1.0, r(2), v.wall, o(2));
+  house(12.6, 13.6, 3.0, 2.2, 1.3, 1.1, r(0), v.wall, o(1));
+  house(4.0, 15.4, 2.4, 1.9, 1.1, 0.9, r(1), v.wall, o(0));
+  well(u(10), u(10), snow);
+  // sokak süsleri: fıçılar, sandıklar, araba, banklar
+  for (const [x, z] of [[6.2, 5.6], [6.5, 6.0], [13.9, 11.6], [14.2, 12.0], [3.1, 14.6]]) barrel(u(x), u(z), snow);
+  for (const [x, z, s2] of [[13.6, 6.0, 0.9], [13.9, 6.4, 0.7], [6.0, 14.6, 0.8]]) crate(u(x), u(z), s2, snow);
+  cart(u(15.6), u(8.4), 0.4);
+  bench(u(8.0), u(7.2), 0, snow); bench(u(12.0), u(7.2), 0, snow); bench(u(7.2), u(12.4), Math.PI, snow);
+  // köy içi ağaçlar ve kar yığınları (meydanı boğmadan)
+  for (const [x, z] of [[1.5, 5.5], [17.5, 3.0], [1.0, 17.5], [17.8, 17.8], [5.2, 1.2]]) (snow ? pine(u(x), u(z), '#264b2a', true) : tree(u(x), u(z)));
+  if (snow) for (const [x, z, s2] of [[5.6, 6.2, 1.2], [14.6, 14.0, 1.0], [2.2, 10.4, 1.4], [16.4, 6.8, 1.1]]) snowpile(u(x), u(z), s2);
   stall(u(7.2), u(12.6), '#d9534f', '#f4efe4', ['#e5533d', '#e5533d', '#ff8a7a']);
   stall(u(13.8), u(7.3), '#3d7fc4', '#f4efe4', ['#c9d1d9', '#b08a5a', '#c9d1d9']);
   stall(18, 14.5, '#6b4a2e', '#e8b54a', ['#9aa3ad', '#e8b54a', '#8a5a34']);
@@ -176,7 +307,9 @@ function buildOuterVillage(th, rnd, R) {
   ring.forEach(([deg, rad], i) => {
     const a = deg * Math.PI / 180, cx = VC + Math.cos(a) * rad, cz = VC + Math.sin(a) * rad;
     const w = 2.6 + rnd() * 0.8, d = 2.0 + rnd() * 0.4;
-    house(cx / S - w / 2, cz / S - d / 2, w, d, 1.2 + rnd() * 0.3, 1.0, roof(i), v.wall);
+    house(cx / S - w / 2, cz / S - d / 2, w, d, 1.2 + rnd() * 0.3, 1.0, roof(i), v.wall, { rnd, snow: !!v.snowRoof, shutter: ['#3d6a4a', '#7a2f2a', '#2f4f7a'][i % 3] });
+    if (i % 2 === 0) barrel(cx + w * S * 0.5 + 1.2, cz + d * S * 0.5 + 1.5, !!v.snowRoof);
+    if (i % 3 === 1) crate(cx - w * S * 0.5 - 1.0, cz + d * S * 0.5 + 1.2, 0.9, !!v.snowRoof);
   });
   // tarlalar ve çit içi süsler
   for (const [deg, rad] of [[10, 50], [170, 52], [260, 50], [350, 52]]) {
@@ -195,7 +328,7 @@ function buildOuterVillage(th, rnd, R) {
     if (nearGate(am)) continue;
     const x0 = VC + Math.cos(a0) * R, z0 = VC + Math.sin(a0) * R, x1 = VC + Math.cos(a1) * R, z1 = VC + Math.sin(a1) * R;
     const len = Math.hypot(x1 - x0, z1 - z0) + 0.2;
-    const seg = box(len, 2.6, 0.45, i % 2 ? wood : dark, (x0 + x1) / 2, 1.3, (z0 + z1) / 2);
+    const seg = tbox(len, 2.6, 0.45, texMat(woodTex(i % 2 ? wood : dark, 6)), (x0 + x1) / 2, 1.3, (z0 + z1) / 2);
     seg.rotation.y = -Math.atan2(z1 - z0, x1 - x0);
     const post = add(new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 3.4, 6), mat(dark)), x0, 1.7, z0);
     if (th.snow) { const cap = box(len, 0.18, 0.6, '#f4f8fb', (x0 + x1) / 2, 2.68, (z0 + z1) / 2, false); cap.rotation.y = seg.rotation.y; }
@@ -205,8 +338,9 @@ function buildOuterVillage(th, rnd, R) {
   for (const g of gates) for (const s of [-1, 1]) {
     const a = g + s * gate;
     const tx = VC + Math.cos(a) * R, tz = VC + Math.sin(a) * R;
-    box(2.2, 6, 2.2, dark, tx, 3, tz);
-    add(roofPrism(3, 3, 1.4, v.roofs[0]), tx - 1.5, 6, tz - 1.5);
+    tbox(2.6, 2.4, 2.6, texMat(stoneTex('#8a857c')), tx, 1.2, tz);
+    tbox(2.2, 3.8, 2.2, texMat(woodTex(dark, 4)), tx, 4.3, tz);
+    for (const sg of [1, -1]) { const sl = tbox(3.0, 0.16, 1.9, texMat(roofTex(v.roofs[0], !!v.snowRoof)), tx, 6.75, tz + sg * 0.7); sl.rotation.x = sg * 0.75; }
     const fl = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.6), new THREE.MeshLambertMaterial({ color: '#8e2a21', side: THREE.DoubleSide }));
     fl.position.set(tx, 4.2, tz); fl.rotation.y = -a; group.add(fl);
     circles.push({ x: tx, z: tz, r: 1.6 });
@@ -442,6 +576,29 @@ function portalMesh(X, Z, color) {
 
 // ---------- ana fonksiyon ----------
 // def: maps.json içindeki harita; sonuç: geçit listesi ve NPC'ler
+// köyün binlerce sabit parçası malzemeye göre birleştirilir: telefonda çizim sayısı azalır
+function mergeStatic(root) {
+  root.updateMatrixWorld(true);
+  const out = new THREE.Group(), buckets = new Map(), keep = [];
+  root.traverse((o) => {
+    if (!o.isMesh) { if (o !== root && (o.isLight || o.isSprite)) keep.push(o); return; }
+    const key = o.material.uuid + (o.castShadow ? 's' : '');
+    let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(k)) g.deleteAttribute(k);
+    if (!g.attributes.uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+    if (!g.attributes.normal) g.computeVertexNormals();
+    g.applyMatrix4(o.matrixWorld);
+    if (!buckets.has(key)) buckets.set(key, { mat: o.material, cast: o.castShadow, list: [] });
+    buckets.get(key).list.push(g);
+  });
+  for (const b of buckets.values()) {
+    const g = mergeGeometries(b.list, false); if (!g) continue;
+    const m = new THREE.Mesh(g, b.mat); m.castShadow = b.cast; m.receiveShadow = true; out.add(m);
+    for (const x of b.list) x.dispose();
+  }
+  for (const l of keep) { const p = new THREE.Vector3(); l.getWorldPosition(p); l.parent.remove(l); l.position.copy(p); out.add(l); }
+  return out;
+}
 export function loadMap(scene, def) {
   if (group) {
     scene.remove(group);
@@ -458,26 +615,21 @@ export function loadMap(scene, def) {
   scene.background = new THREE.Color(th.sky);
   scene.fog = new THREE.Fog(th.sky, th.fog[0], th.fog[1]);
 
-  // zemin: büyük düzlem + hafif dama deseni
-  const cv = document.createElement('canvas'); cv.width = cv.height = 2;
-  const cx = cv.getContext('2d');
-  cx.fillStyle = th.ground; cx.fillRect(0, 0, 2, 2);
-  cx.fillStyle = th.ground2; cx.fillRect(0, 0, 1, 1); cx.fillRect(1, 1, 1, 1);
-  const tex = new THREE.CanvasTexture(cv);
-  tex.magFilter = THREE.NearestFilter; tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  // zemin: doğal gürültülü doku (çim, kar, kum, toprak)
   const gsize = span + 70;
-  tex.repeat.set(gsize / 12, gsize / 12);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(gsize, gsize), new THREE.MeshLambertMaterial({ map: tex }));
+  const ground = new THREE.Mesh(planeGeo(gsize, gsize), new THREE.MeshLambertMaterial({ map: groundTex(th.ground, th.ground2, !!th.snow) }));
   ground.rotation.x = -Math.PI / 2;
   add(ground, mid, 0, mid, false);
-  // geçitleri birbirine bağlayan ana yol
-  plane(bmin - 5, 23, bmax + 5, 27, th.path, 0.02);
+  // geçitleri birbirine bağlayan ana yol: toprak doku
+  plane(bmin - 5, 23, bmax + 5, 27, th.path, 0.02, new THREE.MeshLambertMaterial({ map: groundTex(th.path, darker(th.path, 0.85), !!th.snow) }));
 
   const npcs = [];
   if (def.village && th.village) {
+    const main = group; group = new THREE.Group();
     buildVillage(th, rnd);
     if (def.villageR) buildOuterVillage(th, rnd, def.villageR);
+    const vg = group; group = main;
+    group.add(mergeStatic(vg));
     for (const n of Object.values(NPC_SPOTS)) npcs.push({ ...n });
   }
   if (def.river) buildRiver(def.river, th, bmin, bmax);

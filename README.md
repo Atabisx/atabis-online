@@ -4,7 +4,33 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 5.5 (bu sürüm): Peri Kanadı, logo
+### Aşama 5.6 (bu sürüm): Balık açma, otomatik iksirler, tecrübe yüzüğü, Nesne Market, yeni köy görünümü
+
+- **Balık açma:** tutulan balıklara dokun, **Aç** ya da **Hepsini aç** (50'ye kadar). Her balıktan ayrı ayrı şu şanslarla çıkar:
+  - Efsun Nesnesi %25, Efsun Değiştirme Nesnesi %25
+  - Yaprak %30, Pet Sandığı %15
+  - Kırmızı/mavi iksir %75 (seviyene göre)
+  - Az miktarda yang %45 (büyük balıkta biraz daha çok)
+  - Otomatik iksir: 1 saatlik %6, 1 günlük %1,5, 20 günlük %0,2
+  - Eski çizme açılmaz. Balıklar istenirse yine satılabilir.
+- **Otomatik Kırmızı/Mavi İksir (1 saat, 1 gün, 20 gün):** kullanınca süre başlar.
+  - Can %70'in altına düşünce saniyede bir canın %10'unu doldurur; mana %50'nin altına düşünce manayı doldurur.
+  - Süre gerçek zamanla işler, oyundan çıkınca da azalır. Tekrar kullanınca süreye eklenir.
+  - Metin taşlarından ve balıklardan düşer. Kalan süre sol üstte görünür.
+- **Tecrübe Yüzüğü (1 gün, 7 gün, 30 gün):** canavarlardan %25 fazla tecrübe. Nesne Market'te satılır.
+- **Nesne Market (Menü › Nesne Market):** **Ejder Parası (EP)** ile alışveriş yapılır. EP hesaptaki bütün karakterlerde ortaktır.
+  - Satılanlar: tecrübe yüzükleri, otomatik iksirler, bütün petler, Pet Sandığı, kostümler, kanatlar, efsun nesneleri, kutsama kağıdı.
+  - EP nasıl kazanılır: dünya boss'unda 1. olana 30, 2.-3.'ye 20, 4.-10.'a 10, diğer katılanlara 3 EP.
+  - GM komutu: `/ep <karakter adı> <miktar>` (eksi miktar EP düşer).
+- **Köyler daha gerçekçi:**
+  - Kodla çizilen dokular (`client/js/world/textures.js`): taş döşeme meydan ve yollar, sıvalı duvar, ahşap, kiremit ve karlı kiremit, kesme taş.
+  - Evler iki katlı ve yarı ahşap: taş temel, ahşap kirişler ve çaprazlar, ışıklı pencereler, panjurlar, çiçeklikler, kapı ve kapı feneri, baca.
+  - Kuyu, tezgâhlar, fenerler, çit ve kapı kuleleri yenilendi.
+  - Fıçılar, sandıklar, saman yüklü araba, banklar, köy içi çamlar ve kar yığınları eklendi.
+  - Bütün haritalarda zemin artık dama deseni yerine doğal gürültülü doku.
+  - Köydeki sabit parçalar malzemeye göre birleştirildiği için telefonda hızlı çalışır.
+
+### Aşama 5.5: Peri Kanadı, logo
 
 - **Peri Kanadı:** lila, pembe ve beyaz tüylü, ortasında altın kalp süslü kanat (`client/models/wings/kanat_peri.glb`, kullanıcının getirdiği model).
   - Kostümcüde 700.000 yang, Sv. 35.
