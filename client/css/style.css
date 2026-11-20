@@ -484,3 +484,22 @@ body.standalone #chatBtn { left: 116px; } body.standalone #friendBtn { left: 168
 .helpbox { width: min(640px, 96vw); }
 .help { overflow-y: auto; max-height: 62vh; display: flex; flex-direction: column; gap: 2px; }
 .help h4 { margin: 8px 0 2px; color: #ffd36b; font-size: 15px; } .help p { margin: 0; font-size: 13px; line-height: 1.5; color: #d8d2c0; }
+
+/* sade ekran: sol üstte sadece Menü, Ayarlar, Sohbet (ve varsa At) */
+#sndBtn, #musicBtn, #fsBtn, #charBtn, #friendBtn, #skillBtn, #online { display: none !important; }
+#menuBtn { left: 12px; top: 130px; width: 52px; height: 52px; }
+#setBtn { position: fixed; left: 70px; top: 130px; width: 46px; height: 46px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.3); background: rgba(14,16,13,0.78); color: #f4f1e8; display: flex; align-items: center; justify-content: center; }
+#chatBtn, body.standalone #chatBtn { left: 122px; top: 130px; }
+#mountBtn { left: 174px; top: 130px; }
+#partyFrames { top: 190px; }
+/* ayarlar */
+.setbox { width: min(520px, 96vw); gap: 10px; }
+.setrow { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.setrow > span:first-child { width: 150px; flex: none; }
+.setrow input[type=range] { flex: 1; accent-color: #e8b54a; height: 32px; }
+.setrow b { width: 46px; text-align: right; color: #ffe08a; font-size: 13px; }
+.seg { display: flex; gap: 4px; flex: 1; } .seg button { flex: 1; min-height: 38px; border-radius: 10px; border: 1px solid #3a3f35; background: #22261e; color: #c9c4b6; font: inherit; font-weight: 700; font-size: 13px; }
+.seg button.on { background: #3a3220; color: #ffe08a; border-color: #e8b54a; }
+.setbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.setbtns .btn { min-height: 46px; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none; }
+#stallBtn { position: fixed; left: 174px; top: 130px; width: 46px; height: 46px; border-radius: 12px; border: 2px solid #ffd36b; background: rgba(40,28,10,0.82); color: #ffd36b; display: flex; align-items: center; justify-content: center; }

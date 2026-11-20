@@ -74,6 +74,12 @@
   <button id="sndBtn" aria-label="Sesi kapat">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path class="wave" d="M15.5 8.5a5 5 0 0 1 0 7"/><path class="wave" d="M18.5 5.5a9 9 0 0 1 0 13"/><path class="mute" d="m16 9 6 6"/><path class="mute" d="m22 9-6 6"/></svg>
   </button>
+  <button id="stallBtn" aria-label="Pazar tezgâhı" style="display:none">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l2-5h14l2 5"/><path d="M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M5 13v7h14v-7"/><path d="M10 20v-4h4v4"/></svg>
+  </button>
+  <button id="setBtn" aria-label="Ayarlar">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
   <button id="menuBtn" aria-label="Menü">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     <i id="menuBadge" style="display:none">0</i>
@@ -138,6 +144,22 @@
       <div id="smithList"></div>
     </div>
   </div>
+  <div id="setwin" class="modal" role="dialog" aria-label="Ayarlar">
+    <div class="modalbox setbox">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">AYARLAR</b><span id="setOnline" style="font-size:12px;color:#8b877c"></span><button id="setX" class="xbtn" aria-label="Kapat">×</button></div>
+      <div class="setrow"><span>🔊 Efekt sesi</span><input id="setSfx" type="range" min="0" max="100" step="5" aria-label="Efekt sesi"><b id="setSfxV"></b></div>
+      <div class="setrow"><span>🎵 Müzik</span><input id="setMusic" type="range" min="0" max="100" step="5" aria-label="Müzik sesi"><b id="setMusicV"></b></div>
+      <div class="setrow"><span>🔍 Arayüz boyutu</span><input id="setUi" type="range" min="70" max="130" step="5" aria-label="Arayüz boyutu"><b id="setUiV"></b></div>
+      <div class="setrow"><span>🎥 Kamera uzaklığı</span><input id="setCam" type="range" min="55" max="170" step="5" aria-label="Kamera uzaklığı"><b id="setCamV"></b></div>
+      <div class="setrow"><span>🖥️ Grafik</span><span class="seg" id="setGfx"><button data-g="0">Düşük</button><button data-g="1">Normal</button><button data-g="2">Yüksek</button></span></div>
+      <div class="setbtns">
+        <button id="setFs" class="btn alt">⛶ Tam ekran</button>
+        <a id="setApk" class="btn alt" href="https://github.com/Atabisx/atabis-online/releases/latest/download/AtabisOnline.apk" target="_blank" rel="noopener">📱 Android uygulaması</a>
+        <button id="setChar" class="btn alt">👥 Karakter değiştir</button>
+        <button id="setQuit" class="btn danger">⏻ Çıkış yap</button>
+      </div>
+    </div>
+  </div>
   <div id="menuwin" class="modal" role="dialog" aria-label="Menü">
     <div class="modalbox menubox">
       <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">MENÜ</b><button id="menuX" class="xbtn" aria-label="Kapat">×</button></div>
@@ -149,8 +171,9 @@
         <button data-menu="dungeon"><span class="mi">🕸️</span>Zindan</button>
         <button data-menu="events"><span class="mi">🎉</span>Etkinlikler</button>
         <button data-menu="friends"><span class="mi">👥</span>Arkadaşlar</button>
-        <button data-menu="char"><span class="mi">🧍</span>Karakter</button>
-        <button data-menu="skills"><span class="mi">⚡</span>Beceriler</button>
+        <button data-menu="char"><span class="mi">🧍</span>Karakter<i id="mbChar" style="display:none">0</i></button>
+        <button data-menu="skills"><span class="mi">⚡</span>Beceriler<i id="mbSkill" style="display:none">0</i></button>
+        <button data-menu="settings"><span class="mi">⚙️</span>Ayarlar</button>
         <button data-menu="help"><span class="mi">❔</span>Rehber</button>
       </div>
       <small class="menuhint">Sohbette <b>#</b> ile grup, <b>%</b> ile lonca kanalına yazarsın.</small>

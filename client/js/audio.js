@@ -12,7 +12,7 @@ function init() {
   if (!AC) return null;
   ctx = new AC();
   master = ctx.createGain();
-  master.gain.value = muted ? 0 : 0.55;
+  master.gain.value = muted ? 0 : SFX_VOL;
   // ani tepe noktalarını yumuşatır, telefonda cızırtı olmaz
   const comp = ctx.createDynamicsCompressor();
   comp.threshold.value = -14; comp.ratio.value = 4;
@@ -50,7 +50,8 @@ function play(name, vol, t = 0, rate = 1) {
 // HTML ses öğesiyle çalınır (uzun parçalar için daha az bellek); iki öğe arasında yumuşak geçiş yapılır
 let musicOn = true;
 try { musicOn = localStorage.getItem('atabis_music') !== '0'; } catch (e) { /* yok say */ }
-const MUSIC_VOL = 0.38;
+let MUSIC_VOL = 0.38, SFX_VOL = 0.55;
+try { const v = JSON.parse(localStorage.getItem('atabis_vol') || 'null'); if (v) { MUSIC_VOL = v.m; SFX_VOL = v.s; } } catch (e) { /* yok say */ }
 let curTrack = null, curEl = null, fadeTimer = null;
 const els = [];
 function musicTarget() { return muted || !musicOn ? 0 : MUSIC_VOL; }
@@ -80,6 +81,14 @@ function refreshMusic() {
   else fadeTo(curEl, 0, 400, () => curEl && curEl.pause());
 }
 export function isMusicOn() { return musicOn; }
+// ayarlar penceresi: efekt ve müzik seviyesi (0..1)
+export function volumes() { return { s: SFX_VOL, m: MUSIC_VOL }; }
+export function setVolumes(s, m) {
+  SFX_VOL = s; MUSIC_VOL = m;
+  try { localStorage.setItem('atabis_vol', JSON.stringify({ s, m })); } catch (e) { /* yok say */ }
+  if (master && !muted) master.gain.setTargetAtTime(SFX_VOL, ctx.currentTime, 0.05);
+  refreshMusic();
+}
 export function setMusicOn(on) {
   musicOn = on;
   try { localStorage.setItem('atabis_music', on ? '1' : '0'); } catch (e) { /* yok say */ }
@@ -99,7 +108,7 @@ export function isMuted() { return muted; }
 export function setMuted(m) {
   muted = m;
   try { localStorage.setItem('atabis_mute', m ? '1' : '0'); } catch (e) { /* yok say */ }
-  if (master) master.gain.setTargetAtTime(m ? 0 : 0.55, ctx.currentTime, 0.02);
+  if (master) master.gain.setTargetAtTime(m ? 0 : SFX_VOL, ctx.currentTime, 0.02);
   refreshMusic();
 }
 

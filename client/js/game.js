@@ -13,6 +13,7 @@ import * as fx from './fx.js';
 import * as icons from './icons.js';
 import { buildStage, updateStage } from './lobby.js';
 import * as social from './social.js';
+import * as settings from './settings.js';
 import { buildWings, buildPet } from './entities/cosmetics.js';
 
 let FACE_OFFSET = Math.PI;     // model yüklenince otomatik hesaplanır
@@ -1715,7 +1716,12 @@ function updateToolButtons() {
   mountBtn.style.display = inv.inventory.some((i) => i.key === 'at_muhru') ? 'flex' : 'none';
   mountBtn.classList.toggle('on', !!inv.mounted);
   fishBtn.style.display = currentMap && currentMap.fishing && inv.inventory.some((i) => i.key === 'olta') ? 'block' : 'none';
+  // köydeyken pazar tezgâhı düğmesi; at düğmesi görünüyorsa onun yanına kayar
+  stallBtn.style.display = currentMap && currentMap.village ? 'flex' : 'none';
+  stallBtn.style.left = mountBtn.style.display === 'none' ? '174px' : '226px';
 }
+const stallBtn = document.getElementById('stallBtn');
+stallBtn.addEventListener('click', () => { sfx.click(); social.openMyStall(); });
 const talkBtn = document.getElementById('talkBtn');
 let nearAction = null;
 talkBtn.addEventListener('click', () => { if (nearAction) nearAction.run(); });
@@ -2699,12 +2705,20 @@ const menuHandlers = {
   dungeon: () => social.openDungeon(),
   rank: () => social.openRank(),
   help: () => social.openHelp(),
+  settings: () => document.getElementById('setBtn').click(),
 };
 export function onMenu(key, fn) { menuHandlers[key] = fn; }
 function partyLabels(pt) {
   const ids = new Set(pt ? pt.members.map((m) => m.id) : []);
   for (const p of Object.values(players)) if (p.label && !p.npc && p.id !== myId) p.label.el.classList.toggle('party', ids.has(p.id));
 }
+settings.setup({
+  sfx, toast, askBox,
+  setCamZoom: (z) => { camZoom = Math.max(0.55, Math.min(1.7, z)); },
+  // grafik: 0 düşük (telefonlar için hızlı), 1 normal, 2 yüksek
+  setQuality: (q) => { renderer.setPixelRatio(Math.min(window.devicePixelRatio, [0.75, 1.25, 2][q] || 1.25)); renderer.setSize(window.innerWidth, window.innerHeight); },
+  leave: () => { try { if (socket) socket.disconnect(); } catch (e) { /* yok say */ } },
+});
 social.setup({
   myId: () => myId, esc, toast, askBox, itemIcon, sfx, get ITEMS() { return ITEMS; }, inventory: () => inv.inventory, yang: () => inv.yang, myName: () => myName, tutStats: () => tutStats,
   onParty: partyLabels,

@@ -34,6 +34,7 @@ export function setup(ctx) {
   $('tutRestart').addEventListener('click', () => { $('helpwin').classList.remove('open'); startTutorial(0); });
   $('tutSkip').addEventListener('click', () => { tutStep = -1; showTut(); if (socket) socket.emit('tutorial', 'done'); });
   setInterval(tickTut, 400);
+  setInterval(renderMenuBadges, 1500);
   $('rankX').addEventListener('click', () => $('rankwin').classList.remove('open'));
   $('rankwin').addEventListener('click', (e) => { if (e.target.id === 'rankwin') $('rankwin').classList.remove('open'); });
   document.querySelector('.rtabs').addEventListener('click', (e) => { const b = e.target.closest('[data-rt]'); if (!b) return; rankTab = b.dataset.rt; C.sfx.click(); loadRank(); });
@@ -272,7 +273,12 @@ function openMenu() { menuOpened = true; renderMenuBadges(); $('menuwin').classL
 function renderMenuBadges() {
   const n = daily ? daily.list.filter((q) => q.have >= q.need && !q.claimed).length : 0;
   const b = document.querySelector('[data-menu="daily"] i'); if (b) { b.textContent = n; b.style.display = n ? '' : 'none'; }
-  const mb = $('menuBadge'); if (mb) { mb.style.display = n ? '' : 'none'; mb.textContent = n; }
+  // dağıtılmamış karakter ve beceri puanları da menüde gösterilir
+  const pts = (id) => { const e = $(id); return e && e.style.display !== 'none' ? Number(e.textContent) || 0 : 0; };
+  const cp = pts('charPts'), sp = pts('skillPts');
+  for (const [id, v] of [['mbChar', cp], ['mbSkill', sp]]) { const e = $(id); if (e) { e.textContent = v; e.style.display = v ? '' : 'none'; } }
+  const mb = $('menuBadge'), tot = n + (cp ? 1 : 0) + (sp ? 1 : 0);
+  if (mb) { mb.style.display = tot ? '' : 'none'; mb.textContent = n + cp + sp > 99 ? '99+' : n + cp + sp; }
 }
 
 export function bind(sock) {
