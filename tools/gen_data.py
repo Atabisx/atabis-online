@@ -438,12 +438,12 @@ def sk(key, name, desc, target, mp, mpLv, cd, color, **kw):
 SKILLS = {
     'savasci': [
         sk('s_ucluk', 'Üçlü Kesik', 'Önündeki düşmanlara üç yönlü güçlü bir kesik.', 'front', 15, 3, 6, '#ff6a5a', radius=5, mult=1.6, multLv=0.12, combo=1),
-        sk('s_firtina', 'Kılıç Fırtınası', 'Etrafında dönerek çevresindeki herkesi biçer.', 'aoe', 25, 4, 10, '#e8b54a', radius=4.5, mult=1.3, multLv=0.1, combo=1),
+        sk('s_firtina', 'Kılıç Fırtınası', 'Havaya sıçrayıp dönerek yere çakılır; çevresindekileri biçer ve 1 saniye sersemletir.', 'aoe', 25, 4, 10, '#e8b54a', radius=4.5, mult=1.3, multLv=0.1, combo=1, stun=1.2),
         sk('s_hamle', 'Saldırı Hamlesi', 'İleri atılır, vardığı yerdeki düşmanlara vurur.', 'dash', 20, 3, 12, '#ffb347', radius=3, dist=7, mult=1.8, multLv=0.14, combo=2),
         sk('s_demir', 'Demir Beden', '60 saniye savunmanı artırır.', 'self', 30, 3, 60, '#c9d1d9', buff={'stat': 'def', 'base': 10, 'perLv': 4, 'dur': 60}),
     ],
     'ninja': [
-        sk('n_golge', 'Gölge Darbesi', 'Tek hedefe her zaman kritik vuran sinsi bir darbe.', 'single', 18, 3, 7, '#8a7dff', range=4.8, mult=2.0, multLv=0.15, crit=True, combo=2),
+        sk('n_golge', 'Gölge Darbesi', 'Hedefin arkasına sıçrar; her zaman kritik vuran, kısa süre sersemleten sinsi bir darbe.', 'single', 18, 3, 7, '#8a7dff', range=4.8, mult=2.0, multLv=0.15, crit=True, combo=2, stun=0.8),
         sk('n_zehir', 'Zehirli Hançer', 'Vurur ve 8 saniye zehirler.', 'single', 15, 2, 9, '#6fd36f', range=4.8, mult=1.0, multLv=0.06, dot={'mult': 0.45, 'multLv': 0.05, 'sec': 8}, combo=0),
         sk('n_yagmur', 'Hançer Yağmuru', 'Çevresine hançer yağdırır.', 'aoe', 28, 4, 12, '#c9d1d9', radius=5, mult=1.2, multLv=0.1, combo=1),
         sk('n_adim', 'Kaçış Adımı', '30 saniye hareket ve saldırı hızını artırır.', 'self', 25, 2, 45, '#7be08f', buff={'stat': 'movespeed', 'base': 15, 'perLv': 1, 'dur': 30, 'extra': {'atkspeed': 10}}),
@@ -462,7 +462,7 @@ SKILLS = {
     ],
     'okcu': [
         sk('o_coklu', 'Çoklu Ok', 'Aynı anda 3 hedefe ok atar.', 'multi', 18, 3, 5, '#f4e2b8', range=12, mult=1.2, multLv=0.1, count=3),
-        sk('o_zehirli', 'Zehirli Ok', 'Vurur ve 8 saniye zehirler.', 'single', 15, 2, 8, '#6fd36f', range=12, mult=1.0, multLv=0.08, dot={'mult': 0.5, 'multLv': 0.05, 'sec': 8}),
+        sk('o_zehirli', 'Buz Oku', 'Buzdan bir ok fırlatır; hedefi 2 saniye dondurur.', 'single', 15, 2, 8, '#9fd8ff', range=12, mult=1.3, multLv=0.09, stun=2.0, freeze=True),
         sk('o_ates', 'Ateşli Ok', 'Patlayan ok: hedefin çevresine de hasar verir.', 'single', 28, 4, 10, '#ff6a3d', range=13, mult=2.2, multLv=0.17, splash=2.8),
         sk('o_hafif', 'Hafif Adım', '40 saniye hareket ve saldırı hızını artırır.', 'self', 20, 2, 45, '#7be08f', buff={'stat': 'movespeed', 'base': 20, 'perLv': 1.5, 'dur': 40, 'extra': {'atkspeed': 8}}),
     ],

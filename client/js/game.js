@@ -841,22 +841,76 @@ function seatRider(p) {
   if (p.model) p.model.parent.position.y = riderBaseY(p);
 }
 // beceri hareketleri: kılıç fırtınasında dönme, buff ve seviye atlamada sıçrama
+// ---------- beceri hareketleri (Metin2 tarzı): sıçrama, takla, dönme, atılma, eğilme ----------
+// jump: yükseklik, jumpAt: [başla, bitir] (süre oranı), spin: tur, flip: +1 öne / -1 geriye takla,
+// lunge: öne (eksi: geriye) kayma, lean: öne eğilme, combos: [zaman oranı, kombo] kılıç vuruşları, cast: büyü pozu
+// yere çakılma sarsıntısı (yakında olursa)
+const shake = { t: 0, dur: 0, amp: 0 };
+fx.onShake((amp, dur, x, z) => {
+  const me = players[myId]; if (!me) return;
+  const d = x == null ? 0 : Math.hypot(me.group.position.x - x, me.group.position.z - z);
+  if (d > 14) return;
+  shake.amp = Math.max(shake.t > 0 ? shake.amp : 0, amp * (1 - d / 14)); shake.t = shake.dur = dur;
+});
+const MOVES = {
+  s_ucluk: { dur: 0.75, lunge: 0.9, wave: 3, combos: [[0, 0], [0.3, 1], [0.6, 2]] },
+  s_firtina: { dur: 0.9, jump: 1.5, jumpAt: [0.05, 0.92], spin: 3 },
+  s_hamle: { dur: 0.5, lean: 0.5, lunge: 0.8, combos: [[0.55, 2]] },
+  s_demir: { dur: 0.8, jump: 0.55, jumpAt: [0.05, 0.48], cast: 'raise' },
+  n_golge: { dur: 0.6, jump: 1.1, jumpAt: [0, 0.6], flip: 1, lunge: 1.2, combos: [[0.6, 2]] },
+  n_zehir: { dur: 0.45, lean: 0.25, combos: [[0, 1]] },
+  n_yagmur: { dur: 1.0, jump: 2.6, jumpAt: [0, 0.85], flip: -1, spin: 0.5 },
+  n_adim: { dur: 0.65, jump: 1.0, jumpAt: [0, 0.9], flip: -1, lunge: -1.3 },
+  u_kara: { dur: 0.8, jump: 0.35, jumpAt: [0.4, 0.8], cast: 'raise' },
+  u_emme: { dur: 0.8, lean: -0.25, cast: 'push' },
+  u_alev: { dur: 0.75, jump: 1.3, jumpAt: [0, 0.62], spin: 1 },
+  u_kalkan: { dur: 0.8, cast: 'raise', spin: 1 },
+  m_sifa: { dur: 0.8, cast: 'raise' },
+  m_simsek: { dur: 0.7, jump: 0.4, jumpAt: [0, 0.5], cast: 'push' },
+  m_kutsama: { dur: 1.0, jump: 0.6, jumpAt: [0.1, 0.9], cast: 'raise' },
+  m_kukreme: { dur: 0.8, lean: 0.35, lunge: 0.4, cast: 'push' },
+  o_coklu: { dur: 0.6, jump: 0.5, jumpAt: [0, 0.5], lunge: -0.9, bow: true },
+  o_zehirli: { dur: 0.55, lean: -0.15, bow: true },
+  o_ates: { dur: 0.6, lean: -0.25, lunge: -0.3, bow: true },
+  o_hafif: { dur: 0.6, jump: 0.8, jumpAt: [0, 0.8], spin: 1 },
+};
+function startMove(p, sk) {
+  const spec = MOVES[sk.key] || (sk.target === 'self' || sk.target === 'heal' ? { dur: 0.8, cast: 'raise' } : { dur: 0.5, combos: [[0, sk.combo || 0]] });
+  p.move = { spec, t: 0, fired: 0 };
+  if (spec.cast) { p.castT = p.castDur = Math.max(0.6, spec.dur); p.castKind = spec.cast; }
+  if (spec.bow) { p.swingT = SWING_T; p.combo = 0; }
+}
+const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 function skillPoseUpdate(p, dt) {
-  if (!p.model || (!p.spinT && !p.jumpT && !p.posed)) return;
-  const wrap = p.model.parent;
-  p.posed = false;
-  if (p.spinT > 0) {
-    p.spinT = Math.max(0, p.spinT - dt);
-    wrap.rotation.y = (1 - p.spinT / p.spinDur) * Math.PI * 4;
-    p.posed = true;
-  } else wrap.rotation.y = 0;
-  let jump = 0;
-  if (p.jumpT > 0) {
-    p.jumpT = Math.max(0, p.jumpT - dt);
-    jump = Math.sin((1 - p.jumpT / p.jumpDur) * Math.PI) * 0.45;
-    p.posed = true;
+  if (!p.model) return;
+  const wrap = p.model.parent, mv = p.move;
+  p.moveOff = p.moveOff || { x: 0, z: 0 };
+  if (!mv) {
+    if (p.posed) { wrap.rotation.y = 0; wrap.rotation.x = 0; p.moveOff.x = p.moveOff.z = 0; wrap.position.y = riderBaseY(p); p.posed = false; }
+    return;
   }
-  wrap.position.y = riderBaseY(p) + jump;
+  mv.t += dt;
+  const s = mv.spec, k = clamp01(mv.t / s.dur);
+  p.posed = true;
+  // zamanı gelen kılıç vuruşları
+  for (const c of s.combos || []) if (mv.fired < (s.combos.indexOf(c) + 1) && k >= c[0]) {
+    mv.fired++; p.swingT = SWING_T; p.combo = c[1]; if (p.cls !== 'okcu') p.slashT = 0.3;
+  }
+  const [ja, jb] = s.jumpAt || [0, 1], u = clamp01((k - ja) / (jb - ja));
+  const y = s.jump && u > 0 && u < 1 ? Math.sin(u * Math.PI) * s.jump : 0;
+  const yaw = s.spin ? ease(k) * s.spin * Math.PI * 2 : 0;
+  let pitch = s.flip ? s.flip * ease(u) * Math.PI * 2 : 0;
+  if (s.lean) pitch += s.lean * Math.sin(k * Math.PI);
+  let fwd = 0;
+  if (s.lunge) fwd = s.wave ? s.lunge * Math.abs(Math.sin(k * Math.PI * s.wave)) * (1 - k * 0.3) : s.lunge * Math.sin(k * Math.PI);
+  // takla gövdenin ortası etrafında döner (ayak değil)
+  const fz = Math.cos(-FACE_OFFSET), fx = Math.sin(-FACE_OFFSET), cH = 0.95;
+  wrap.rotation.y = yaw;
+  wrap.rotation.x = pitch * fz;
+  wrap.position.y = riderBaseY(p) + y + cH * (1 - Math.cos(pitch));
+  const off = fwd + cH * Math.sin(pitch);
+  p.moveOff.x = fx * off; p.moveOff.z = fz * off;
+  if (mv.t >= s.dur) p.move = null;
 }
 // balık tutarken elde olta
 function setRod(p, on) {
@@ -969,7 +1023,8 @@ function updateCapes(p, t) {
   if (p.robe) p.robe.visible = !p.mounted;
 }
 function applySwing(p) {
-  if (p.swingT <= 0 || !p.bones) { if (p.model) p.model.parent.position.x = p.model.parent.position.z = 0; return; }
+  const mo = p.moveOff || { x: 0, z: 0 };
+  if (p.swingT <= 0 || !p.bones) { if (p.model) { p.model.parent.position.x = mo.x; p.model.parent.position.z = mo.z; } return; }
   const t = 1 - p.swingT / SWING_T;
   const a = p.group.rotation.y - FACE_OFFSET;
   _f.set(Math.sin(a), 0, Math.cos(a));
@@ -983,8 +1038,8 @@ function applySwing(p) {
   rotWorld(p.bones.fore, _r, o.fore);
   // ileri hamle: modeli kendi önüne doğru it (grubun yerel ekseninde)
   const wrap = p.model.parent;
-  wrap.position.x = Math.sin(-FACE_OFFSET) * o.lunge;
-  wrap.position.z = Math.cos(-FACE_OFFSET) * o.lunge;
+  wrap.position.x = Math.sin(-FACE_OFFSET) * o.lunge + mo.x;
+  wrap.position.z = Math.cos(-FACE_OFFSET) * o.lunge + mo.z;
 }
 
 // büyü pozu: 'raise' iki kol başın üstüne kalkar, 'push' sağ kol öne uzanır, gövde hafif geriye
@@ -1125,7 +1180,7 @@ function updateMobs(dt) {
     m.v.root.rotation.y = angleLerp(m.v.root.rotation.y, m.ry, 1 - Math.exp(-10 * dt));
     if (m.atkT > 0) m.atkT = Math.max(0, m.atkT - dt);
     const atk = m.atkT > 0 ? Math.sin((1 - m.atkT / 0.4) * Math.PI) : 0;
-    m.v.update(m.t, m.moving, atk, dt);
+    if (!(m.frozenUntil > performance.now())) m.v.update(m.t, m.moving, atk, dt);
     placeLabel(m.label, m.v.root.position.x, m.height + 0.4, m.v.root.position.z);
   }
 }
@@ -1901,7 +1956,7 @@ function showLevelBanner(level) {
 }
 function levelUpFx(p) {
   fx.levelUp(p);
-  p.jumpT = p.jumpDur = 0.6;
+  p.move = { spec: { dur: 0.6, jump: 0.6 }, t: 0, fired: 0 };   // seviye atlayınca sevinçle zıplar
 }
 function skillDef(key) {
   for (const list of Object.values(SKILLS)) for (const sk of list) if (sk.key === key) return sk;
@@ -2055,8 +2110,7 @@ export function startGame(sock, opts = {}) {
   socket.on('skillFx', ({ id, key, targets, x, z, lv }) => {
     const sk = skillDef(key); if (!sk) return;
     const p = players[id];
-    const pose = fx.skillPose(sk);
-    if (p && (sk.combo != null || pose.bow)) { p.swingT = SWING_T; p.combo = sk.combo || 0; if (p.cls !== 'okcu') p.slashT = 0.3; }
+    if (p) startMove(p, sk);
     const from = p ? p.group.position : { x, z };
     sfx.skill(sk, from);
     if (p && sk.target !== 'heal') sfx.grunt(from, p.cls === 'ninja' || p.cls === 'saman');
@@ -2065,11 +2119,14 @@ export function startGame(sock, opts = {}) {
     for (const t of targets) { const tp = targetPos(t); if (tp) tl.push({ x: tp.x, y: 0, z: tp.z, obj: players[t] || null }); }
     const facing = p ? p.group.rotation.y - FACE_OFFSET : 0;
     try { fx.playSkill(sk, { caster: p || null, from: { x: from.x, z: from.z }, facing, targets: tl, lv: lv || 0 }); } catch (e) { console.warn('Beceri efekti', key, e); }
-    if (p) {
-      if (pose.spin) { p.spinT = p.spinDur = pose.spin; }
-      if (pose.jump) { p.jumpT = p.jumpDur = pose.jump; }
-      if (pose.cast) { p.castT = p.castDur = 0.8; p.castKind = pose.cast; }
-    }
+  });
+  // sersemleme / donma: yaratık yerinde kalır, üstünde yıldızlar ya da buz kalıbı
+  socket.on('mobStun', ({ id, sec, kind }) => {
+    const m = mobs[id]; if (!m) return;
+    m.frozenUntil = performance.now() + sec * 1000;
+    const pos = m.v.root.position;
+    if (kind === 'freeze') fx.iceBlock(pos, sec, Math.max(0.8, (m.height || 1.6) / 1.7));
+    else fx.stunStars(pos, sec, (m.height || 1.6) + 0.35);
   });
   socket.on('playerJoin', (p) => { const o = createPlayer(p); if (p.mounted) setMount(o, true); log(`<b>${esc(p.name)}</b> haritaya geldi.`); });
   socket.on('playerLeave', ({ id }) => removePlayer(id));
@@ -2538,10 +2595,7 @@ function lobbyFlourish(appear) {
   }]));
   if (sk) lobby.show.push([now + 2.2, () => {
     try { fx.playSkill(sk, { caster: o, from: { x: 0, z: 0 }, facing: o.ry - FACE_OFFSET, targets: sk.target === 'self' || sk.target === 'heal' ? [{ x: 0, y: 0.9, z: 0, obj: o }] : [{ x: Math.sin(o.ry - FACE_OFFSET) * 3, y: 0.9, z: Math.cos(o.ry - FACE_OFFSET) * 3 }], lv: 18 }); } catch (e) { console.warn(e); }
-    const pose = fx.skillPose(sk);
-    if (pose.spin) o.spinT = o.spinDur = pose.spin;
-    if (pose.jump) o.jumpT = o.jumpDur = pose.jump;
-    if (pose.cast) { o.castT = o.castDur = 0.8; o.castKind = pose.cast; }
+    startMove(o, sk);
     sfx.skill(sk, o.group.position);
   }]);
 }
@@ -2616,6 +2670,7 @@ function loop() {
     camPos.copy(me.group.position).add(camOffset);
     camera.position.lerp(camPos, 1 - Math.exp(-8 * dt));
     camera.lookAt(camera.position.x - camOffset.x, 1.2, camera.position.z - camOffset.z);
+    if (shake.t > 0) { shake.t = Math.max(0, shake.t - dt); const a = shake.amp * (shake.t / shake.dur); camera.position.x += (Math.random() - 0.5) * a; camera.position.y += (Math.random() - 0.5) * a; }
     sun.position.set(me.group.position.x + 12, 25, me.group.position.z + 6);
     sun.target.position.copy(me.group.position);
     sfx.setListener(me.group.position.x, me.group.position.z);
@@ -2641,7 +2696,7 @@ function loop() {
     applyCast(p, dt);
     updateCapes(p, clock.elapsedTime);
     updateAuras(p, dt, clock.elapsedTime);
-    if (p.model) p.model.parent.rotation.x = (p.id === myId ? amDead : p.dead) ? -Math.PI / 2 : 0;
+    if (p.model) { if (p.id === myId ? amDead : p.dead) p.model.parent.rotation.x = -Math.PI / 2; else if (!p.move) p.model.parent.rotation.x = 0; }
     if (p.spirit) {
       // ruh: havada süzülür, hafifçe sallanır, yakına gelen oyuncuya döner
       const sp = p.spirit, t = clock.elapsedTime + sp.phase;

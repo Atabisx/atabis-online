@@ -358,6 +358,12 @@ class Zone {
       const heal = Math.round(dmg * ((sk.lifesteal || 0) + (steal || 0) / 100));
       if (heal) this.hooks.heal(p, heal);
       if (kind === 'mob') {
+        // sersemletme / dondurma: yaratık kısa süre kıpırdayamaz (boss'larda yarı süre)
+        if (sk.stun && this.mobs.has(t.id)) {
+          const sec = sk.stun * (t.d.boss ? 0.5 : 1);
+          t.stunUntil = Date.now() + sec * 1000;
+          this.emit('mobStun', { id: t.id, sec, kind: sk.freeze ? 'freeze' : 'stun' });
+        }
         if (sk.dot && this.mobs.has(t.id)) {
           const per = Math.max(1, Math.round(dmg * ((sk.dot.mult || 0) + (sk.dot.multLv || 0) * (lv - 1)) / (crit ? 2 : 1)));
           t.dots = t.dots.filter((d) => d.key !== sk.key);
@@ -388,6 +394,7 @@ class Zone {
         if (!this.mobs.has(m.id)) continue;
       }
       let tx = null, tz = null, speed = d.speed;
+      if (m.stunUntil && now < m.stunUntil) { if (m.moving) { m.moving = false; } continue; }
       // saldırgan yaratık yakındaki oyuncuyu fark eder
       if (m.state === 'idle' && d.aggro > 0) {
         let best = null, bd = d.aggro;

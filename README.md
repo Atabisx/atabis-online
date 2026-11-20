@@ -4,7 +4,25 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 5.0 (bu sürüm): Topluluk ve oyunu tutturacak sistemler
+### Aşama 5.1 (bu sürüm): Yeni karakterler, petler, ayarlar, beceri hareketleri, Android uygulaması
+
+- **Yeni karakter modelleri:** Savaşçı = barbar kız (kılıç), Ninja = yelpazeli dansçı, Sura = melek kanatlı kız (mızrak), Okçu = iblis avcısı (arbalet). Şaman aynı kaldı.
+- **Petler artık metin taşlarından düşer** (her kırılan taşta %1,5; Ejder Yavrusu bunların %5'i). Dükkânda satılmaz. Her pet karaktere özellik verir:
+  - Kurt: kritik +5
+  - Tilki: delici +5
+  - Ayı: can +600, savunma +12
+  - Baykuş: saldırı hızı +6, mana +300
+  - Yılan: kaçınma +5, delici +3
+  - Ejder Yavrusu: saldırı +40, kritik +4, can +400
+- **Ayarlar (⚙):** efekt ve müzik ses seviyesi, arayüz büyütme/küçültme, kamera uzaklığı, grafik kalitesi, tam ekran, Android uygulamasını indirme, karakter değiştirme ve çıkış.
+- **Sade ekran:** ses, müzik, tam ekran, karakter, arkadaş ve beceri düğmeleri Menü ile Ayarlar'a taşındı. Solda yalnızca Menü, Ayarlar, Sohbet, Binek ve Pazar düğmeleri var.
+- **Pazar düğmesi:** köyde soldaki 🏪 düğmesi tezgâhını açar.
+- **Metin2 tarzı beceri hareketleri:** karakterler zıplar, döner, takla atar, atılır ve yere vurur. Yerde çatlaklar, toz ve kamera sarsıntısı olur; artık üstten yükselen ışık sütunları yok.
+  - **Buz Oku** (Okçu, Zehirli Ok'un yerine): hedefi 2 saniye buz kalıbına hapseder.
+  - **Fırtına** (Savaşçı) ve **Gölge** (Ninja) hedefi sersemletir; başında yıldızlar döner. Boss'larda bu süre yarıya iner.
+- **Android uygulaması:** aşağıdaki "Android uygulaması (APK)" bölümüne bak.
+
+### Aşama 5.0: Topluluk ve oyunu tutturacak sistemler
 
 Hepsi sol menüdeki **☰ Menü** düğmesinden açılır. Veritabanı tabloları sunucu açılırken kendiliğinden eklenir.
 
@@ -22,7 +40,7 @@ Hepsi sol menüdeki **☰ Menü** düğmesinden açılır. Veritabanı tablolar�
   - Ganimet Bereketi (2 kat düşme): Salı ve Perşembe 20:30.
   - GM komutu: `/etkinlik <metin|exp|boss|drop> [dakika]`, bitirmek için `/etkinlik bitir <tür>`.
 - **Sıralama:** seviye, canavar avcısı, düello, lonca ve krallık.
-- **Kostüm, kanat ve evcil hayvan:** köydeki Kostümcü'de 6 kostüm (zırhın rengini değiştirir), 4 kanat (biraz istatistik verir) ve 4 evcil hayvan (peşinden gelir, +%3–4 tecrübe) satılır. Ejder Kanadı ve Ejder Yavrusu sadece boss'lardan düşer.
+- **Kostüm, kanat ve evcil hayvan:** köydeki Kostümcü'de 6 kostüm (zırhın rengini değiştirir), 4 kanat (biraz istatistik verir) satılır. Ejder Kanadı sadece boss'lardan düşer. (Evcil hayvanlar 5.1'den beri metin taşlarından düşer.)
 - **Öğretici ve Rehber:** yeni oyuncular 5 adımlık öğreticiyi görür ve sonunda küçük bir ödül alır. Menü › Rehber'de tüm sistemlerin açıklaması vardır.
 - **Otomatik yedek:** `bash scripts/install-backup.sh` komutu bir kez çalıştırılınca her gece 04:30'da veritabanı yedeği `~/atabis-yedek` klasörüne alınır (en yeni 14 yedek saklanır). Elle yedek almak için `bash scripts/backup.sh`.
 
