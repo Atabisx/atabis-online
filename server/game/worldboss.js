@@ -113,10 +113,13 @@ function createWorldBoss(W) {
       give(R.LEAVES[Math.floor(Math.random() * R.LEAVES.length)], 3);
     } else give('kutsama', 1);
     p.yang += yang;
+    // Ejder Parası (Nesne Market'te harcanır)
+    const ep = killed ? (rank === 1 ? 30 : rank <= 3 ? 20 : rank <= 10 ? 10 : 3) : 0;
+    if (ep && W.addEp) W.addEp(p, ep);
     const exp = Math.round(R.expForLevel(p.level) * (killed ? 0.08 + Math.min(0.25, share * 2) : 0.03));
     if (exp > 0) giveExp(p, exp);
     sendInv(p); save(p);
-    p.socket.emit('wbEnd', { killed, rank, share: +(share * 100).toFixed(1), dmg: row.dmg, yang, exp, items, lastHit: wb.lastHit === p.charId, top: last && last.top });
+    p.socket.emit('wbEnd', { killed, rank, share: +(share * 100).toFixed(1), dmg: row.dmg, yang, exp, ep, items, lastHit: wb.lastHit === p.charId, top: last && last.top });
   }
   function end(killed) {
     if (!wb.active) return;

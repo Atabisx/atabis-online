@@ -280,6 +280,7 @@ class Zone {
         const key = Math.random() < 0.05 ? 'pet_ejder' : pets[Math.floor(Math.random() * pets.length)];
         if (R.ITEMS[key]) { this.makeDrop(best.x, best.z, p.id, { key }); this.hooks.announce(`${p.name}, ${best.name} kırarak ${R.ITEMS[key].name} buldu!`, this); }
       }
+      if (this.hooks.stoneBonus) for (const k of this.hooks.stoneBonus()) this.makeDrop(best.x, best.z, p.id, { key: k, n: 1 });
       this.makeDrop(best.x, best.z, p.id, null, Math.round((50 + best.lv * 30) * (n + Math.random())));
       if (!best.extra) setTimeout(() => this.spawnStone(), 15000);
     }

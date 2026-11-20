@@ -1308,6 +1308,8 @@ function iconBuilder(key, def) {
   if (key === 'yem') return () => icons.wormMesh();
   if (key === 'istiridye') return () => icons.shellMesh();
   if (key === 'pet_sandik') return () => icons.chestBoxMesh('#5a3a6a', '#ffd36b');
+  if (def.timed && def.timed.kind === 'expring') return () => icons.ringMesh('#ffd23f');
+  if (def.timed) return () => icons.potionMesh({ ...def, color: def.color });
   if (key === 'at_muhru' || key === 'savas_muhru') return () => icons.medalMesh();
   if (key === 'isin_yuzugu') return () => icons.ringMesh();
   return null;
@@ -1428,6 +1430,7 @@ function renderDetail() {
   let buttons;
   if (equipped) buttons = '<button data-act="unequip">Çıkar</button>';
   else if (def.slot === 'potion' || def.slot === 'use') buttons = '<button data-act="use">Kullan</button><button class="alt" data-act="drop">Yere at</button>';
+  else if (def.slot === 'fish' && def.open) buttons = `<button data-act="use">Aç</button>${(it.n || 1) > 1 ? `<button data-act="openall">Hepsini aç (${Math.min(50, it.n)})</button>` : ''}<button class="alt" data-act="drop">Yere at</button>`;
   else if (def.slot === 'fish' || def.slot === 'gem' || def.slot === 'material') buttons = '<button class="alt" data-act="drop">Yere at</button>';
   else if (def.slot === 'stone') buttons = `<button data-act="socket" style="background:${def.color};color:#111">${def.stone.for === 'weapon' ? 'Silaha tak' : 'Zırha tak'}</button><button class="alt" data-act="drop">Yere at</button>`;
   else buttons = '<button data-act="equip">Giy</button><button class="alt" data-act="drop">Yere at</button>';
@@ -1457,6 +1460,7 @@ detailEl.addEventListener('click', (e) => {
   if (b.dataset.act === 'equip') socket.emit('equip', selected.uid);
   if (b.dataset.act === 'unequip') socket.emit('unequip', selected.slot);
   if (b.dataset.act === 'drop') socket.emit('dropItem', selected.uid);
+  if (b.dataset.act === 'openall' && it) { socket.emit('openAll', it.uid); sfx.click(); return; }
   if (b.dataset.act === 'use' && it) { socket.emit('useItem', it.uid); if (ITEMS[it.key] && ITEMS[it.key].slot === 'potion') sfx.potion(); return; }
   if (b.dataset.act === 'enchant') { socket.emit('enchant', selected.slot ? { slot: selected.slot } : { uid: selected.uid }); return; }
   if (b.dataset.act === 'reroll') { socket.emit('reroll', selected.slot ? { slot: selected.slot } : { uid: selected.uid }); return; }
@@ -1642,11 +1646,17 @@ let quests = {};
 const buffsEl = document.getElementById('buffs');
 let buffList = {}, buffAt = 0;
 const BUFF_NAMES = { atk: 'Saldırı', def: 'Savunma', atkspeed: 'Saldırı hızı', movespeed: 'Hareket hızı', crit: 'Kritik' };
+let timedList = {}, timedAt = 0;
+const TIMED_SHORT = { autohp: '❤ Oto iksir', automp: '💧 Oto iksir', expring: '✦ Tecrübe +%25' };
+const fmtLong = (s) => (s >= 86400 ? `${Math.floor(s / 86400)}g ${Math.floor((s % 86400) / 3600)}s` : s >= 3600 ? `${Math.floor(s / 3600)}s ${Math.floor((s % 3600) / 60)}dk` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`);
 function renderBuffs() {
-  const passed = (performance.now() - buffAt) / 1000;
+  const passed = (performance.now() - buffAt) / 1000, tp = (performance.now() - timedAt) / 1000;
   buffsEl.innerHTML = Object.entries(buffList).map(([stat, b]) => {
     const left = Math.max(0, Math.round(b.left - passed));
     return left > 0 ? `<span>${BUFF_NAMES[stat] || stat} +${b.value}${stat === 'atk' || stat === 'def' ? '' : '%'} · ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}</span>` : '';
+  }).join('') + Object.entries(timedList).map(([k, t]) => {
+    const left = Math.max(0, Math.round(t.left - tp));
+    return left > 0 ? `<span class="timed" title="${esc(t.name)}">${TIMED_SHORT[k] || esc(t.name)} · ${fmtLong(left)}</span>` : '';
   }).join('');
 }
 setInterval(renderBuffs, 1000);
@@ -2215,6 +2225,9 @@ export function startGame(sock, opts = {}) {
   socket.on('attrs', (a) => { attrs = a; renderChar(); });
   socket.on('skillCd', ({ key, until }) => { skillCdUntil[key] = { until: performance.now() + until * 1000, total: until * 1000 }; });
   socket.on('buffs', (list) => { buffList = list; buffAt = performance.now(); renderBuffs(); });
+  socket.on('timed', (list) => { timedList = list || {}; timedAt = performance.now(); renderBuffs(); });
+  socket.on('autoPot', ({ id }) => { const p = players[id]; if (p && p.id === myId) sfx.potion(); if (p) ringFx(p.group.position.x, p.group.position.z, 1.4, '#ff6a7a', 0.5); });
+  socket.on('mall', (d) => { mallData = d; renderMall(); });
   socket.on('depot', (d) => { depotData = d; renderDepot(); depotWin.classList.add('open'); });
   socket.on('mainQuests', (l) => { mainQuests = l || []; social.setMainQuests(mainQuests); if (invEl.classList.contains('open')) renderInv(); });
   socket.on('quests', (q) => {
@@ -2900,7 +2913,30 @@ const menuHandlers = {
   help: () => social.openHelp(),
   settings: () => document.getElementById('setBtn').click(),
   depot: () => { if (!currentMap || !currentMap.village) { toast('Depo sadece köylerde açılır.'); return; } if (socket) socket.emit('depotOpen'); },
+  mall: () => { if (socket) socket.emit('mallGet'); mallWin.classList.add('open'); renderMall(); },
 };
+// ---------- nesne market (Ejder Parası) ----------
+let mallData = null, mallCat = 'Güçlendirme';
+const mallWin = document.getElementById('mallwin');
+function renderMall() {
+  if (!mallWin.classList.contains('open')) return;
+  const d = mallData;
+  document.getElementById('mallEp').textContent = d ? d.ep.toLocaleString('tr-TR') : '…';
+  if (!d) return;
+  const cats = [...new Set(d.items.map((x) => x.cat))];
+  if (!cats.includes(mallCat)) mallCat = cats[0];
+  document.getElementById('mallTabs').innerHTML = cats.map((c) => `<button data-mcat="${esc(c)}" class="${c === mallCat ? 'on' : ''}">${esc(c)}</button>`).join('');
+  document.getElementById('mallList').innerHTML = d.items.filter((x) => x.cat === mallCat).map((x) => {
+    const def = ITEMS[x.key]; if (!def) return '';
+    return `<div class="srow">${itemIcon(x.key, def, 22)}<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(def.name)}</b><br><small>${esc(def.desc || statText(def))}</small></span>` +
+      `<button data-mbuy="${x.key}" ${d.ep >= x.price ? '' : 'disabled'}>${x.price} EP</button></div>`;
+  }).join('');
+}
+mallWin.addEventListener('click', (e) => {
+  if (e.target.id === 'mallwin' || e.target.closest('#mallX')) { mallWin.classList.remove('open'); return; }
+  const c = e.target.closest('[data-mcat]'); if (c) { mallCat = c.dataset.mcat; sfx.click(); renderMall(); return; }
+  const b = e.target.closest('[data-mbuy]'); if (b && socket) { const def = ITEMS[b.dataset.mbuy]; askBox(`${def.name} satın alınsın mı?`, (ok) => { if (ok) socket.emit('mallBuy', { key: b.dataset.mbuy }); }, 'Satın al', 'Vazgeç'); }
+});
 // ---------- depo ----------
 let depotData = null;
 const depotWin = document.getElementById('depotwin');

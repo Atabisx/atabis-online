@@ -154,6 +154,19 @@ def build_items():
     for key, name, value in fish:
         items[key] = {'name': name, 'slot': 'fish', 'lv': 1, 'price': value * 4, 'rarity': 1 if value >= 600 else 0,
                       'color': '#7fb3c4' if key != 'b_cizme' else '#6b4a2e', 'stack': 200}
+        if key != 'b_cizme':
+            items[key]['open'] = {'b_hamsi': 1, 'b_sazan': 2, 'b_alabalik': 3, 'b_levrek': 4, 'b_yayin': 6}[key]
+            items[key]['desc'] = 'Aç: içinden efsun nesneleri, yaprak, iksir, biraz yang ve şanslıysan Pet Sandığı ya da otomatik iksir çıkar. İstersen balıkçıya sat.'
+    # süreli eşyalar: kullanınca süre başlar (çevrimdışıyken de işler), üst üste kullanılırsa süre uzar
+    for kind, nm, color in [('hp', 'Kırmızı', '#e0453a'), ('mp', 'Mavi', '#3d8fe0')]:
+        for suf, label, sec in [('1s', '1 saat', 3600), ('1g', '1 gün', 86400), ('20g', '20 gün', 20 * 86400)]:
+            items[f'oto_{kind}_{suf}'] = {'name': f'Otomatik {nm} İksir ({label})', 'slot': 'use', 'timed': {'kind': 'auto' + kind, 'sec': sec},
+                'desc': f'Kullanınca {label} boyunca {"canın %70" if kind == "hp" else "manan %50"}\'in altına düşünce kendiliğinden {"can" if kind == "hp" else "mana"} doldurur. Metin taşlarından ve balıklardan düşer.',
+                'lv': 1, 'price': 0, 'rarity': 2 if suf == '20g' else 1, 'color': color, 'stack': 20}
+    for suf, label, sec in [('1g', '1 gün', 86400), ('7g', '7 gün', 7 * 86400), ('30g', '30 gün', 30 * 86400)]:
+        items[f'exp_yuzuk_{suf}'] = {'name': f'Tecrübe Yüzüğü ({label})', 'slot': 'use', 'timed': {'kind': 'expring', 'sec': sec},
+            'desc': f'Kullanınca {label} boyunca canavarlardan %25 fazla tecrübe kazanırsın. Nesne Market\'te satılır.',
+            'lv': 1, 'price': 0, 'rarity': 2, 'color': '#ffd23f', 'stack': 20}
     items['pet_sandik'] = {'name': 'Pet Sandığı', 'slot': 'use', 'desc': 'Aç: içinden rastgele bir evcil hayvan çıkar (Ejder Yavrusu çok nadir). Balık tutarken nadiren takılır.', 'lv': 1, 'price': 0, 'rarity': 2, 'color': '#b48ad9', 'stack': 50}
     items['istiridye'] = {'name': 'İstiridye', 'slot': 'use', 'desc': 'Aç: içinden nadiren inci çıkar.', 'lv': 1, 'price': 40, 'rarity': 1, 'color': '#c8c0b0', 'stack': 200}
     for key, name, value, color in [('inci_beyaz', 'Beyaz İnci', 3000, '#f4f1e8'), ('inci_mavi', 'Mavi İnci', 9000, '#7fb3ff'), ('inci_kirmizi', 'Kırmızı İnci', 30000, '#ff6a5a')]:

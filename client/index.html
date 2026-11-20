@@ -173,6 +173,7 @@
         <button data-menu="rank"><span class="mi">🏆</span>Sıralama</button>
         <button data-menu="stall"><span class="mi">🏪</span>Pazar tezgâhı</button>
         <button data-menu="depot"><span class="mi">📦</span>Depo</button>
+        <button data-menu="mall"><span class="mi">💎</span>Nesne Market</button>
         <button data-menu="dungeon"><span class="mi">🕸️</span>Zindan</button>
         <button data-menu="events"><span class="mi">🎉</span>Etkinlikler</button>
         <button data-menu="friends"><span class="mi">👥</span>Arkadaşlar</button>
@@ -304,6 +305,14 @@
       <div class="mhead"><b id="stTitle" style="color:#ffd36b"></b><span id="stOwner" style="font-size:12px;color:#8ec5ff"></span><button id="stallX" class="xbtn" aria-label="Kapat">×</button></div>
       <div id="stItems" class="stlist"></div>
       <small class="gtxt">Satın almak için dokun. Yangın: <b id="stYang"></b></small>
+    </div>
+  </div>
+  <div id="mallwin" class="modal" role="dialog" aria-label="Nesne Market">
+    <div class="modalbox">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">NESNE MARKET</b><span class="mallep">💎 <b id="mallEp">…</b> Ejder Parası</span><button id="mallX" class="xbtn" aria-label="Kapat">×</button></div>
+      <div id="mallTabs" class="gtabs" role="tablist"></div>
+      <div id="mallList" class="shoplist"></div>
+      <small class="gtxt">Ejder Parası (EP) hesabındaki bütün karakterlerde ortaktır. Dünya boss'unda ilk sıralara girerek ya da GM'den kazanılır.</small>
     </div>
   </div>
   <div id="depotwin" class="modal" role="dialog" aria-label="Depo">

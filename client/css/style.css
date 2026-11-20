@@ -560,3 +560,8 @@ body.ingame #autoBtn { display: flex; }
 #wbTop small { color: #c9c4b6; font-weight: 600; }
 #wbMe { color: #8ec5ff; }
 #wbN { color: #c9c4b6; font-weight: 600; }
+/* nesne market ve süreli etkiler */
+.mallep { font-size: 13px; color: #c9c4b6; margin-left: auto; margin-right: 8px; }
+.mallep b { color: #8fd8ff; }
+#mallList { display: flex; flex-direction: column; gap: 6px; max-height: 60vh; max-height: 60dvh; overflow-y: auto; }
+#buffs .timed { border-color: #ffd23f; color: #ffe8a0; }

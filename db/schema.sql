@@ -87,3 +87,5 @@ CREATE TABLE IF NOT EXISTS depots (
   items      JSONB       NOT NULL DEFAULT '[]',
   yang       BIGINT      NOT NULL DEFAULT 0
 );
+-- Ejder Parası (EP): Nesne Market'in parası, hesabın bütün karakterleri ortak kullanır
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS ep INTEGER NOT NULL DEFAULT 0;

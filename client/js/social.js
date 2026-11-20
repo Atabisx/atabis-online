@@ -114,6 +114,7 @@ function showWbReward(r) {
   $('rewardTitle').textContent = r.killed ? 'KADİM LAV EJDERİ YENİLDİ!' : 'EJDER KAÇTI';
   $('rewardItems').innerHTML = `<div class="rwi"><b>${r.yang.toLocaleString('tr-TR')}</b><small>Yang</small></div>` +
     (r.exp ? `<div class="rwi"><b>${r.exp.toLocaleString('tr-TR')}</b><small>Tecrübe</small></div>` : '') +
+    (r.ep ? `<div class="rwi"><b>💎 ${r.ep}</b><small>Ejder Parası</small></div>` : '') +
     r.items.map(([k, n]) => { const d = C.ITEMS[k]; return `<div class="rwi">${C.itemIcon(k, d, 30)}<small>${C.esc(d ? d.name : k)}${n > 1 ? ' x' + n : ''}</small></div>`; }).join('');
   $('rewardSub').textContent = `Hasar sıran: ${r.rank}. (%${r.share} · ${r.dmg.toLocaleString('tr-TR')} hasar)${r.lastHit ? ' · SON VURUŞ SENİN!' : ''}`;
   $('rewardwin').classList.add('open');

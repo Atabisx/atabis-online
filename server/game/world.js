@@ -12,6 +12,7 @@ const { createDungeons } = require('./dungeon');
 const { createMainQuests } = require('./mainq');
 const { createDepot } = require('./depot');
 const { createWorldBoss } = require('./worldboss');
+const { createPremium } = require('./premium');
 const { createEvents } = require('./events');
 const { createRanking } = require('./ranking');
 
@@ -220,10 +221,16 @@ function createWorld(io) {
     }
     if (cmd === 'savas') { realm.gm(p, args); return; }
     if (cmd === 'etkinlik') { events.gm(p, args); return; }
+    if (cmd === 'ep') {
+      const n = Number(args[1]);
+      if (!a0 || !Number.isFinite(n)) { notice(p, 'Kullanım: /ep <karakter adı> <miktar> (eksi miktar düşer)'); return; }
+      premium.grantEp(a0, Math.round(n)).then((left) => notice(p, left == null ? `${a0} bulunamadı.` : `${a0} hesabına ${n} EP verildi (şimdi ${left} EP).`)).catch((e) => notice(p, 'EP verilemedi: ' + e.message));
+      return;
+    }
     if (cmd === 'dunyaboss') { worldboss.gm(p, args); return; }
     if (cmd === 'petler') { const n = giveAllPets(p); sendInv(p); notice(p, n ? `${n} evcil hayvan çantana kondu.` : 'Bütün petler zaten sende (ya da çanta dolu).'); return; }
     if (cmd === 'iyiles') { p.hp = p.maxHp; p.mp = p.maxMp; sendHp(p); sendMp(p); return; }
-    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /petler, /iyiles, /savas [bitir], /dunyaboss [bitir], /etkinlik <metin|exp|boss|drop> [dk]');
+    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /petler, /ep <isim> <miktar>, /iyiles, /savas [bitir], /dunyaboss [bitir], /etkinlik <metin|exp|boss|drop> [dk]');
   }
 
   // zindan ve savaş meydanı kaydedilmez: oyuncu tekrar girince köyde başlar
@@ -267,6 +274,8 @@ function createWorld(io) {
     // grup varsa tecrübe yakındaki üyelerle paylaşılır
     giveExp(p, amount) { social.shareExp(p, amount, expRaw); },
     onStoneBroken(p) { social.progress(p, 'stone'); mainq.onStoneBroken(p); },
+    // metin taşından ek ganimet: otomatik iksirler
+    stoneBonus() { const k = premium.autoPotionRoll(0.6); return k ? [k] : []; },
     damagePlayer(p, dmg) {
       if (p.dead) return;
       p.hp = Math.max(0, p.hp - dmg);
@@ -343,9 +352,10 @@ function createWorld(io) {
   const mainq = createMainQuests({ notice, sendInv, addItem, save });
   const depot = createDepot({ db, notice, sendInv, addItem, freeSlotsFor, save });
   const ranking = createRanking({ db });
-  W.expBonus = (p) => realm.expBonus(p) + events.expBonus(p);
+  W.expBonus = (p) => realm.expBonus(p) + events.expBonus(p) + premium.expBonus(p);
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
-  const worldboss = createWorldBoss({ db, io, players, zones, notice, moveToZone, sendInv, addItem, save, villageFor, hooks, giveExp: (p, n) => expRaw(p, n, false, false) });
+  const premium = createPremium({ db, players, notice, sendInv, addItem, freeSlotsFor, save, sendHp, sendMp });
+  const worldboss = createWorldBoss({ db, io, players, zones, notice, moveToZone, sendInv, addItem, save, villageFor, hooks, addEp: (p, n) => premium.addEp(p, n), giveExp: (p, n) => expRaw(p, n, false, false) });
 
   // seviye ödülleri: 25'te at görevi, 30'da olta
   function levelRewards(p) {
@@ -538,6 +548,7 @@ function createWorld(io) {
     mainq.onConnect(p, socket);
     depot.onConnect(p, socket);
     worldboss.onConnect(p, socket);
+    premium.onConnect(p, socket);
     guilds.onConnect(p, socket);
     realm.onConnect(p, socket);
     market.onConnect(p, socket);
@@ -650,6 +661,7 @@ function createWorld(io) {
       if (p.dead) return;
       const def = R.ITEMS[it.key];
       if (!def) return;
+      if (premium.use(p, it, 1)) return;          // süreli eşyalar ve balık açma
       const now = Date.now();
       if (def.slot === 'potion') {
         if (now - p.lastPotion < 600) return;
