@@ -26,6 +26,8 @@ FING_B = {'0': 'Thumb', '1': 'Index', '2': 'Middle', '3': 'Ring', '4': 'Pinky'}
 FING_U = {'thumb': 'Thumb', 'index': 'Index', 'middle': 'Middle', 'ring': 'Ring', 'pinky': 'Pinky'}
 def mixname(n):
     if n in MIXAMO: return 'mixamorig' + MIXAMO[n]
+    # HumanIK (Maya) adları: Character1_RightHand -> mixamorigRightHand
+    if n.startswith('Character1_'): return 'mixamorig' + n[len('Character1_'):]
     import re
     m = re.match(r'Bip001 ([LR]) Finger(\d)(\d?)(Nub)?$', n)
     if m:

@@ -233,10 +233,11 @@ const loader = new GLTFLoader();
 // k: boy ölçeği (verilmezse ölçülür); helm: kask takılınca gizlenen kendi miğferi;
 // helmet: false → kapüşonlu modele kask eşyası giydirilmez (iç içe geçmesin)
 const CHAR_MODELS = {
-  savasci: { url: 'models/chars/savasci.glb', skip: ['helmet'], helm: ['helmet'] },             // boynuzlu miğferli barbar
-  ninja: { url: 'models/chars/ninja.glb', helmet: false },                                     // kapüşonlu suikastçı
-  sura: { url: 'models/chars/sura.glb', hide: ['spear'], k: 1.1 },                              // kanatlı savaşçı (kanatlar boyu etkilemesin)
+  savasci: { url: 'models/chars/savasci.glb', hide: ['sword'], skip: ['sword'] },        // barbar kız (kendi kılıçları gizli, oyunun silahı takılır)
+  ninja: { url: 'models/chars/ninja.glb', hide: ['fan'], skip: ['fan'] },                // yelpaze dansçısı
+  sura: { url: 'models/chars/sura.glb', hide: ['spear'], skip: ['spear'], k: 1.1 },       // kanatlı kadın savaşçı (kanatlar boyu etkilemesin)
   saman: { url: 'models/chars/saman.glb', hide: ['prop'], skip: ['prop', 'outline'], k: 0.933 },
+  okcu: { url: 'models/chars/okcu.glb', hide: ['crossbow'], skip: ['crossbow'] },        // iblis avcısı
 };
 const charModels = {};   // cls -> { scene, calib, clips }
 function loadGlb(url) { return new Promise((res) => loader.load(url, res, undefined, (e) => { console.warn('Model yüklenemedi:', url, e); res(null); })); }
