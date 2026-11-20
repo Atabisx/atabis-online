@@ -1292,6 +1292,7 @@ function iconBuilder(key, def) {
     return g;
   };
   if (s === 'helmet') return () => (def.model && ITEM_MODELS[def.model] ? itemModel(def.model, helmetMesh(def)) : helmetMesh(def));
+  if (s === 'wings' && def.wing && def.wing.model) return () => { const g = buildWings(def.wing); g.children[0].rotation.y = 0; return g; };   // simgede süslü yüz öne
   if (s === 'shoes') return () => icons.bootsMesh(def);
   if (s === 'bracelet') return () => icons.braceletMesh(def);
   if (s === 'earring') return () => icons.earringMesh(def);
@@ -1312,7 +1313,7 @@ function iconBuilder(key, def) {
   return null;
 }
 const ICON_POSE = { weapon: { rz: -0.8, ry: 0.35 }, armor: { ry: 0.45, rx: 0.08 }, helmet: { ry: 0.65, rx: 0.1 }, shoes: { ry: 0.55, rx: 0.2 },
-  bracelet: { ry: 0.3 }, earring: { ry: 0.4 }, potion: { ry: 0.3, rx: 0.1 }, fish: { ry: 0.5 }, gem: { rx: 0.5 }, use: { ry: 0.5, rx: 0.15 }, stone: { rx: 0.4, ry: 0.3 }, material: { rx: 0.3, ry: 0.4 } };
+  bracelet: { ry: 0.3 }, earring: { ry: 0.4 }, wings: { ry: 0.25, rx: 0.15 }, potion: { ry: 0.3, rx: 0.1 }, fish: { ry: 0.5 }, gem: { rx: 0.5 }, use: { ry: 0.5, rx: 0.15 }, stone: { rx: 0.4, ry: 0.3 }, material: { rx: 0.3, ry: 0.4 } };
 function itemIcon(key, def, size = 26, slot) {
   if (def && key) {
     const b = iconBuilder(key, def);

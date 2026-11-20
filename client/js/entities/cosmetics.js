@@ -2,7 +2,7 @@
 // Hepsi kodla üretilir; dışarıdan model gerekmez.
 import * as THREE from 'three';
 import { buildMob } from './mobs.js';
-import { attachMobModel } from './models.js';
+import { attachMobModel, loadModel } from './models.js';
 
 const mats = new Map();
 function wingMat(color, glow, opts = {}) {
@@ -69,7 +69,35 @@ function crystalWing(w) {
   return g;
 }
 
+// hazır modelli kanat (client/models/wings/<ad>.glb, tools/wingglb.py ile hazırlanır):
+// 'sol' ve 'sag' parçaları kendi kök noktalarında çırpar, 'orta' (sırt plakası) sabit
+function modelWings(w) {
+  const root = new THREE.Group();
+  const body = new THREE.Group();
+  body.rotation.y = Math.PI;              // modelin süslü yüzü (+z) sırttan dışarı baksın
+  body.scale.setScalar(w.scale || 1);
+  root.add(body);
+  let L = null, R = null;
+  root.userData.ready = loadModel(`models/wings/${w.model}.glb`).then((scene) => {
+    const m = scene.clone(true);
+    m.traverse((o) => {
+      if (o.isMesh) { o.castShadow = true; o.material = o.material.clone(); o.material.side = THREE.DoubleSide; if (w.glow) { o.material.emissive = new THREE.Color(w.glow); o.material.emissiveIntensity = 0.12; } }
+      if (o.name === 'sol') L = o; if (o.name === 'sag') R = o;
+    });
+    body.add(m);
+  }).catch((e) => console.warn('kanat modeli', e));
+  root.userData.flap = (t, moving) => {
+    if (!L || !R) return;
+    const sp = moving ? 6.5 : 2.0, amp = moving ? 0.38 : 0.12;
+    const a = Math.sin(t * sp) * amp;
+    // kökten öne-arkaya açılıp kapanır, uçlar hafif yukarı kalkar
+    L.rotation.y = -a; R.rotation.y = a;
+    L.rotation.z = -a * 0.25; R.rotation.z = a * 0.25;
+  };
+  return root;
+}
 export function buildWings(w) {
+  if (w.model) return modelWings(w);
   const make = w.kind === 'bat' ? batWing : w.kind === 'crystal' ? crystalWing : featherWing;
   const root = new THREE.Group();
   const R = make(w), L = make(w);

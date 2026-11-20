@@ -4,7 +4,20 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 5.4 (bu sürüm): Dünya boss'u
+### Aşama 5.5 (bu sürüm): Peri Kanadı, logo
+
+- **Peri Kanadı:** lila, pembe ve beyaz tüylü, ortasında altın kalp süslü kanat (`client/models/wings/kanat_peri.glb`, kullanıcının getirdiği model).
+  - Kostümcüde 700.000 yang, Sv. 35.
+  - Verdikleri: can +250, mana +200, savunma +6.
+  - Kanatlar duruyorken hafif, koşarken daha güçlü çırpar.
+- **Kanat modeli hazırlama:** `python3 tools/wingglb.py girdi.glb client/models/wings/ad.glb`
+  - Sergileme ayağını, direğini ve askısını atar.
+  - Kanadı sol, sağ ve orta (sırt plakası) olarak böler, böylece kanatlar çırpabilir.
+  - Dokuları 1024 piksele küçültür.
+  - Sonra `tools/gen_data.py` içindeki WINGS listesine `'model'` türünde bir satır eklemek yeterli.
+- **Logo:** giriş ekranında, sekme başlığında ve telefona yüklenen uygulamada artık "ATABİS ONLINE" yazıyor (eskiden "ATA ONLINE").
+
+### Aşama 5.4: Dünya boss'u
 
 - **Kadim Lav Ejderi** her **Pazar 21:00**'de (İstanbul) gizli **Ejder Yuvası** haritasında uyanır ve 30 dakika kalır.
   - 10 dakika ve 1 dakika kala duyuru yapılır.

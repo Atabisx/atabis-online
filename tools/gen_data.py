@@ -178,10 +178,12 @@ def build_items():
              ('kanat_buz', 'Buz Kanadı', 'crystal', '#9fd8ff', '#bff0ff', 40, 900000, 1, {'def': 18, 'hp': 150}),
              ('kanat_ates', 'Ateş Kanadı', 'feather', '#ff6a2a', '#ffb347', 45, 1200000, 1, {'atk': 18}),
              ('kanat_golge', 'Gölge Kanadı', 'bat', '#3a2550', '#b06bff', 50, 1600000, 1, {'atk': 12, 'hp': 250}),
-             ('kanat_ejder', 'Ejder Kanadı', 'bat', '#a8251c', '#ff6a3d', 60, 0, 2, {'atk': 30, 'hp': 400, 'def': 15})]
+             ('kanat_ejder', 'Ejder Kanadı', 'bat', '#a8251c', '#ff6a3d', 60, 0, 2, {'atk': 30, 'hp': 400, 'def': 15}),
+             # hazır modelli kanat (client/models/wings/kanat_peri.glb)
+             ('kanat_peri', 'Peri Kanadı', 'model', '#b9a2e8', '#ffd6f0', 35, 700000, 1, {'hp': 250, 'mp': 200, 'def': 6})]
     for key, name, kind, color, glow, lv, pr, rar, st in WINGS:
         items[key] = {'name': name, 'slot': 'wings', 'lv': lv, 'price': pr or 5000000, 'rarity': rar, 'color': color,
-                      'wing': {'kind': kind, 'color': color, 'glow': glow}, 'desc': 'Sırtına takılan kanat. ' + ('Sadece boss\'lardan düşer.' if not pr else 'Kostümcüden alınır, boss\'lardan da düşebilir.'), **st}
+                      'wing': {'kind': kind, 'color': color, 'glow': glow, **({'model': key, 'scale': 1.15} if kind == 'model' else {})}, 'desc': 'Sırtına takılan kanat. ' + ('Sadece boss\'lardan düşer.' if not pr else 'Kostümcüden alınır, boss\'lardan da düşebilir.'), **st}
     COSTUMES = [('kostum_altin', 'Altın Kostüm', '#e8b54a', 250000), ('kostum_gece', 'Gece Kostümü', '#2b2445', 250000),
                 ('kostum_kar', 'Kar Kostümü', '#eef4ff', 250000), ('kostum_kizil', 'Kızıl Kostüm', '#b8321f', 250000),
                 ('kostum_orman', 'Orman Kostümü', '#3f7a3a', 250000), ('kostum_gok', 'Gök Kostümü', '#3d8fe0', 250000)]
