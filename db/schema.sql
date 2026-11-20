@@ -81,3 +81,9 @@ CREATE TABLE IF NOT EXISTS stalls (
 );
 -- sıralama sorguları için
 CREATE INDEX IF NOT EXISTS characters_level_idx ON characters (level DESC, exp DESC);
+-- hesap deposu: aynı hesabın bütün karakterleri ortak kullanır
+CREATE TABLE IF NOT EXISTS depots (
+  account_id INTEGER     PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+  items      JSONB       NOT NULL DEFAULT '[]',
+  yang       BIGINT      NOT NULL DEFAULT 0
+);

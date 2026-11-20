@@ -124,7 +124,7 @@ function createSocial(W) {
     sendInv(p); sendDaily(p); save(p);
   }
   function canFit(p, items) {
-    const sim = { inventory: p.inventory.map((i) => ({ ...i })), nextUid: p.nextUid };
+    const sim = { inventory: p.inventory.map((i) => ({ ...i })), nextUid: p.nextUid, quests: p.quests };
     for (const [k, n] of items) if (R.ITEMS[k] && !addItem(sim, k, n)) return false;
     return true;
   }

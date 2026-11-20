@@ -515,3 +515,29 @@ body.ingame #autoBtn { display: flex; }
 #autoBtn b { font-size: 14px; letter-spacing: .04em; } #autoBtn small { font-size: 9px; opacity: .8; margin-top: 2px; }
 #autoBtn.on { border-color: #ffd36b; background: radial-gradient(circle, #6b4a0e, #2a1c06); color: #ffe08a; box-shadow: 0 0 14px rgba(255,200,80,.7); animation: autopulse 1.6s ease-in-out infinite; }
 @keyframes autopulse { 50% { box-shadow: 0 0 4px rgba(255,200,80,.3); } }
+/* oyuncu menüsü: iki sütun, yatay telefonda ekrana sığar; düello en üstte ve geniş */
+#pmenu.open { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 300px; }
+#pmenu b, #pmenu small, #pmenu .duelbtn { grid-column: 1 / -1; }
+#pmenu button { min-height: 44px; font-size: 13px; }
+/* envanter sayfaları (I açık; II ve III görevle açılır) */
+.gridcol { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+#invPages { display: flex; gap: 6px; }
+#invPages button { flex: 1; min-height: 32px; border-radius: 8px; border: 1px solid #5a4a2a; background: #1e1c16; color: #c9c4b6; font-weight: 800; letter-spacing: .1em; }
+#invPages button.on { background: #e8b54a; color: #2a1f08; border-color: #e8b54a; }
+#invPages button.locked { opacity: .55; }
+#invPages button.locked::after { content: ' 🔒'; font-size: 11px; }
+.invlock { grid-column: 1 / -1; padding: 14px; border-radius: 10px; background: #1a1812; border: 1px dashed #5a4a2a; color: #c9c4b6; font-size: 13px; line-height: 1.5; }
+.invlock b { color: #ffd98a; }
+/* ana görevler */
+.mqhead { font-size: 11px; font-weight: 800; letter-spacing: .14em; color: #8b877c; margin-top: 2px; }
+#mainList { display: flex; flex-direction: column; gap: 8px; }
+.dq.locked { opacity: .55; }
+/* depo */
+.depotbox { width: min(860px, 98vw); }
+.depotcols { display: flex; gap: 12px; min-height: 0; }
+.depotcol { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.dgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 5px; max-height: 46vh; max-height: 46dvh; overflow-y: auto; align-content: start; }
+.dgrid .slot { position: relative; }
+.depotyang { align-items: center; flex-wrap: wrap; }
+.depotyang input { width: 120px; }
+@media (max-width: 640px) { .depotcols { flex-direction: column; } }

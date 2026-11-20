@@ -90,7 +90,7 @@ function createMarket(W) {
       if (p.yang < x.price) { notice(p, 'Yeterli yangın yok.'); return; }
       const def = R.ITEMS[x.item.key];
       if (def && def.stack) { if (!addItem(p, x.item.key, x.item.n || 1)) { notice(p, 'Çantan dolu.'); return; } }
-      else { if (p.inventory.length >= R.INV_SIZE) { notice(p, 'Çantan dolu.'); return; } p.inventory.push({ ...x.item, uid: p.nextUid++ }); }
+      else { if (p.inventory.length >= R.invSize(p)) { notice(p, 'Çantan dolu.'); return; } p.inventory.push({ ...x.item, uid: p.nextUid++ }); }
       s.items.splice(i, 1);
       p.yang -= x.price;
       const gain = Math.floor(x.price * (1 - TAX));
@@ -113,11 +113,11 @@ function createMarket(W) {
     socket.on('stallClose', async () => {
       const s = stalls.get(p.charId); if (!s) return;
       // eşyaların çantaya sığıyor mu?
-      const sim = { inventory: p.inventory.map((i) => ({ ...i })), nextUid: p.nextUid };
+      const sim = { inventory: p.inventory.map((i) => ({ ...i })), nextUid: p.nextUid, quests: p.quests };
       for (const x of s.items) {
         const def = R.ITEMS[x.item.key];
         if (def && def.stack) { if (!addItem(sim, x.item.key, x.item.n || 1)) { notice(p, 'Tezgâhtaki eşyalar çantana sığmıyor, yer aç.'); return; } }
-        else { if (sim.inventory.length >= R.INV_SIZE) { notice(p, 'Tezgâhtaki eşyalar çantana sığmıyor, yer aç.'); return; } sim.inventory.push({ ...x.item, uid: sim.nextUid++ }); }
+        else { if (sim.inventory.length >= R.invSize(sim)) { notice(p, 'Tezgâhtaki eşyalar çantana sığmıyor, yer aç.'); return; } sim.inventory.push({ ...x.item, uid: sim.nextUid++ }); }
       }
       p.inventory = sim.inventory; p.nextUid = sim.nextUid;
       p.yang += s.earnings;

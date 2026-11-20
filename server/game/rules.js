@@ -6,7 +6,9 @@ const MAPS = require('../../shared/maps.json');
 const SKILLS = require('../../shared/skills.json');
 
 const MAX_LEVEL = 120;
-const INV_SIZE = 32;
+const INV_SIZE = 32;            // bir envanter sayfası
+// açılmış envanter sayfası kadar yuva (1. sayfa hep açık; 2. ve 3. sayfa görevlerle açılır)
+const invSize = (p) => INV_SIZE * (1 + Math.max(0, Math.min(2, (p && p.quests && p.quests.bag) || 0)));
 const EQUIP_SLOTS = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring', 'costume', 'wings', 'pet'];
 // yükseltilebilen, efsunlanabilen, taş takılabilen ekipman (görünüş eşyaları hariç)
 const GEAR_SLOTS = EQUIP_SLOTS.slice(0, 6);
@@ -144,7 +146,7 @@ function maxMp(p) {
 function defense(p) { return (classOf(p).def || 0) + totals(p).def; }
 function attackPower(p) { return totals(p).atk; }
 function speedMul(p) {
-  return (classOf(p).speed || 1) * (1 + totals(p).movespeed / 100) * (p.mounted ? MOUNT_SPEED : 1);
+  return (classOf(p).speed || 1) * (1 + totals(p).movespeed / 100) * (p.mounted ? MOUNT_SPEED * (p.quests && p.quests.warhorse === 'done' ? 1.1 : 1) : 1);
 }
 function attackCooldown(p) {
   const base = p.class === 'ninja' ? 400 : 480;
@@ -177,7 +179,7 @@ function expGain(mobLv, playerLv, base) {
 const skillLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 
 module.exports = { STONE_TYPES, CLASS_KEYS,
-  ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, EQUIP_SLOTS, GEAR_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
+  ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, invSize, EQUIP_SLOTS, GEAR_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
   BONUS_TYPES, rollBonus, maxBonus, MAX_UP, LEAVES, leafNeed, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
   speedMul, attackCooldown, playerDamage, mobDamage, expGain, skillLabel,
 };

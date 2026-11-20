@@ -1,7 +1,7 @@
 {
  "savasci": {
-  "name": "Savaşçı",
-  "desc": "Ön safta dövüşür. Yüksek can ve savunma, ağır kılıç darbeleri.",
+  "name": "Alp",
+  "desc": "Bozkırın kılıç ustası. Ön safta dövüşür; yüksek can ve savunma, ağır kılıç darbeleri.",
   "hp": 220,
   "mp": 40,
   "atk": 1.0,
@@ -10,8 +10,8 @@
   "startWeapon": "sword0"
  },
  "ninja": {
-  "name": "Ninja",
-  "desc": "Hızlı ve çevik. Kısa hançerlerle seri, kritik vuruşlar.",
+  "name": "Akıncı",
+  "desc": "Hızlı ve çevik baskıncı. Kısa hançerlerle seri, kritik vuruşlar.",
   "hp": 160,
   "mp": 60,
   "atk": 0.9,
@@ -22,8 +22,8 @@
   "startWeapon": "dagger0"
  },
  "sura": {
-  "name": "Sura",
-  "desc": "Kara büyüyü kılıçla birleştirir. Güçlü ama kırılgan.",
+  "name": "Yalaz",
+  "desc": "Kara alevi kılıçla birleştirir. Güçlü ama kırılgan.",
   "hp": 180,
   "mp": 90,
   "atk": 1.15,
@@ -32,8 +32,8 @@
   "startWeapon": "sword0"
  },
  "saman": {
-  "name": "Şaman",
-  "desc": "İyileştirir ve büyü yapar. Grubun can damarı.",
+  "name": "Kam",
+  "desc": "Ataların ruhlarıyla konuşan büyücü. İyileştirir ve büyü yapar; grubun can damarı.",
   "hp": 150,
   "mp": 140,
   "atk": 0.85,
@@ -42,7 +42,7 @@
   "startWeapon": "staff0"
  },
  "okcu": {
-  "name": "Okçu",
+  "name": "Avcı",
   "desc": "Uzaktan ok yağdırır. Düşmanı yaklaşmadan indirir.",
   "hp": 150,
   "mp": 70,

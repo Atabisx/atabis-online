@@ -4,7 +4,37 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 5.2 (bu sürüm): Otomatik av, büyük ilk köy, yeni müzikler
+### Aşama 5.3 (bu sürüm): Depo, envanter sayfaları, savaş atı, bağırışlar, +9 parlaması
+
+- **Yeni sınıf adları:** Savaşçı → **Alp**, Ninja → **Akıncı**, Sura → **Yalaz**, Şaman → **Kam**, Okçu → **Avcı**. Kodlardaki anahtarlar aynı kaldı, eski karakterler etkilenmez.
+- **Metin2'yi andıran beceri adları değişti:**
+  - Kartal Pençesi, Kasırga, Yıldırım Atılışı, Tunç Deri
+  - Yaşam Suyu, Gök Gürültüsü, Ata Duası, Bozkurt Uluması
+- **Hedefsiz beceri çıkmaz:** menzilde hedef yoksa "Hedef yok." yazar; mana ve bekleme süresi harcanmaz.
+- **Becerilerde zıplayıp vurma:** Kasırga, Hançer Yağmuru, Kara Alev, Karanlık Kılıç, Kartal Pençesi ve okçu atışlarında karakter havadayken ve inerken vurur. İnişte toz kalkar.
+- **Vuruş bağırışları:** "kia!", "hiya!", "eya!", "ha!" (`tools/music/voice.py` ile sentezlendi).
+  - Kombonun 3. vuruşunda ve becerilerde güçlü bağırış, diğer vuruşlarda ara sıra kısa bağırış.
+  - Her sınıfın sesi farklı perdede.
+- **+9 parlaması:** +9 silah ve zırh, kademesi ne olursa olsun parlar. Parıltısı olan kademelerde parıltı güçlenir. Herkes görür.
+- **Envanter sayfaları:** çantanın üstünde I, II, III sekmeleri var. II ve III görevle açılır:
+  - **Çanta Ustası I** (Sv. 10): 150 canavar yen.
+  - **Çanta Ustası II** (Sv. 30): 10 metin kır, 3 boss yen.
+  - Her sayfa 32 yuvadır.
+- **Görevler penceresi:** Menü › Görevler'de üstte ana görevler, altta günlük görevler var.
+- **Savaş Atı** (Sv. 50, at görevinden sonra): Sv. 45+ 100 canavar yen. Ödül **Savaş Atı Mührü**:
+  - At Mührü'nün yerine geçer.
+  - Atın üstünde saldırabilirsin; beceri kullanınca inersin.
+  - At %10 daha hızlı koşar.
+- **Depo:** Menü › Depo (sadece köylerde açılır).
+  - 45 yuva ve yang kasası var.
+  - Hesabındaki bütün karakterler aynı depoyu kullanır.
+  - Binek mühürleri depoya konmaz.
+- **Balık tutma:** balıkların yanında yaprak, Efsun Nesnesi, Efsun Değiştirme Nesnesi ve nadiren **Pet Sandığı** takılır. Pet Sandığı açılınca rastgele bir pet verir (Ejder Yavrusu çok nadir).
+- **GM:** GM karakterlerine bütün petler bir kez çantaya verilir; 3 envanter sayfası da açıktır. `/petler` komutu eksik petleri yeniden verir.
+- **Oyuncu menüsü:** başka bir oyuncuya dokununca açılan menü iki sütuna geçti. "Düello iste" en üstte, yatay telefonda ekrana sığıyor.
+- **Atabis Köyü boss'ları:** Dev Horoz ve Dev Tavuk küçültüldü, horozun boyu normale yaklaştı.
+
+### Aşama 5.2: Otomatik av, büyük ilk köy, yeni müzikler
 
 - **Otomatik av:** joystick'in üstündeki **OTO** düğmesi. Karakter en yakın yaratığa ya da metin taşına yürür ve vurur. Hazır becerileri kendisi kullanır; can %40'ın altına inince kırmızı, mana azalınca mavi iksir içer. Ganimeti zaten otomatik toplar. Joystick'e dokunduğunda kontrol sende olur, bırakınca av devam eder. Senden 3 seviyeden fazla güçlü boss'lara saldırmaz. Ölünce kapanır.
 - **Atabis Köyü büyüdü:** harita 270'ten 360 birime çıktı. Her yaratıktan 26 tane var. Köprünün ötesinde 10 boss bulunur (her birinden 2 tane):

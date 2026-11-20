@@ -308,6 +308,11 @@ class Zone {
     if (p && this.hooks.enemies) for (const opp of this.hooks.enemies(p)) if (Math.hypot(opp.x - x, opp.z - z) - 0.6 < r) list.push(['player', opp]);
     return list;
   }
+  // beceri için menzilde hedef var mı (Metin2 gibi: hedef yoksa beceri çıkmaz)
+  hasSkillTarget(p, sk) {
+    const r = sk.target === 'dash' ? (sk.dist || 0) + (sk.radius || 3) : sk.target === 'single' || sk.target === 'multi' || sk.target === 'chain' ? (sk.range || 6) : (sk.radius || sk.range || 6);
+    return this.targetsAround(p.x, p.z, r + 1, p).length > 0;
+  }
   nearestTarget(p, range) {
     let best = null, bd = Infinity;
     for (const t of this.targetsAround(p.x, p.z, range, p)) {

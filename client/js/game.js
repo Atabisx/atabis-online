@@ -509,8 +509,14 @@ function attach(p, info, mesh) {
 }
 // ---------- silah ve zırh aurası (Metin2'deki +9 parıltısı gibi) ----------
 // Kademe yükseldikçe renk ve yoğunluk artar; efsanevi eşyalar altın parlar.
-function auraOf(def) {
+// eşyanın parıltısı: kademeye göre; +9 olan her eşya (Metin2 gibi) ayrıca parlar
+function auraOf(def, up = 0) {
   if (!def || def.tier == null) return null;
+  const base = auraOfTier(def);
+  if (up >= 9) return base ? { ...base, k: base.k + 0.45, plus9: true } : { color: '#8fd8ff', k: 0.95, plus9: true };
+  return base;
+}
+function auraOfTier(def) {
   const leg = def.rarity >= 2;
   if (def.tier >= 15 || leg) return { color: '#ffd23f', k: leg ? 1.3 : 1.1 };
   if (def.tier >= 12) return { color: '#ff5a3a', k: 0.95 };
@@ -534,7 +540,8 @@ function addGlowShell(root, color, list) {
 function setupAuras(p, wMesh, w, a) {
   p.auraMats = [];
   p.weaponAura = null; p.armorAura = null;
-  const wa = auraOf(w), aa = auraOf(a);
+  const ups = (p.look && p.look.up) || {};
+  const wa = auraOf(w, ups.weapon || 0), aa = auraOf(a, ups.armor || 0);
   if (wa && wMesh) {
     p.weaponAura = { ...wa, mesh: wMesh, len: (w.len || 1.0) + 0.1, acc: 0 };
     const go = () => addGlowShell(wMesh, wa.color, p.auraMats);
@@ -853,25 +860,25 @@ fx.onShake((amp, dur, x, z) => {
   shake.amp = Math.max(shake.t > 0 ? shake.amp : 0, amp * (1 - d / 14)); shake.t = shake.dur = dur;
 });
 const MOVES = {
-  s_ucluk: { dur: 0.75, lunge: 0.9, wave: 3, combos: [[0, 0], [0.3, 1], [0.6, 2]] },
-  s_firtina: { dur: 0.9, jump: 1.5, jumpAt: [0.05, 0.92], spin: 3 },
+  s_ucluk: { dur: 0.8, lunge: 1.0, wave: 3, jump: 0.45, jumpAt: [0.55, 0.85], combos: [[0, 0], [0.3, 1], [0.62, 2]] },
+  s_firtina: { dur: 0.95, jump: 1.6, jumpAt: [0.05, 0.9], spin: 3, combos: [[0.2, 0], [0.45, 1], [0.84, 2]] },
   s_hamle: { dur: 0.5, lean: 0.5, lunge: 0.8, combos: [[0.55, 2]] },
   s_demir: { dur: 0.8, jump: 0.55, jumpAt: [0.05, 0.48], cast: 'raise' },
   n_golge: { dur: 0.6, jump: 1.1, jumpAt: [0, 0.6], flip: 1, lunge: 1.2, combos: [[0.6, 2]] },
   n_zehir: { dur: 0.45, lean: 0.25, combos: [[0, 1]] },
-  n_yagmur: { dur: 1.0, jump: 2.6, jumpAt: [0, 0.85], flip: -1, spin: 0.5 },
-  n_adim: { dur: 0.65, jump: 1.0, jumpAt: [0, 0.9], flip: -1, lunge: -1.3 },
-  u_kara: { dur: 0.8, jump: 0.35, jumpAt: [0.4, 0.8], cast: 'raise' },
+  n_yagmur: { dur: 1.0, jump: 2.6, jumpAt: [0, 0.85], flip: -1, spin: 0.5, combos: [[0.3, 0], [0.5, 1], [0.82, 2]] },
+  n_adim: { dur: 0.65, jump: 1.0, jumpAt: [0, 0.9], flip: -1, lunge: -1.3, combos: [[0.15, 1]] },
+  u_kara: { dur: 0.85, jump: 0.9, jumpAt: [0.15, 0.75], lunge: 0.6, combos: [[0.1, 0], [0.68, 2]] },
   u_emme: { dur: 0.8, lean: -0.25, cast: 'push' },
-  u_alev: { dur: 0.75, jump: 1.3, jumpAt: [0, 0.62], spin: 1 },
+  u_alev: { dur: 0.8, jump: 1.5, jumpAt: [0, 0.62], spin: 1, lunge: 0.5, combos: [[0.25, 1], [0.58, 2]] },
   u_kalkan: { dur: 0.8, cast: 'raise', spin: 1 },
   m_sifa: { dur: 0.8, cast: 'raise' },
   m_simsek: { dur: 0.7, jump: 0.4, jumpAt: [0, 0.5], cast: 'push' },
   m_kutsama: { dur: 1.0, jump: 0.6, jumpAt: [0.1, 0.9], cast: 'raise' },
-  m_kukreme: { dur: 0.8, lean: 0.35, lunge: 0.4, cast: 'push' },
+  m_kukreme: { dur: 0.85, jump: 0.7, jumpAt: [0, 0.55], lean: 0.35, lunge: 0.5, cast: 'push' },
   o_coklu: { dur: 0.6, jump: 0.5, jumpAt: [0, 0.5], lunge: -0.9, bow: true },
-  o_zehirli: { dur: 0.55, lean: -0.15, bow: true },
-  o_ates: { dur: 0.6, lean: -0.25, lunge: -0.3, bow: true },
+  o_zehirli: { dur: 0.6, jump: 0.6, jumpAt: [0, 0.7], lunge: -0.6, lean: -0.15, bow: true },
+  o_ates: { dur: 0.7, jump: 0.9, jumpAt: [0, 0.75], spin: 1, lunge: -0.4, bow: true },
   o_hafif: { dur: 0.6, jump: 0.8, jumpAt: [0, 0.8], spin: 1 },
 };
 function startMove(p, sk) {
@@ -881,6 +888,7 @@ function startMove(p, sk) {
   if (spec.bow) { p.swingT = SWING_T; p.combo = 0; }
 }
 const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+function nearMe(p, r) { const me = players[myId]; return !me || p === me || Math.hypot(me.group.position.x - p.group.position.x, me.group.position.z - p.group.position.z) < r; }
 function skillPoseUpdate(p, dt) {
   if (!p.model) return;
   const wrap = p.model.parent, mv = p.move;
@@ -895,6 +903,10 @@ function skillPoseUpdate(p, dt) {
   // zamanı gelen kılıç vuruşları
   for (const c of s.combos || []) if (mv.fired < (s.combos.indexOf(c) + 1) && k >= c[0]) {
     mv.fired++; p.swingT = SWING_T; p.combo = c[1]; if (p.cls !== 'okcu') p.slashT = 0.3;
+    if (mv.fired === s.combos.length) {
+      if (nearMe(p, 30)) sfx.shout(p.cls, true, p.group.position);
+      if (s.jump && c[0] > (s.jumpAt || [0, 1])[1] - 0.12) fx.groundSlam(p.group.position.x, p.group.position.z, '#d8c8a8', 1.6, 0.4);
+    }
   }
   const [ja, jb] = s.jumpAt || [0, 1], u = clamp01((k - ja) / (jb - ja));
   const y = s.jump && u > 0 && u < 1 ? Math.sin(u * Math.PI) * s.jump : 0;
@@ -1294,7 +1306,8 @@ function iconBuilder(key, def) {
   if (key === 'olta') return () => icons.rodMesh();
   if (key === 'yem') return () => icons.wormMesh();
   if (key === 'istiridye') return () => icons.shellMesh();
-  if (key === 'at_muhru') return () => icons.medalMesh();
+  if (key === 'pet_sandik') return () => icons.chestBoxMesh('#5a3a6a', '#ffd36b');
+  if (key === 'at_muhru' || key === 'savas_muhru') return () => icons.medalMesh();
   if (key === 'isin_yuzugu') return () => icons.ringMesh();
   return null;
 }
@@ -1367,6 +1380,11 @@ function socketHtml(it, def) {
   return h + '</span>';
 }
 const invEl = document.getElementById('inv'), gridEl = document.getElementById('grid'), detailEl = document.getElementById('detail');
+let invPage = 0, mainQuests = [];
+document.getElementById('invPages').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-ip]'); if (!b) return;
+  invPage = +b.dataset.ip; sfx.click(); renderInv();
+});
 function renderInv() {
   document.getElementById('yang').textContent = `${inv.yang.toLocaleString('tr-TR')} Yang`;
   const eqEl = document.getElementById('equipcol');
@@ -1377,7 +1395,16 @@ function renderInv() {
   });
   document.getElementById('stats').innerHTML = `Saldırı <b>${inv.atk}</b> · Savunma <b>${inv.def}</b> · Can <b>${inv.maxHp}</b>`;
   let html = '';
-  for (let i = 0; i < 32; i++) {
+  // envanter sayfaları: açık olmayan sayfada görev bilgisi
+  const pages = Math.max(1, Math.round((inv.invSize || 32) / 32));
+  if (invPage >= pages && !inv.inventory.slice(invPage * 32).length) {
+    document.querySelectorAll('#invPages button').forEach((b) => { b.classList.toggle('on', +b.dataset.ip === invPage); b.classList.toggle('locked', +b.dataset.ip >= pages); });
+    const q = (mainQuests || []).find((x) => x.id === (invPage === 1 ? 'bag2' : 'bag3'));
+    gridEl.innerHTML = `<div class="invlock"><b>Bu sayfa kilitli.</b><br>${q ? `${esc(q.name)} görevini bitir (Sv. ${q.lv}+): ${esc(q.text)}<br><small>${esc(q.parts)}</small><br>Menü › Görevler'den takip edebilirsin.` : 'Görevle açılır.'}</div>`;
+    renderDetail(); updatePotionButton(); return;
+  }
+  document.querySelectorAll('#invPages button').forEach((b) => { b.classList.toggle('on', +b.dataset.ip === invPage); b.classList.toggle('locked', +b.dataset.ip >= pages); });
+  for (let i = invPage * 32; i < invPage * 32 + 32; i++) {
     const it = inv.inventory[i];
     if (it) {
       const def = ITEMS[it.key] || { name: '?', rarity: 0 };
@@ -1529,7 +1556,8 @@ function renderShop() {
     else if (st === 'available' || (!st && myLevel >= 25)) body = '<p>Kızılçam Ormanı\'ndaki <b>Vahşi Kurt</b>lar atlarımıza saldırıyor. <b>20</b> tanesini yen, sana kendi atını vereyim.</p><button class="btn" data-quest="accept">Görevi kabul et</button>';
     else if (st === 'active') body = `<p>Vahşi Kurt: <b>${q.horseKills || 0} / 20</b></p><p class="muted">Kızılçam Ormanı'nda (Sv. 15, köyün doğusundaki geçitten) bulabilirsin.</p>`;
     else if (st === 'ready') body = '<p>Harika iş çıkardın! Atın seni bekliyor.</p><button class="btn" data-quest="claim">At Mührü\'nü al</button>';
-    else body = '<p>Atına iyi bak. Envanterindeki At Mührü ile binip inebilirsin. Atlıyken saldırırsan ya da beceri kullanırsan atından inersin.</p>';
+    else if (q.warhorse === 'done') body = '<p>Savaş atın hazır! Savaş Atı Mührü ile binip inebilirsin. Atın üstündeyken saldırabilirsin; beceri kullanırsan atından inersin.</p>';
+    else body = `<p>Atına iyi bak. Envanterindeki At Mührü ile binip inebilirsin. Atlıyken saldırırsan ya da beceri kullanırsan atından inersin.</p><p class="muted">${myLevel >= 50 ? 'Savaş Atı görevi Menü › Görevler\'de seni bekliyor: Sv. 45+ 100 canavar yen, atın üstünde savaşmayı öğret.' : '50. seviyede sana bir savaş atı görevim olacak: atın üstünde savaşabileceksin.'}</p>`;
     html = `<div style="display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5">${body}</div>`;
   } else if (shopKind === 'teleport') {
     for (const m of MAPS) {
@@ -1754,7 +1782,7 @@ function updateSkillCooldowns() {
 // ---------- at ve balık butonları ----------
 const mountBtn = document.getElementById('mountBtn'), fishBtn = document.getElementById('fishBtn');
 mountBtn.addEventListener('click', () => {
-  const it = inv.inventory.find((i) => i.key === 'at_muhru');
+  const it = inv.inventory.find((i) => i.key === 'savas_muhru') || inv.inventory.find((i) => i.key === 'at_muhru');
   if (it && socket) socket.emit('useItem', it.uid);
 });
 let fishState = 'idle';
@@ -1769,7 +1797,7 @@ function setFishState(st) {
   fishBtn.textContent = st === 'idle' ? 'Olta at' : st === 'wait' ? 'Bekle…' : 'ÇEK!';
 }
 function updateToolButtons() {
-  mountBtn.style.display = inv.inventory.some((i) => i.key === 'at_muhru') ? 'flex' : 'none';
+  mountBtn.style.display = inv.inventory.some((i) => i.key === 'at_muhru' || i.key === 'savas_muhru') ? 'flex' : 'none';
   mountBtn.classList.toggle('on', !!inv.mounted);
   fishBtn.style.display = currentMap && currentMap.fishing && inv.inventory.some((i) => i.key === 'olta') ? 'block' : 'none';
   // köydeyken pazar tezgâhı düğmesi; at düğmesi görünüyorsa onun yanına kayar
@@ -1980,14 +2008,16 @@ function useSkill(key) {
   if (c && c.until > performance.now()) return;
   const pos = me.group.position;
   if (sk.target !== 'self' && sk.target !== 'heal') {
-    let best = null, bestD = (sk.range || sk.radius || 6) + 2;
+    let best = null, bestD = (sk.target === 'dash' ? (sk.dist || 0) + (sk.radius || 3) : (sk.range || sk.radius || 6)) + 1.5;
     for (const m of Object.values(mobs)) {
-      const p = m.v.root.position, d = Math.hypot(p.x - pos.x, p.z - pos.z);
+      if (!(m.hp > 0)) continue;
+      const p = m.v.root.position, d = Math.hypot(p.x - pos.x, p.z - pos.z) - ((m.def && (m.def.hitR || m.def.scale * 0.6)) || 0.6);
       if (d < bestD) { best = p; bestD = d; }
     }
-    for (const st of Object.values(stones)) { const d = Math.hypot(st.x - pos.x, st.z - pos.z); if (d < bestD) { best = st; bestD = d; } }
+    for (const st of Object.values(stones)) { const d = Math.hypot(st.x - pos.x, st.z - pos.z) - 1.2; if (d < bestD) { best = st; bestD = d; } }
     for (const foe of foesList()) { const fp = foe.group.position, d = Math.hypot(fp.x - pos.x, fp.z - pos.z); if (d < bestD) { best = fp; bestD = d; } }
-    if (best) me.ry = Math.atan2(best.x - pos.x, best.z - pos.z) + FACE_OFFSET;
+    if (!best) { toast('Hedef yok.'); return; }   // Metin2 gibi: hedefsiz beceri çıkmaz
+    me.ry = Math.atan2(best.x - pos.x, best.z - pos.z) + FACE_OFFSET;
   }
   socket.emit('skill', { key, f: me.ry - FACE_OFFSET });
 }
@@ -2117,7 +2147,7 @@ export function startGame(sock, opts = {}) {
     if (opts.onWelcome) opts.onWelcome();
   });
   socket.on('mapChange', (data) => { amDead = false; auto.target = null; auto.skip.clear(); if (auto.on && data && MAPS[data.map] && (MAPS[data.map].safe || MAPS[data.map].war)) setAuto(false); deadEl.classList.remove('open'); setFishState('idle'); enterMap(data); updateToolButtons(); renderSkillbar(); refreshFoes(); if (!(currentMap && currentMap.dungeon)) social.clearDungeon(); });
-  socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (shopKind) renderShop(); renderSmith(); if (trade) renderTrade(); social.refreshGuild(); social.refreshStallWins(); });
+  socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (depotWin.classList.contains('open')) renderDepot(); if (shopKind) renderShop(); renderSmith(); if (trade) renderTrade(); social.refreshGuild(); social.refreshStallWins(); });
   socket.on('upgraded', ({ ok, name, up, stone }) => smithResult(ok, ok ? (stone ? `BAŞARILI · ${name}` : `BAŞARILI · ${name} +${up}`) : (stone ? 'BAŞARISIZ · taş kırıldı' : `BAŞARISIZ · ${name} +${up}`)));
   socket.on('socketed', ({ ok }) => { if (ok) sfx.enchant(); else sfx.hit('stone', false, null); });
   // ---------- sohbet, fısıltı, arkadaşlar, düello ----------
@@ -2165,6 +2195,8 @@ export function startGame(sock, opts = {}) {
   socket.on('attrs', (a) => { attrs = a; renderChar(); });
   socket.on('skillCd', ({ key, until }) => { skillCdUntil[key] = { until: performance.now() + until * 1000, total: until * 1000 }; });
   socket.on('buffs', (list) => { buffList = list; buffAt = performance.now(); renderBuffs(); });
+  socket.on('depot', (d) => { depotData = d; renderDepot(); depotWin.classList.add('open'); });
+  socket.on('mainQuests', (l) => { mainQuests = l || []; social.setMainQuests(mainQuests); if (invEl.classList.contains('open')) renderInv(); });
   socket.on('quests', (q) => {
     const first = !quests.__seen; quests = q; quests.__seen = true;
     if (shopKind === 'stable') renderShop();
@@ -2189,7 +2221,7 @@ export function startGame(sock, opts = {}) {
     if (p) startMove(p, sk);
     const from = p ? p.group.position : { x, z };
     sfx.skill(sk, from);
-    if (p && sk.target !== 'heal') sfx.grunt(from, p.cls === 'ninja' || p.cls === 'saman');
+    if (p && sk.target !== 'heal') sfx.shout(p.cls, true, from);
     // Metin2 tarzı beceri görüntüsü (fx.js) + karakterin dönmesi/sıçraması
     const tl = [];
     for (const t of targets) { const tp = targetPos(t); if (tp) tl.push({ x: tp.x, y: 0, z: tp.z, obj: players[t] || null }); }
@@ -2234,6 +2266,9 @@ export function startGame(sock, opts = {}) {
     const tm = target && (mobs[target] ? mobs[target].v.root.position : stones[target] ? stones[target] : players[target] ? players[target].group.position : null);
     if (p.cls === 'okcu' && tm) shootArrow(p, tm);
     sfx.swing(p.cls, p.group.position, combo || 0);
+    // Metin2 gibi bağırış: 3. kombo vuruşunda güçlü, diğerlerinde ara sıra kısa
+    if (combo >= 2) sfx.shout(p.cls, true, p.group.position);
+    else if (Math.random() < 0.3) sfx.shout(p.cls, false, p.group.position);
     p.swingT = SWING_T; p.combo = combo || 0;
     if (p.cls !== 'okcu') p.slashT = 0.3;
   });
@@ -2470,9 +2505,11 @@ function openPlayerMenu(p, x, y) {
   document.getElementById('pmSub').textContent = `${(CLASSES[p.cls] || {}).name || ''} · Sv. ${p.level}`;
   const isFriend = friendList.some((f) => f.name === p.name);
   pmenu.querySelector('[data-pm="friend"]').style.display = isFriend ? 'none' : '';
-  pmenu.style.left = Math.min(window.innerWidth - 200, Math.max(8, x - 90)) + 'px';
-  pmenu.style.top = Math.min(window.innerHeight - 230, Math.max(8, y - 40)) + 'px';
   pmenu.classList.add('open');
+  // menünün gerçek boyuna göre ekrana sığdır
+  const w = pmenu.offsetWidth || 300, h = pmenu.offsetHeight || 260;
+  pmenu.style.left = Math.min(window.innerWidth - w - 8, Math.max(8, x - w / 2)) + 'px';
+  pmenu.style.top = Math.min(window.innerHeight - h - 8, Math.max(8, y - 40)) + 'px';
 }
 pmenu.addEventListener('click', (e) => {
   const b = e.target.closest('[data-pm]'); if (!b || !socket) return;
@@ -2668,7 +2705,7 @@ function lobbyFlourish(appear) {
   if (appear) lobby.show.push([now, () => { fx.levelUp(o); sfx.levelUp(); }]);
   [0, 1, 2].forEach((k, i) => lobby.show.push([now + 0.7 + i * 0.42, () => {
     o.swingT = SWING_T; o.combo = k; if (o.cls !== 'okcu') o.slashT = 0.3;
-    sfx.swing(o.cls, o.group.position, k);
+    sfx.swing(o.cls, o.group.position, k); if (k === 2) sfx.shout(o.cls, true);
   }]));
   if (sk) lobby.show.push([now + 2.2, () => {
     try { fx.playSkill(sk, { caster: o, from: { x: 0, z: 0 }, facing: o.ry - FACE_OFFSET, targets: sk.target === 'self' || sk.target === 'heal' ? [{ x: 0, y: 0.9, z: 0, obj: o }] : [{ x: Math.sin(o.ry - FACE_OFFSET) * 3, y: 0.9, z: Math.cos(o.ry - FACE_OFFSET) * 3 }], lv: 18 }); } catch (e) { console.warn(e); }
@@ -2841,7 +2878,33 @@ const menuHandlers = {
   rank: () => social.openRank(),
   help: () => social.openHelp(),
   settings: () => document.getElementById('setBtn').click(),
+  depot: () => { if (!currentMap || !currentMap.village) { toast('Depo sadece köylerde açılır.'); return; } if (socket) socket.emit('depotOpen'); },
 };
+// ---------- depo ----------
+let depotData = null;
+const depotWin = document.getElementById('depotwin');
+function slotHtml(it, attr) {
+  const def = ITEMS[it.key] || { name: '?', rarity: 0 };
+  return `<button class="slot" ${attr} aria-label="${esc(itemName(it, def))}" style="border-color:${RARITY[def.rarity]}66">${itemIcon(it.key, def)}${it.n > 1 ? `<i class="cnt">${it.n}</i>` : ''}${it.up ? `<i class="upb">+${it.up}</i>` : ''}</button>`;
+}
+function renderDepot() {
+  if (!depotData) return;
+  const d = depotData;
+  let h = d.items.map((it, i) => slotHtml(it, `data-dtake="${i}"`)).join('');
+  for (let i = d.items.length; i < d.size; i++) h += '<div class="slot" aria-hidden="true"></div>';
+  document.getElementById('depotGrid').innerHTML = h;
+  document.getElementById('depotCount').textContent = `(${d.items.length}/${d.size})`;
+  document.getElementById('depotInv').innerHTML = inv.inventory.map((it) => slotHtml(it, `data-dput="${it.uid}"`)).join('') || '<small class="muted">Çantan boş.</small>';
+  document.getElementById('depotYang').textContent = d.yang.toLocaleString('tr-TR');
+}
+depotWin.addEventListener('click', (e) => {
+  if (e.target.id === 'depotwin' || e.target.closest('#depotX')) { depotWin.classList.remove('open'); return; }
+  const t = e.target.closest('[data-dtake]'); if (t && socket) { socket.emit('depotTake', +t.dataset.dtake); sfx.click(); return; }
+  const pt = e.target.closest('[data-dput]'); if (pt && socket) { socket.emit('depotPut', +pt.dataset.dput); sfx.click(); return; }
+  const n = Math.floor(Number(document.getElementById('depotYangN').value) || 0);
+  if (e.target.closest('#depotYangPut') && n > 0 && socket) socket.emit('depotYang', { dir: 'put', n });
+  if (e.target.closest('#depotYangTake') && n > 0 && socket) socket.emit('depotYang', { dir: 'take', n });
+});
 export function onMenu(key, fn) { menuHandlers[key] = fn; }
 function partyLabels(pt) {
   const ids = new Set(pt ? pt.members.map((m) => m.id) : []);

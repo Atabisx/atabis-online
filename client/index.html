@@ -109,7 +109,10 @@
           <button class="eq cos" data-slot="pet"></button>
           <div id="stats"></div>
         </div>
-        <div id="grid"></div>
+        <div class="gridcol">
+          <div id="invPages" role="tablist" aria-label="Envanter sayfaları"><button data-ip="0" class="on" role="tab">I</button><button data-ip="1" role="tab">II</button><button data-ip="2" role="tab">III</button></div>
+          <div id="grid"></div>
+        </div>
       </div>
       <div id="detail"><span class="grow" style="color:#8b877c">Bir eşyaya dokun.</span></div>
     </div>
@@ -169,6 +172,7 @@
         <button data-menu="guild"><span class="mi">🛡️</span>Lonca</button>
         <button data-menu="rank"><span class="mi">🏆</span>Sıralama</button>
         <button data-menu="stall"><span class="mi">🏪</span>Pazar tezgâhı</button>
+        <button data-menu="depot"><span class="mi">📦</span>Depo</button>
         <button data-menu="dungeon"><span class="mi">🕸️</span>Zindan</button>
         <button data-menu="events"><span class="mi">🎉</span>Etkinlikler</button>
         <button data-menu="friends"><span class="mi">👥</span>Arkadaşlar</button>
@@ -182,7 +186,10 @@
   </div>
   <div id="dailywin" class="modal" role="dialog" aria-label="Görevler">
     <div class="modalbox">
-      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">GÜNLÜK GÖREVLER</b><span style="font-size:12px;color:#8b877c">Her gece 00:00'da yenilenir</span><button id="dailyX" class="xbtn" aria-label="Kapat">×</button></div>
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">GÖREVLER</b><span style="font-size:12px;color:#8b877c">Günlükler her gece 00:00'da yenilenir</span><button id="dailyX" class="xbtn" aria-label="Kapat">×</button></div>
+      <div class="mqhead">ANA GÖREVLER</div>
+      <div id="mainList"></div>
+      <div class="mqhead">GÜNLÜK</div>
       <div id="dailyList"></div>
       <div class="loginbox"><b>Günlük giriş ödülü</b><div id="loginDays"></div><div id="loginInfo"></div></div>
     </div>
@@ -288,6 +295,16 @@
       <small class="gtxt">Satın almak için dokun. Yangın: <b id="stYang"></b></small>
     </div>
   </div>
+  <div id="depotwin" class="modal" role="dialog" aria-label="Depo">
+    <div class="modalbox depotbox">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">DEPO</b><span style="font-size:12px;color:#8b877c">Hesabındaki bütün karakterler ortak kullanır</span><button id="depotX" class="xbtn" aria-label="Kapat">×</button></div>
+      <div class="depotcols">
+        <div class="depotcol"><div class="tinvhead">Depodakiler <small id="depotCount"></small> · almak için dokun</div><div id="depotGrid" class="dgrid"></div></div>
+        <div class="depotcol"><div class="tinvhead">Çantan · koymak için dokun</div><div id="depotInv" class="dgrid"></div></div>
+      </div>
+      <div class="frow depotyang"><span>Depoda <b id="depotYang">0</b> yang</span><input id="depotYangN" type="number" min="1" inputmode="numeric" placeholder="Miktar" aria-label="Yang miktarı"><button id="depotYangPut" class="btn alt">Yatır</button><button id="depotYangTake" class="btn alt">Çek</button></div>
+    </div>
+  </div>
   <div id="mystallwin" class="modal" role="dialog" aria-label="Pazar tezgâhım">
     <div class="modalbox">
       <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">PAZAR TEZGÂHIM</b><button id="mystallX" class="xbtn" aria-label="Kapat">×</button></div>
@@ -335,12 +352,12 @@
   </div>
   <div id="pmenu" role="menu">
     <b id="pmName"></b><small id="pmSub"></small>
-    <button data-pm="whisper">Fısılda</button>
-    <button data-pm="party" class="partybtn">Gruba davet et</button>
+    <button data-pm="duel" class="duelbtn">⚔ Düello iste</button>
     <button data-pm="trade" class="tradebtn">Ticaret</button>
+    <button data-pm="party" class="partybtn">Gruba davet et</button>
+    <button data-pm="whisper">Fısılda</button>
     <button data-pm="guild" class="guildbtn">Loncaya davet et</button>
     <button data-pm="friend">Arkadaş ekle</button>
-    <button data-pm="duel" class="duelbtn">Düello iste</button>
   </div>
   <div id="askBox" role="alertdialog" aria-live="assertive">
     <p id="askText"></p>

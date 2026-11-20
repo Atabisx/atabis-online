@@ -259,3 +259,15 @@ export function leafMesh(color) {
   g.add(leaf, vein, stem); g.rotation.z = -0.5;
   return g;
 }
+// sandık (pet sandığı vb.): ahşap gövde, metal kuşak, altın kilit
+export function chestBoxMesh(color = '#7a4a26', band = '#e8b54a') {
+  const g = new THREE.Group();
+  const wood = std(color, 0.05, 0.7), metal = std(band, 0.9, 0.3);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.45, 0.5), wood); body.position.y = -0.1;
+  const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.8, 18, 1, false, 0, Math.PI), wood); lid.rotation.z = Math.PI / 2; lid.position.y = 0.12;
+  const b1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.47, 0.52), metal); b1.position.set(-0.25, -0.1, 0);
+  const b2 = b1.clone(); b2.position.x = 0.25;
+  const lock = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, 0.06), metal); lock.position.set(0, 0.06, 0.27);
+  g.add(body, lid, b1, b2, lock);
+  return g;
+}

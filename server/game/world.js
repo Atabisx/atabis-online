@@ -9,14 +9,20 @@ const { createGuilds } = require('./guild');
 const { createRealm } = require('./realm');
 const { createMarket } = require('./market');
 const { createDungeons } = require('./dungeon');
+const { createMainQuests } = require('./mainq');
+const { createDepot } = require('./depot');
 const { createEvents } = require('./events');
 const { createRanking } = require('./ranking');
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const VILLAGES = R.MAPS.filter((m) => m.village).map((m) => m.id);
 const HORSE_QUEST = { level: 25, mob: 'vkurt', count: 20 };
-const FISH_TABLE = [['b_hamsi', 38], ['b_sazan', 25], ['b_alabalik', 15], ['b_levrek', 9], ['b_yayin', 3], ['istiridye', 4], ['b_cizme', 6]];
+// balık tutarken takılanlar: balıklar, istiridye, yapraklar, efsun nesneleri ve nadiren pet sandığı
+const FISH_TABLE = [['b_hamsi', 34], ['b_sazan', 22], ['b_alabalik', 13], ['b_levrek', 8], ['b_yayin', 3], ['istiridye', 4], ['b_cizme', 5],
+  ['yaprak_mor', 4], ['yaprak_mavi', 3], ['yaprak_kirmizi', 2], ['efsun', 2.5], ['efsun_degis', 2], ['pet_sandik', 1]];
+const PET_BOX = [['pet_kurt', 22], ['pet_tilki', 22], ['pet_ayi', 20], ['pet_baykus', 18], ['pet_yilan', 15], ['pet_ejder', 3]];
 const PEARLS = [['inci_beyaz', 70], ['inci_mavi', 25], ['inci_kirmizi', 5]];
+function z0announce(p, msg) { if (p.zone) p.zone.emit('announce', msg); }
 function roll(table) {
   const total = table.reduce((a, [, w]) => a + w, 0);
   let r = Math.random() * total;
@@ -32,6 +38,8 @@ function createWorld(io) {
   function looks(p) {
     const l = {};
     for (const s of ['weapon', 'armor', 'helmet', 'costume', 'wings', 'pet']) l[s] = p.equip[s] ? p.equip[s].key : null;
+    // +9 parlaması için silah ve zırhın artısı
+    l.up = { weapon: (p.equip.weapon && p.equip.weapon.up) || 0, armor: (p.equip.armor && p.equip.armor.up) || 0 };
     return l;
   }
   const publicPlayer = (p) => ({ id: p.id, name: p.name, cls: p.class, x: p.x, z: p.z, ry: p.ry, level: p.level,
@@ -48,7 +56,7 @@ function createWorld(io) {
     p.socket.emit('inv', { inventory: p.inventory, equip: p.equip, yang: p.yang,
       atk: R.attackPower(p), def: R.defense(p), maxHp: p.maxHp, maxMp: p.maxMp,
       crit: Math.round(((R.classOf(p).crit || 0.12) * 100) + t.crit), atkspeed: t.atkspeed, movespeed: t.movespeed,
-      speed: R.speedMul(p), atkCd: R.attackCooldown(p), mounted: !!p.mounted });
+      speed: R.speedMul(p), atkCd: R.attackCooldown(p), mounted: !!p.mounted, invSize: R.invSize(p) });
     sendAttrs(p);
     if (p.trade) tradeCheck(p);
   }
@@ -104,13 +112,13 @@ function createWorld(io) {
         }
       }
       while (n > 0) {
-        if (p.inventory.length >= R.INV_SIZE) return false;
+        if (p.inventory.length >= R.invSize(p)) return false;
         const add = Math.min(n, def.stack);
         p.inventory.push({ uid: p.nextUid++, key, n: add }); n -= add;
       }
       return true;
     }
-    if (p.inventory.length >= R.INV_SIZE) return false;
+    if (p.inventory.length >= R.invSize(p)) return false;
     p.inventory.push({ uid: p.nextUid++, key });
     return true;
   }
@@ -127,8 +135,8 @@ function createWorld(io) {
   }
   function freeSlotsFor(p, key, n) {
     const def = R.ITEMS[key];
-    if (!def.stack) return p.inventory.length < R.INV_SIZE;
-    let room = (R.INV_SIZE - p.inventory.length) * def.stack;
+    if (!def.stack) return p.inventory.length < R.invSize(p);
+    let room = (R.invSize(p) - p.inventory.length) * def.stack;
     for (const it of p.inventory) if (it.key === key) room += def.stack - (it.n || 1);
     return room >= n;
   }
@@ -154,24 +162,26 @@ function createWorld(io) {
   function setupGm(p) {
     p.level = R.MAX_LEVEL; p.exp = 0;
     p.quests = p.quests || {};
+    p.quests.bag = 2;                                   // GM'nin üç envanter sayfası da açık
+    if (!p.quests.gmPets) { giveAllPets(p); p.quests.gmPets = 1; }
     if (p.quests.gmKit === 1) return;
     gmTarget = p;
     const cls = R.CLASSES[p.class] || {};
     const wtype = String(cls.startWeapon || 'sword0').replace(/\d+$/, '');
     const top = (base) => (R.ITEMS[base + '15_L'] ? base + '15_L' : base + '15');
     // eski kuşanılanlar çantaya
-    for (const slot of R.EQUIP_SLOTS) if (p.equip[slot] && p.inventory.length < R.INV_SIZE) p.inventory.push(p.equip[slot]);
+    for (const slot of R.EQUIP_SLOTS) if (p.equip[slot] && p.inventory.length < R.invSize(p)) p.inventory.push(p.equip[slot]);
     p.equip = { weapon: maxedItem(top(wtype)), armor: maxedItem(top('armor')), helmet: maxedItem(top('helmet')),
       shoes: maxedItem(top('shoes')), bracelet: maxedItem(top('bracelet')), earring: maxedItem(top('earring')) };
     const give = [['isin_yuzugu', 1], ['at_muhru', 1], ['olta', 1], ['yem', 200], ['p_hp4', 200], ['p_mp4', 200], ['p_green', 50], ['p_speed', 50], ['efsun', 100], ['efsun_degis', 100]];
     for (const [key, n] of give) {
       if (!R.ITEMS[key] || p.inventory.some((i) => i.key === key)) continue;
-      if (p.inventory.length >= R.INV_SIZE) break;
+      if (p.inventory.length >= R.invSize(p)) break;
       p.inventory.push({ uid: p.nextUid++, key, n });
     }
     // diğer silah türlerinin en üst kademeleri de (yer varsa)
     for (const t of ['sword', 'dagger', 'bow', 'staff']) {
-      if (t === wtype || p.inventory.length >= R.INV_SIZE) continue;
+      if (t === wtype || p.inventory.length >= R.invSize(p)) continue;
       p.inventory.push(maxedItem(top(t)));
     }
     p.yang = Math.max(p.yang, 999999999);
@@ -179,6 +189,17 @@ function createWorld(io) {
     p.quests.rod = true; p.quests.skillHint = true;
     p.quests.gmKit = 1;
     gmTarget = null;
+  }
+  // bütün evcil hayvanlar (eksik olanlar) çantaya
+  function giveAllPets(p) {
+    const pets = Object.keys(R.ITEMS).filter((k) => R.ITEMS[k].slot === 'pet');
+    let n = 0;
+    for (const k of pets) {
+      if (p.inventory.some((i) => i.key === k) || (p.equip.pet && p.equip.pet.key === k)) continue;
+      if (p.inventory.length >= R.invSize(p)) break;
+      p.inventory.push({ uid: p.nextUid++, key: k }); n++;
+    }
+    return n;
   }
   function gmCommand(p, text) {
     const [cmd, ...args] = text.slice(1).split(/\s+/);
@@ -193,13 +214,14 @@ function createWorld(io) {
       if (!R.ITEMS[a0]) { notice(p, 'Böyle bir eşya yok: ' + a0); return; }
       gmTarget = p; const it = maxedItem(a0); gmTarget = null;
       if (R.ITEMS[a0].stack) it.n = Math.max(1, Math.min(200, Number(args[1]) || 1));
-      if (p.inventory.length >= R.INV_SIZE) { notice(p, 'Çanta dolu.'); return; }
+      if (p.inventory.length >= R.invSize(p)) { notice(p, 'Çanta dolu.'); return; }
       p.inventory.push(it); sendInv(p); notice(p, R.ITEMS[a0].name + ' verildi.'); return;
     }
     if (cmd === 'savas') { realm.gm(p, args); return; }
     if (cmd === 'etkinlik') { events.gm(p, args); return; }
+    if (cmd === 'petler') { const n = giveAllPets(p); sendInv(p); notice(p, n ? `${n} evcil hayvan çantana kondu.` : 'Bütün petler zaten sende (ya da çanta dolu).'); return; }
     if (cmd === 'iyiles') { p.hp = p.maxHp; p.mp = p.maxMp; sendHp(p); sendMp(p); return; }
-    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /iyiles, /savas [bitir], /etkinlik <metin|exp|boss|drop> [dk]');
+    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /petler, /iyiles, /savas [bitir], /etkinlik <metin|exp|boss|drop> [dk]');
   }
 
   // zindan ve savaş meydanı kaydedilmez: oyuncu tekrar girince köyde başlar
@@ -242,7 +264,7 @@ function createWorld(io) {
     dropMul: () => events.dropMul(),
     // grup varsa tecrübe yakındaki üyelerle paylaşılır
     giveExp(p, amount) { social.shareExp(p, amount, expRaw); },
-    onStoneBroken(p) { social.progress(p, 'stone'); },
+    onStoneBroken(p) { social.progress(p, 'stone'); mainq.onStoneBroken(p); },
     damagePlayer(p, dmg) {
       if (p.dead) return;
       p.hp = Math.max(0, p.hp - dmg);
@@ -269,6 +291,7 @@ function createWorld(io) {
         sendQuests(p);
       }
       social.onMobKilled(p, m);
+      mainq.onMobKilled(p, m);
     },
     announce(text, zone) { (zone ? zone : io).emit('announce', text); },
     // düello: rakip (geri sayım bittiyse)
@@ -315,6 +338,8 @@ function createWorld(io) {
   const market = createMarket({ db, players, notice, sendInv, addItem, save, zones });
   const dungeons = createDungeons({ io, players, notice, moveToZone, hooks, villageFor });
   const events = createEvents({ io, zones, notice });
+  const mainq = createMainQuests({ notice, sendInv, addItem, save });
+  const depot = createDepot({ db, notice, sendInv, addItem, freeSlotsFor, save });
   const ranking = createRanking({ db });
   W.expBonus = (p) => realm.expBonus(p) + events.expBonus(p);
   for (const def of R.MAPS) zones.push(new Zone(io, def, hooks));
@@ -322,6 +347,7 @@ function createWorld(io) {
   // seviye ödülleri: 25'te at görevi, 30'da olta
   function levelRewards(p) {
     const q = p.quests;
+    if (typeof mainq !== 'undefined' && p.socket) mainq.onLevel(p);
     if (p.level >= 5 && !q.skillHint) { q.skillHint = true; notice(p, 'Becerilerin açıldı! Beceri penceresinden puan ver.'); }
     if (p.level >= HORSE_QUEST.level && !q.horse) { q.horse = 'available'; notice(p, 'Köydeki Seyis seninle konuşmak istiyor: at görevi!'); sendQuests(p); }
     if (p.level >= 30 && !q.rod) {
@@ -394,14 +420,14 @@ function createWorld(io) {
     }
     const next = sides.map((s) => {
       const give = new Set(s.items.map((x) => x.uid));
-      return { inventory: s.p.inventory.filter((i) => !give.has(i.uid)).map((i) => ({ ...i })), nextUid: s.p.nextUid };
+      return { inventory: s.p.inventory.filter((i) => !give.has(i.uid)).map((i) => ({ ...i })), nextUid: s.p.nextUid, quests: s.p.quests };
     });
     for (let k = 0; k < 2; k++) {
       const to = next[k], from = sides[1 - k];
       for (const x of from.items) {
         const it = from.p.inventory.find((i) => i.uid === x.uid), def = R.ITEMS[it.key];
         if (def && def.stack) { if (!addItem(to, it.key, it.n || 1)) { closeTrade(sides[k].p, `Ticaret iptal: ${sides[k].p.name} oyuncusunun çantası dolu.`); return; } }
-        else { if (to.inventory.length >= R.INV_SIZE) { closeTrade(sides[k].p, `Ticaret iptal: ${sides[k].p.name} oyuncusunun çantası dolu.`); return; }
+        else { if (to.inventory.length >= R.invSize(to)) { closeTrade(sides[k].p, `Ticaret iptal: ${sides[k].p.name} oyuncusunun çantası dolu.`); return; }
           to.inventory.push({ ...it, uid: to.nextUid++ }); }
       }
     }
@@ -473,7 +499,7 @@ function createWorld(io) {
       o.socket.disconnect(true);
     }
     const p = {
-      id: socket.id, socket, charId: row.id, name: row.name, class: row.class,
+      id: socket.id, socket, charId: row.id, accountId: row.account_id, name: row.name, class: row.class,
       x: 0, z: 0, ry: 0, moving: false, lastAttack: 0, lastMove: Date.now(), combo: 0, lastPotion: 0,
       level: row.level, exp: row.exp, yang: Number(row.yang), kills: row.kills,
       inventory: row.inventory || [], equip: row.equip || {}, nextUid: row.next_uid,
@@ -506,6 +532,8 @@ function createWorld(io) {
     sendFriends(p); tellFriends(p, true);
     sendHp(p); sendMp(p); sendSkills(p); sendQuests(p); sendBuffs(p);
     social.onConnect(p, socket);
+    mainq.onConnect(p, socket);
+    depot.onConnect(p, socket);
     guilds.onConnect(p, socket);
     realm.onConnect(p, socket);
     market.onConnect(p, socket);
@@ -540,7 +568,7 @@ function createWorld(io) {
       const cd = R.attackCooldown(p);
       if (now - p.lastAttack < cd) return;
       if (p.zone.def.safe) return;
-      setMounted(p, false);
+      if (p.quests.warhorse !== 'done') setMounted(p, false);   // savaş atıyla atın üstünde vurulabilir
       p.combo = now - p.lastAttack < 1200 ? (p.combo + 1) % 3 : 0;
       p.lastAttack = now;
       p.zone.attack(p, p.combo);
@@ -583,7 +611,7 @@ function createWorld(io) {
 
     socket.on('unequip', (slot) => {
       if (!R.EQUIP_SLOTS.includes(slot) || !p.equip[slot]) return;
-      if (p.inventory.length >= R.INV_SIZE) { notice(p, 'Envanterin dolu!'); return; }
+      if (p.inventory.length >= R.invSize(p)) { notice(p, 'Envanterin dolu!'); return; }
       p.inventory.push(p.equip[slot]);
       p.equip[slot] = null;
       recalc(p); sendInv(p); sendHp(p);
@@ -631,6 +659,15 @@ function createWorld(io) {
         sendInv(p);
         return;
       }
+      if (it.key === 'pet_sandik') {
+        const pet = roll(PET_BOX);
+        consume(it);
+        if (!addItem(p, pet, 1)) { addItem(p, 'pet_sandik', 1); notice(p, 'Envanterin dolu!'); sendInv(p); return; }
+        notice(p, `Pet Sandığından ${R.ITEMS[pet].name} çıktı!`);
+        if (p.zone) p.zone.emit('announce', `${p.name} Pet Sandığından ${R.ITEMS[pet].name} çıkardı!`);
+        sendInv(p);
+        return;
+      }
       if (it.key === 'istiridye') {
         consume(it);
         if (Math.random() < 0.12) {
@@ -642,7 +679,7 @@ function createWorld(io) {
         sendInv(p);
         return;
       }
-      if (it.key === 'at_muhru') {
+      if (it.key === 'at_muhru' || it.key === 'savas_muhru') {
         if (p.zone && p.zone.def.safe && !p.mounted) { notice(p, 'Burada ata binemezsin.'); return; }
         setMounted(p, !p.mounted);
         notice(p, p.mounted ? 'Atına bindin.' : 'Atından indin.');
@@ -736,6 +773,7 @@ function createWorld(io) {
       if (now < (p.skillCd[key] || 0)) return;
       const cost = sk.mp + sk.mpLv * (lv - 1);
       if (p.mp < cost) { notice(p, 'Yeterli manan yok.'); return; }
+      if (sk.target !== 'self' && sk.target !== 'heal' && !p.zone.hasSkillTarget(p, sk)) { notice(p, 'Hedef yok.'); return; }
       if (isFinite(Number(data.f))) p.facing = Number(data.f);
       setMounted(p, false);
       p.mp -= cost; sendMp(p);
@@ -788,7 +826,8 @@ function createWorld(io) {
       const key = roll(FISH_TABLE);
       if (!addItem(p, key, 1)) { socket.emit('fishEnd', { ok: false, msg: 'Envanterin dolu!' }); return; }
       sendInv(p);
-      socket.emit('fishEnd', { ok: true, msg: `${R.ITEMS[key].name} tuttun!`, key });
+      socket.emit('fishEnd', { ok: true, msg: R.ITEMS[key].slot === 'fish' ? `${R.ITEMS[key].name} tuttun!` : `Oltana ${R.ITEMS[key].name} takıldı!`, key });
+      if (key === 'pet_sandik') z0announce(p, `${p.name} oltasıyla bir Pet Sandığı çıkardı!`);
       if (!key.startsWith('b_cizme')) social.progress(p, 'fish');
     });
 
@@ -933,6 +972,7 @@ function createWorld(io) {
       socket.emit('upgraded', { ok, name: def.name, up: target.up || 0 });
       social.progress(p, 'upgrade');
       recalc(p); sendInv(p); sendHp(p); sendMp(p);
+      if (p.zone) p.zone.emit('look', { id: p.id, look: looks(p) });   // +9 parlaması herkese görünsün
       if (ok && target.up >= 7 && p.zone) hooks.announce(`${p.name}, ${def.name} eşyasını +${target.up} yaptı!`, p.zone);
     });
     // ruh taşı tak: { stone: uid, slot | uid }

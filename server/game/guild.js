@@ -169,7 +169,7 @@ function createGuilds(W) {
       const i = g.storage.findIndex((x) => x.uid === Number(uid)); if (i < 0) return;
       const it = g.storage[i], def = R.ITEMS[it.key];
       if (def && def.stack) { if (!addItem(p, it.key, it.n || 1)) { notice(p, 'Çantan dolu.'); return; } }
-      else { if (p.inventory.length >= R.INV_SIZE) { notice(p, 'Çantan dolu.'); return; } const { by, ...rest } = it; p.inventory.push({ ...rest, uid: p.nextUid++ }); }
+      else { if (p.inventory.length >= R.invSize(p)) { notice(p, 'Çantan dolu.'); return; } const { by, ...rest } = it; p.inventory.push({ ...rest, uid: p.nextUid++ }); }
       g.storage.splice(i, 1);
       dirty.add(g); sendInv(p); save(p); sendAll(g);
       tell(g, `${p.name} depodan aldı: ${(def || {}).name || it.key}${it.n > 1 ? ' x' + it.n : ''}`);
@@ -194,7 +194,7 @@ function createGuilds(W) {
       for (const it of g.storage) {
         const { by: _, ...rest } = it;
         const def = R.ITEMS[it.key];
-        const ok = def && def.stack ? addItem(by, it.key, it.n || 1) : by.inventory.length < R.INV_SIZE && by.inventory.push({ ...rest, uid: by.nextUid++ });
+        const ok = def && def.stack ? addItem(by, it.key, it.n || 1) : by.inventory.length < R.invSize(by) && by.inventory.push({ ...rest, uid: by.nextUid++ });
         if (!ok && by.zone) by.zone.makeDrop(by.x, by.z, by.id, { key: it.key, n: it.n || 1 }, 0, 600000);
       }
       by.yang += g.yang; sendInv(by); save(by);

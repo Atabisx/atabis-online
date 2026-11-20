@@ -64,12 +64,12 @@ STONES = [
     ('delme', 'Delme Taşı', 'weapon', 'pierce', [1, 2, 3, 4, 5], '#f2c94c', '%{v} şansla savunmayı deler.'),
     ('guc', 'Güç Taşı', 'weapon', 'atk', [6, 12, 20, 30, 42], '#e67e22', 'Saldırı gücü +{v}.'),
     ('ceviklik', 'Çeviklik Taşı', 'weapon', 'atkspeed', [2, 4, 6, 8, 10], '#16a085', 'Saldırı hızı +%{v}.'),
-    ('avci', 'Avcı Taşı', 'weapon', 'monster', [2, 4, 6, 8, 10], '#8d6e63', 'Canavarlara karşı güç +%{v}.'),
-    ('savasci', 'Savaşçı Taşı', 'weapon', 'vs_savasci', [2, 4, 6, 8, 10], '#c0392b', 'Savaşçılara karşı güç +%{v}.'),
-    ('ninja', 'Ninja Taşı', 'weapon', 'vs_ninja', [2, 4, 6, 8, 10], '#5a5f73', 'Ninjalara karşı güç +%{v}.'),
-    ('sura', 'Sura Taşı', 'weapon', 'vs_sura', [2, 4, 6, 8, 10], '#8e44ad', 'Suralara karşı güç +%{v}.'),
-    ('saman', 'Şaman Taşı', 'weapon', 'vs_saman', [2, 4, 6, 8, 10], '#27ae60', 'Şamanlara karşı güç +%{v}.'),
-    ('okcu', 'Okçu Taşı', 'weapon', 'vs_okcu', [2, 4, 6, 8, 10], '#b8860b', 'Okçulara karşı güç +%{v}.'),
+    ('avci', 'Canavar Taşı', 'weapon', 'monster', [2, 4, 6, 8, 10], '#8d6e63', 'Canavarlara karşı güç +%{v}.'),
+    ('savasci', 'Alp Taşı', 'weapon', 'vs_savasci', [2, 4, 6, 8, 10], '#c0392b', 'Alplara karşı güç +%{v}.'),
+    ('ninja', 'Akıncı Taşı', 'weapon', 'vs_ninja', [2, 4, 6, 8, 10], '#5a5f73', 'Akıncılara karşı güç +%{v}.'),
+    ('sura', 'Yalaz Taşı', 'weapon', 'vs_sura', [2, 4, 6, 8, 10], '#8e44ad', 'Yalazlara karşı güç +%{v}.'),
+    ('saman', 'Kam Taşı', 'weapon', 'vs_saman', [2, 4, 6, 8, 10], '#27ae60', 'Kamlara karşı güç +%{v}.'),
+    ('okcu', 'Avcı Taşı', 'weapon', 'vs_okcu', [2, 4, 6, 8, 10], '#b8860b', 'Avcılara karşı güç +%{v}.'),
     ('hayat', 'Hayat Taşı', 'armor', 'hp', [80, 150, 250, 350, 500], '#e74c3c', 'Maks. Can +{v}.'),
     ('savunma', 'Savunma Taşı', 'armor', 'def', [8, 15, 22, 30, 40], '#7f8c8d', 'Savunma +{v}.'),
     ('hiz', 'Hız Taşı', 'armor', 'movespeed', [2, 4, 6, 8, 10], '#3498db', 'Hareket hızı +%{v}.'),
@@ -154,6 +154,7 @@ def build_items():
     for key, name, value in fish:
         items[key] = {'name': name, 'slot': 'fish', 'lv': 1, 'price': value * 4, 'rarity': 1 if value >= 600 else 0,
                       'color': '#7fb3c4' if key != 'b_cizme' else '#6b4a2e', 'stack': 200}
+    items['pet_sandik'] = {'name': 'Pet Sandığı', 'slot': 'use', 'desc': 'Aç: içinden rastgele bir evcil hayvan çıkar (Ejder Yavrusu çok nadir). Balık tutarken nadiren takılır.', 'lv': 1, 'price': 0, 'rarity': 2, 'color': '#b48ad9', 'stack': 50}
     items['istiridye'] = {'name': 'İstiridye', 'slot': 'use', 'desc': 'Aç: içinden nadiren inci çıkar.', 'lv': 1, 'price': 40, 'rarity': 1, 'color': '#c8c0b0', 'stack': 200}
     for key, name, value, color in [('inci_beyaz', 'Beyaz İnci', 3000, '#f4f1e8'), ('inci_mavi', 'Mavi İnci', 9000, '#7fb3ff'), ('inci_kirmizi', 'Kırmızı İnci', 30000, '#ff6a5a')]:
         items[key] = {'name': name, 'slot': 'gem', 'lv': 1, 'price': value * 4, 'rarity': 2, 'color': color, 'stack': 200}
@@ -163,6 +164,7 @@ def build_items():
                             'lv': 1, 'price': 2500000, 'rarity': 3, 'color': '#4fd1c5'}
     items['at_muhru'] = {'name': 'At Mührü', 'slot': 'use', 'desc': 'Kullanınca atına biner ya da iner. Atlıyken %60 daha hızlısın.',
                          'lv': 25, 'price': 0, 'rarity': 2, 'color': '#c9a35a'}
+    items['savas_muhru'] = {'name': 'Savaş Atı Mührü', 'slot': 'use', 'desc': 'Kullanınca zırhlı savaş atına biner ya da iner. Atın üstünde saldırabilirsin; at %76 daha hızlıdır.', 'lv': 50, 'price': 0, 'rarity': 2, 'color': '#e8b54a'}
 
     # ruh taşları (Metin2 gibi): metin taşlarından düşer, silah/zırh yuvalarına takılır, demircide +4'e kadar yükselir
     for key, name, target, stat, vals, color, desc in STONES:
@@ -238,12 +240,12 @@ MAPS = [
      # 9. alan: {'model': client/models/mobs/<ad>.glb} – kullanıcının eklediği modeller
      # tavuk ve horoz modelleri küçük olduğu için büyütüldü; vuruş menzili boydan bağımsız ('range')
      'mobs': [('tavuk', 'Tavuk', 1, 'frog', '#f4f1e8', 3.0, 0, 3.4, {'model': 'tavuk', 'range': 2.6}),
-              ('horoz', 'Horoz', 2, 'frog', '#c0392b', 3.6, 0, 3.8, {'model': 'horoz', 'range': 2.8}),
+              ('horoz', 'Horoz', 2, 'frog', '#c0392b', 2.8, 0, 3.8, {'model': 'horoz', 'range': 2.8}),
               ('domuz', 'Domuz', 3, 'boar', '#e8a0a0', 1.0, 0, 4.0, {'model': 'domuz'}),
               ('inek', 'İnek', 5, 'bear', '#a0522d', 1.0, 0, 3.2, {'model': 'inek'})],
      # köprünün ötesinde bol boss: her birinden 2 tane ('n')
-     'bosses': [('devtavuk', 'Dev Tavuk', 5, 'frog', '#f4f1e8', 15.0, {'model': 'tavuk', 'aura': '#fff1b0', 'hitR': 3.6, 'n': 2}),
-                ('devhoroz', 'Dev Horoz', 8, 'frog', '#c0392b', 18.0, {'model': 'horoz', 'aura': '#ffb347', 'hitR': 4.5, 'n': 2}),
+     'bosses': [('devtavuk', 'Dev Tavuk', 5, 'frog', '#f4f1e8', 9.0, {'model': 'tavuk', 'aura': '#fff1b0', 'hitR': 2.6, 'n': 2}),
+                ('devhoroz', 'Dev Horoz', 8, 'frog', '#c0392b', 9.5, {'model': 'horoz', 'aura': '#ffb347', 'hitR': 3.2, 'n': 2}),
                 ('domuzreis', 'Yaban Domuzu Reisi', 10, 'boar', '#7a4a3a', 4.6, {'model': 'domuz', 'aura': '#ff8a3d', 'hitR': 3.6, 'n': 2}),
                 ('deliboga', 'Deli Boğa', 12, 'bear', '#6b3a1e', 3.6, {'model': 'inek', 'aura': '#ff3b2f', 'hitR': 3.8, 'n': 2}),
                 ('kuduzkopek', 'Kuduz Çoban Köpeği', 14, 'wolf', '#5a4636', 4.4, {'model': 'kopek', 'aura': '#b04aff', 'hitR': 3.2, 'n': 2})]},
@@ -445,10 +447,10 @@ def sk(key, name, desc, target, mp, mpLv, cd, color, **kw):
 
 SKILLS = {
     'savasci': [
-        sk('s_ucluk', 'Üçlü Kesik', 'Önündeki düşmanlara üç yönlü güçlü bir kesik.', 'front', 15, 3, 6, '#ff6a5a', radius=5, mult=1.6, multLv=0.12, combo=1),
-        sk('s_firtina', 'Kılıç Fırtınası', 'Havaya sıçrayıp dönerek yere çakılır; çevresindekileri biçer ve 1 saniye sersemletir.', 'aoe', 25, 4, 10, '#e8b54a', radius=4.5, mult=1.3, multLv=0.1, combo=1, stun=1.2),
-        sk('s_hamle', 'Saldırı Hamlesi', 'İleri atılır, vardığı yerdeki düşmanlara vurur.', 'dash', 20, 3, 12, '#ffb347', radius=3, dist=7, mult=1.8, multLv=0.14, combo=2),
-        sk('s_demir', 'Demir Beden', '60 saniye savunmanı artırır.', 'self', 30, 3, 60, '#c9d1d9', buff={'stat': 'def', 'base': 10, 'perLv': 4, 'dur': 60}),
+        sk('s_ucluk', 'Kartal Pençesi', 'Önündeki düşmanlara üç yönlü güçlü bir kesik.', 'front', 15, 3, 6, '#ff6a5a', radius=5, mult=1.6, multLv=0.12, combo=1),
+        sk('s_firtina', 'Kasırga', 'Havaya sıçrayıp dönerek yere çakılır; çevresindekileri biçer ve 1 saniye sersemletir.', 'aoe', 25, 4, 10, '#e8b54a', radius=4.5, mult=1.3, multLv=0.1, combo=1, stun=1.2),
+        sk('s_hamle', 'Yıldırım Atılışı', 'İleri atılır, vardığı yerdeki düşmanlara vurur.', 'dash', 20, 3, 12, '#ffb347', radius=3, dist=7, mult=1.8, multLv=0.14, combo=2),
+        sk('s_demir', 'Tunç Deri', '60 saniye savunmanı artırır.', 'self', 30, 3, 60, '#c9d1d9', buff={'stat': 'def', 'base': 10, 'perLv': 4, 'dur': 60}),
     ],
     'ninja': [
         sk('n_golge', 'Gölge Darbesi', 'Hedefin arkasına sıçrar; her zaman kritik vuran, kısa süre sersemleten sinsi bir darbe.', 'single', 18, 3, 7, '#8a7dff', range=4.8, mult=2.0, multLv=0.15, crit=True, combo=2, stun=0.8),
@@ -463,10 +465,10 @@ SKILLS = {
         sk('u_kalkan', 'Gölge Kalkanı', '60 saniye savunmanı artırır.', 'self', 25, 3, 60, '#5a5e6a', buff={'stat': 'def', 'base': 8, 'perLv': 3, 'dur': 60}),
     ],
     'saman': [
-        sk('m_sifa', 'Şifa', 'Kendini ve 8 metre içindeki oyuncuları iyileştirir.', 'heal', 30, 3, 8, '#7be08f', heal={'base': 80, 'perLv': 14, 'perLevel': 8}, radius=8),
-        sk('m_simsek', 'Şimşek', 'Hedeften hedefe sıçrayan yıldırım (3 hedef, 10. seviyede 4, M1\'de 5).', 'chain', 22, 3, 6, '#9fd8ff', range=11, mult=1.5, multLv=0.12),
-        sk('m_kutsama', 'Kutsama', '90 saniye kendinin ve yakınındakilerin savunmasını artırır.', 'self', 35, 3, 60, '#ffd23f', buff={'stat': 'def', 'base': 6, 'perLv': 3, 'dur': 90}, radius=10),
-        sk('m_kukreme', 'Ejder Kükremesi', 'Çevresine ateşli bir kükreme salar.', 'aoe', 40, 5, 14, '#ff6a3d', radius=6, mult=1.6, multLv=0.13, combo=1),
+        sk('m_sifa', 'Yaşam Suyu', 'Kendini ve 8 metre içindeki oyuncuları iyileştirir.', 'heal', 30, 3, 8, '#7be08f', heal={'base': 80, 'perLv': 14, 'perLevel': 8}, radius=8),
+        sk('m_simsek', 'Gök Gürültüsü', 'Hedeften hedefe sıçrayan yıldırım (3 hedef, 10. seviyede 4, M1\'de 5).', 'chain', 22, 3, 6, '#9fd8ff', range=11, mult=1.5, multLv=0.12),
+        sk('m_kutsama', 'Ata Duası', '90 saniye kendinin ve yakınındakilerin savunmasını artırır.', 'self', 35, 3, 60, '#ffd23f', buff={'stat': 'def', 'base': 6, 'perLv': 3, 'dur': 90}, radius=10),
+        sk('m_kukreme', 'Bozkurt Uluması', 'Çevresine ateşli bir kükreme salar.', 'aoe', 40, 5, 14, '#ff6a3d', radius=6, mult=1.6, multLv=0.13, combo=1),
     ],
     'okcu': [
         sk('o_coklu', 'Çoklu Ok', 'Aynı anda 3 hedefe ok atar.', 'multi', 18, 3, 5, '#f4e2b8', range=12, mult=1.2, multLv=0.1, count=3),

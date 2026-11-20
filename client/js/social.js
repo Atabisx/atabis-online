@@ -23,6 +23,7 @@ export function setup(ctx) {
   $('dailywin').addEventListener('click', (e) => {
     if (e.target.id === 'dailywin') { $('dailywin').classList.remove('open'); return; }
     const b = e.target.closest('[data-claim]'); if (b && socket) { socket.emit('dailyClaim', Number(b.dataset.claim)); C.sfx.click(); }
+    const mb = e.target.closest('[data-mclaim]'); if (mb && socket) { socket.emit('mainClaim', mb.dataset.mclaim); C.sfx.click(); }
     if (e.target.closest('#loginClaim') && socket) socket.emit('loginClaim');
   });
   $('rewardOk').addEventListener('click', () => $('rewardwin').classList.remove('open'));
@@ -237,7 +238,7 @@ function setupGuild() {
   $('gLeave').addEventListener('click', () => C.askBox('Loncadan ayrılmak istiyor musun?', (ok) => ok && socket.emit('guildLeave'), 'Ayrıl', 'Vazgeç', true));
   $('gDisband').addEventListener('click', () => C.askBox('Lonca tamamen dağıtılsın mı? Depodaki eşyalar ve kasa sana kalır.', (ok) => ok && socket.emit('guildDisband'), 'Dağıt', 'Vazgeç', true));
 }
-const CLS_NAMES = { savasci: 'Savaşçı', ninja: 'Ninja', sura: 'Sura', saman: 'Şaman', okcu: 'Okçu' };
+const CLS_NAMES = { savasci: 'Alp', ninja: 'Akıncı', sura: 'Yalaz', saman: 'Kam', okcu: 'Avcı' };
 function slotHtml(it) {
   const d = C.ITEMS[it.key] || { name: '?', rarity: 0 };
   return `<button class="slot" data-uid="${it.uid}" aria-label="${C.esc(d.name)}" title="${C.esc(d.name + (it.by ? ' · ' + it.by : ''))}">${C.itemIcon(it.key, d)}${it.n > 1 ? `<i class="cnt">${it.n}</i>` : ''}${it.up ? `<i class="upb">+${it.up}</i>` : ''}</button>`;
@@ -271,7 +272,7 @@ export function refreshGuild() { if ($('guildwin').classList.contains('open')) r
 
 function openMenu() { menuOpened = true; renderMenuBadges(); $('menuwin').classList.add('open'); if (tutStep >= 0) setTimeout(showTut, 50); }
 function renderMenuBadges() {
-  const n = daily ? daily.list.filter((q) => q.have >= q.need && !q.claimed).length : 0;
+  const n = (daily ? daily.list.filter((q) => q.have >= q.need && !q.claimed).length : 0) + mainQ.filter((q) => q.st === 'ready').length;
   const b = document.querySelector('[data-menu="daily"] i'); if (b) { b.textContent = n; b.style.display = n ? '' : 'none'; }
   // dağıtılmamış karakter ve beceri puanları da menüde gösterilir
   const pts = (id) => { const e = $(id); return e && e.style.display !== 'none' ? Number(e.textContent) || 0 : 0; };
@@ -317,13 +318,30 @@ function renderParty() {
 }
 
 // ---------- günlük görevler ----------
-function openDaily() { dailyOpened = true; if (socket) socket.emit('dailyGet'); renderDaily(); $('dailywin').classList.add('open'); }
+function openDaily() { dailyOpened = true; if (socket) { socket.emit('dailyGet'); socket.emit('mainGet'); } renderDaily(); $('dailywin').classList.add('open'); }
 function rewardText(q) {
   const parts = [`${q.exp.toLocaleString('tr-TR')} tecrübe`, `${q.yang.toLocaleString('tr-TR')} yang`];
   for (const [k, n] of q.items) parts.push(`${(C.ITEMS[k] || {}).name || k}${n > 1 ? ' x' + n : ''}`);
   return parts.join(' · ');
 }
+// ana görevler: envanter sayfaları ve savaş atı
+let mainQ = [];
+export function setMainQuests(list) { mainQ = list || []; renderMain(); renderMenuBadges(); }
+function renderMain() {
+  const el = $('mainList'); if (!el) return;
+  el.innerHTML = mainQ.map((q) => {
+    const pct = q.need ? Math.round(100 * q.have / q.need) : 0;
+    const st = q.st === 'locked' ? `<small>${q.lv}. seviyede açılır</small>` : q.st === 'wait' ? '<small>Önceki görevi bitir</small>'
+      : q.st === 'ready' ? `<button class="btn" data-mclaim="${q.id}">Ödülü al</button>` : q.st === 'done' ? '<span class="dqok">✔ Tamamlandı</span>' : '';
+    return `<div class="dq${q.st === 'ready' ? ' done' : ''}${q.st === 'done' ? ' claimed' : ''}${q.st === 'locked' || q.st === 'wait' ? ' locked' : ''}">
+      <div class="dqh"><b>${C.esc(q.name)}</b><span>${q.st === 'active' || q.st === 'ready' ? C.esc(q.parts) : 'Sv. ' + q.lv}</span></div>
+      <div class="dqt">${C.esc(q.text)}</div>
+      ${q.st === 'active' || q.st === 'ready' ? `<div class="dqbar"><i style="width:${pct}%"></i></div>` : ''}
+      <div class="dqr"><small>Ödül: ${C.esc(q.reward)}</small>${st}</div></div>`;
+  }).join('');
+}
 function renderDaily() {
+  renderMain();
   if (!daily) return;
   $('dailyList').innerHTML = daily.list.map((q, i) => {
     const pct = Math.round(100 * q.have / q.need), done = q.have >= q.need;
