@@ -229,8 +229,30 @@ function createWorld(io) {
     }
     if (cmd === 'dunyaboss') { worldboss.gm(p, args); return; }
     if (cmd === 'petler') { const n = giveAllPets(p); sendInv(p); notice(p, n ? `${n} evcil hayvan çantana kondu.` : 'Bütün petler zaten sende (ya da çanta dolu).'); return; }
+    if (cmd === 'silahlar') {
+      // /silahlar: kendi sınıfının bütün silahları; /silahlar kilic|hancer|yay|asa|hepsi
+      const TYPES = { kilic: 'sword', hancer: 'dagger', yay: 'bow', asa: 'staff' };
+      const want = a0 && TYPES[a0];
+      if (a0 && !want && a0 !== 'hepsi') { notice(p, 'Kullanım: /silahlar [kilic|hancer|yay|asa|hepsi]'); return; }
+      const keys = Object.keys(R.ITEMS).filter((k) => {
+        const d = R.ITEMS[k];
+        if (d.slot !== 'weapon') return false;
+        if (a0 === 'hepsi') return true;
+        return want ? d.type === want : (d.classes || []).includes(p.class);
+      }).sort((x, y) => (R.ITEMS[x].tier - R.ITEMS[y].tier) || x.localeCompare(y));
+      let n = 0;
+      gmTarget = p;
+      for (const k of keys) {
+        if (p.inventory.length >= R.invSize(p)) break;
+        p.inventory.push(maxedItem(k)); n++;
+      }
+      gmTarget = null;
+      sendInv(p);
+      notice(p, n < keys.length ? `${n} silah çantana kondu, ${keys.length - n} tanesi sığmadı (çanta dolu).` : `${n} silah çantana kondu.`);
+      return;
+    }
     if (cmd === 'iyiles') { p.hp = p.maxHp; p.mp = p.maxMp; sendHp(p); sendMp(p); return; }
-    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /petler, /ep <isim> <miktar>, /iyiles, /savas [bitir], /dunyaboss [bitir], /etkinlik <metin|exp|boss|drop> [dk]');
+    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /silahlar [kilic|hancer|yay|asa|hepsi], /petler, /ep <isim> <miktar>, /iyiles, /savas [bitir], /dunyaboss [bitir], /etkinlik <metin|exp|boss|drop> [dk]');
   }
 
   // zindan ve savaş meydanı kaydedilmez: oyuncu tekrar girince köyde başlar

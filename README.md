@@ -17,6 +17,7 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
   - Sv. 43 Gümüş Kanatlı Kılıç, Sv. 50 Mor Büyü Kılıcı, Sv. 57-64 Altın Kanatlı Kılıç
   - Sv. 71 Savaş Baltası, Sv. 78 Demir Balta, Sv. 85-92 Altın İşlemeli Balta, Sv. 99+ Buz Baltası
   - **Kam asaları** Sv. 43 ve üstü: ametist küreli Kraliyet Asası.
+- **GM komutu `/silahlar`:** kendi sınıfının bütün silahlarını (her kademe + efsanevi) en iyi efsunlarla çantaya koyar. `/silahlar kilic|hancer|yay|asa` sadece o türü, `/silahlar hepsi` her şeyi verir (çanta dolunca durur).
 - **Araçlar:**
   - `tools/fbxanim.py`: tek dosyada birden çok hareket olan FBX'lerden klip alır (`Idle=dosya.fbx#YığınAdı`).
   - `tools/glbstatic.py`: `--paint kilic|balta|asa` (dokusuz silahları boyar), `--matcolor` (malzeme rengi), `--cell` (çok ağır modeli sadeleştirir).
