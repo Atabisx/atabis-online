@@ -1,4 +1,4 @@
-// Zindan: Örümcek Mağarası. Her grup kendi kopyasına girer: 3 dalga, sonunda Örümcek Kraliçe.
+// Zindan: Örümcek Mağarası. Her grup kendi kopyasına girer: 3 dalga, sonunda Mağara Canavarı.
 // Menü > Zindan'dan grup lideri (ya da tek başına oyuncu) yakındaki grup üyeleriyle girer. 25 dakika süre, 30 dakika bekleme.
 const R = require('./rules');
 const { Zone } = require('./zone');
@@ -30,7 +30,7 @@ function createDungeons(W) {
       const spot = boss ? [25, 42] : [25 + (Math.random() - 0.5) * 50, 18 + Math.random() * 34];
       run.zone.spawnMob(key, spot);
     }
-    run.zone.emit('announce', `${run.stage + 1}. dalga: ${w.name}!${w.boss ? ' Örümcek Kraliçe uyandı!' : ''}`);
+    run.zone.emit('announce', `${run.stage + 1}. dalga: ${w.name}!${w.boss ? ' Mağara Canavarı uyandı!' : ''}`);
     send(run);
   }
   function onKill(run, m, owner) {
@@ -45,7 +45,7 @@ function createDungeons(W) {
     // zindan bitti: ödüller
     run.done = true;
     const names = [...run.zone.players.values()].map((p) => p.name);
-    io.emit('announce', `${names.join(', ')} ${DEF.name}'nı temizledi ve Örümcek Kraliçe'yi yendi!`);
+    io.emit('announce', `${names.join(', ')} ${DEF.name}'nı temizledi ve Mağara Canavarı'nı yendi!`);
     for (const p of run.zone.players.values()) {
       p.quests.dungeonDone = Date.now(); p.quests.dungeons = (p.quests.dungeons || 0) + 1;
       for (const [key, n, ch] of CHEST) {

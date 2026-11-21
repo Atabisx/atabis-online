@@ -205,15 +205,17 @@ def build_items():
         items[key] = {'name': name, 'slot': 'costume', 'lv': 1, 'price': pr, 'rarity': 1, 'color': color, 'tint': color,
                       'desc': 'Zırhının görünüşünü değiştirir (istatistik vermez). Kostümcüden alınır.'}
     # evcil hayvanlar metin taşlarından düşer; her biri farklı bir güç verir
-    PETS = [('pet_kurt', 'Kurt Yavrusu', 'wolf', '#8a8f99', {'crit': 5}, 'Kritik vuruş +%5'),
-            ('pet_tilki', 'Tilki Yavrusu', 'dog', '#d9762b', {'pierce': 5}, 'Delici vuruş +%5'),
-            ('pet_ayi', 'Ayı Yavrusu', 'bear', '#6b4a2e', {'hp': 600, 'def': 12}, 'Can +600, savunma +12'),
-            ('pet_baykus', 'Baykuş', 'flyer', '#c9b48a', {'atkspeed': 6, 'mp': 300}, 'Saldırı hızı +%6, mana +300'),
-            ('pet_yilan', 'Yılan', 'snake', '#4f7a2a', {'dodge': 5, 'pierce': 3}, 'Kaçınma +%5, delici +%3'),
-            ('pet_ejder', 'Ejder Yavrusu', 'dragon', '#c0392b', {'atk': 40, 'crit': 4, 'hp': 400}, 'Saldırı +40, kritik +%4, can +400')]
-    for key, name, shape, color, bonus, text in PETS:
+    # sadece kullanıcının getirdiği modellerle evcil hayvanlar (anahtarlar eski kayıtlar bozulmasın diye korunur)
+    PETS = [('pet_kurt', 'Kurt Yavrusu', 'wolf', '#8a8f99', {'crit': 5}, 'Kritik vuruş +%5', 'kurt'),
+            ('pet_tilki', 'Tilki Yavrusu', 'dog', '#d9762b', {'pierce': 5}, 'Delici vuruş +%5', 'kopek'),
+            ('pet_yilan', 'Yılan', 'snake', '#4f7a2a', {'dodge': 5, 'pierce': 3}, 'Kaçınma +%5, delici +%3', 'yilan'),
+            ('pet_ayi', 'Sekreter Kuşu', 'flyer', '#c9c2b0', {'hp': 600, 'def': 12}, 'Can +600, savunma +12', 'sekreter'),
+            ('pet_baykus', 'Kuzgun', 'flyer', '#3a3550', {'atkspeed': 6, 'mp': 300}, 'Saldırı hızı +%6, mana +300', 'kuzgun'),
+            ('pet_uzayli', 'Uzaylı Yaratık', 'dog', '#3a4430', {'atk': 25, 'dodge': 4}, 'Saldırı +25, kaçınma +%4', 'uzayli'),
+            ('pet_ejder', 'Ejder Yavrusu', 'dragon', '#5a1a14', {'atk': 40, 'crit': 4, 'hp': 400}, 'Saldırı +40, kritik +%4, can +400', 'ejder')]
+    for key, name, shape, color, bonus, text, model in PETS:
         items[key] = {'name': name, 'slot': 'pet', 'lv': 1, 'price': 5000000, 'rarity': 2 if key == 'pet_ejder' else 1, 'color': color,
-                      'pet': {'shape': 'worm' if shape == 'snake' else shape, 'color': color, 'model': {'pet_kurt': 'kurt', 'pet_tilki': 'kopek', 'pet_yilan': 'yilan'}.get(key)}, 'bonus': bonus,
+                      'pet': {'shape': 'worm' if shape == 'snake' else shape, 'color': color, 'model': model}, 'bonus': bonus,
                       'desc': f'Peşinden gelen evcil hayvan. {text}. Metin taşlarından düşer' + (' (çok nadir).' if key == 'pet_ejder' else '.')}
     for key, name, color in [('yaprak_mor', 'Mor Yaprak', '#9b59d0'), ('yaprak_mavi', 'Mavi Yaprak', '#3d8fe0'), ('yaprak_kirmizi', 'Kırmızı Yaprak', '#e0453a')]:
         items[key] = {'name': name, 'slot': 'material', 'desc': "Demircide 30. seviye ve üstü eşyaları +6'dan sonra yükseltmek için gerekir. Metin taşlarından düşer.",
@@ -232,6 +234,9 @@ def build_items():
         v.setdefault('lv', 1)
         v['price'] = 0
         v['legacy'] = True
+        # eski kılıçlar da kullanıcının modelleriyle görünür
+        LEG = {'w_wood': 'sade_kilic', 'w_iron': 'kivrik_kilic', 'w_steel': 'katana', 'w_shadow': 'mor_kilic', 'w_dragon': 'kanatli_kilic'}
+        if k in LEG: v['model'] = LEG[k]
         items[k] = v
     return items
 
@@ -294,61 +299,61 @@ MAPS = [
      'mobs': [('kumakrep', 'Kum Akrebi', 36, 'scorpion', '#c9a35a', 1.05, 9, 5.2),
               ('colkurt', 'Benekli Sırtlan', 38, 'wolf', '#c9a36a', 1.0, 11, 6.2, {'model': 'sirtlan'}),
               ('solucan', 'Kum Solucanı', 40, 'worm', '#b08a5a', 1.1, 8, 4.4)],
-     'bosses': [('devsolucan', 'Dev Kum Solucanı', 45, 'worm', '#8a6440', 2.6, {'spikes': '#e8d5a8', 'crystals': '#ffb347', 'eyes': '#ff3b2f'}),
+     'bosses': [('devsolucan', 'Dev Kum Yılanı', 45, 'worm', '#8a6440', 3.2, {'model': 'yilan', 'aura': '#ffb347', 'hitR': 2.6}),
                 ('sirtlanreis', 'Sırtlan Reisi Kahkaha', 42, 'wolf', '#c9a36a', 2.4, {'model': 'sirtlan', 'aura': '#ffb347', 'hitR': 2.4, 'n': 2})]},
     {'name': 'Kızıl Kanyon', 'lv': 43, 'theme': 'desert_canyon',
      'mobs': [('colhaydut', 'Çöl Haydudu', 43, 'humanoid', '#c9a35a', 1.0, 11, 5.6),
               ('mumya', 'Mumya', 45, 'humanoid', '#d9cfb8', 1.05, 8, 3.8),
               ('akbaba', 'Akbaba', 47, 'flyer', '#3a2a1c', 1.1, 12, 6.5)],
-     'bosses': [('yagmaci', 'Kervan Yağmacısı', 52, 'humanoid', '#8e2a21', 1.6, {'cape': '#c9a35a', 'eyes': '#ffd23f', 'orbs': '#ffb347', 'weapon': '#ffd700'})]},
+     'bosses': [('yagmaci', 'Kervan Yağmacısı', 52, 'humanoid', '#8e2a21', 1.4, {'model': 'savasci', 'aura': '#ffb347', 'tint': '#c98a4a'})]},
     {'name': 'Kara Bataklık', 'lv': 50, 'theme': 'swamp',
      'mobs': [('kurbaga', 'Boynuzlu Bataklık Kurbağası', 50, 'frog', '#4a6a35', 1.0, 8, 5.0, {'model': 'kurbaga'}),
               ('yilan', 'Zehirli Yılan', 52, 'worm', '#3f7535', 0.9, 10, 5.6),
               ('camur', 'Çamur Canavarı', 54, 'golem', '#4a3a2a', 1.2, 7, 3.8)],
-     'bosses': [('cadi', 'Bataklık Cadısı', 59, 'ghost', '#6fd36f', 1.8, {'hat': '#1a2a1a', 'flames': '#6fd36f', 'orbs': '#9fff7f', 'aura': '#6fd36f'}),
+     'bosses': [('cadi', 'Bataklık Cadısı', 59, 'ghost', '#6fd36f', 1.4, {'model': 'buyucu', 'aura': '#6fd36f', 'tint': '#5fae5a'}),
                 ('kurbagakral', 'Kurbağa Kralı Vırak', 56, 'frog', '#4a6a35', 3.2, {'model': 'kurbaga', 'aura': '#9fff7f', 'hitR': 2.6, 'n': 2})]},
     {'name': 'Karlı Dağlar', 'lv': 57, 'theme': 'snow',
      'mobs': [('karkurt', 'Kar Kurdu', 57, 'wolf', '#e8eef2', 1.15, 12, 6.2),
               ('buzayi', 'Buz Ayısı', 59, 'bear', '#dfe8ee', 1.35, 9, 4.8),
               ('yeti', 'Yeti', 61, 'humanoid', '#f4f6f8', 1.4, 9, 4.6)],
-     'bosses': [('buzdevi', 'Buz Devi', 66, 'golem', '#9fd8ff', 2.6, {'crystals': '#9fd8ff', 'spikes': '#e8f4ff', 'eyes': '#7fd4ff', 'aura': '#9fd8ff'})]},
+     'bosses': [('buzdevi', 'Buz Devi', 66, 'golem', '#9fd8ff', 2.6, {'model': 'su_elementi', 'aura': '#9fd8ff', 'tint': '#bfe6ff', 'hitR': 2.6})]},
     {'name': 'Buz Mağarası', 'lv': 64, 'theme': 'ice_cave',
      'mobs': [('buzorumcek', 'Buz Örümceği', 64, 'spider', '#9fd8ff', 1.05, 10, 5.6),
               ('kristalgolem', 'Kristal Golem', 66, 'golem', '#c8d0ff', 1.2, 7, 3.8),
               ('ayazruhu', 'Ayaz Ruhu', 68, 'ghost', '#e8f4ff', 1.0, 12, 5.8)],
-     'bosses': [('ayazkralice', 'Ayaz Kraliçesi', 73, 'ghost', '#7fb3ff', 2.0, {'crown': '#e8f4ff', 'crystals': '#7fb3ff', 'orbs': '#c8e8ff', 'aura': '#7fb3ff'})]},
+     'bosses': [('ayazkralice', 'Ayaz Kraliçesi', 73, 'ghost', '#7fb3ff', 1.6, {'model': 'buyucu', 'aura': '#7fb3ff', 'tint': '#a8ccff'})]},
     {'name': 'Volkan Eteği', 'lv': 71, 'theme': 'volcanic',
      'mobs': [('atesbocek', 'Ateş Tükürgeci', 71, 'humanoid', '#3d6b38', 1.0, 10, 6.0, {'model': 'ates_tukurgec'}),
               ('lavgolem', 'Lav Golemi', 73, 'golem', '#5a2a1c', 1.25, 7, 3.6),
               ('korkurt', 'Kor Kurdu', 75, 'wolf', '#c0392b', 1.2, 12, 6.4)],
-     'bosses': [('ejderyavru', 'Ateş Ejderhası Yavrusu', 80, 'dragon', '#c0392b', 1.8, {'flames': '#ff6a3d', 'horns': '#2a1a14', 'eyes': '#ffd23f'})]},
+     'bosses': [('ejderyavru', 'Ateş Ejderhası', 80, 'dragon', '#c0392b', 1.4, {'model': 'ejder', 'aura': '#ff6a3d', 'hitR': 2.4})]},
     {'name': 'Ejder Kalesi', 'lv': 78, 'theme': 'castle',
      'mobs': [('muhafiz', 'Kale Muhafızı', 78, 'humanoid', '#7d7f86', 1.05, 10, 5.2),
               ('karasovalye', 'Kara Şövalye', 80, 'humanoid', '#2a2a2a', 1.1, 11, 5.4),
               ('gargoyl', 'Gargoyl', 82, 'flyer', '#5a5e6a', 1.25, 12, 6.2)],
-     'bosses': [('sovalyelord', 'Kara Şövalye Lordu', 87, 'humanoid', '#1a1a1a', 1.7, {'cape': '#1a1a1a', 'horns': '#2a2a2a', 'eyes': '#ff3b2f', 'plates': '#3a3a40', 'weapon': '#8a7dff'})]},
+     'bosses': [('sovalyelord', 'Kara Şövalye Lordu', 87, 'humanoid', '#1a1a1a', 1.5, {'model': 'cehennem_sovalyesi', 'aura': '#8a7dff', 'tint': '#55556a'})]},
     {'name': 'Lanetli Harabeler', 'lv': 85, 'theme': 'ruins',
      'mobs': [('iskelet', 'İskelet Savaşçı', 85, 'skeleton', '#e8e2d0', 1.0, 11, 5.4),
               ('hayalet', 'Hayalet', 87, 'ghost', '#c8d0ff', 1.0, 12, 5.8),
               ('buyucu', 'Lanetli Büyücü', 89, 'humanoid', '#6c3483', 1.0, 13, 5.0)],
-     'bosses': [('lichkral', 'Lich Kral', 94, 'skeleton', '#8a7dff', 1.9, {'crown': '#8a7dff', 'cape': '#2a1a3a', 'orbs': '#8a7dff', 'aura': '#8a7dff', 'eyes': '#b0a8ff'})]},
+     'bosses': [('lichkral', 'Lich Kral', 94, 'skeleton', '#8a7dff', 1.6, {'model': 'mumya', 'aura': '#8a7dff', 'tint': '#9a90d0'})]},
     {'name': 'İblis Kulesi', 'lv': 92, 'theme': 'demon',
      'mobs': [('iblismuhafiz', 'İblis Muhafız', 92, 'humanoid', '#4a4a8a', 1.0, 11, 5.4, {'model': 'iblis'}),
               ('alevib', 'Alev İblisi', 94, 'ghost', '#ff6a3d', 1.1, 12, 6.0),
               ('suikastci', 'Gölge Suikastçı', 96, 'humanoid', '#1a1a1a', 1.0, 14, 7.0)],
-     'bosses': [('kuleefendisi', 'Kule Efendisi', 101, 'humanoid', '#b0362b', 1.9, {'horns': '#1a0a0a', 'wings': '#5a1010', 'flames': '#ff6a3d', 'eyes': '#ffd23f', 'weapon': '#ff6a3d'}),
+     'bosses': [('kuleefendisi', 'Kule Efendisi', 101, 'humanoid', '#b0362b', 1.5, {'model': 'iblis', 'aura': '#ff6a3d', 'tint': '#d0584a', 'hitR': 2.4}),
                 ('iblislord', 'Mor İblis Lordu', 98, 'humanoid', '#6a3a9a', 1.8, {'model': 'iblis_mor', 'aura': '#b06bff', 'hitR': 2.4})]},
     {'name': 'Ejder Vadisi', 'lv': 99, 'theme': 'dragon_valley',
      'mobs': [('gencejder', 'Genç Ejder', 99, 'dragon', '#3f7535', 1.0, 12, 6.0),
               ('ejdermuhafiz', 'Ejder Muhafızı', 101, 'humanoid', '#ffb347', 1.15, 11, 5.4),
               ('ejderbuyucu', 'Ejder Büyücüsü', 103, 'ghost', '#ffb347', 1.1, 13, 5.6)],
-     'bosses': [('gokejder', 'Gök Ejderi', 108, 'dragon', '#7fb3ff', 2.3, {'horns': '#e8f4ff', 'crystals': '#9fd8ff', 'spikes': '#c8e8ff', 'aura': '#7fb3ff'})]},
+     'bosses': [('gokejder', 'Gök Ejderi', 108, 'dragon', '#7fb3ff', 1.9, {'model': 'ejder', 'aura': '#7fb3ff', 'tint': '#1f6fff', 'hitR': 3.0})]},
     {'name': 'Kara Taht', 'lv': 106, 'theme': 'dark_throne',
      'mobs': [('karaasker', 'Kara Ordu Askeri', 106, 'humanoid', '#2a2a2a', 1.05, 12, 5.6),
               ('karakomutan', 'Kara Ordu Komutanı', 108, 'humanoid', '#4a1a1a', 1.2, 12, 5.6),
               ('hiclik', 'Hiçlik Yaratığı', 110, 'ghost', '#3a1a4a', 1.2, 14, 6.0)],
-     'bosses': [('karaimparator', 'Kara İmparator', 115, 'humanoid', '#ffd700', 2.0, {'crown': '#ffd700', 'cape': '#4a1a6a', 'plates': '#c9a35a', 'aura': '#ffd700', 'weapon': '#ffd700'}),
-                ('hiclikejder', 'Hiçlik Ejderi', 120, 'dragon', '#3a1a4a', 2.6, {'horns': '#0a0010', 'spikes': '#8a5aff', 'flames': '#8a5aff', 'eyes': '#d07bff', 'aura': '#5a2a8a'})]},
+     'bosses': [('karaimparator', 'Kara İmparator', 115, 'humanoid', '#ffd700', 1.7, {'model': 'savasci', 'aura': '#ffd700', 'tint': '#e8c060'}),
+                ('hiclikejder', 'Hiçlik Ejderi', 120, 'dragon', '#3a1a4a', 2.4, {'model': 'ejder', 'aura': '#8a5aff', 'tint': '#3a1a5a', 'hitR': 3.6})]},
 ]
 
 # tek köy var: bütün alışveriş Atabis Köyü'nde (harita sırası -> (iksirler, satılan kademeler))
@@ -447,8 +452,8 @@ def build(items):
     mobs['zzehir'] = dict(mob_stats(35), name='Zehirli Örümcek', shape='spider', color='#4f8a2a', scale=1.35, aggro=12, speed=5.8,
                           range=2.4, cd=1400, respawn=0, drops=[], potions=[['p_hp2', 0.2]], style={'aura': '#7dff3a'})
     q = mob_stats(40, boss=True)
-    q.update({'name': 'Örümcek Kraliçe', 'shape': 'spider', 'color': '#5a1a4a', 'scale': 4.2, 'aggro': 0, 'speed': 4.6, 'range': 6.0, 'cd': 1800,
-              'boss': True, 'respawn': 0, 'hitR': 3.2, 'drops': [], 'potions': [['p_hp3', 1.0]], 'style': {'aura': '#c03aff', 'breath': '#9dff3a'}})
+    q.update({'name': 'Mağara Canavarı', 'shape': 'spider', 'color': '#5a1a4a', 'scale': 2.6, 'aggro': 0, 'speed': 4.6, 'range': 6.0, 'cd': 1800,
+              'boss': True, 'respawn': 0, 'hitR': 3.2, 'drops': [], 'potions': [['p_hp3', 1.0]], 'style': {'model': 'uzayli', 'aura': '#c03aff', 'breath': '#9dff3a'}})
     q['hp'] = q['hp'] * 3
     mobs['zkralice'] = q
     maps.append({'id': len(maps), 'name': 'Örümcek Mağarası', 'minLevel': 30, 'theme': 'swamp', 'village': False, 'hidden': True, 'dungeon': True,

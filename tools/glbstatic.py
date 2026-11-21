@@ -64,15 +64,23 @@ for ax, d in (('x', a.rotx), ('z', a.rotz)):
 # sadeleştirme: aynı hücreye düşen (ve dokuda yakın) noktalar birleşir
 if a.cell:
     allP = np.concatenate([p['P'] for p in prims]); ext = (allP.max(0) - allP.min(0)).max(); h = ext * a.cell
+    # hücre ortalaması bütün parçalar için ortak: parçaların birleştiği yerlerde yarık açılmaz
+    _gk, _ginv, _gcnt = np.unique(np.floor(allP / h).astype(np.int64), axis=0, return_inverse=True, return_counts=True)
+    _gavg = np.zeros((len(_gcnt), 3)); np.add.at(_gavg, _ginv.ravel(), allP); _gavg /= _gcnt[:, None]
+    _gmap = {tuple(k): i for i, k in enumerate(_gk)}
+    def cell_avg(P):
+        ks = np.floor(P / h).astype(np.int64)
+        return _gavg[[_gmap[tuple(k)] for k in ks]]
     for p in prims:
         textured = p['mat'] is not None and 'baseColorTexture' in j['materials'][p['mat']].get('pbrMetallicRoughness', {})
-        uvk = np.floor(p['UV'] * 32).astype(np.int64) if textured else np.zeros((len(p['P']), 2), np.int64)
+        uvk = np.floor(p['UV'] * 96).astype(np.int64) if textured else np.zeros((len(p['P']), 2), np.int64)
         key = np.concatenate([np.floor(p['P'] / h).astype(np.int64), uvk], 1)
-        _, inv, cnt = np.unique(key, axis=0, return_inverse=True, return_counts=True); inv = inv.ravel()
+        _, first, inv, cnt = np.unique(key, axis=0, return_index=True, return_inverse=True, return_counts=True); inv = inv.ravel()
         k = len(cnt)
-        P2 = np.zeros((k, 3)); np.add.at(P2, inv, p['P']); P2 /= cnt[:, None]
+        # konum hücre ortalamasıdır (dokuya göre ayrılan kopyalar aynı yere düşer, dikiş yerinde yarık açılmaz)
+        P2 = cell_avg(p['P'])[first]
         N2 = np.zeros((k, 3)); np.add.at(N2, inv, p['N']); N2 /= np.maximum(1e-9, np.linalg.norm(N2, axis=1, keepdims=True))
-        UV2 = np.zeros((k, 2)); np.add.at(UV2, inv, p['UV']); UV2 /= cnt[:, None]
+        UV2 = p['UV'][first].astype(np.float64)   # doku koordinatı ortalanmaz: ada dışına taşıp siyah çizgi yapmasın
         TT = inv[p['I']].reshape(-1, 3)
         ok = (TT[:, 0] != TT[:, 1]) & (TT[:, 1] != TT[:, 2]) & (TT[:, 0] != TT[:, 2]); TT = TT[ok]
         _, first = np.unique(np.sort(TT, 1), axis=0, return_index=True); TT = TT[np.sort(first)]

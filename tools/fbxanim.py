@@ -139,6 +139,9 @@ def main():
             for path_, arr, typ in (('translation', tr[k], 'VEC3'), ('rotation', ro[k], 'VEC4'), ('scale', sc[k], 'VEC3')):
                 arr = np.array(arr)
                 if path_ == 'scale' and np.abs(arr - 1).max() < 1e-3 and 'scale' not in nodes[k]: continue
+                if path_ == 'rotation' and np.abs(arr - arr[0]).max() < 1e-4:
+                    rest = np.array(nodes[k].get('rotation', [0, 0, 0, 1]))
+                    if min(np.abs(arr[0] - rest).max(), np.abs(arr[0] + rest).max()) < 1e-3: continue
                 if path_ == 'translation' and np.abs(arr - arr[0]).max() < 1e-4:
                     # hareketsiz kanal ve dinlenme konumuyla aynıysa yazılmaz (dosya küçülür)
                     rest = np.array(nodes[k].get('translation', [0, 0, 0]))

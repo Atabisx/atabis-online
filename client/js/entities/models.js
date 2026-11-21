@@ -34,6 +34,10 @@ export const MOB_MODELS = {
   sirtlan:     { kind: 'skel', size: 1.0, clips: { idle: ['Idle', 'Idle2'], walk: 'Walk', run: 'Run', atk: ['Atk', 'Atk2'], die: 'Die', roar: ['Roar', 'Bark'] }, walkRate: 1.4 },
   ates_tukurgec: { kind: 'skel', size: 1.5, clips: { idle: 'Idle', walk: 'Walk', run: 'Run', atk: ['Atk', 'Atk2', 'Bite', 'Spit'], die: 'Die' }, walkRate: 1.2 },
   iblis:       { kind: 'skel', size: 2.3, clips: { idle: 'Idle', walk: 'Walk', run: 'Run', atk: 'Atk', die: 'Death' } },
+  ejder:       { kind: 'skel', size: 2.2, clips: { idle: 'All', walk: 'All' } },
+  uzayli:      { kind: 'skel', size: 1.4, clips: { idle: 'Idle', walk: 'Walk', run: 'Run', atk: ['Atk', 'Atk2'], die: 'Die' }, walkRate: 1.2 },
+  kuzgun:      { kind: 'skel', size: 1.1, clips: {}, flap: /^(shoulder|Wing)/, flapAxis: [0, 0, 1], hover: 0.9 },
+  sekreter:    { kind: 'bird', size: 2.0, legTop: 0.42, armX: 0.12, armMin: 0.45, shoulder: 0.7, headY: 0.82, tail: 0.2, freq: 12, amp: 0.5, graze: 0.6, grazeRate: 1.2 },
   iblis_mor:   { kind: 'skel', size: 2.3, clips: { idle: 'Idle', walk: 'Walk', run: 'Run', atk: 'Atk', die: 'Death' } },
 };
 const KIND = { quad: 0, sit: 0, humanoid: 1, robe: 2, snake: 3, bird: 4 };
@@ -294,6 +298,16 @@ export function skelInstance(gltf, spec) {
   holder.add(model);
   mixer.update(Math.random() * 2);   // sürüdekiler aynı anda kıpırdamasın
   let oneShot = null, dead = false, lastAtk = 0, still = 0, nextRoar = 8 + Math.random() * 12;
+  // kendi animasyonu olmayan kuşlar: kanat kemikleri kodla çırpılır
+  const flaps = [];
+  if (spec.flap) {
+    const ax = new THREE.Vector3(...(spec.flapAxis || [0, 0, 1]));
+    model.traverse((o) => { if (o.isBone && spec.flap.test(o.name)) flaps.push({ o, q: o.quaternion.clone(), s: /\.R$|_R$|Right/i.test(o.name) ? -1 : 1, d: /\.00[12]/.test(o.name) ? 0.6 : 0 }); });
+    flaps.ax = ax;
+  }
+  const tmpQ = new THREE.Quaternion();
+  const baseY = model.position.y;
+  let tt = Math.random() * 10;
   function fadeTo(a, d = 0.2) {
     if (!a || a === cur) return;
     a.reset().play();
@@ -308,9 +322,15 @@ export function skelInstance(gltf, spec) {
     oneShot = a;
   }
   function update(t, moving, atk, dt) {
-    dt = dt || 0.016;
+    dt = dt || 0.016; tt += dt;
+    if (flaps.length) {
+      const sp = moving ? 14 : 9;
+      for (const f of flaps) { tmpQ.setFromAxisAngle(flaps.ax, f.s * Math.sin(tt * sp - f.d) * (0.55 + 0.25 * (f.d ? 1 : 0))); f.o.quaternion.copy(f.q).multiply(tmpQ); }
+    }
+    if (spec.hover) model.position.y = baseY + spec.hover * spec.size * (0.35 + 0.08 * Math.sin(tt * 2.2));
+    if (!C.atk) holder.position.z = (atk || 0) * 0.18 * spec.size;
     if (!dead) {
-      if (atk > 0 && lastAtk === 0) once(C.atk, 0.9);
+      if (atk > 0 && lastAtk === 0 && C.atk) once(C.atk, 0.9);
       lastAtk = atk > 0 ? atk : 0;
       if (oneShot && (!oneShot.isRunning() || oneShot.time >= oneShot.getClip().duration - 0.05)) oneShot = null;
       // uzun süre boşta kalınca ara sıra böğürür
@@ -327,12 +347,23 @@ export function skelInstance(gltf, spec) {
   return {
     holder, update, size: spec.size,
     hit() { if (!dead && !oneShot && Math.random() < 0.4) once(C.hit, 0.6); },
-    die() { if (dead) return false; dead = true; once(C.die); return true; },
+    die() { if (dead || !C.die) return false; dead = true; once(C.die); return true; },   // ölüm klibi yoksa oyun devirir
     roar() { if (!dead && !oneShot && C.roar) once(C.roar); },
   };
 }
 
 // ---------- yaratık: önce kodla çizilen yedek görünür, model gelince onunla değişir ----------
+// aynı modeli farklı boss'larda ayırt etmek için renk tonu (dokunun üstüne çarpılır)
+function tintModel(root, hex, cloneMat) {
+  if (!hex) return;
+  const c = new THREE.Color(hex);
+  root.traverse((o) => {
+    if (!o.isMesh || !o.material) return;
+    const one = (m) => { const n = cloneMat ? m.clone() : m; if (n.color) n.color.lerp(c, 0.6); return n; };
+    o.material = Array.isArray(o.material) ? o.material.map(one) : one(o.material);
+  });
+}
+
 export function attachMobModel(v, def) {
   const name = def.style && def.style.model;
   const spec = MOB_MODELS[name];
@@ -342,6 +373,7 @@ export function attachMobModel(v, def) {
     loadGltf(`models/mobs/${name}.glb`).then((gltf) => {
       for (const c of [...v.root.children]) if (!c.userData.keep) v.root.remove(c);
       const inst = skelInstance(gltf, spec);
+      tintModel(inst.holder, def.style.tint, true);
       v.root.add(inst.holder);
       const extra = v.extraAnim || [];
       v.update = (t, moving, atk, dt) => { inst.update(t, moving, atk, dt); for (const f of extra) f(t, moving); };
@@ -352,6 +384,7 @@ export function attachMobModel(v, def) {
   loadModel(`models/mobs/${name}.glb`).then((scene) => {
     for (const c of [...v.root.children]) if (!c.userData.keep) v.root.remove(c);
     const inst = animatedInstance(scene, spec);
+    tintModel(inst.holder, def.style.tint, false);
     v.root.add(inst.holder);
     const extra = v.extraAnim || [];
     v.update = (t, moving, atk, dt) => { inst.update(t, moving, atk, dt); for (const f of extra) f(t, moving); };

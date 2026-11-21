@@ -4,7 +4,18 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 5.9 (bu sürüm): Yönetim paneli
+### Aşama 6.0 (bu sürüm): yeni evcil hayvanlar, bütün boss'lar ve kılıçlar kullanıcı modelleriyle
+
+- **Evcil hayvanlar** (sadece kullanıcının getirdiği modeller): Kurt Yavrusu, Tilki Yavrusu, Yılan, **Sekreter Kuşu**, **Kuzgun** (havada süzülür, kanat çırpar), **Uzaylı Yaratık** (yeni, kendi animasyonlarıyla), **Ejder Yavrusu** (kendi animasyonuyla). Kodla çizilmiş Ayı ve Baykuş kaldırıldı; eski kayıtlardaki Ayı Yavrusu artık Sekreter Kuşu, Baykuş artık Kuzgun olarak görünür.
+- **Boss'lar:** kodla çizilmiş bütün boss'lar kullanıcının modelleriyle değişti (renk tonu ve ışık halkasıyla ayırt edilir):
+  - Ejder modeli: Ateş Ejderhası, Gök Ejderi (mavi), Hiçlik Ejderi (mor)
+  - Uzaylı Yaratık: Örümcek Mağarası boss'u, adı artık Mağara Canavarı
+  - Diğerleri: Dev Kum Yılanı, Kervan Yağmacısı, Kara İmparator, Bataklık Cadısı, Ayaz Kraliçesi, Buz Devi, Kara Şövalye Lordu, Lich Kral, Kule Efendisi
+- **Kılıçlar:** eski sürümden kalan 5 kılıç da (Tahta, Demir, Mavi Çelik, Gölge, Ejder Dişi) kullanıcının modelleriyle görünür; artık kodla çizilmiş kılıç yok.
+- **Düzeltme (bilgisayar):** karakter bir süre sonra kendi kendine yürüyordu. Başka pencereye geçince ya da Ctrl+S gibi tarayıcı kısayolunda tuş bırakma sinyali kaçıyordu; artık pencere odağı gidince bütün tuşlar bırakılır, yazı yazarken ve Ctrl/Alt kısayollarında yürünmez, tuşlar klavye dilinden bağımsız tanınır.
+- **Araç:** `tools/glbslim.py` iskeleti ve animasyonu koruyarak modeli sadeleştirir ve dokuları küçültür. `glbstatic`/`glbslim` sadeleştirmesi artık parça sınırlarında yarık bırakmıyor.
+
+### Aşama 5.9: Yönetim paneli
 
 - **Adres:** `http://SUNUCU_IP:3100/admin` (oyunun adresinin sonuna `/admin`). Telefondan da rahat kullanılır.
 - **Giriş:** GM karakteri (`.env` içindeki `GM_NAMES`, varsayılan Atabis) olan hesabın kullanıcı adı ve şifresiyle. Başka hesaplar giremez.

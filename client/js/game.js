@@ -1847,12 +1847,23 @@ function startDeadCountdown() {
 // ---------- kontroller ----------
 const input = { x: 0, y: 0 };
 const keys = {};
+// tuşu harf yerine fiziksel yerinden tanı: Shift, Caps Lock ya da klavye dili yüzünden bırakma kaçmasın
+const CODE = { KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', ArrowUp: 'arrowup', ArrowDown: 'arrowdown', ArrowLeft: 'arrowleft', ArrowRight: 'arrowright' };
+const keyOf = (e) => CODE[e.code] || String(e.key || '').toLowerCase();
+const typing = (e) => e && e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName);
 window.addEventListener('keydown', (e) => {
-  keys[e.key.toLowerCase()] = true;
+  if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;   // yazı yazarken ya da Ctrl+S gibi kısayollarda yürünmez
+  const k = keyOf(e);
+  keys[k] = true;
   if (e.key === ' ') attack();
-  if (e.key.toLowerCase() === 'i') document.getElementById('invbtn').click();
+  if (k === 'i' && !e.repeat) document.getElementById('invbtn').click();
 });
-window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+window.addEventListener('keyup', (e) => { keys[keyOf(e)] = false; keys[String(e.key || '').toLowerCase()] = false; });
+// tuş bırakılışı kaçarsa (başka pencereye geçiş, tarayıcı kısayolu penceresi) karakter kendi kendine yürümesin
+function releaseAll() { for (const k in keys) keys[k] = false; if (joyId != null) joyEnd({ pointerId: joyId }); }
+window.addEventListener('blur', releaseAll);
+document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAll(); });
+document.addEventListener('focusin', (e) => { if (typing(e)) releaseAll(); });
 
 const joy = document.getElementById('joy'), knob = document.getElementById('knob');
 let joyId = null;
@@ -1867,7 +1878,7 @@ function joyMove(e) {
 joy.addEventListener('pointerdown', (e) => { joyId = e.pointerId; joy.setPointerCapture(e.pointerId); joyMove(e); });
 joy.addEventListener('pointermove', (e) => { if (e.pointerId === joyId) joyMove(e); });
 const joyEnd = (e) => { if (e.pointerId !== joyId) return; joyId = null; input.x = input.y = 0; knob.style.transform = ''; };
-joy.addEventListener('pointerup', joyEnd); joy.addEventListener('pointercancel', joyEnd);
+joy.addEventListener('pointerup', joyEnd); joy.addEventListener('pointercancel', joyEnd); joy.addEventListener('lostpointercapture', joyEnd);
 
 // basılı tutunca sürekli saldır
 let atkHeld = false;
