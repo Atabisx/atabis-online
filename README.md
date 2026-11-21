@@ -4,7 +4,26 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 5.7 (bu sürüm): Kurbağa Kralı, katana ve savaş baltası
+### Aşama 5.8 (bu sürüm): sırtlan, ateş tükürgeci, iblisler, 8 yeni silah görünümü
+
+- **Yeni animasyonlu yaratıklar** (kullanıcının getirdiği iskeletli modeller, kendi hareketleriyle):
+  - **Benekli Sırtlan** (Kuru Çöl, Sv. 38): eski Çöl Kurdu'nun yerine. Boşta, yürüme, iki saldırı, ölüm, ara sıra uluma/havlama.
+  - **Sırtlan Reisi Kahkaha** (Kuru Çöl boss'u, Sv. 42, 2 tane).
+  - **Ateş Tükürgeci** (Volkan Eteği, Sv. 71): eski Ateş Böceği'nin yerine, ayakta yürüyen kertenkele. Pençe, ısırma ve ateş tükürme saldırıları.
+  - **İblis Muhafız** (İblis Kulesi, Sv. 92): mavi iblis.
+  - **Mor İblis Lordu** (İblis Kulesi boss'u, Sv. 98): aynı iblisin mor derili dev hali.
+- **Silah görünümleri** (savaşçı ve sura kılıçları kademeye göre):
+  - Sv. 1 Sade Kılıç, Sv. 8 Kıvrık Kılıç, Sv. 15-22 Katana, Sv. 29-36 Lav Kılıcı
+  - Sv. 43 Gümüş Kanatlı Kılıç, Sv. 50 Mor Büyü Kılıcı, Sv. 57-64 Altın Kanatlı Kılıç
+  - Sv. 71 Savaş Baltası, Sv. 78 Demir Balta, Sv. 85-92 Altın İşlemeli Balta, Sv. 99+ Buz Baltası
+  - **Kam asaları** Sv. 43 ve üstü: ametist küreli Kraliyet Asası.
+- **Araçlar:**
+  - `tools/fbxanim.py`: tek dosyada birden çok hareket olan FBX'lerden klip alır (`Idle=dosya.fbx#YığınAdı`).
+  - `tools/glbstatic.py`: `--paint kilic|balta|asa` (dokusuz silahları boyar), `--matcolor` (malzeme rengi), `--cell` (çok ağır modeli sadeleştirir).
+  - `tools/objglb.py`: OBJ'yi GLB'ye çevirir.
+  - `tools/fbxskin.py`: dokunun yanında `_Opacity` dosyası varsa saydamlığı oradan alır.
+
+### Aşama 5.7: Kurbağa Kralı, katana ve savaş baltası
 
 - **Boynuzlu Bataklık Kurbağası (Kara Bataklık, Sv. 50):** eski kodla çizilmiş kurbağa yerine iskeletli, gerçek animasyonlu model (kullanıcının getirdiği Giang_99 paketi).
   - Kendi hareketleri var: boşta soluklanma, yürüme, iki çeşit saldırı (dil fırlatma, ısırma), darbe alınca sarsılma, ölünce sırt üstü devrilme, ara sıra böğürme.

@@ -1,6 +1,7 @@
 # FBX hareket dosyalarını (yalnız iskelet + animasyon) derili GLB'ye klip olarak ekler.
 # Kemikler ada göre eşleşir (fbxskin ile aynı mixname çevirisi).
 # Kullanım: python3 fbxanim.py taban.glb çıktı.glb Idle=idle.fbx Walk=walk.fbx ... [--fps 30] [--zup]
+#   Tek dosyada birden çok hareket (AnimationStack) varsa: Idle=hepsi.fbx#YığınAdı
 #   --zup: 3ds Max (Z yukarı) dosyası; iskeletin köküne -90° X dönmesi eklenir
 import sys, os, json, struct, math, argparse
 import numpy as np
@@ -10,13 +11,26 @@ from fbxskin import mixname, name_of, p70, local_matrix, decompose
 
 TICK = 46186158000.0
 
-def load_motion(path):
-    ver, top = parse(path)
+_parsed = {}
+def load_motion(path, stack=None):
+    if path not in _parsed: _parsed[path] = parse(path)
+    ver, top = _parsed[path]
     objs = {o['props'][0]: o for o in find(top, 'Objects')[0]['ch']}
     parent, op = {}, {}
     for c in (c['props'] for c in find(top, 'Connections')[0]['ch']):
         if c[0] == 'OO': parent.setdefault(c[1], []).append(c[2])
         elif c[0] == 'OP': op.setdefault(c[2], []).append((c[1], c[3]))
+    # istenen yığının katmanlarındaki eğri düğümleri ve zaman aralığı
+    allowed, t0, t1 = None, None, None
+    if stack:
+        st = [i for i, o in objs.items() if o['name'] == 'AnimationStack' and name_of(o) == stack]
+        if not st: raise SystemExit('yığın yok: ' + stack)
+        P = p70(objs[st[0]])
+        if 'LocalStart' in P: t0 = float(P['LocalStart'][0]) / TICK
+        if 'LocalStop' in P: t1 = float(P['LocalStop'][0]) / TICK
+        layers = [i for i, o in objs.items() if o['name'] == 'AnimationLayer' and st[0] in parent.get(i, [])]
+        allowed = set(i for i, o in objs.items() if o['name'] == 'AnimationCurveNode' and any(l in parent.get(i, []) for l in layers))
+        if not allowed: allowed = None   # eğriler ortak zaman çizgisinde: aralıkla kesilir
     gs = p70(find(top, 'GlobalSettings')[0]); unit = float(gs.get('UnitScaleFactor', [1])[0])
     models = {i: o for i, o in objs.items() if o['name'] == 'Model'}
     base = {i: p70(o) for i, o in models.items()}
@@ -25,6 +39,7 @@ def load_motion(path):
     end = 0
     for cn_id, cn in objs.items():
         if cn['name'] != 'AnimationCurveNode': continue
+        if allowed is not None and cn_id not in allowed: continue
         tgt = [(m, prop) for m, lst in op.items() for (src, prop) in lst if src == cn_id and m in models]
         if not tgt: continue
         m, prop = tgt[0]
@@ -42,7 +57,13 @@ def load_motion(path):
                 chans.append(float(d[0]) if d else None)
         anim.setdefault(m, {})[prop] = chans
     byname = {mixname(name_of(o)): i for i, o in models.items()}
-    return models, base, anim, parent, unit, end, byname
+    if allowed is not None and anim:
+        # yığının kendi eğrileri varsa süre eğrilerin anahtarlarından alınır (LocalStop tüm çizgiyi gösterebilir)
+        ks = [ch[0] for d in anim.values() for chans in d.values() for ch in chans if isinstance(ch, tuple)]
+        if ks: t0 = min(k[0] for k in ks); t1 = max(k[-1] for k in ks)
+    if t0 is None: t0 = 0.0
+    if t1 is None or t1 <= t0: t1 = end
+    return models, base, anim, parent, unit, (t0, t1), byname
 
 def sample(models, base, anim, parent, t):
     L = {}
@@ -91,13 +112,15 @@ def main():
     j['animations'] = []
     for spec in a.clips:
         cname, path = spec.split('=', 1)
-        models, base, anim, parent, unit, end, byname = load_motion(path)
+        stack = None
+        if '#' in path: path, stack = path.split('#', 1)
+        models, base, anim, parent, unit, (t0, t1), byname = load_motion(path, stack)
         conv = np.diag([unit / 100.0] * 3 + [1.0])
-        n = max(2, int(round(end * a.fps)) + 1)
+        n = max(2, int(round((t1 - t0) * a.fps)) + 1)
         times = np.arange(n) / a.fps
         tr = {k: [] for k in joints}; ro = {k: [] for k in joints}; sc = {k: [] for k in joints}
         for t in times:
-            W = sample(models, base, anim, parent, t)
+            W = sample(models, base, anim, parent, t + t0)
             for k in joints:
                 mi = byname.get(jname[k])
                 if mi is None: continue

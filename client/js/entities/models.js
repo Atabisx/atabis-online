@@ -31,6 +31,10 @@ export const MOB_MODELS = {
   kertenkele:  { kind: 'quad', size: 1.0, legTop: 0.26, head: 0.28, tail: 0.3, tailFirst: true, freq: 10, amp: 0.5 },
   // iskeletli ve kendi animasyonları olan modeller (kind: skel): klip adları dosyadakilerle aynı
   kurbaga:     { kind: 'skel', size: 1.05, clips: { idle: ['Idle', 'Idle2'], walk: 'Walk', run: 'Run', atk: ['Atk', 'Atk2'], hit: 'Beaten', die: 'Death', roar: 'Roar' }, walkRate: 1.3 },
+  sirtlan:     { kind: 'skel', size: 1.0, clips: { idle: ['Idle', 'Idle2'], walk: 'Walk', run: 'Run', atk: ['Atk', 'Atk2'], die: 'Die', roar: ['Roar', 'Bark'] }, walkRate: 1.4 },
+  ates_tukurgec: { kind: 'skel', size: 1.5, clips: { idle: 'Idle', walk: 'Walk', run: 'Run', atk: ['Atk', 'Atk2', 'Bite', 'Spit'], die: 'Die' }, walkRate: 1.2 },
+  iblis:       { kind: 'skel', size: 2.3, clips: { idle: 'Idle', walk: 'Walk', run: 'Run', atk: 'Atk', die: 'Death' } },
+  iblis_mor:   { kind: 'skel', size: 2.3, clips: { idle: 'Idle', walk: 'Walk', run: 'Run', atk: 'Atk', die: 'Death' } },
 };
 const KIND = { quad: 0, sit: 0, humanoid: 1, robe: 2, snake: 3, bird: 4 };
 
@@ -378,6 +382,14 @@ export const ITEM_MODELS = {
   buz_balta: { grip: 0.2, len: 1.05 },
   katana: { grip: 0.13, len: 1.15, center: true },
   savas_baltasi: { grip: 0.3, len: 1.3, center: true },
+  sade_kilic: { grip: 0.08, len: 1.0, center: true },
+  kivrik_kilic: { grip: 0.16, len: 1.1, center: true },
+  gumus_kilic: { grip: 0.13, len: 1.2, center: true },
+  mor_kilic: { grip: 0.12, len: 1.15, center: true },
+  kanatli_kilic: { grip: 0.12, len: 1.2, center: true },
+  demir_balta: { grip: 0.25, len: 1.2, center: true },
+  altin_balta: { grip: 0.3, len: 1.3, center: true },
+  kraliyet_asasi: { grip: 0.3, len: 1.25, center: true },
   // zırhlar: gövdeye oturacak boy (m) ve dikey kaydırma; omuzluk takılsın mı
   yelek: { armor: true, height: 0.5, y: -0.05, pads: false },
   gogusluk: { armor: true, height: 0.48, y: -0.04, pads: true },

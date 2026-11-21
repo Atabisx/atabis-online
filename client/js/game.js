@@ -456,7 +456,7 @@ function bowMesh(def) {
   return g;
 }
 function weaponMesh(def) {
-  if (def.model && ITEM_MODELS[def.model]) return itemModel(def.model, swordMesh(def));   // kullanıcının modeli
+  if (def.model && ITEM_MODELS[def.model]) return itemModel(def.model, def.type === 'staff' ? staffMesh(def) : swordMesh(def));   // kullanıcının modeli
   if (def.type === 'dagger') return daggerMesh(def);
   if (def.type === 'staff') return staffMesh(def);
   if (def.type === 'bow') return bowMesh(def);

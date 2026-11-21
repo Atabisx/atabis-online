@@ -33,17 +33,14 @@ GEAR = [  # (yuva, ad, fiyat çarpanı)
 
 # Kullanıcının eklediği 3D modeller (client/models/items/*.glb): hangi kademede hangisi görünür
 def weapon_model(wtype, i):
+    # kullanıcının getirdiği silah modelleri (client/models/items/<ad>.glb)
+    if wtype == 'staff':
+        return 'kraliyet_asasi' if i >= 6 else None
     if wtype != 'sword':
         return None
-    if 1 <= i <= 3:
-        return 'katana'
-    if 4 <= i <= 9:
-        return 'lav_kilic'
-    if 10 <= i <= 12:
-        return 'savas_baltasi'
-    if i >= 13:
-        return 'buz_balta'
-    return None
+    return {0: 'sade_kilic', 1: 'kivrik_kilic', 2: 'katana', 3: 'katana', 4: 'lav_kilic', 5: 'lav_kilic',
+            6: 'gumus_kilic', 7: 'mor_kilic', 8: 'kanatli_kilic', 9: 'kanatli_kilic',
+            10: 'savas_baltasi', 11: 'demir_balta', 12: 'altin_balta', 13: 'altin_balta'}.get(i, 'buz_balta')
 
 
 def armor_model(i):
@@ -295,9 +292,10 @@ MAPS = [
                 ('alpbey', 'Savaşçı Alp Bey', 37, 'humanoid', '#8a6a3a', 1.25, {'model': 'savasci', 'aura': '#e8b54a'})]},
     {'name': 'Kuru Çöl', 'lv': 36, 'theme': 'desert_dunes',
      'mobs': [('kumakrep', 'Kum Akrebi', 36, 'scorpion', '#c9a35a', 1.05, 9, 5.2),
-              ('colkurt', 'Çöl Kurdu', 38, 'wolf', '#c9a36a', 1.1, 11, 6.2),
+              ('colkurt', 'Benekli Sırtlan', 38, 'wolf', '#c9a36a', 1.0, 11, 6.2, {'model': 'sirtlan'}),
               ('solucan', 'Kum Solucanı', 40, 'worm', '#b08a5a', 1.1, 8, 4.4)],
-     'bosses': [('devsolucan', 'Dev Kum Solucanı', 45, 'worm', '#8a6440', 2.6, {'spikes': '#e8d5a8', 'crystals': '#ffb347', 'eyes': '#ff3b2f'})]},
+     'bosses': [('devsolucan', 'Dev Kum Solucanı', 45, 'worm', '#8a6440', 2.6, {'spikes': '#e8d5a8', 'crystals': '#ffb347', 'eyes': '#ff3b2f'}),
+                ('sirtlanreis', 'Sırtlan Reisi Kahkaha', 42, 'wolf', '#c9a36a', 2.4, {'model': 'sirtlan', 'aura': '#ffb347', 'hitR': 2.4, 'n': 2})]},
     {'name': 'Kızıl Kanyon', 'lv': 43, 'theme': 'desert_canyon',
      'mobs': [('colhaydut', 'Çöl Haydudu', 43, 'humanoid', '#c9a35a', 1.0, 11, 5.6),
               ('mumya', 'Mumya', 45, 'humanoid', '#d9cfb8', 1.05, 8, 3.8),
@@ -320,7 +318,7 @@ MAPS = [
               ('ayazruhu', 'Ayaz Ruhu', 68, 'ghost', '#e8f4ff', 1.0, 12, 5.8)],
      'bosses': [('ayazkralice', 'Ayaz Kraliçesi', 73, 'ghost', '#7fb3ff', 2.0, {'crown': '#e8f4ff', 'crystals': '#7fb3ff', 'orbs': '#c8e8ff', 'aura': '#7fb3ff'})]},
     {'name': 'Volkan Eteği', 'lv': 71, 'theme': 'volcanic',
-     'mobs': [('atesbocek', 'Ateş Böceği', 71, 'spider', '#ff6a3d', 0.95, 10, 6.0),
+     'mobs': [('atesbocek', 'Ateş Tükürgeci', 71, 'humanoid', '#3d6b38', 1.0, 10, 6.0, {'model': 'ates_tukurgec'}),
               ('lavgolem', 'Lav Golemi', 73, 'golem', '#5a2a1c', 1.25, 7, 3.6),
               ('korkurt', 'Kor Kurdu', 75, 'wolf', '#c0392b', 1.2, 12, 6.4)],
      'bosses': [('ejderyavru', 'Ateş Ejderhası Yavrusu', 80, 'dragon', '#c0392b', 1.8, {'flames': '#ff6a3d', 'horns': '#2a1a14', 'eyes': '#ffd23f'})]},
@@ -335,10 +333,11 @@ MAPS = [
               ('buyucu', 'Lanetli Büyücü', 89, 'humanoid', '#6c3483', 1.0, 13, 5.0)],
      'bosses': [('lichkral', 'Lich Kral', 94, 'skeleton', '#8a7dff', 1.9, {'crown': '#8a7dff', 'cape': '#2a1a3a', 'orbs': '#8a7dff', 'aura': '#8a7dff', 'eyes': '#b0a8ff'})]},
     {'name': 'İblis Kulesi', 'lv': 92, 'theme': 'demon',
-     'mobs': [('iblismuhafiz', 'İblis Muhafız', 92, 'humanoid', '#8e2a21', 1.15, 11, 5.4),
+     'mobs': [('iblismuhafiz', 'İblis Muhafız', 92, 'humanoid', '#4a4a8a', 1.0, 11, 5.4, {'model': 'iblis'}),
               ('alevib', 'Alev İblisi', 94, 'ghost', '#ff6a3d', 1.1, 12, 6.0),
               ('suikastci', 'Gölge Suikastçı', 96, 'humanoid', '#1a1a1a', 1.0, 14, 7.0)],
-     'bosses': [('kuleefendisi', 'Kule Efendisi', 101, 'humanoid', '#b0362b', 1.9, {'horns': '#1a0a0a', 'wings': '#5a1010', 'flames': '#ff6a3d', 'eyes': '#ffd23f', 'weapon': '#ff6a3d'})]},
+     'bosses': [('kuleefendisi', 'Kule Efendisi', 101, 'humanoid', '#b0362b', 1.9, {'horns': '#1a0a0a', 'wings': '#5a1010', 'flames': '#ff6a3d', 'eyes': '#ffd23f', 'weapon': '#ff6a3d'}),
+                ('iblislord', 'Mor İblis Lordu', 98, 'humanoid', '#6a3a9a', 1.8, {'model': 'iblis_mor', 'aura': '#b06bff', 'hitR': 2.4})]},
     {'name': 'Ejder Vadisi', 'lv': 99, 'theme': 'dragon_valley',
      'mobs': [('gencejder', 'Genç Ejder', 99, 'dragon', '#3f7535', 1.0, 12, 6.0),
               ('ejdermuhafiz', 'Ejder Muhafızı', 101, 'humanoid', '#ffb347', 1.15, 11, 5.4),

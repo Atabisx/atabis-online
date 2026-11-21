@@ -142,7 +142,13 @@ def main():
         uniq = nm if all(m['name'] != nm for m in materials) else f'{nm}_{len(materials)}'
         entry = {'name': uniq, 'pbrMetallicRoughness': {'metallicFactor': 0.0, 'roughnessFactor': 0.8}}
         if path:
-            im = Image.open(path); alpha = im.mode in ('RGBA', 'LA') and np.asarray(im.convert('RGBA'))[..., 3].min() < 250
+            im = Image.open(path)
+            # yanında "..._Opacity" dosyası varsa saydamlık oradan alınır (dişler, yeleler, kanat zarı)
+            op_path = path.replace('Diffuse', 'Opacity') if 'Diffuse' in os.path.basename(path) else None
+            if op_path and os.path.exists(op_path):
+                om = Image.open(op_path).convert('L').resize(im.size)
+                if np.asarray(om).min() < 250: im = im.convert('RGB'); im.putalpha(om)
+            alpha = im.mode in ('RGBA', 'LA') and np.asarray(im.convert('RGBA'))[..., 3].min() < 250
             im = im.convert('RGBA' if alpha else 'RGB')
             if max(im.size) > a.tex: im = im.resize((a.tex, a.tex) if im.size[0] == im.size[1] else (a.tex, int(a.tex * im.size[1] / im.size[0])), Image.LANCZOS)
             b = io.BytesIO()
