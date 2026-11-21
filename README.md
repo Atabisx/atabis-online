@@ -4,7 +4,19 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 5.8 (bu sürüm): sırtlan, ateş tükürgeci, iblisler, 8 yeni silah görünümü
+### Aşama 5.9 (bu sürüm): Yönetim paneli
+
+- **Adres:** `http://SUNUCU_IP:3100/admin` (oyunun adresinin sonuna `/admin`). Telefondan da rahat kullanılır.
+- **Giriş:** GM karakteri (`.env` içindeki `GM_NAMES`, varsayılan Atabis) olan hesabın kullanıcı adı ve şifresiyle. Başka hesaplar giremez.
+  - Şifreyi unuttuysan sunucuda: `node scripts/hesap.js gm` (hangi hesap) ve `node scripts/hesap.js sifre <kullanıcı> <yeni şifre>`.
+- **Özet:** oyundakiler, hesap/karakter sayıları, bugün oynayanlar, en yüksek seviyeler, sınıf dağılımı, toplam yang.
+- **Oyuncular:** arama; karaktere dokununca bilgileri, kuşandıkları ve çantası. Seviye/yang ayarla, EP ekle, eşya ver ya da sil, ışınla, oyundan at. Oyunda olmayan karakterin de seviyesi, yangı ve çantası değiştirilebilir.
+- **Eşyalar:** 444 eşyanın hepsi; türe ve sınıfa göre süzme, arama. Dokununca 3D önizleme (parmakla çevrilir), bütün değerleri ve "oyuncuya ver".
+- **Yaratıklar:** haritalara göre bütün yaratık ve boss'lar; 3D önizlemede Boşta, Yürü, Saldır, Darbe, Öl düğmeleriyle animasyonlar; can, saldırı, tecrübe, düşürdükleri.
+- **Haritalar:** her haritanın seviyesi, yaratıkları, boss'ları.
+- **Duyuru ve Etkinlik:** bütün oyunculara duyuru; etkinlik başlat/bitir; dünya boss'unu uyandır/bitir.
+
+### Aşama 5.8: sırtlan, ateş tükürgeci, iblisler, 8 yeni silah görünümü
 
 - **Yeni animasyonlu yaratıklar** (kullanıcının getirdiği iskeletli modeller, kendi hareketleriyle):
   - **Benekli Sırtlan** (Kuru Çöl, Sv. 38): eski Çöl Kurdu'nun yerine. Boşta, yürüme, iki saldırı, ölüm, ara sıra uluma/havlama.

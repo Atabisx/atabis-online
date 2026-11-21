@@ -7,6 +7,7 @@ const config = require('./config');
 const db = require('./db');
 const auth = require('./auth');
 const characters = require('./characters');
+const admin = require('./admin');
 const { createWorld } = require('./game/world');
 
 async function main() {
@@ -20,10 +21,12 @@ async function main() {
   auth.routes(app);
   characters.routes(app);
   app.get('/api/status', (req, res) => res.json({ ok: true, online: world.online() }));
+  app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'client', 'admin.html')));
 
   const server = http.createServer(app);
   const io = new Server(server);
   const world = createWorld(io);
+  admin.routes(app, world);
 
   const shutdown = async () => {
     console.log('Kapanıyor, oyuncular kaydediliyor…');

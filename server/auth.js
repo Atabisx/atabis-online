@@ -103,7 +103,7 @@ async function requireAuth(req, res, next) {
   const account = await accountFromToken(token).catch(() => null);
   if (!account) return res.status(401).json({ error: 'Oturum süresi doldu. Tekrar giriş yap.' });
   req.account = account;
-  next();
+  return next();
 }
 
 module.exports = { routes, requireAuth, accountFromToken, hashPassword, checkPassword };

@@ -13,7 +13,7 @@ const { createMainQuests } = require('./mainq');
 const { createDepot } = require('./depot');
 const { createWorldBoss } = require('./worldboss');
 const { createPremium } = require('./premium');
-const { createEvents } = require('./events');
+const { createEvents, EVENT_TYPES } = require('./events');
 const { createRanking } = require('./ranking');
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1209,7 +1209,115 @@ function createWorld(io) {
     }
   }, 100);
 
+
+  // ---------- yönetim paneli (/admin) için işlemler ----------
+  // Oyundaki karakter bellekte değiştirilir (kayıt onu yazar); oyunda değilse doğrudan veritabanı güncellenir.
+  const findOnline = (name) => Object.values(players).find((o) => o.name.toLocaleLowerCase('tr-TR') === String(name).toLocaleLowerCase('tr-TR'));
+  async function charRow(name) {
+    const r = await db.query(`SELECT c.*, a.username, a.ep FROM characters c JOIN accounts a ON a.id = c.account_id WHERE lower(c.name) = lower($1)`, [String(name)]);
+    return r.rows[0] || null;
+  }
+  const admin = {
+    online() {
+      return Object.values(players).map((o) => ({ name: o.name, cls: o.class, level: o.level, map: o.zone ? o.zone.id : o.mapId, hp: o.hp, maxHp: o.maxHp, yang: o.yang, gm: !!o.gm }));
+    },
+    async character(name) {
+      const row = await charRow(name); if (!row) return null;
+      const o = findOnline(row.name);
+      const src = o || { level: row.level, exp: row.exp, yang: Number(row.yang), kills: row.kills, inventory: row.inventory, equip: row.equip, mapId: row.map_id, quests: row.quests, class: row.class };
+      return { name: row.name, cls: src.class, username: row.username, ep: row.ep || 0, online: !!o, level: src.level, exp: src.exp, yang: src.yang, kills: src.kills,
+        map: o ? (o.zone ? o.zone.id : o.mapId) : row.map_id, inventory: src.inventory, equip: src.equip, bag: R.invSize({ quests: src.quests || {} }),
+        timed: (src.quests && src.quests.timed) || {}, created: row.created_at, lastPlayed: row.last_played, empire: row.empire };
+    },
+    async give(name, key, n = 1, maxed = true) {
+      const def = R.ITEMS[key]; if (!def) throw new Error('Böyle bir eşya yok: ' + key);
+      n = Math.max(1, Math.min(def.stack || 1, Number(n) || 1));
+      const o = findOnline(name);
+      if (o) {
+        if (o.inventory.length >= R.invSize(o)) throw new Error(`${o.name} adlı oyuncunun çantası dolu.`);
+        gmTarget = o; const it = maxed ? maxedItem(key) : { uid: o.nextUid++, key }; gmTarget = null;
+        if (def.stack) it.n = n;
+        o.inventory.push(it); sendInv(o); notice(o, `Yönetici sana ${def.name}${n > 1 ? ' x' + n : ''} gönderdi.`);
+        return `${o.name} adlı oyuncuya ${def.name} verildi (oyunda).`;
+      }
+      const row = await charRow(name); if (!row) throw new Error(`${name} adında karakter yok.`);
+      const inv = row.inventory || [];
+      if (inv.length >= R.invSize({ quests: row.quests || {} })) throw new Error(`${row.name} adlı oyuncunun çantası dolu.`);
+      let uid = row.next_uid;
+      const it = { uid: uid++, key };
+      if (def.stack) it.n = n;
+      if (maxed && R.EQUIP_SLOTS.includes(def.slot)) {
+        const types = Object.keys(R.BONUS_TYPES).filter((t) => t !== 'movespeed').slice(0, 5);
+        it.bon = types.map((t) => [t, R.maxBonus(t, def.tier)]);
+      }
+      inv.push(it);
+      await db.query('UPDATE characters SET inventory = $2, next_uid = $3 WHERE id = $1', [row.id, JSON.stringify(inv), uid]);
+      return `${row.name} adlı oyuncuya ${def.name} verildi (oyunda değil, girince çantasında).`;
+    },
+    async removeItem(name, uid) {
+      uid = Number(uid);
+      const o = findOnline(name);
+      if (o) {
+        const k = o.inventory.findIndex((i) => i.uid === uid); if (k < 0) throw new Error('Eşya bulunamadı.');
+        const [it] = o.inventory.splice(k, 1); sendInv(o); return `${R.ITEMS[it.key] ? R.ITEMS[it.key].name : it.key} silindi.`;
+      }
+      const row = await charRow(name); if (!row) throw new Error(`${name} adında karakter yok.`);
+      const inv = row.inventory || []; const k = inv.findIndex((i) => i.uid === uid); if (k < 0) throw new Error('Eşya bulunamadı.');
+      const [it] = inv.splice(k, 1);
+      await db.query('UPDATE characters SET inventory = $2 WHERE id = $1', [row.id, JSON.stringify(inv)]);
+      return `${R.ITEMS[it.key] ? R.ITEMS[it.key].name : it.key} silindi.`;
+    },
+    async setLevel(name, lv) {
+      lv = Math.max(1, Math.min(R.MAX_LEVEL, Math.round(Number(lv) || 1)));
+      const o = findOnline(name);
+      if (o) { o.level = lv; o.exp = 0; recalc(o); sendInv(o); sendHp(o); sendSkills(o); sendStats(o, true); return `${o.name} artık ${lv}. seviye.`; }
+      const r = await db.query('UPDATE characters SET level = $2, exp = 0 WHERE lower(name) = lower($1) RETURNING name', [String(name), lv]);
+      if (!r.rows[0]) throw new Error(`${name} adında karakter yok.`);
+      return `${r.rows[0].name} artık ${lv}. seviye.`;
+    },
+    async setYang(name, y) {
+      y = Math.max(0, Math.min(1e12, Math.round(Number(y) || 0)));
+      const o = findOnline(name);
+      if (o) { o.yang = y; sendInv(o); return `${o.name}: ${y.toLocaleString('tr-TR')} yang.`; }
+      const r = await db.query('UPDATE characters SET yang = $2 WHERE lower(name) = lower($1) RETURNING name', [String(name), y]);
+      if (!r.rows[0]) throw new Error(`${name} adında karakter yok.`);
+      return `${r.rows[0].name}: ${y.toLocaleString('tr-TR')} yang.`;
+    },
+    async ep(name, n) {
+      const left = await premium.grantEp(name, Math.round(Number(n) || 0));
+      if (left == null) throw new Error(`${name} adında karakter yok.`);
+      return `${name} hesabında artık ${left} EP var.`;
+    },
+    teleport(name, mapId) {
+      const o = findOnline(name); if (!o) throw new Error(`${name} şu an oyunda değil.`);
+      if (!R.MAPS[mapId]) throw new Error('Böyle bir harita yok.');
+      moveToZone(o, Number(mapId)); return `${o.name} ${R.MAPS[mapId].name} haritasına ışınlandı.`;
+    },
+    kick(name) {
+      const o = findOnline(name); if (!o) throw new Error(`${name} şu an oyunda değil.`);
+      o.socket.emit('kicked', 'Yönetici tarafından oyundan çıkarıldın.'); o.socket.disconnect(true);
+      return `${o.name} oyundan çıkarıldı.`;
+    },
+    announce(text) {
+      text = String(text || '').trim().slice(0, 200); if (!text) throw new Error('Duyuru boş.');
+      io.emit('announce', '📢 ' + text); return 'Duyuru bütün oyunculara gönderildi.';
+    },
+    event(type, minutes, stop) {
+      if (!EVENT_TYPES[type]) throw new Error('Etkinlik türleri: ' + Object.keys(EVENT_TYPES).join(', '));
+      if (stop) { events.stop(type); return `${EVENT_TYPES[type].name} bitirildi.`; }
+      events.start(type, Number(minutes) || 0); return `${EVENT_TYPES[type].name} başlatıldı.`;
+    },
+    eventTypes: () => Object.fromEntries(Object.entries(EVENT_TYPES).map(([k, t]) => [k, { name: t.name, icon: t.icon, min: t.min, desc: t.desc }])),
+    events: () => events.list(),
+    worldBoss(action) {
+      const said = [];
+      const fake = { name: 'Yönetici', socket: { emit: (e, d) => said.push(d) } };
+      worldboss.gm(fake, action === 'bitir' ? ['bitir'] : ['buradan']);
+      return said.length ? said.join(' ') : (action === 'bitir' ? 'Dünya boss\'u bitirildi.' : 'Dünya boss\'u uyandırıldı.');
+    },
+  };
   return {
+    admin,
     async saveAll() { await Promise.all(Object.values(players).map(save)); await guilds.saveAll(); },
     online: () => Object.keys(players).length,
     zones,       // testler için
