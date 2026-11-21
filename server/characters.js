@@ -3,11 +3,12 @@ const db = require('./db');
 const config = require('./config');
 const { requireAuth } = require('./auth');
 const CLASSES = require('../shared/classes.json');
+const R = require('./game/rules');
 
 const NAME_RE = /^[a-zA-Z0-9_çğıöşüÇĞİÖŞÜ]{3,14}$/;
 
 function publicChar(row) {
-  return { id: row.id, name: row.name, class: row.class, level: row.level, equip: row.equip, empire: row.empire || 0 };
+  return { id: row.id, name: row.name, class: row.class, level: row.level, equip: R.fixEquip(row.equip), empire: row.empire || 0 };
 }
 
 function routes(app) {

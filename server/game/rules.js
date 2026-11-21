@@ -6,7 +6,7 @@ const MAPS = require('../../shared/maps.json');
 const SKILLS = require('../../shared/skills.json');
 
 const MAX_LEVEL = 120;
-const INV_SIZE = 32;            // bir envanter sayfası
+const INV_SIZE = 45;            // bir envanter sayfası (Metin2 gibi 5×9)
 // açılmış envanter sayfası kadar yuva (1. sayfa hep açık; 2. ve 3. sayfa görevlerle açılır)
 const invSize = (p) => INV_SIZE * (1 + Math.max(0, Math.min(2, (p && p.quests && p.quests.bag) || 0)));
 const EQUIP_SLOTS = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring', 'costume', 'wings', 'pet'];
@@ -176,9 +176,31 @@ function expGain(mobLv, playerLv, base) {
   if (diff > 10) return Math.round(base * 1.3);
   return base;
 }
+// Kaldırılan eşyalar (hançer, yay) eski kayıtlarda kılıca çevrilir; bilinmeyen anahtarlar atılır
+const OLD_KEYS = { d_wood: 'w_wood', d_iron: 'w_iron', d_venom: 'w_shadow', b_wood: 'w_wood', b_horn: 'w_iron', b_storm: 'w_steel' };
+function fixKey(k) {
+  if (ITEMS[k]) return k;
+  const m = /^(dagger|bow)(\d+)(_L)?$/.exec(String(k));
+  if (m) return 'sword' + m[2] + (m[3] || '');
+  return OLD_KEYS[k] || k;
+}
+function fixItems(arr) {
+  if (!Array.isArray(arr)) return [];
+  for (const it of arr) if (it && it.key) it.key = fixKey(it.key);
+  return arr.filter((it) => it && it.key && ITEMS[it.key]);
+}
+function fixEquip(eq) {
+  eq = eq || {};
+  for (const slot of Object.keys(eq)) {
+    const it = eq[slot]; if (!it) continue;
+    it.key = fixKey(it.key);
+    if (!ITEMS[it.key]) delete eq[slot];
+  }
+  return eq;
+}
 const skillLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 
-module.exports = { STONE_TYPES, CLASS_KEYS,
+module.exports = { STONE_TYPES, CLASS_KEYS, fixKey, fixItems, fixEquip,
   ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, invSize, EQUIP_SLOTS, GEAR_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
   BONUS_TYPES, rollBonus, maxBonus, MAX_UP, LEAVES, leafNeed, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
   speedMul, attackCooldown, playerDamage, mobDamage, expGain, skillLabel,

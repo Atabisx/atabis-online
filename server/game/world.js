@@ -182,7 +182,7 @@ function createWorld(io) {
       p.inventory.push({ uid: p.nextUid++, key, n });
     }
     // diğer silah türlerinin en üst kademeleri de (yer varsa)
-    for (const t of ['sword', 'dagger', 'bow', 'staff']) {
+    for (const t of ['sword', 'staff']) {
       if (t === wtype || p.inventory.length >= R.invSize(p)) continue;
       p.inventory.push(maxedItem(top(t)));
     }
@@ -230,10 +230,10 @@ function createWorld(io) {
     if (cmd === 'dunyaboss') { worldboss.gm(p, args); return; }
     if (cmd === 'petler') { const n = giveAllPets(p); sendInv(p); notice(p, n ? `${n} evcil hayvan çantana kondu.` : 'Bütün petler zaten sende (ya da çanta dolu).'); return; }
     if (cmd === 'silahlar') {
-      // /silahlar: kendi sınıfının bütün silahları; /silahlar kilic|hancer|yay|asa|hepsi
-      const TYPES = { kilic: 'sword', hancer: 'dagger', yay: 'bow', asa: 'staff' };
+      // /silahlar: kendi sınıfının bütün silahları; /silahlar kilic|asa|hepsi
+      const TYPES = { kilic: 'sword', asa: 'staff' };
       const want = a0 && TYPES[a0];
-      if (a0 && !want && a0 !== 'hepsi') { notice(p, 'Kullanım: /silahlar [kilic|hancer|yay|asa|hepsi]'); return; }
+      if (a0 && !want && a0 !== 'hepsi') { notice(p, 'Kullanım: /silahlar [kilic|asa|hepsi]'); return; }
       const keys = Object.keys(R.ITEMS).filter((k) => {
         const d = R.ITEMS[k];
         if (d.slot !== 'weapon') return false;
@@ -252,7 +252,7 @@ function createWorld(io) {
       return;
     }
     if (cmd === 'iyiles') { p.hp = p.maxHp; p.mp = p.maxMp; sendHp(p); sendMp(p); return; }
-    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /silahlar [kilic|hancer|yay|asa|hepsi], /petler, /ep <isim> <miktar>, /iyiles, /savas [bitir], /dunyaboss [bitir], /etkinlik <metin|exp|boss|drop> [dk]');
+    notice(p, 'GM komutları: /git <harita>, /seviye <n>, /yang <n>, /esya <anahtar> [adet], /silahlar [kilic|asa|hepsi], /petler, /ep <isim> <miktar>, /iyiles, /savas [bitir], /dunyaboss [bitir], /etkinlik <metin|exp|boss|drop> [dk]');
   }
 
   // zindan ve savaş meydanı kaydedilmez: oyuncu tekrar girince köyde başlar
@@ -537,7 +537,7 @@ function createWorld(io) {
       id: socket.id, socket, charId: row.id, accountId: row.account_id, name: row.name, class: row.class,
       x: 0, z: 0, ry: 0, moving: false, lastAttack: 0, lastMove: Date.now(), combo: 0, lastPotion: 0,
       level: row.level, exp: row.exp, yang: Number(row.yang), kills: row.kills,
-      inventory: row.inventory || [], equip: row.equip || {}, nextUid: row.next_uid,
+      inventory: R.fixItems(row.inventory), equip: R.fixEquip(row.equip), nextUid: row.next_uid,
       mapId: R.MAPS[row.map_id] && !R.MAPS[row.map_id].hidden ? row.map_id : 0, hp: row.hp, dead: false, zone: null,
       mp: row.mp, skills: row.skills || {}, quests: row.quests || {}, stats: row.stats || {}, buffs: {}, skillCd: {}, mounted: false,
       fish: null, facing: 0, friends: Array.isArray(row.friends) ? row.friends : [], duel: null,
@@ -1224,7 +1224,7 @@ function createWorld(io) {
     async character(name) {
       const row = await charRow(name); if (!row) return null;
       const o = findOnline(row.name);
-      const src = o || { level: row.level, exp: row.exp, yang: Number(row.yang), kills: row.kills, inventory: row.inventory, equip: row.equip, mapId: row.map_id, quests: row.quests, class: row.class };
+      const src = o || { level: row.level, exp: row.exp, yang: Number(row.yang), kills: row.kills, inventory: R.fixItems(row.inventory), equip: R.fixEquip(row.equip), mapId: row.map_id, quests: row.quests, class: row.class };
       return { name: row.name, cls: src.class, username: row.username, ep: row.ep || 0, online: !!o, level: src.level, exp: src.exp, yang: src.yang, kills: src.kills,
         map: o ? (o.zone ? o.zone.id : o.mapId) : row.map_id, inventory: src.inventory, equip: src.equip, bag: R.invSize({ quests: src.quests || {} }),
         timed: (src.quests && src.quests.timed) || {}, created: row.created_at, lastPlayed: row.last_played, empire: row.empire };

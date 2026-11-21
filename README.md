@@ -4,7 +4,29 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 6.0 (bu sürüm): yeni evcil hayvanlar, bütün boss'lar ve kılıçlar kullanıcı modelleriyle
+### Aşama 6.1 (bu sürüm): sadece 3D eşyalar, Metin2 tarzı envanter, kadın sesleri
+
+- **Sadece 3D eşyalar:**
+  - Hiçbiri 3D olmayan hançer ve yaylar kaldırıldı (70 eşya).
+  - Akıncı ve Avcı da Alp ile Yalaz gibi 3D kılıçları kullanır; ikisi de Acemi Kılıç ile başlar.
+  - Avcı uzaktan saldırmaya devam eder, ama artık ok yerine kılıcını savurup parlak kılıç dalgası fırlatır. Becerilerinin adları da buna göre değişti: Üçlü Kılıç Dalgası, Buz Dalgası, Ateş Dalgası.
+  - Kam'ın bütün asaları (Sv. 1'den itibaren) Kraliyet Asası modelinde.
+  - Bütün miğferler 3D kask modelinde (Sv. 36 ve üstü miğferlerde eksik olan savunma değeri de düzeldi).
+  - Eski sürümden kalan zırh, miğfer ve asalar da 3D modelli.
+  - Eski kayıtlardaki hançer ve yaylar oyuncu girince aynı kademedeki kılıca çevrilir (çanta, kuşanılanlar, depo, pazar tezgâhı); kimse eşyasını kaybetmez.
+  - Düşmeler, dükkânlar, zindan ödülleri ve GM kiti buna göre ayarlandı. `/silahlar kilic|asa|hepsi`.
+- **Metin2 tarzı envanter:**
+  - Üstte kuşanılanlar karakter siluetinin çevresinde: küpe, kask, kanat; uzun silah ve zırh yuvası; evcil hayvan ve kostüm; bilezik ve ayakkabı.
+  - Altta 5×9 çanta (sayfa başına 45 yuva; eskiden 32) ve I/II/III sekmeleri. En altta yang.
+  - Yatay telefonda kuşanılanlar solda, çanta sağda durur.
+- **Eşya bilgisi Metin2 gibi alt alta:**
+  - Sırayla: ad (nadirlik renginde, +artı), tür, kuşanma seviyesi (yetmiyorsa kırmızı), saldırı/savunma/can (artıdan gelen ek yeşil), eşya bonusları (mavi), efsunlar (mor), taş yuvaları, kullanabilen sınıflar, açıklama.
+  - Bilgisayarda envanterin solunda, telefonda eşyanın üstünde açılır; düğmeler (Giy, Yere at, Efsunla...) altında.
+- **Kadın karakterlerde sadece kadın sesi:**
+  - Oyundaki bütün karakterler kadın. Bağırışlarda sadece ince (kadın) kayıtlar kullanılır.
+  - Kalın sesli "ha" kayıtları ve erkek gibi duyulan 4 bağırış çıkarıldı; sesin perdesi artık hiçbir sınıfta kalınlaştırılmıyor.
+
+### Aşama 6.0: yeni evcil hayvanlar, bütün boss'lar ve kılıçlar kullanıcı modelleriyle
 
 - **Evcil hayvanlar** (sadece kullanıcının getirdiği modeller): Kurt Yavrusu, Tilki Yavrusu, Yılan, **Sekreter Kuşu**, **Kuzgun** (havada süzülür, kanat çırpar), **Uzaylı Yaratık** (yeni, kendi animasyonlarıyla), **Ejder Yavrusu** (kendi animasyonuyla). Kodla çizilmiş Ayı ve Baykuş kaldırıldı; eski kayıtlardaki Ayı Yavrusu artık Sekreter Kuşu, Baykuş artık Kuzgun olarak görünür.
 - **Boss'lar:** kodla çizilmiş bütün boss'lar kullanıcının modelleriyle değişti (renk tonu ve ışık halkasıyla ayırt edilir):

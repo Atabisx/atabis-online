@@ -96,26 +96,28 @@
   <div id="inv" role="dialog" aria-label="Envanter">
     <div id="invbox">
       <div id="invhead"><b>ENVANTER</b><button id="invclose" aria-label="Kapat">×</button></div>
-      <div id="invbody">
-        <div id="equipcol">
-          <button class="eq" data-slot="weapon"></button>
-          <button class="eq" data-slot="armor"></button>
-          <button class="eq" data-slot="helmet"></button>
-          <button class="eq" data-slot="shoes"></button>
-          <button class="eq" data-slot="bracelet"></button>
-          <button class="eq" data-slot="earring"></button>
-          <button class="eq cos" data-slot="costume"></button>
-          <button class="eq cos" data-slot="wings"></button>
-          <button class="eq cos" data-slot="pet"></button>
-          <div id="stats"></div>
-        </div>
-        <div class="gridcol">
-          <div id="invPages" role="tablist" aria-label="Envanter sayfaları"><button data-ip="0" class="on" role="tab">I</button><button data-ip="1" role="tab">II</button><button data-ip="2" role="tab">III</button></div>
-          <div id="grid"></div>
-        </div>
+      <!-- Metin2 gibi: üstte kuşanılanlar karakter siluetinin çevresinde, altta 5×9 çanta, en altta yang -->
+      <div id="invmain">
+      <div id="equipcol">
+        <button class="eq" data-slot="earring" style="grid-area:ear"></button>
+        <button class="eq" data-slot="helmet" style="grid-area:helm"></button>
+        <button class="eq cos" data-slot="wings" style="grid-area:wing"></button>
+        <button class="eq tall" data-slot="weapon" style="grid-area:weap"></button>
+        <button class="eq tall" data-slot="armor" style="grid-area:arm"></button>
+        <button class="eq cos" data-slot="pet" style="grid-area:pet"></button>
+        <button class="eq cos" data-slot="costume" style="grid-area:cos"></button>
+        <button class="eq" data-slot="bracelet" style="grid-area:brac"></button>
+        <button class="eq" data-slot="shoes" style="grid-area:shoe"></button>
+        <div id="stats" style="grid-area:stat"></div>
       </div>
-      <div id="detail"><span class="grow" style="color:#8b877c">Bir eşyaya dokun.</span></div>
+      <div id="invright">
+        <div id="invPages" role="tablist" aria-label="Envanter sayfaları"><button data-ip="0" class="on" role="tab">I</button><button data-ip="1" role="tab">II</button><button data-ip="2" role="tab">III</button></div>
+        <div id="grid"></div>
+        <div id="invfoot"><span class="coin"></span><b id="invYang">0</b><span>Yang</span></div>
+      </div>
+      </div>
     </div>
+    <div id="detail" class="itip" aria-live="polite"></div>
   </div>
   <div id="shop" class="modal" role="dialog" aria-label="Dükkân">
     <div class="modalbox">

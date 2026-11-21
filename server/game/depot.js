@@ -12,7 +12,7 @@ function createDepot(W) {
     if (d) { await d.ready; return d; }
     d = { items: [], yang: 0 };
     d.ready = db.query('SELECT items, yang FROM depots WHERE account_id = $1', [acc]).then((r) => {
-      if (r.rows[0]) { d.items = r.rows[0].items || []; d.yang = Number(r.rows[0].yang) || 0; }
+      if (r.rows[0]) { d.items = R.fixItems(r.rows[0].items); d.yang = Number(r.rows[0].yang) || 0; }
     }).catch((e) => console.error('depo yüklenemedi', e.message));
     cache.set(acc, d);
     await d.ready;

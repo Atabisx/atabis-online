@@ -40,10 +40,6 @@ canvas { display: block; }
 .eq { display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 8px; border-radius: 10px; border: 2px solid #3a3f35; background: #1a1d17; color: #f4f1e8; font: inherit; font-size: 11px; text-align: left; }
 .eq.sel { border-color: #e8b54a; }
 .eq small { display: block; color: #8b877c; font-size: 10px; }
-#detail { display: flex; align-items: center; gap: 8px; min-height: 48px; font-size: 12px; }
-#detail .grow { flex: 1; }
-#detail button { font: inherit; font-weight: 700; padding: 0 14px; height: 44px; border-radius: 10px; border: 0; background: #e8b54a; color: #2a1f08; }
-#detail button.alt { background: #3a3f35; color: #f4f1e8; }
 #toast { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); padding: 8px 16px; border-radius: 12px; background: rgba(14,16,13,0.85); color: #ffe08a; font-weight: 700; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 12; }
 #rotate { display: none; position: fixed; inset: 0; z-index: 20; background: #0e100d; align-items: center; justify-content: center; text-align: center; padding: 24px; font-size: 16px; }
 @media (orientation: portrait) and (max-width: 700px) { body.ingame #rotate { display: flex; } }
@@ -565,3 +561,74 @@ body.ingame #autoBtn { display: flex; }
 .mallep b { color: #8fd8ff; }
 #mallList { display: flex; flex-direction: column; gap: 6px; max-height: 60vh; max-height: 60dvh; overflow-y: auto; }
 #buffs .timed { border-color: #ffd23f; color: #ffe8a0; }
+
+/* ---------- Metin2 tarzı envanter ---------- */
+#inv { align-items: center; justify-content: flex-end; padding-right: max(10px, 3vw); }
+@media (max-width: 720px) { #inv { justify-content: center; padding: 0; } }
+#invbox { width: min(318px, 96vw); max-height: 96vh; overflow-y: auto; padding: 10px 10px 8px; gap: 8px; border-radius: 6px;
+  background: linear-gradient(#2a2418, #17140e 40%, #120f0a); border: 2px solid #6b5630; box-shadow: inset 0 0 0 1px #000, 0 10px 40px rgba(0,0,0,.6); }
+#invhead { height: 22px; border-bottom: 1px solid #4a3c22; padding-bottom: 4px; }
+#invhead b { font-size: 13px; color: #f0d58a; letter-spacing: .12em; text-shadow: 0 1px 0 #000; }
+#invclose { width: 22px; height: 22px; border-radius: 4px; border: 1px solid #6b5630; background: #2a2216; color: #f0d58a; line-height: 1; padding: 0; }
+#invmain { display: flex; flex-direction: column; gap: 8px; }
+#invright { display: flex; flex-direction: column; gap: 0; }
+#equipcol { --es: 48px; width: auto; display: grid; gap: 5px; padding: 8px; border-radius: 4px; border: 1px solid #3e3320;
+  grid-template-columns: repeat(3, var(--es)); grid-template-rows: var(--es) var(--es) var(--es) var(--es) auto; justify-content: center; align-content: center;
+  grid-template-areas: "ear helm wing" "weap arm pet" "weap arm cos" "brac shoe ." "stat stat stat";
+  background: radial-gradient(ellipse at 50% 45%, rgba(232,181,74,.10), transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath fill='%23ffffff' fill-opacity='.05' d='M50 6a12 12 0 1 1 0 24a12 12 0 1 1 0-24zM30 34h40l10 34-8 3-6-20v66H54V82h-8v35H34V51l-6 20-8-3z'/%3E%3C/svg%3E") center/62% no-repeat, #0f0d09; }
+.eq { position: relative; height: auto !important; width: 100%; padding: 0; justify-content: center; border-radius: 4px; border: 1px solid #4a3c22;
+  background: radial-gradient(circle at 50% 40%, #241f15, #0c0a07); box-shadow: inset 0 0 8px #000; }
+.eq.tall { grid-row-end: span 2; }
+.eq .ico3d { width: calc(var(--es) - 6px) !important; height: calc(var(--es) - 6px) !important; }
+.eq.tall .ico3d { width: calc(var(--es) - 2px) !important; height: calc(var(--es) * 2 - 6px) !important; object-fit: contain; }
+.eq > span { display: none; }
+.eq.empty::after { content: attr(data-label); position: absolute; inset: auto 0 3px; font-size: 9px; color: #6b6150; text-align: center; letter-spacing: .02em; }
+.eq.empty svg { opacity: .25; }
+.eq.cos { border-style: solid; border-color: #4a3a5a; }
+.eq.sel { border-color: #ffd36b; box-shadow: 0 0 0 1px #ffd36b, inset 0 0 10px rgba(255,211,107,.25); }
+#stats { text-align: center; font-size: 11px; line-height: 1.5; color: #c9b98f; padding-top: 2px; }
+#stats b { color: #fff1c8; }
+#invPages { gap: 3px; }
+#invPages button { min-height: 26px; border-radius: 3px 3px 0 0; border: 1px solid #4a3c22; border-bottom: 0; background: #1a160e; color: #9a8a66; font-size: 12px; }
+#invPages button.on { background: #6b5630; color: #fff1c8; border-color: #8a7040; }
+#grid { grid-template-columns: repeat(5, var(--gs, 1fr)); gap: 2px; padding: 3px; border: 1px solid #4a3c22; background: #0c0a07; flex: none; justify-content: center; }
+#invfoot { margin-top: 4px; }
+/* yatay telefon ve kısa ekran: kuşanılanlar solda, çanta sağda */
+@media (max-height: 620px) {
+  #invbox { width: auto; max-width: 98vw; padding: 6px 8px; gap: 4px; }
+  #invmain { flex-direction: row; align-items: flex-start; }
+  #equipcol { --es: min(44px, 10.5vh); }
+  #grid { --gs: min(36px, 7.6vh); }
+  #grid .slot { width: var(--gs); height: var(--gs); }
+  #invhead { height: 18px; }
+  #stats { font-size: 10px; }
+}
+#grid .slot { min-height: 0; border-radius: 2px; border: 1px solid #2e2618 !important; background: linear-gradient(#17140e, #0e0c08); }
+#grid .slot.sel { border-color: #ffd36b !important; box-shadow: inset 0 0 0 1px #ffd36b; }
+#grid .slot.r1 { box-shadow: inset 0 0 10px rgba(127,179,255,.35); }
+#grid .slot.r2 { box-shadow: inset 0 0 10px rgba(255,179,71,.45); }
+#invfoot { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 4px 8px; border: 1px solid #4a3c22; border-radius: 3px; background: #0c0a07; font-size: 12px; color: #c9b98f; }
+#invfoot b { color: #ffe08a; font-size: 13px; }
+#invfoot .coin { width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3b0, #e8b54a 55%, #8a6420); box-shadow: 0 0 4px #e8b54a; }
+
+/* eşya bilgisi: Metin2 gibi alt alta satırlar */
+.itip { position: fixed; z-index: 16; display: none; width: 250px; max-width: 92vw; max-height: 80vh; overflow-y: auto; padding: 10px 12px 10px;
+  border-radius: 4px; border: 1px solid #8a7040; background: rgba(8,7,5,.94); box-shadow: 0 6px 24px rgba(0,0,0,.7); text-align: center; font-size: 12px; line-height: 1.55; color: #e8e2d0; }
+.itip.open { display: block; }
+.itip .t-tn { font-size: 14px; font-weight: 800; margin-bottom: 2px; }
+.itip .ln { display: block; }
+.itip .sp { height: 7px; }
+.itip .t-req.bad { color: #ff6a5a; }
+.itip .t-st { color: #f4f1e8; }
+.itip .t-st i { font-style: normal; color: #9fe07f; }
+.itip .t-bn { color: #8fd3ff; }
+.itip .t-ef { color: #c58bff; }
+.itip .t-sk { color: #9a8f78; }
+.itip .t-cl { color: #d8b96a; }
+.itip .t-ds { color: #9a917c; font-style: italic; }
+.itip .ico { display: flex; justify-content: center; margin: 2px 0 4px; }
+.itip .ico .ico3d { width: 64px; height: 64px; }
+.itip .acts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 10px; }
+.itip .acts button { font: inherit; font-weight: 700; min-height: 36px; padding: 0 12px; border-radius: 4px; border: 1px solid #c89a3a; background: linear-gradient(#e8b54a, #a87a24); color: #241805; }
+.itip .acts button.alt { background: #2a2418; color: #e8e2d0; border-color: #5a4a2a; }

@@ -12,7 +12,7 @@ function createMarket(W) {
 
   db.query('SELECT * FROM stalls').then((r) => {
     for (const row of r.rows) stalls.set(row.char_id, { charId: row.char_id, owner: row.owner_name, mapId: row.map_id, x: row.x, z: row.z,
-      title: row.title, items: row.items || [], earnings: Number(row.earnings), log: row.log || [] });
+      title: row.title, items: R.fixItems(row.items), earnings: Number(row.earnings), log: row.log || [] });
     ready = true;
     if (stalls.size) console.log(`${stalls.size} pazar tezgâhı yüklendi`);
   }).catch((e) => { console.error('tezgâhlar', e.message); ready = true; });

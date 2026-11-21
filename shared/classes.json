@@ -11,7 +11,7 @@
  },
  "ninja": {
   "name": "Akıncı",
-  "desc": "Hızlı ve çevik baskıncı. Kısa hançerlerle seri, kritik vuruşlar.",
+  "desc": "Hızlı ve çevik baskıncı. Hafif kılıçla seri, kritik vuruşlar.",
   "hp": 160,
   "mp": 60,
   "atk": 0.9,
@@ -19,7 +19,7 @@
   "crit": 0.25,
   "speed": 1.12,
   "color": "#2c3e50",
-  "startWeapon": "dagger0"
+  "startWeapon": "sword0"
  },
  "sura": {
   "name": "Yalaz",
@@ -43,13 +43,13 @@
  },
  "okcu": {
   "name": "Avcı",
-  "desc": "Uzaktan ok yağdırır. Düşmanı yaklaşmadan indirir.",
+  "desc": "Kılıcını savurup uzağa parlak kılıç dalgaları fırlatır. Düşmanı yaklaşmadan indirir.",
   "hp": 150,
   "mp": 70,
   "atk": 0.95,
   "def": 3,
   "range": 12,
   "color": "#1e8449",
-  "startWeapon": "bow0"
+  "startWeapon": "sword0"
  }
 }

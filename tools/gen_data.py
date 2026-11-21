@@ -20,9 +20,8 @@ TIERS = [
 ]
 
 WEAPONS = [  # (tür, ad, sınıflar, uzunluk)
-    ('sword', 'Kılıç', ['savasci', 'sura'], 0.95),
-    ('dagger', 'Hançer', ['ninja'], 0.45),
-    ('bow', 'Yay', ['okcu'], 1.25),
+    # sadece 3D modeli olan silahlar: hançer ve yay kaldırıldı, Akıncı ve Avcı da kılıç kullanır
+    ('sword', 'Kılıç', ['savasci', 'sura', 'ninja', 'okcu'], 0.95),
     ('staff', 'Asa', ['saman'], 1.55),
 ]
 GEAR = [  # (yuva, ad, fiyat çarpanı)
@@ -35,7 +34,7 @@ GEAR = [  # (yuva, ad, fiyat çarpanı)
 def weapon_model(wtype, i):
     # kullanıcının getirdiği silah modelleri (client/models/items/<ad>.glb)
     if wtype == 'staff':
-        return 'kraliyet_asasi' if i >= 6 else None
+        return 'kraliyet_asasi'
     if wtype != 'sword':
         return None
     return {0: 'sade_kilic', 1: 'kivrik_kilic', 2: 'katana', 3: 'katana', 4: 'lav_kilic', 5: 'lav_kilic',
@@ -107,12 +106,9 @@ def build_items():
                         it['trim'] = '#e8b54a' if not legendary else '#fff1b8'
                     if armor_model(i):
                         it['model'] = armor_model(i)
-                if slot == 'helmet' and i >= 5:
-                    it['model'] = 'kask'      # Sv. 36 ve üstü: Spartalı kask modeli
-                elif slot == 'helmet':
+                if slot == 'helmet':
+                    it['model'] = 'kask'      # bütün miğferler 3D kask modeliyle
                     it['def'] = round((3 + 6 * i + 0.4 * i * i) * 0.6 * m)
-                    if i >= 4:
-                        it['plume'] = '#e8b54a'
                 elif slot == 'shoes':
                     it['def'] = round((3 + 6 * i + 0.4 * i * i) * 0.4 * m)
                 elif slot == 'bracelet':
@@ -228,15 +224,18 @@ def build_items():
     legacy = json.load(open(os.path.join(ROOT, 'items.json'), encoding='utf8')) if os.path.exists(
         os.path.join(ROOT, 'items.json')) else {}
     for k, v in legacy.items():
-        if k in items or not ('_' in k and k.split('_')[0] in ('w', 'd', 'b', 's', 'a', 'h')):
-            continue
+        if k in items or not ('_' in k and k.split('_')[0] in ('w', 's', 'a', 'h')):
+            continue      # eski hançer ve yaylar (d_, b_) kaldırıldı: sunucu yüklerken kılıca çevirir
         v = dict(v)
         v.setdefault('lv', 1)
         v['price'] = 0
         v['legacy'] = True
         # eski kılıçlar da kullanıcının modelleriyle görünür
         LEG = {'w_wood': 'sade_kilic', 'w_iron': 'kivrik_kilic', 'w_steel': 'katana', 'w_shadow': 'mor_kilic', 'w_dragon': 'kanatli_kilic'}
-        if k in LEG: v['model'] = LEG[k]
+        if k in LEG: v['model'] = LEG[k]; v['classes'] = ['savasci', 'sura', 'ninja', 'okcu']
+        if k.startswith('s_'): v['model'] = 'kraliyet_asasi'
+        if k.startswith('h_'): v['model'] = 'kask'
+        if k.startswith('a_'): v['model'] = {'a_cloth': 'demir_zirh', 'a_leather': 'yelek', 'a_iron': 'yelek', 'a_crimson': 'gogusluk', 'a_gold': 'celik_zirh'}.get(k, 'yelek')
         items[k] = v
     return items
 
@@ -504,9 +503,9 @@ SKILLS = {
         sk('m_kukreme', 'Bozkurt Uluması', 'Çevresine ateşli bir kükreme salar.', 'aoe', 40, 5, 14, '#ff6a3d', radius=6, mult=1.6, multLv=0.13, combo=1),
     ],
     'okcu': [
-        sk('o_coklu', 'Çoklu Ok', 'Aynı anda 3 hedefe ok atar.', 'multi', 18, 3, 5, '#f4e2b8', range=12, mult=1.2, multLv=0.1, count=3),
-        sk('o_zehirli', 'Buz Oku', 'Buzdan bir ok fırlatır; hedefi 2 saniye dondurur.', 'single', 15, 2, 8, '#9fd8ff', range=12, mult=1.3, multLv=0.09, stun=2.0, freeze=True),
-        sk('o_ates', 'Ateşli Ok', 'Patlayan ok: hedefin çevresine de hasar verir.', 'single', 28, 4, 10, '#ff6a3d', range=13, mult=2.2, multLv=0.17, splash=2.8),
+        sk('o_coklu', 'Üçlü Kılıç Dalgası', 'Kılıcını savurup aynı anda 3 hedefe kılıç dalgası fırlatır.', 'multi', 18, 3, 5, '#f4e2b8', range=12, mult=1.2, multLv=0.1, count=3),
+        sk('o_zehirli', 'Buz Dalgası', 'Buzdan bir kılıç dalgası fırlatır; hedefi 2 saniye dondurur.', 'single', 15, 2, 8, '#9fd8ff', range=12, mult=1.3, multLv=0.09, stun=2.0, freeze=True),
+        sk('o_ates', 'Ateş Dalgası', 'Patlayan ateş dalgası: hedefin çevresine de hasar verir.', 'single', 28, 4, 10, '#ff6a3d', range=13, mult=2.2, multLv=0.17, splash=2.8),
         sk('o_hafif', 'Hafif Adım', '40 saniye hareket ve saldırı hızını artırır.', 'self', 20, 2, 45, '#7be08f', buff={'stat': 'movespeed', 'base': 20, 'perLv': 1.5, 'dur': 40, 'extra': {'atkspeed': 8}}),
     ],
 }

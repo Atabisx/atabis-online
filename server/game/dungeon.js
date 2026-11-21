@@ -13,7 +13,7 @@ const WAVES = [
 ];
 // kraliçenin sandığı: her üyeye ayrı ganimet
 const CHEST = [['kutsama', 1, 0.8], ['efsun', 2, 0.6], ['tas_*_1', 1, 0.5], ['tas_*_2', 1, 0.12], ['yaprak_*', 4, 0.7], ['p_hp3', 10, 1], ['efsun_degis', 2, 0.3]];
-const GEAR = ['sword6', 'dagger6', 'bow6', 'staff6', 'armor6', 'helmet6', 'shoes6', 'bracelet6', 'earring6'];
+const GEAR = ['sword6', 'staff6', 'armor6', 'helmet6', 'shoes6', 'bracelet6', 'earring6'];
 
 function createDungeons(W) {
   const { io, players, notice, moveToZone, hooks, zonesTick, villageFor } = W;

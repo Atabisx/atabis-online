@@ -27,8 +27,7 @@ function init() {
 // ---------- örnek sesler ----------
 const SAMPLE_NAMES = ['swing_sword0', 'swing_sword1', 'swing_sword2', 'swing_heavy0', 'swing_heavy1', 'swing_dagger0', 'swing_dagger1', 'swing_staff',
   'bow_shot', 'hit_flesh0', 'hit_flesh1', 'hit_flesh2', 'hit_crit', 'hit_stone', 'hit_armor', 'hit_arrow',
-  ...Array.from({ length: 9 }, (_, i) => 'voice_ha' + i), ...Array.from({ length: 8 }, (_, i) => 'voice_hya' + i),
-  'voice_sharp0', 'voice_sharp1', 'voice_myst0', 'voice_myst1'];
+  ...['hya0', 'hya2', 'hya3', 'hya4', 'hya5', 'hya7', 'sharp1', 'myst0'].map((n) => 'voice_' + n)];   // sadece kadın sesleri
 const samples = {};
 function loadSamples() {
   for (const n of SAMPLE_NAMES) {
@@ -167,15 +166,8 @@ function ring(base, vol, dur, t = 0) {
 export function swing(cls, pos, combo = 0) {
   if (!ready()) return;
   const v = near(pos); if (v <= 0) return;
-  const smp = cls === 'okcu' ? 'bow_shot' : cls === 'saman' ? 'swing_staff' : cls === 'ninja' ? pick('swing_dagger', 2)
-    : combo >= 2 ? pick('swing_heavy', 2) : pick('swing_sword', 3);
+  const smp = cls === 'saman' ? 'swing_staff' : combo >= 2 ? pick('swing_heavy', 2) : pick('swing_sword', 3);
   if (play(smp, (0.55 + combo * 0.08) * v, 0, cls === 'sura' ? 0.92 : 1)) return;
-  if (cls === 'okcu') {
-    tone({ type: 'triangle', f0: vary(190), f1: 110, dur: 0.16, vol: 0.28 * v });
-    noise({ dur: 0.1, vol: 0.22 * v, f0: 4200, f1: 1500, q: 2.5 });
-    noise({ t: 0.03, dur: 0.18, vol: 0.12 * v, f0: 2000, f1: 5000, q: 6 });   // ok uçuşu ıslığı
-    return;
-  }
   if (cls === 'saman') {
     noise({ dur: 0.28, vol: 0.2 * v, f0: 500, f1: 2600, q: 3 });
     tone({ type: 'sine', f0: vary(520), f1: 980, dur: 0.22, vol: 0.09 * v });
@@ -213,14 +205,17 @@ export function hit(kind, crit, pos) {
   }
 }
 // Metin2 tarzı vuruş bağırışları (gerçek ses kayıtları, audio/sfx/voice_*.wav):
-// 'light' sıradan vuruşta ara sıra kısa "ha!", 'strong' 3. kombo ve becerilerde "hyaa!", 'magic' büyülerde.
-// Kayıtlar sınıflara bölüştürüldü; her sınıfın kendi bağırışları ve biraz farklı perdesi var.
+// 'light' sıradan vuruşta ara sıra kısa bağırış, 'strong' 3. kombo ve becerilerde, 'magic' büyülerde.
+// Oyundaki bütün karakterler kadın: sadece perdesi yüksek (kadın) kayıtlar kullanılır.
+// Kalın sesli "ha" kayıtları ile hya1, hya6, sharp0, myst1 erkek gibi duyulduğu için çıkarıldı; perde hiçbir sınıfta kalınlaştırılmaz.
+const FEMALE_LIGHT = ['hya4', 'hya0', 'hya5'];
+const FEMALE_STRONG = ['hya0', 'hya2', 'hya3', 'hya4', 'hya5', 'hya7'];
 const VOICES = {
-  savasci: { light: ['ha0', 'ha2', 'ha3'], strong: ['sharp0', 'sharp1', 'hya3', 'hya7'], magic: ['sharp1', 'hya7'], rate: 0.95 },
-  ninja: { light: ['ha4', 'ha6', 'ha7'], strong: ['hya0', 'hya1', 'hya4', 'hya5'], magic: ['hya5'], rate: 1.06 },
-  sura: { light: ['ha5', 'ha8', 'ha1'], strong: ['hya2', 'hya6', 'sharp1'], magic: ['myst0', 'myst1'], rate: 0.97 },
-  saman: { light: ['ha1', 'ha4', 'ha7'], strong: ['myst1', 'hya2'], magic: ['myst0', 'myst1'], rate: 1.02 },
-  okcu: { light: ['ha0', 'ha5', 'ha8'], strong: ['hya0', 'hya4', 'hya5', 'sharp0'], magic: ['hya4'], rate: 1.0 },
+  savasci: { light: FEMALE_LIGHT, strong: ['hya2', 'hya3', 'hya7', 'sharp1'], magic: ['sharp1', 'hya7'], rate: 1.0 },
+  ninja: { light: FEMALE_LIGHT, strong: ['hya0', 'hya4', 'hya5', 'hya2'], magic: ['hya5'], rate: 1.08 },
+  sura: { light: FEMALE_LIGHT, strong: ['hya2', 'hya3', 'hya7', 'sharp1'], magic: ['myst0'], rate: 1.02 },
+  saman: { light: FEMALE_LIGHT, strong: FEMALE_STRONG, magic: ['myst0', 'sharp1'], rate: 1.05 },
+  okcu: { light: FEMALE_LIGHT, strong: ['hya0', 'hya4', 'hya5', 'hya3'], magic: ['hya4'], rate: 1.04 },
 };
 let lastShout = 0;
 export function shout(cls, kind = 'light', pos = null) {
