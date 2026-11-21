@@ -916,12 +916,12 @@ function skillPoseUpdate(p, dt) {
   let fwd = 0;
   if (s.lunge) fwd = s.wave ? s.lunge * Math.abs(Math.sin(k * Math.PI * s.wave)) * (1 - k * 0.3) : s.lunge * Math.sin(k * Math.PI);
   // takla gövdenin ortası etrafında döner (ayak değil)
-  const fz = Math.cos(-FACE_OFFSET), fx = Math.sin(-FACE_OFFSET), cH = 0.95;
+  const fz = Math.cos(-FACE_OFFSET), fxs = Math.sin(-FACE_OFFSET), cH = 0.95;   // (fx adı efekt modülüyle çakışmasın)
   wrap.rotation.y = yaw;
   wrap.rotation.x = pitch * fz;
   wrap.position.y = riderBaseY(p) + y + cH * (1 - Math.cos(pitch));
   const off = fwd + cH * Math.sin(pitch);
-  p.moveOff.x = fx * off; p.moveOff.z = fz * off;
+  p.moveOff.x = fxs * off; p.moveOff.z = fz * off;
   if (mv.t >= s.dur) p.move = null;
 }
 // balık tutarken elde olta
