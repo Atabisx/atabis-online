@@ -219,6 +219,7 @@ Hepsi sol menüdeki **☰ Menü** düğmesinden açılır. Veritabanı tablolar�
 - **Kızılçam Ormanı:** sadece kullanıcının modelleri: Vahşi Kurt, Benekli Kaplan, Ateş Kertenkelesi Yavrusu, boss'lar ve metin taşları.
 - **Ölünce:** "Köyde başla" (tam can) ve 5 saniye sonra açılan "Burada başla" (yarım can).
 - **Işınlanma Yüzüğü:** markette 2.500.000 Yang; her yerden ışınlanma penceresini açar, bitmez.
+- **Hesap aracı:** GM'nin hangi hesapta olduğunu bulmak için `node scripts/hesap.js gm`. Bir karakterin hesabını bulmak için `node scripts/hesap.js bul <karakter>`. Unutulan şifreyi değiştirmek için `node scripts/hesap.js sifre <kullanıcı> <yeni şifre>`.
 - **GM:** `.env` içindeki `GM_NAMES` (varsayılan `Atabis`) adlı karakterler GM'dir: başında altın GM rozeti, son seviye, her haritaya girer, her eşyayı giyer; ilk girişte en üst kademe efsanevi eşyalar (5 en yüksek efsun), yüzük, at, iksirler. Sohbet komutları: `/git <harita>`, `/seviye <n>`, `/yang <n>`, `/esya <anahtar> [adet]`, `/iyiles`.
 - **Ata binme:** karakter eyere oturur (bacaklar atın iki yanında), dik durur, dizgin tutar gibi.
 - **Sınıflar farklı görünür:** savaşçı iri ve kürk yakalı, ninja ince ve maskeli/atkılı, sura pelerinli ve boynuzlu omuzluklu, şaman cüppeli ve tüylü başlıklı, okçu sadaklı ve başlıklı.
