@@ -35,9 +35,13 @@ GEAR = [  # (yuva, ad, fiyat çarpanı)
 def weapon_model(wtype, i):
     if wtype != 'sword':
         return None
+    if 1 <= i <= 3:
+        return 'katana'
     if 4 <= i <= 9:
         return 'lav_kilic'
-    if i >= 10:
+    if 10 <= i <= 12:
+        return 'savas_baltasi'
+    if i >= 13:
         return 'buz_balta'
     return None
 
@@ -300,10 +304,11 @@ MAPS = [
               ('akbaba', 'Akbaba', 47, 'flyer', '#3a2a1c', 1.1, 12, 6.5)],
      'bosses': [('yagmaci', 'Kervan Yağmacısı', 52, 'humanoid', '#8e2a21', 1.6, {'cape': '#c9a35a', 'eyes': '#ffd23f', 'orbs': '#ffb347', 'weapon': '#ffd700'})]},
     {'name': 'Kara Bataklık', 'lv': 50, 'theme': 'swamp',
-     'mobs': [('kurbaga', 'Bataklık Kurbağası', 50, 'frog', '#4a6a35', 1.0, 8, 5.0),
+     'mobs': [('kurbaga', 'Boynuzlu Bataklık Kurbağası', 50, 'frog', '#4a6a35', 1.0, 8, 5.0, {'model': 'kurbaga'}),
               ('yilan', 'Zehirli Yılan', 52, 'worm', '#3f7535', 0.9, 10, 5.6),
               ('camur', 'Çamur Canavarı', 54, 'golem', '#4a3a2a', 1.2, 7, 3.8)],
-     'bosses': [('cadi', 'Bataklık Cadısı', 59, 'ghost', '#6fd36f', 1.8, {'hat': '#1a2a1a', 'flames': '#6fd36f', 'orbs': '#9fff7f', 'aura': '#6fd36f'})]},
+     'bosses': [('cadi', 'Bataklık Cadısı', 59, 'ghost', '#6fd36f', 1.8, {'hat': '#1a2a1a', 'flames': '#6fd36f', 'orbs': '#9fff7f', 'aura': '#6fd36f'}),
+                ('kurbagakral', 'Kurbağa Kralı Vırak', 56, 'frog', '#4a6a35', 3.2, {'model': 'kurbaga', 'aura': '#9fff7f', 'hitR': 2.6, 'n': 2})]},
     {'name': 'Karlı Dağlar', 'lv': 57, 'theme': 'snow',
      'mobs': [('karkurt', 'Kar Kurdu', 57, 'wolf', '#e8eef2', 1.15, 12, 6.2),
               ('buzayi', 'Buz Ayısı', 59, 'bear', '#dfe8ee', 1.35, 9, 4.8),

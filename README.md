@@ -4,7 +4,22 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 5.6 (bu sürüm): Balık açma, otomatik iksirler, tecrübe yüzüğü, Nesne Market, yeni köy görünümü
+### Aşama 5.7 (bu sürüm): Kurbağa Kralı, katana ve savaş baltası
+
+- **Boynuzlu Bataklık Kurbağası (Kara Bataklık, Sv. 50):** eski kodla çizilmiş kurbağa yerine iskeletli, gerçek animasyonlu model (kullanıcının getirdiği Giang_99 paketi).
+  - Kendi hareketleri var: boşta soluklanma, yürüme, iki çeşit saldırı (dil fırlatma, ısırma), darbe alınca sarsılma, ölünce sırt üstü devrilme, ara sıra böğürme.
+- **Yeni boss: Kurbağa Kralı Vırak (Sv. 56):** aynı modelin dev hali, Kara Bataklık'ta 2 tane.
+- **Silah görünümleri:** savaşçı ve sura için.
+  - Katana: Sv. 8-22 kılıçlar.
+  - Lav Kılıcı: Sv. 29-64, değişmedi.
+  - Savaş Baltası (çift ağızlı, çelik ağız, ahşap sap): Sv. 71-85 baltalar.
+  - Buz Baltası: Sv. 92 ve üstü.
+- **Araçlar:**
+  - `tools/fbxanim.py taban.glb çıktı.glb Idle=idle.fbx Walk=walk.fbx ... --zup`: FBX hareket dosyalarını derili GLB'ye animasyon klibi olarak ekler.
+  - `tools/glbstatic.py girdi.glb çıktı.glb [--rotz 90] [--paint balta]`: silah gibi sabit modellerden iskeleti siler, dikleştirir, dokusuz baltayı boyar.
+  - İstemcide `kind: 'skel'` olan yaratıklar (`client/js/entities/models.js`) dosyadaki klipleri oynatır.
+
+### Aşama 5.6: Balık açma, otomatik iksirler, tecrübe yüzüğü, Nesne Market, yeni köy görünümü
 
 - **Balık açma:** tutulan balıklara dokun, **Aç** ya da **Hepsini aç** (50'ye kadar). Her balıktan ayrı ayrı şu şanslarla çıkar:
   - Efsun Nesnesi %25, Efsun Değiştirme Nesnesi %25

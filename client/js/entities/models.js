@@ -4,6 +4,7 @@
 // karede bu bölgeleri kendi eklem noktası etrafında döndürüyor (yürüme, ısırma, kılıç savurma).
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 // size: def.scale = 1 iken metre cinsinden boy
 // kind: quad (dört ayaklı), sit (oturan köpek), humanoid, robe (cüppeli, ayak yok), snake
@@ -28,11 +29,17 @@ export const MOB_MODELS = {
   kaplan_adam: { kind: 'humanoid', size: 1.9, legTop: 0.4, armX: 0.21, armMin: 0.3, shoulder: 0.74, headY: 0.8, headFront: true, tail: 0.3, tailFirst: true, freq: 7, amp: 0.4 },
   lav_canavari: { kind: 'quad', size: 1.3, legTop: 0.32, head: 0.26, tail: 0.25, freq: 8, amp: 0.45 },
   kertenkele:  { kind: 'quad', size: 1.0, legTop: 0.26, head: 0.28, tail: 0.3, tailFirst: true, freq: 10, amp: 0.5 },
+  // iskeletli ve kendi animasyonları olan modeller (kind: skel): klip adları dosyadakilerle aynı
+  kurbaga:     { kind: 'skel', size: 1.05, clips: { idle: ['Idle', 'Idle2'], walk: 'Walk', run: 'Run', atk: ['Atk', 'Atk2'], hit: 'Beaten', die: 'Death', roar: 'Roar' }, walkRate: 1.3 },
 };
 const KIND = { quad: 0, sit: 0, humanoid: 1, robe: 2, snake: 3, bird: 4 };
 
 const loader = new GLTFLoader();
-const cache = {};
+const cache = {}, gcache = {};
+export function loadGltf(url) {
+  if (!gcache[url]) gcache[url] = new Promise((resolve, reject) => loader.load(url, resolve, undefined, reject));
+  return gcache[url];
+}
 export function loadModel(url) {
   if (!cache[url]) {
     cache[url] = new Promise((resolve, reject) => loader.load(url, (g) => resolve(g.scene), undefined, reject));
@@ -261,12 +268,83 @@ export function animatedInstance(scene, spec) {
   return { holder, update, size };
 }
 
+// ---------- iskeletli yaratık: dosyadaki gerçek animasyonlar (boşta, yürüme, saldırı, darbe, ölüm) ----------
+export function skelInstance(gltf, spec) {
+  const holder = new THREE.Group();
+  const model = SkeletonUtils.clone(gltf.scene);
+  model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  const mixer = new THREE.AnimationMixer(model);
+  const clip = (n) => gltf.animations.find((a) => a.name === n);
+  const pick = (v) => clip(Array.isArray(v) ? v[Math.floor(Math.random() * v.length)] : v);
+  const C = spec.clips;
+  const act = (n) => { const c = typeof n === 'string' || Array.isArray(n) ? pick(n) : n; return c ? mixer.clipAction(c) : null; };
+  const idle = act(C.idle), walk = act(C.walk);
+  let cur = idle;
+  if (cur) cur.play();
+  // boşta duruşta boyu ölç, ayakları yere bas
+  mixer.update(0); model.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(model, true);
+  const k = spec.size / Math.max(0.001, box.max.y - box.min.y);
+  model.scale.multiplyScalar(k);
+  model.position.y -= box.min.y * k;
+  holder.add(model);
+  mixer.update(Math.random() * 2);   // sürüdekiler aynı anda kıpırdamasın
+  let oneShot = null, dead = false, lastAtk = 0, still = 0, nextRoar = 8 + Math.random() * 12;
+  function fadeTo(a, d = 0.2) {
+    if (!a || a === cur) return;
+    a.reset().play();
+    if (cur) a.crossFadeFrom(cur, d, false);
+    cur = a;
+  }
+  function once(name, maxDur) {
+    const a = act(name); if (!a) return;
+    a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true;
+    a.timeScale = maxDur ? Math.max(1, a.getClip().duration / maxDur) : 1;
+    if (a === cur) a.reset().play(); else fadeTo(a, 0.12);
+    oneShot = a;
+  }
+  function update(t, moving, atk, dt) {
+    dt = dt || 0.016;
+    if (!dead) {
+      if (atk > 0 && lastAtk === 0) once(C.atk, 0.9);
+      lastAtk = atk > 0 ? atk : 0;
+      if (oneShot && (!oneShot.isRunning() || oneShot.time >= oneShot.getClip().duration - 0.05)) oneShot = null;
+      // uzun süre boşta kalınca ara sıra böğürür
+      still = moving ? 0 : still + dt;
+      if (!oneShot && C.roar && still > nextRoar) { once(C.roar); still = 0; nextRoar = 10 + Math.random() * 15; }
+      if (!oneShot) {
+        const want = moving ? walk : idle;
+        if (want && moving) want.timeScale = spec.walkRate || 1;
+        fadeTo(want, 0.25);
+      }
+    }
+    mixer.update(dt);
+  }
+  return {
+    holder, update, size: spec.size,
+    hit() { if (!dead && !oneShot && Math.random() < 0.4) once(C.hit, 0.6); },
+    die() { if (dead) return false; dead = true; once(C.die); return true; },
+    roar() { if (!dead && !oneShot && C.roar) once(C.roar); },
+  };
+}
+
 // ---------- yaratık: önce kodla çizilen yedek görünür, model gelince onunla değişir ----------
 export function attachMobModel(v, def) {
   const name = def.style && def.style.model;
   const spec = MOB_MODELS[name];
   if (!spec) return;
   v.height = spec.size * (def.scale || 1);
+  if (spec.kind === 'skel') {
+    loadGltf(`models/mobs/${name}.glb`).then((gltf) => {
+      for (const c of [...v.root.children]) if (!c.userData.keep) v.root.remove(c);
+      const inst = skelInstance(gltf, spec);
+      v.root.add(inst.holder);
+      const extra = v.extraAnim || [];
+      v.update = (t, moving, atk, dt) => { inst.update(t, moving, atk, dt); for (const f of extra) f(t, moving); };
+      v.hit = inst.hit; v.die = inst.die; v.roar = inst.roar;
+    }).catch((e) => console.warn('Yaratık modeli yüklenemedi:', name, e));
+    return;
+  }
   loadModel(`models/mobs/${name}.glb`).then((scene) => {
     for (const c of [...v.root.children]) if (!c.userData.keep) v.root.remove(c);
     const inst = animatedInstance(scene, spec);
@@ -298,6 +376,8 @@ export function attachMountModel(v) {
 export const ITEM_MODELS = {
   lav_kilic: { grip: 0.13, len: 1.2 },
   buz_balta: { grip: 0.2, len: 1.05 },
+  katana: { grip: 0.13, len: 1.15, center: true },
+  savas_baltasi: { grip: 0.3, len: 1.3, center: true },
   // zırhlar: gövdeye oturacak boy (m) ve dikey kaydırma; omuzluk takılsın mı
   yelek: { armor: true, height: 0.5, y: -0.05, pads: false },
   gogusluk: { armor: true, height: 0.48, y: -0.04, pads: true },
@@ -330,6 +410,7 @@ export function itemModel(key, fallback) {
       m.scale.multiplyScalar(k);
       // tutma yeri elin içine gelsin (yedek kılıçta sap -0.05'te)
       m.position.y = -(box.min.y + spec.grip * h) * k - 0.04;
+      if (spec.center) { m.position.x = -(box.min.x + box.max.x) / 2 * k; m.position.z = -(box.min.z + box.max.z) / 2 * k; }
     }
     g.add(m);
     done();

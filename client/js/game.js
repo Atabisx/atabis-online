@@ -1164,15 +1164,21 @@ function killMobVisual(m, boss) {
   const box = new THREE.Box3().setFromObject(root), size = box.getSize(new THREE.Vector3());
   root.rotation.y = ry; root.rotation.order = 'YXZ';
   const half = Math.max(0.05, Math.min(size.x, size.z) / 2);
-  corpses.push({ root, t: 0, side: Math.random() < 0.5 ? 1 : -1, half, lie: boss ? 12 : 3, boss, y0: root.position.y, dust: false });
+  // kendi ölüm animasyonu olan model devrilmez, animasyonunu oynatır
+  const anim = m.v.die && m.v.die() ? m.v : null;
+  corpses.push({ root, t: 0, side: Math.random() < 0.5 ? 1 : -1, half, lie: boss ? 12 : 3, boss, y0: root.position.y, dust: false, anim });
 }
 function updateCorpses(dt) {
   for (let i = corpses.length - 1; i >= 0; i--) {
     const c = corpses[i]; c.t += dt;
     const fallT = c.boss ? 1.0 : 0.6, fall = Math.min(1, c.t / fallT), e = fall * fall;     // hızlanarak devrilir
     const bounce = fall >= 1 ? Math.sin(Math.min(1, (c.t - fallT) / 0.25) * Math.PI) * 0.06 : 0;
-    c.root.rotation.z = c.side * (Math.PI / 2) * e - c.side * bounce;
-    let y = c.y0 + c.half * Math.sin(e * Math.PI / 2);
+    let y;
+    if (c.anim) { c.anim.update(c.t, false, 0, dt); y = c.y0; }
+    else {
+      c.root.rotation.z = c.side * (Math.PI / 2) * e - c.side * bounce;
+      y = c.y0 + c.half * Math.sin(e * Math.PI / 2);
+    }
     if (fall >= 1 && !c.dust) {
       c.dust = true;
       const p = c.root.position, n = c.boss ? 40 : 14;
@@ -2321,6 +2327,7 @@ export function startGame(sock, opts = {}) {
       floatText((crit ? 'KRİTİK ' : '') + '-' + dmg, m.v.root.position.x, m.height + 0.6, m.v.root.position.z, crit);
       sfx.hit('mob', crit, m.v.root.position);
       fx.hitSpark(m.v.root.position, crit, 'mob');
+      if (m.v.hit && hp > 0) m.v.hit();
     } else {
       const s = stones[id]; if (!s) return;
       s.hp = hp; s.label.hp.style.width = (100 * hp / s.max) + '%'; s.shake = 0.2; s.flash = crit ? 1 : 0.6;
