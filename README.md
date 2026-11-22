@@ -4,7 +4,13 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 6.6 (bu sürüm): harita süsleri; miğfer ve kalkan görünmez
+### Aşama 6.7 (bu sürüm): köy meydanında Türk bayrağı, süslü köy
+
+- **Atabis Köyü meydanının tam ortasında Türk bayrağı:** basamaklı taş kaide, metal gönder, altın alem; bayrak rüzgârda dalgalanır. Oranlar 2893 sayılı Türk Bayrağı Kanunu'ndaki ölçülere göre çizildi (en G, boy 1,5G; hilal ve yıldız ölçüleri). Meydandaki kuyu kaldırıldı.
+- **Köy süslendi:** gönderden meydanın dört köşesindeki fenerlere ve fenerler arasına kırmızı-beyaz flamalı süs ipleri, köşe fenerlerinde küçük dalgalanan bayraklar, ana sokaklarda karşılıklı flamalar.
+- Köyün dört kapı kulesinde de Türk bayrağı dalgalanır.
+
+### Aşama 6.6: harita süsleri; miğfer ve kalkan görünmez
 
 - **Miğfer ve kalkan artık karakterde görünmez**: takılınca sadece güç verirler (savunma, can, efsun). Envanterde simgeleri görünür; karakterin kendi başlığı/saçı hep görünür.
 - **9 dokulu harita süsü** (kullanıcının getirdiği modeller), temasına uygun haritalara dağıtıldı:

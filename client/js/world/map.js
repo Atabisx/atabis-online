@@ -195,16 +195,87 @@ function bench(X, Z, rot, snow) {
   g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   circles.push({ x: X, z: Z, r: 1.0 });
 }
-function well(X, Z, snow) {
-  add(new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.85, 1.5, 16), texMat(stoneTex('#8a857c'))), X, 0.75, Z);
-  add(new THREE.Mesh(new THREE.TorusGeometry(1.75, 0.16, 6, 20), mat(snow ? '#f4f8fb' : '#6d685f')), X, 1.5, Z).rotation.x = Math.PI / 2;
-  add(new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.1, 16), new THREE.MeshLambertMaterial({ color: '#2e5f73', emissive: '#0d2a3a', emissiveIntensity: 0.3 })), X, 1.35, Z, false);
-  tbox(0.3, 4, 0.3, WOOD(), X - 1.5, 2, Z); tbox(0.3, 4, 0.3, WOOD(), X + 1.5, 2, Z);
-  const ax = add(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 3.2, 8), WOOD()), X, 3.3, Z); ax.rotation.z = Math.PI / 2;
-  add(new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.4, 10), texMat(woodTex('#7a5232', 6))), X, 2.4, Z);
-  const rm = texMat(roofTex('#4a5868', snow));
-  for (const sg of [1, -1]) { const sl = tbox(4.4, 0.16, 1.9, rm, X, 4.55, Z + sg * 0.75); sl.rotation.x = sg * 0.62; }
-  circles.push({ x: X, z: Z, r: 2.3 });
+// ---------- Türk bayrağı (2893 sayılı Kanun oranları: en G, boy 1,5G; hilal dış çember G/2, iç çember 2/5 G,
+// merkezler arası G/16; yıldız çemberi G/4, bir ucu göndere bakar) ----------
+let flagTex = null;
+function turkFlagTex() {
+  if (flagTex) return flagTex;
+  const G = 512, c = document.createElement('canvas'); c.width = G * 1.5; c.height = G;
+  const x = c.getContext('2d');
+  x.fillStyle = '#E30A17'; x.fillRect(0, 0, c.width, G);
+  const cx = G * 0.5 + G / 30, cy = G / 2;                          // dış çember merkezi: gönder tarafından G/2 (+ uçkurluk)
+  x.fillStyle = '#ffffff'; x.beginPath(); x.arc(cx, cy, G / 4, 0, Math.PI * 2); x.fill();
+  x.fillStyle = '#E30A17'; x.beginPath(); x.arc(cx + G / 16, cy, G / 5, 0, Math.PI * 2); x.fill();
+  const sx = cx + G / 16 - G / 5 + G / 3, R = G / 8, r = R * 0.382;   // yıldız merkezi: iç çemberin gönder tarafı kenarından G/3
+  x.fillStyle = '#ffffff'; x.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = Math.PI + i * Math.PI / 5, rr = i % 2 ? r : R;   // ilk uç sola (göndere) bakar
+    const px = sx + Math.cos(a) * rr, py = cy + Math.sin(a) * rr;
+    i ? x.lineTo(px, py) : x.moveTo(px, py);
+  }
+  x.closePath(); x.fill();
+  flagTex = new THREE.CanvasTexture(c); flagTex.colorSpace = THREE.SRGBColorSpace; flagTex.anisotropy = 4;
+  return flagTex;
+}
+// dalgalanan bayraklar: harita her karede updateMap ile çağırır
+const wavers = [];
+let dynamic = [];          // köy birleştirilmeden önce ayrı tutulan hareketli parçalar
+function wavingFlag(X, Y, Z, W, ry = 0) {
+  const geo = new THREE.PlaneGeometry(W, W / 1.5, 28, 14);
+  geo.translate(W / 2, 0, 0);                                         // gönder kenarı x=0
+  const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: turkFlagTex(), side: THREE.DoubleSide }));
+  m.position.set(X, Y, Z); m.rotation.y = ry; m.castShadow = true;
+  wavers.push({ m, base: Float32Array.from(geo.attributes.position.array), W, ph: Math.random() * 6 });
+  dynamic.push(m);
+  return m;
+}
+export function updateMap(t) {
+  for (const f of wavers) {
+    const pos = f.m.geometry.attributes.position, b = f.base, W = f.W;
+    for (let i = 0; i < pos.count; i++) {
+      const x = b[i * 3], y = b[i * 3 + 1], k = x / W;                // gönderden uzaklaştıkça dalga büyür
+      pos.array[i * 3 + 2] = Math.sin(x * 2.2 - t * 4.2 + f.ph + y * 0.35) * 0.32 * k + Math.sin(x * 4.1 - t * 6.3 + f.ph) * 0.08 * k;
+      pos.array[i * 3 + 1] = y - k * k * 0.12 + Math.sin(x * 1.7 - t * 3.1 + f.ph) * 0.05 * k;
+    }
+    pos.needsUpdate = true; f.m.geometry.computeVertexNormals();
+  }
+}
+// meydan: basamaklı taş kaide, gönder, altın alem ve dalgalanan bayrak
+function flagMonument(X, Z, snow) {
+  const st = texMat(stoneTex('#9a958c'));
+  [[2.3, 0.35], [1.75, 0.35], [1.2, 0.4]].reduce((y, [r, h]) => {
+    add(new THREE.Mesh(new THREE.CylinderGeometry(r, r + 0.08, h, 24), st), X, y + h / 2, Z);
+    if (snow) add(new THREE.Mesh(new THREE.TorusGeometry(r - 0.05, 0.07, 5, 24), mat('#f4f8fb')), X, y + h, Z, false).rotation.x = Math.PI / 2;
+    return y + h;
+  }, 0);
+  const H = 8.5;
+  add(new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.13, H, 12), new THREE.MeshStandardMaterial({ color: '#d8dbe0', metalness: 0.7, roughness: 0.35 })), X, 1.1 + H / 2, Z);
+  add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 10), new THREE.MeshStandardMaterial({ color: '#e8b54a', metalness: 0.8, roughness: 0.3 })), X, 1.1 + H + 0.15, Z);
+  wavingFlag(X + 0.1, 1.1 + H - 1.5, Z, 4.2);
+  circles.push({ x: X, z: Z, r: 2.4 });
+  return 1.1 + H;
+}
+// süs ipi: sarkık ip üzerinde kırmızı-beyaz üçgen flamalar
+let PENNANT = null;
+function bunting(x0, y0, z0, x1, y1, z1, sag = 0.9) {
+  if (!PENNANT) {
+    PENNANT = new THREE.BufferGeometry();
+    PENNANT.setAttribute('position', new THREE.Float32BufferAttribute([-0.22, 0, 0, 0.22, 0, 0, 0, -0.5, 0], 3));
+    PENNANT.computeVertexNormals();
+  }
+  const len = Math.hypot(x1 - x0, y1 - y0, z1 - z0), n = Math.max(4, Math.round(len / 0.75));
+  const pt = (t) => [x0 + (x1 - x0) * t, y0 + (y1 - y0) * t - Math.sin(t * Math.PI) * sag, z0 + (z1 - z0) * t];
+  const UP = new THREE.Vector3(0, 1, 0);
+  const rope = mat('#3a2a1c'), red = new THREE.MeshLambertMaterial({ color: '#E30A17', side: THREE.DoubleSide }), white = new THREE.MeshLambertMaterial({ color: '#f6f2ea', side: THREE.DoubleSide });
+  const ry = -Math.atan2(z1 - z0, x1 - x0);
+  for (let i = 0; i < n; i++) {
+    const a = pt(i / n), b = pt((i + 1) / n), d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], l = Math.hypot(...d);
+    const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+    const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, l, 4), rope);
+    seg.quaternion.setFromUnitVectors(UP, new THREE.Vector3(d[0] / l, d[1] / l, d[2] / l));
+    add(seg, mid[0], mid[1], mid[2], false);
+    const p = new THREE.Mesh(PENNANT, i % 2 ? white : red); p.rotation.y = ry; add(p, mid[0], mid[1], mid[2], false);
+  }
 }
 function stall(X, Z, c1, c2, goods) {
   tbox(3.5, 1.75, 2.2, texMat(woodTex('#8a6440', 5)), X + 1.75, 0.875, Z + 1.1);
@@ -276,7 +347,14 @@ function buildVillage(th, rnd) {
   house(2.6, 11.6, 2.6, 2.2, 1.3, 1.0, r(2), v.wall, o(2));
   house(12.6, 13.6, 3.0, 2.2, 1.3, 1.1, r(0), v.wall, o(1));
   house(4.0, 15.4, 2.4, 1.9, 1.1, 0.9, r(1), v.wall, o(0));
-  well(u(10), u(10), snow);
+  // meydanın tam ortasında Türk bayrağı; meydan ve sokaklar süs ipleriyle süslü
+  const top = flagMonument(u(10), u(10), snow);
+  const corners = [[6.7, 6.7], [13.3, 6.7], [13.3, 13.3], [6.7, 13.3]];
+  for (const [x, z] of corners) bunting(u(10), top - 3.4, u(10), u(x), 4.1, u(z), 0.7);          // gönderden fenerlere
+  corners.forEach(([x, z], i) => { const [x2, z2] = corners[(i + 1) % 4]; bunting(u(x), 4.1, u(z), u(x2), 4.1, u(z2), 0.8); });
+  for (const [x, z] of corners) { add(new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.6, 6), mat('#c9ccd2')), u(x) + 0.05, 5.0, u(z), false); wavingFlag(u(x) + 0.08, 5.45, u(z), 1.1, Math.atan2(u(z) - u(10), u(x) - u(10)) * -1); }
+  // ana sokaklar boyunca karşılıklı süs ipleri
+  for (const t of [3.5, 16.5]) { bunting(u(9.0), 3.6, u(t), u(11.0), 3.6, u(t), 0.5); bunting(u(t), 3.6, u(9.0), u(t), 3.6, u(11.0), 0.5); }
   // sokak süsleri: fıçılar, sandıklar, araba, banklar
   for (const [x, z] of [[6.2, 5.6], [6.5, 6.0], [13.9, 11.6], [14.2, 12.0], [3.1, 14.6]]) barrel(u(x), u(z), snow);
   for (const [x, z, s2] of [[13.6, 6.0, 0.9], [13.9, 6.4, 0.7], [6.0, 14.6, 0.8]]) crate(u(x), u(z), s2, snow);
@@ -342,8 +420,8 @@ function buildOuterVillage(th, rnd, R) {
     tbox(2.6, 2.4, 2.6, texMat(stoneTex('#8a857c')), tx, 1.2, tz);
     tbox(2.2, 3.8, 2.2, texMat(woodTex(dark, 4)), tx, 4.3, tz);
     for (const sg of [1, -1]) { const sl = tbox(3.0, 0.16, 1.9, texMat(roofTex(v.roofs[0], !!v.snowRoof)), tx, 6.75, tz + sg * 0.7); sl.rotation.x = sg * 0.75; }
-    const fl = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.6), new THREE.MeshLambertMaterial({ color: '#8e2a21', side: THREE.DoubleSide }));
-    fl.position.set(tx, 4.2, tz); fl.rotation.y = -a; group.add(fl);
+    add(new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.2, 6), mat('#c9ccd2')), tx, 7.8, tz, false);
+    wavingFlag(tx + 0.07, 8.6, tz, 1.8, -a);
     circles.push({ x: tx, z: tz, r: 1.6 });
   }
 }
@@ -630,7 +708,7 @@ export function loadMap(scene, def) {
     scene.remove(group);
     group.traverse((o) => { if (o.geometry && !o.userData.shared) o.geometry.dispose(); });
   }
-  colliders.length = 0; circles.length = 0;
+  colliders.length = 0; circles.length = 0; wavers.length = 0; dynamic = [];
   group = new THREE.Group();
   const [bmin, bmax] = def.bounds || [-15, 65];
   BOUNDS.min = bmin; BOUNDS.max = bmax;
@@ -656,6 +734,7 @@ export function loadMap(scene, def) {
     if (def.villageR) buildOuterVillage(th, rnd, def.villageR);
     const vg = group; group = main;
     group.add(mergeStatic(vg));
+    for (const m of dynamic) group.add(m);
     for (const n of Object.values(NPC_SPOTS)) npcs.push({ ...n });
   }
   if (def.river) buildRiver(def.river, th, bmin, bmax);

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { mat, esc } from './util.js';
-import { loadMap, colliders, circles, BOUNDS } from './world/map.js';
+import { loadMap, updateMap, colliders, circles, BOUNDS } from './world/map.js';
 import { buildMob } from './entities/mobs.js';
 import { itemModel, ITEM_MODELS, attachMountModel, MOUNT } from './entities/models.js';
 import { buildOutfit, undersuitColor } from './entities/outfits.js';
@@ -3028,6 +3028,7 @@ function loop() {
   icons.pumpIcons();
   fx.updateFx(dt, (o) => players[o.id] === o);
   updateWeather(dt);
+  updateMap(performance.now() / 1000);
   updateSkillCooldowns();
   renderer.render(scene, camera);
 }
