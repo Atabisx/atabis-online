@@ -20,6 +20,9 @@ MIXAMO = {
     'clavicle_r': 'RightShoulder', 'upperarm_r': 'RightArm', 'lowerarm_r': 'RightForeArm', 'hand_r': 'RightHand',
     'thigh_l': 'LeftUpLeg', 'calf_l': 'LeftLeg', 'foot_l': 'LeftFoot', 'ball_l': 'LeftToeBase',
     'thigh_r': 'RightUpLeg', 'calf_r': 'RightLeg', 'foot_r': 'RightFoot', 'ball_r': 'RightToeBase',
+    # Unreal benzeri ikinci düzen (spine01, arm_l, knee_l, toe_l)
+    'spine01': 'Spine', 'spine02': 'Spine1', 'spine03': 'Spine2', 'neck': 'Neck',
+    'arm_l': 'LeftArm', 'arm_r': 'RightArm', 'knee_l': 'LeftLeg', 'knee_r': 'RightLeg', 'toe_l': 'LeftToeBase', 'toe_r': 'RightToeBase',
 }
 # parmaklar: Biped "Bip001 L Finger1" -> LeftHandIndex1 vb.
 FING_B = {'0': 'Thumb', '1': 'Index', '2': 'Middle', '3': 'Ring', '4': 'Pinky'}
@@ -34,6 +37,10 @@ def mixname(n):
         side = 'Left' if m.group(1) == 'L' else 'Right'
         k = 4 if m.group(4) else (int(m.group(3)) + 1 if m.group(3) else 1)
         return f'mixamorig{side}Hand{FING_B[m.group(2)]}{k}'
+    m = re.match(r'(thumb|index|middle|ring|pinky)_([lr])$', n)          # parmak kökü: index_l -> LeftHandIndex1
+    if m: return f"mixamorig{'Left' if m.group(2) == 'l' else 'Right'}Hand{FING_U[m.group(1)]}1"
+    m = re.match(r'(thumb|index|middle|ring|pinky)_tip_([lr])$', n)
+    if m: return f"mixamorig{'Left' if m.group(2) == 'l' else 'Right'}Hand{FING_U[m.group(1)]}4"
     m = re.match(r'(thumb|index|middle|ring|pinky)_0(\d)_([lr])$', n)
     if m: return f"mixamorig{'Left' if m.group(3) == 'l' else 'Right'}Hand{FING_U[m.group(1)]}{m.group(2)}"
     return n.replace(' ', '_')

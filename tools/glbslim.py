@@ -24,7 +24,7 @@ def read(i):
 
 data = {i: read(i) for i in range(len(j['accessors']))}     # accessor -> dizi (yeniden yazılacak)
 if a.cell:
-    allP = np.concatenate([data[p['attributes']['POSITION']] for m in j['meshes'] for p in m['primitives']])
+    allP = np.concatenate([data[p['attributes']['POSITION']] for m in j['meshes'] for p in m['primitives']]).astype(np.float64)
     h = (allP.max(0) - allP.min(0)).max() * a.cell
     _gk, _ginv, _gcnt = np.unique(np.floor(allP / h).astype(np.int64), axis=0, return_inverse=True, return_counts=True)
     _gavg = np.zeros((len(_gcnt), 3)); np.add.at(_gavg, _ginv.ravel(), allP.astype(np.float64)); _gavg /= _gcnt[:, None]

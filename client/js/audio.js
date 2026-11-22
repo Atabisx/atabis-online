@@ -27,7 +27,8 @@ function init() {
 // ---------- örnek sesler ----------
 const SAMPLE_NAMES = ['swing_sword0', 'swing_sword1', 'swing_sword2', 'swing_heavy0', 'swing_heavy1', 'swing_dagger0', 'swing_dagger1', 'swing_staff',
   'bow_shot', 'hit_flesh0', 'hit_flesh1', 'hit_flesh2', 'hit_crit', 'hit_stone', 'hit_armor', 'hit_arrow',
-  ...['hya0', 'hya2', 'hya3', 'hya4', 'hya5', 'hya7', 'sharp1', 'myst0'].map((n) => 'voice_' + n)];   // sadece kadın sesleri
+  ...['hya0', 'hya2', 'hya3', 'hya4', 'hya5', 'hya7', 'sharp1', 'myst0'].map((n) => 'voice_' + n),   // kadın sesleri
+  ...['ha0', 'ha1', 'ha2', 'ha3', 'ha4', 'ha6', 'ha7', 'ha8', 'hya1', 'hya6', 'sharp0', 'myst1'].map((n) => 'voice_' + n)];   // erkek (Akıncı)
 const samples = {};
 function loadSamples() {
   for (const n of SAMPLE_NAMES) {
@@ -206,13 +207,13 @@ export function hit(kind, crit, pos) {
 }
 // Metin2 tarzı vuruş bağırışları (gerçek ses kayıtları, audio/sfx/voice_*.wav):
 // 'light' sıradan vuruşta ara sıra kısa bağırış, 'strong' 3. kombo ve becerilerde, 'magic' büyülerde.
-// Oyundaki bütün karakterler kadın: sadece perdesi yüksek (kadın) kayıtlar kullanılır.
-// Kalın sesli "ha" kayıtları ile hya1, hya6, sharp0, myst1 erkek gibi duyulduğu için çıkarıldı; perde hiçbir sınıfta kalınlaştırılmaz.
+// Kadın karakterler (Alp, Yalaz, Kam, Avcı) sadece ince (kadın) kayıtları kullanır, perdeleri kalınlaştırılmaz.
+// Akıncı erkek (paralı asker modeli): kalın "ha" kayıtları ve erkek gibi duyulan bağırışlar onda.
 const FEMALE_LIGHT = ['hya4', 'hya0', 'hya5'];
 const FEMALE_STRONG = ['hya0', 'hya2', 'hya3', 'hya4', 'hya5', 'hya7'];
 const VOICES = {
   savasci: { light: FEMALE_LIGHT, strong: ['hya2', 'hya3', 'hya7', 'sharp1'], magic: ['sharp1', 'hya7'], rate: 1.0 },
-  ninja: { light: FEMALE_LIGHT, strong: ['hya0', 'hya4', 'hya5', 'hya2'], magic: ['hya5'], rate: 1.08 },
+  ninja: { light: ['ha1', 'ha2', 'ha6'], strong: ['ha0', 'ha3', 'ha4', 'ha7', 'ha8', 'hya1', 'hya6'], magic: ['sharp0', 'myst1'], rate: 0.97 },
   sura: { light: FEMALE_LIGHT, strong: ['hya2', 'hya3', 'hya7', 'sharp1'], magic: ['myst0'], rate: 1.02 },
   saman: { light: FEMALE_LIGHT, strong: FEMALE_STRONG, magic: ['myst0', 'sharp1'], rate: 1.05 },
   okcu: { light: FEMALE_LIGHT, strong: ['hya0', 'hya4', 'hya5', 'hya3'], magic: ['hya4'], rate: 1.04 },
