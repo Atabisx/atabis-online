@@ -4,7 +4,20 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 6.2 (bu sürüm): Akıncı için yeni karakter
+### Aşama 6.3 (bu sürüm): kodla çizilen yaratıklar kalktı, Taş Golem, Kara Şövalye, kılıç animasyonları
+
+- **Kodla çizilmiş bütün yaratıklar kaldırıldı.** Haritalardaki ve zindandaki 37 yaratık artık kullanıcının getirdiği modellerle görünür; farklı türler renk tonuyla ayırt edilir. Modeli olmayan yaratık kalmadı.
+- **Yeni modeller** (kullanıcının getirdiği):
+  - **Taş Golem:** dokulu, kendi yürüme/bekleme/saldırı animasyonlarıyla. Taş Golem, Kristal Golem (mavi), Lav Golemi (kızıl), Çamur Golemi; yeni boss **Kadim Taş Golem** (Taş Vadisi, Sv. 36).
+  - **Kara Şövalye** (zırhlı, kafatası kılıçlı; dokusu olmadığı için zırh, deri ve kılıç ayrı ayrı boyandı): Kale Muhafızı, Kara Şövalye, Kemik Şövalye, Kara Ordu Komutanı ve boss **Kara Şövalye Lordu**.
+  - **Yaratık** (ahtapot yüzlü): Ağaç Ruhu (yeşil), Yeti (beyaz), Hiçlik Yaratığı (mor).
+  - **Talwar:** mücevherli kılıç, 9. kademe kılıcın görünümü.
+- **Diğer yaratıklar mevcut modellerle:** Sis Kuzgunu, Gölge/Kar/Kor Kurdu, Kaya ve Kum Kertenkelesi, Vadi ve Çöl Haydudu, Kum ve Zehirli Yılan, Akbaba (sekreter kuşu), Mumya, Kar Kaplanı, Buz Yaratığı, Ayaz Ruhu, Hayalet, Gargoyl, Lanetli ve Ejder Büyücüsü, Alev İblisi, Gölge Suikastçı, Genç Ejder, Ejder Muhafızı, Kara Ordu Askeri.
+- **Zindanın adı Karanlık Mağara** oldu (örümcek kalmadı): Mağara Yaratığı, Zehirli Yaratık ve Mağara Canavarı.
+- **Kılıç saldırı animasyonları:** kullanıcının getirdiği 3 kılıç hareketi (kesme, kombo, ağır vuruş) bütün kılıçlı karakterlere aktarıldı. 3'lü komboda her vuruş ayrı hareket: çömelip savurma, yandan kesme, öne atılıp ağır vuruş. Kam (asa) eski hareketlerini kullanır.
+- **Kullanılmayanlar:** Hell Boy (çizgi roman karakteri), zırh/kanat seti (dokuları dosyada yok), kılıç+kalkan (kalkan yuvası yok), Taştaki Kılıç (.blend dosyası açılamıyor; FBX/GLB olarak gönderilirse eklenir).
+
+### Aşama 6.2: Akıncı için yeni karakter
 
 - **Akıncı (ninja) artık başlıklı kızıl bir ninja (erkek).** Kullanıcının gönderdiği Character Creator 4 modelinden: başka bir oyunun karakterine benzemesin diye sarı yelek ve kemer koyu kızıla, sarı kolluk ve tozluklar çelik griye boyandı, yüz maskesi çıkarıldı. Dil, gözyaşı ve göz gölgesi katmanları atıldı; model 60 MB'tan 4 MB'a indi. Yürüme, koşma ve saldırı hareketleri diğer karakterlerden aktarılır.
 - **Akıncı'nın sesi erkek:** kalın "ha" bağırışları ona verildi; kadın karakterler yine sadece kadın sesi kullanır.
@@ -37,7 +50,7 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 - **Evcil hayvanlar** (sadece kullanıcının getirdiği modeller): Kurt Yavrusu, Tilki Yavrusu, Yılan, **Sekreter Kuşu**, **Kuzgun** (havada süzülür, kanat çırpar), **Uzaylı Yaratık** (yeni, kendi animasyonlarıyla), **Ejder Yavrusu** (kendi animasyonuyla). Kodla çizilmiş Ayı ve Baykuş kaldırıldı; eski kayıtlardaki Ayı Yavrusu artık Sekreter Kuşu, Baykuş artık Kuzgun olarak görünür.
 - **Boss'lar:** kodla çizilmiş bütün boss'lar kullanıcının modelleriyle değişti (renk tonu ve ışık halkasıyla ayırt edilir):
   - Ejder modeli: Ateş Ejderhası, Gök Ejderi (mavi), Hiçlik Ejderi (mor)
-  - Uzaylı Yaratık: Örümcek Mağarası boss'u, adı artık Mağara Canavarı
+  - Uzaylı Yaratık: Karanlık Mağara boss'u, adı artık Mağara Canavarı
   - Diğerleri: Dev Kum Yılanı, Kervan Yağmacısı, Kara İmparator, Bataklık Cadısı, Ayaz Kraliçesi, Buz Devi, Kara Şövalye Lordu, Lich Kral, Kule Efendisi
 - **Kılıçlar:** eski sürümden kalan 5 kılıç da (Tahta, Demir, Mavi Çelik, Gölge, Ejder Dişi) kullanıcının modelleriyle görünür; artık kodla çizilmiş kılıç yok.
 - **Düzeltme (bilgisayar):** karakter bir süre sonra kendi kendine yürüyordu. Başka pencereye geçince ya da Ctrl+S gibi tarayıcı kısayolunda tuş bırakma sinyali kaçıyordu; artık pencere odağı gidince bütün tuşlar bırakılır, yazı yazarken ve Ctrl/Alt kısayollarında yürünmez, tuşlar klavye dilinden bağımsız tanınır.
@@ -224,7 +237,7 @@ Hepsi sol menüdeki **☰ Menü** düğmesinden açılır. Veritabanı tablolar�
 - **Krallıklar:** Kızıl Ejder, Altın Kartal ve Gök Kurt. Karakter açarken seçilir, eski karakterler ilk girişte seçer. Krallık işareti ismin önünde görünür.
 - **Krallık savaşı:** Çarşamba ve Cumartesi 21:00'de 20 dakika sürer, Savaş Meydanı'nda yapılır. Her galibiyet krallığına puan kazandırır. Kazanan krallık 24 saat +%20 tecrübe alır, katılanlar yang ve kutsama kağıdı kazanır. GM komutları: `/savas`, `/savas bitir`.
 - **Pazar tezgâhı:** köyde tezgâh açılır, eşyalara fiyat konur. Sahibi oyunda olmasa da satış sürer; kazanç Menü'den toplanır. Her satıştan %2 vergi kesilir.
-- **Zindan (Örümcek Mağarası, Sv. 30+):** her grup kendi kopyasına girer. 3 dalga örümceğin ardından Örümcek Kraliçe gelir ve her üyeye ayrı sandık düşer. Süre 25 dakika, bekleme 30 dakikadır.
+- **Zindan (Karanlık Mağara, Sv. 30+):** her grup kendi kopyasına girer. 3 dalga yaratığın ardından Mağara Canavarı gelir ve her üyeye ayrı sandık düşer. Süre 25 dakika, bekleme 30 dakikadır.
 - **Etkinlikler (İstanbul saatiyle):**
   - Metin Yağmuru: her gün 20:00.
   - Boss İstilası: her gün 22:00.

@@ -38,6 +38,9 @@ export const MOB_MODELS = {
   uzayli:      { kind: 'skel', size: 1.4, clips: { idle: 'Idle', walk: 'Walk', run: 'Run', atk: ['Atk', 'Atk2'], die: 'Die' }, walkRate: 1.2 },
   kuzgun:      { kind: 'skel', size: 1.1, clips: {}, flap: /^(shoulder|Wing)/, flapAxis: [0, 0, 1], hover: 0.9 },
   sekreter:    { kind: 'bird', size: 2.0, legTop: 0.42, armX: 0.12, armMin: 0.45, shoulder: 0.7, headY: 0.82, tail: 0.2, freq: 12, amp: 0.5, graze: 0.6, grazeRate: 1.2 },
+  golem:       { kind: 'skel', size: 2.2, clips: { idle: 'Idle', walk: 'Walk', atk: 'Attack' }, walkRate: 1.1 },
+  kara_sovalye: { kind: 'humanoid', size: 2.0, legTop: 0.45, armX: 0.17, armMin: 0.4, shoulder: 0.76, headY: 0.86, freq: 7, amp: 0.35 },
+  yaratik:     { kind: 'humanoid', size: 1.9, legTop: 0.45, armX: 0.15, armMin: 0.42, shoulder: 0.74, headY: 0.82, freq: 7, amp: 0.4 },
   iblis_mor:   { kind: 'skel', size: 2.3, clips: { idle: 'Idle', walk: 'Walk', run: 'Run', atk: 'Atk', die: 'Death' } },
 };
 const KIND = { quad: 0, sit: 0, humanoid: 1, robe: 2, snake: 3, bird: 4 };
@@ -423,6 +426,7 @@ export const ITEM_MODELS = {
   demir_balta: { grip: 0.25, len: 1.2, center: true },
   altin_balta: { grip: 0.3, len: 1.3, center: true },
   kraliyet_asasi: { grip: 0.3, len: 1.25, center: true },
+  talwar: { grip: 0.1, len: 1.3, center: true },
   // zırhlar: gövdeye oturacak boy (m) ve dikey kaydırma; omuzluk takılsın mı
   yelek: { armor: true, height: 0.5, y: -0.05, pads: false },
   gogusluk: { armor: true, height: 0.48, y: -0.04, pads: true },

@@ -1,4 +1,4 @@
-// Zindan: Örümcek Mağarası. Her grup kendi kopyasına girer: 3 dalga, sonunda Mağara Canavarı.
+// Zindan: Karanlık Mağara. Her grup kendi kopyasına girer: 3 dalga, sonunda Mağara Canavarı.
 // Menü > Zindan'dan grup lideri (ya da tek başına oyuncu) yakındaki grup üyeleriyle girer. 25 dakika süre, 30 dakika bekleme.
 const R = require('./rules');
 const { Zone } = require('./zone');

@@ -247,6 +247,9 @@ const modelReady = (async () => {
   if (!g) { console.warn('Model yüklenemedi, basit karakter kullanılacak'); return; }
   gltf = g;
   try { calib = calibrate(g.scene); FACE_OFFSET = calib.faceOffset; } catch (e) { console.warn('Kalibrasyon başarısız', e); calib = null; return; }
+  // kılıç saldırı animasyonları (kullanıcının getirdiği 3 klip): Soldier'la aynı yöne çevrilir
+  const atk = await loadGlb('models/anim/kilic_anim.glb');
+  if (atk) { try { atk.scene.rotation.y = calibrate(atk.scene).faceOffset - calib.faceOffset; } catch (e) { console.warn('Kılıç animasyonu hazırlanamadı', e); } }
   await Promise.all(Object.entries(CHAR_MODELS).map(async ([cls, cfg]) => {
     const c = await loadGlb(cfg.url); if (!c) return;
     try {
@@ -267,6 +270,7 @@ const modelReady = (async () => {
         if (part(o, ['outline'])) o.userData.outline = true;
       });
       const moves = retargetClips(g.scene, sc, g.animations.filter((a) => a.name !== 'TPose'));
+      if (atk && cls !== 'saman') moves.push(...atkClips(retargetClips(atk.scene, sc, atk.animations)));
       for (const k of Object.keys(cc)) if (cc[k] && cc[k].bone) cc[k] = correctFrame(cc[k], moves);
       charModels[cls] = { scene: sc, calib: cc, clips: moves, cfg };
     } catch (e) { console.warn('Karakter modeli hazırlanamadı', cls, e); }
@@ -941,6 +945,37 @@ function removePlayer(id) {
   if (p.pet) scene.remove(p.pet.root);
   scene.remove(p.group); p.label.el.remove(); delete players[id];
 }
+// kombo vuruşları: kılıç klipinin vuruş anına denk gelen bölümü (saniye) ve oynatma hızı
+const ATK_CUTS = [['slash', 0.15, 0.95, 1.6], ['combo', 0.27, 1.2, 1.8], ['heavy', 0, 0.67, 1.3]];
+function atkClips(clips) {
+  const out = [];
+  ATK_CUTS.forEach(([name, a, b, speed], i) => {
+    const c = clips.find((x) => x.name === name); if (!c) return;
+    const sub = THREE.AnimationUtils.subclip(c, 'Atk' + i, Math.round(a * 30), Math.round(b * 30), 30);
+    sub.userData = { speed }; out.push(sub);
+  });
+  return out;
+}
+// yeni vuruş başladıysa kılıç klipini oynat; bitince bekleme/koşmaya yumuşak geçiş
+function updateAtkAnim(p, dt) {
+  const prev = p.prevSwingT || 0; p.prevSwingT = p.swingT;
+  const act = p.actions && p.actions['Atk' + (p.combo || 0)];
+  if (p.swingT > prev + 1e-4 && act && !p.mounted && !p.dead) {
+    const sp = (act.getClip().userData || {}).speed || 1.5;
+    const from = p.actions[p.current];
+    act.reset(); act.setLoop(THREE.LoopOnce, 1); act.clampWhenFinished = true; act.setEffectiveTimeScale(sp); act.setEffectiveWeight(1); act.play();
+    if (from && from !== act) act.crossFadeFrom(from, 0.1, false);
+    p.current = 'Atk' + (p.combo || 0);
+    p.atkT = act.getClip().duration / sp;
+  }
+  if (p.atkT > 0) {
+    p.atkT -= dt;
+    if (p.moving && p.swingT <= 0) p.atkT = 0;     // yürümeye başladıysa vuruşu kes
+    if (p.atkT > 0.1) return true;
+    p.atkT = 0;
+  }
+  return false;
+}
 function setAnim(p, name) {
   if (!p.mixer || p.current === name || !p.actions[name]) return;
   const from = p.actions[p.current], to = p.actions[name];
@@ -1030,7 +1065,7 @@ function updateCapes(p, t) {
 }
 function applySwing(p) {
   const mo = p.moveOff || { x: 0, z: 0 };
-  if (p.swingT <= 0 || !p.bones) { if (p.model) { p.model.parent.position.x = mo.x; p.model.parent.position.z = mo.z; } return; }
+  if (p.swingT <= 0 || !p.bones || p.atkT > 0) { if (p.model) { p.model.parent.position.x = mo.x; p.model.parent.position.z = mo.z; } return; }
   const t = 1 - p.swingT / SWING_T;
   const a = p.group.rotation.y - FACE_OFFSET;
   _f.set(Math.sin(a), 0, Math.cos(a));
@@ -2902,7 +2937,7 @@ function loop() {
   for (const p of Object.values(players)) {
     if (p.id !== myId && !p.npc) p.group.position.lerp(p.target, 1 - Math.exp(-10 * dt));
     p.group.rotation.y = angleLerp(p.group.rotation.y, p.ry, 1 - Math.exp(-14 * dt));
-    setAnim(p, p.moving && p.swingT <= 0 && !p.mounted ? 'Run' : 'Idle');
+    if (!updateAtkAnim(p, dt)) setAnim(p, p.moving && p.swingT <= 0 && !p.mounted ? 'Run' : 'Idle');
     if (p.mixer) p.mixer.update(dt);
     if (p.mounted && p.horse) p.horse.update(clock.elapsedTime, p.moving, 0, dt);
     skillPoseUpdate(p, dt);
