@@ -42,6 +42,12 @@ export const MOB_MODELS = {
   golem:       { kind: 'skel', size: 2.2, clips: { idle: 'Idle', walk: 'Walk', atk: 'Attack' }, walkRate: 1.1 },
   kara_sovalye: { kind: 'humanoid', size: 2.0, legTop: 0.45, armX: 0.17, armMin: 0.4, shoulder: 0.76, headY: 0.86, freq: 7, amp: 0.35 },
   yaratik:     { kind: 'humanoid', size: 1.9, legTop: 0.45, armX: 0.15, armMin: 0.42, shoulder: 0.74, headY: 0.82, freq: 7, amp: 0.4 },
+  // yüksek seviye düşmanları (kollar yüklenirken aşağı indirildi)
+  lanetli_sovalye: { kind: 'humanoid', size: 2.1, legTop: 0.45, armX: 0.2, armMin: 0.4, shoulder: 0.74, headY: 0.86, freq: 7, amp: 0.35 },
+  carpik_dev:  { kind: 'humanoid', size: 2.6, legTop: 0.42, armX: 0.24, armMin: 0.4, shoulder: 0.76, headY: 0.86, freq: 5, amp: 0.3 },
+  yozlastirici: { kind: 'humanoid', size: 2.1, legTop: 0.42, armX: 0.19, armMin: 0.4, shoulder: 0.76, headY: 0.86, freq: 6, amp: 0.3 },
+  solgun_elf:  { kind: 'humanoid', size: 1.9, legTop: 0.45, armX: 0.17, armMin: 0.4, shoulder: 0.76, headY: 0.86, freq: 9, amp: 0.38 },
+  curuk_agac:  { kind: 'humanoid', size: 2.8, legTop: 0.4, armX: 0.2, armMin: 0.4, shoulder: 0.76, headY: 0.86, freq: 5, amp: 0.3 },
   iblis_mor:   { kind: 'skel', size: 2.3, clips: { idle: 'Idle', walk: 'Walk', run: 'Run', atk: 'Atk', die: 'Death' } },
 };
 const KIND = { quad: 0, sit: 0, humanoid: 1, robe: 2, snake: 3, bird: 4 };

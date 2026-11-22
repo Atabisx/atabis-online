@@ -508,3 +508,6 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 
 ### 6.8 Çağırıcı (summoner) yapıları
 `client/models/props/s_*.glb`: 5 dikilitaş/taht + 6 rün çemberi (dokusuz FBX paketinden). `map.js` içinde `MODEL_PROPS` (`m_s_*`, `m_c_*`) köşe renkleriyle (taş + parıltı) boyanır; haritalara tema listelerinden, köy meydanına 4 altın dikilitaş olarak yerleştirilir.
+
+### 6.9 Yüksek seviye düşmanları
+`client/models/mobs/`: lanetli_sovalye, carpik_dev, yozlastirici, solgun_elf, curuk_agac (dokulu, iskeletsiz; T-pozdaki kollar yüklenirken aşağı indirildi, hareket `models.js` içindeki bölge animasyonuyla). Ejder Kalesi (Lanetli Şövalye), Lanetli Harabeler (Çürük Ağaç Ruhu boss), İblis Kulesi (Solgun Elf Suikastçı), Ejder Vadisi (Çarpık Taş Devi boss), Kara Taht (Hiçlik Yozlaştırıcısı).
