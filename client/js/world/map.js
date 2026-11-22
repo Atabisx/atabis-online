@@ -17,27 +17,27 @@ const THEMES = {
   // tek köy: karlı kış köyü, üzerine kar yağar
   village_winter: { ground: '#eef3f6', ground2: '#e6edf1', path: '#b9c3cc', plaza: '#cfd8df', sky: '#c9d6e2', fog: [40, 100], snow: true,
     village: { wall: '#e4d6bc', roofs: ['#7a3b2a', '#4a5868', '#6a4a32'], snowRoof: true }, props: { snowpine: 34, rock: 6, snowman: 4, snowpile: 14 } },
-  pine_forest: { ground: '#5e8a45', ground2: '#5a8642', path: '#8a7a55', sky: '#a8c8dc', fog: [35, 95], props: { pine: 70, tree: 12, rock: 14, mushroom: 14, log: 10, m_totem: 2 } },
+  pine_forest: { ground: '#5e8a45', ground2: '#5a8642', path: '#8a7a55', sky: '#a8c8dc', fog: [35, 95], props: { pine: 70, tree: 12, rock: 14, mushroom: 14, log: 10, m_totem: 2, m_c_yesil: 3, m_s_sarmasik: 2 } },
   // iki ayrı çöl: sarı kum tepeleri ve kızıl kanyon
-  desert_dunes: { ground: '#e6c27a', ground2: '#e0bc74', path: '#cfa860', sky: '#f6e3b4', fog: [50, 125], props: { dune: 26, cactus: 34, bones: 14, sandrock: 10, palm: 6, m_boynuz: 8 } },
-  desert_canyon: { ground: '#b5562f', ground2: '#ae512c', path: '#8f4426', sky: '#e8a070', fog: [35, 100], props: { mesa: 20, canyonrock: 32, deadbush: 22, bones: 8, m_tezgah: 4, m_totem: 4, m_pano: 3, m_boynuz: 5 } },
-  castle: { ground: '#5a6a48', ground2: '#566645', path: '#8a877e', sky: '#9aa8b8', fog: [35, 100], props: { wallseg: 16, tower: 9, banner: 14, pine: 14, rock: 10, m_pano: 5, m_ejder_heykeli: 3 } },
+  desert_dunes: { ground: '#e6c27a', ground2: '#e0bc74', path: '#cfa860', sky: '#f6e3b4', fog: [50, 125], props: { dune: 26, cactus: 34, bones: 14, sandrock: 10, palm: 6, m_boynuz: 8, m_s_isik: 4, m_c_catlak: 3 } },
+  desert_canyon: { ground: '#b5562f', ground2: '#ae512c', path: '#8f4426', sky: '#e8a070', fog: [35, 100], props: { mesa: 20, canyonrock: 32, deadbush: 22, bones: 8, m_tezgah: 4, m_totem: 4, m_pano: 3, m_boynuz: 5, m_s_isik: 3, m_c_catlak: 3, m_c_kor: 2 } },
+  castle: { ground: '#5a6a48', ground2: '#566645', path: '#8a877e', sky: '#9aa8b8', fog: [35, 100], props: { wallseg: 16, tower: 9, banner: 14, pine: 14, rock: 10, m_pano: 5, m_ejder_heykeli: 3, m_s_isik: 3, m_s_nobetci: 3, m_c_kizil: 2 } },
   village_green: { ground: '#6c9b4b', ground2: '#689748', path: '#b8996a', sky: '#9cc6e4', fog: [45, 95], village: { wall: '#e6d7b6', roofs: ['#3d5a80', '#a8452f'] }, props: { tree: 14, pine: 10, rock: 6 } },
   village_pine: { ground: '#5e8a45', ground2: '#5a8642', path: '#a8895a', sky: '#a8c8dc', fog: [40, 90], village: { wall: '#d9c39a', roofs: ['#7d2f20', '#5a3d24'] }, props: { pine: 30, tree: 6, rock: 8 } },
-  forest_mist: { ground: '#4f7a40', ground2: '#4b763c', path: '#7a6a4a', sky: '#b8c4c8', fog: [18, 60], props: { tree: 45, pine: 25, rock: 10, mushroom: 15, m_kokler: 8, m_diken: 6 } },
-  rocky: { ground: '#8a8070', ground2: '#857b6b', path: '#a89a80', sky: '#b8c8d8', fog: [40, 100], props: { boulder: 40, rock: 30, dead: 8, m_totem: 3, m_pano: 3, m_tezgah: 2 } },
+  forest_mist: { ground: '#4f7a40', ground2: '#4b763c', path: '#7a6a4a', sky: '#b8c4c8', fog: [18, 60], props: { tree: 45, pine: 25, rock: 10, mushroom: 15, m_kokler: 8, m_diken: 6, m_s_sarmasik: 5, m_c_yesil: 4 } },
+  rocky: { ground: '#8a8070', ground2: '#857b6b', path: '#a89a80', sky: '#b8c8d8', fog: [40, 100], props: { boulder: 40, rock: 30, dead: 8, m_totem: 3, m_pano: 3, m_tezgah: 2, m_s_isik: 3, m_c_element: 3 } },
   desert: { ground: '#d9b56a', ground2: '#d4b065', path: '#c9a35a', sky: '#f0d9a8', fog: [45, 110], props: { cactus: 30, sandrock: 25, bones: 6 } },
   desert_village: { ground: '#d4b06a', ground2: '#cfab65', path: '#b8955a', sky: '#f0d9a8', fog: [45, 110], village: { wall: '#e0c89a', roofs: ['#8a6440', '#c9a35a'] }, props: { cactus: 18, sandrock: 15, palm: 10 } },
-  swamp: { ground: '#4a5a35', ground2: '#465631', path: '#5a4a35', sky: '#8a9a7a', fog: [15, 55], props: { dead: 30, pool: 14, reed: 30, mushroom: 10, m_balcik: 10, m_kokler: 10, m_diken: 6, m_totem: 3 } },
-  snow: { ground: '#e8eef2', ground2: '#e2e9ee', path: '#c8d0d8', sky: '#d8e4ee', fog: [30, 85], snow: true, props: { snowpine: 55, rock: 20, snowpile: 16, m_boynuz: 4 } },
-  ice_cave: { ground: '#c8dce8', ground2: '#c2d6e2', path: '#a8c0d0', sky: '#4a6a88', fog: [22, 70], snow: true, props: { crystal: 50, icerock: 30 } },
-  volcanic: { ground: '#3a2a24', ground2: '#362620', path: '#4a3a30', sky: '#5a3a30', fog: [25, 75], props: { lava: 14, lavarock: 35, dead: 10, m_kokler: 5 } },
+  swamp: { ground: '#4a5a35', ground2: '#465631', path: '#5a4a35', sky: '#8a9a7a', fog: [15, 55], props: { dead: 30, pool: 14, reed: 30, mushroom: 10, m_balcik: 10, m_kokler: 10, m_diken: 6, m_totem: 3, m_s_sarmasik: 4, m_c_yesil: 4, m_c_nekro: 2 } },
+  snow: { ground: '#e8eef2', ground2: '#e2e9ee', path: '#c8d0d8', sky: '#d8e4ee', fog: [30, 85], snow: true, props: { snowpine: 55, rock: 20, snowpile: 16, m_boynuz: 4, m_s_isik: 3, m_c_element: 4 } },
+  ice_cave: { ground: '#c8dce8', ground2: '#c2d6e2', path: '#a8c0d0', sky: '#4a6a88', fog: [22, 70], snow: true, props: { crystal: 50, icerock: 30, m_s_isik: 3, m_c_element: 4 } },
+  volcanic: { ground: '#3a2a24', ground2: '#362620', path: '#4a3a30', sky: '#5a3a30', fog: [25, 75], props: { lava: 14, lavarock: 35, dead: 10, m_kokler: 5, m_s_taht: 3, m_c_kor: 4, m_s_nobetci: 2 } },
   castle_town: { ground: '#6a8a50', ground2: '#66864c', path: '#9a978e', sky: '#a8b8c8', fog: [40, 95], village: { wall: '#b8b4aa', roofs: ['#2f4766', '#4a5060'] }, props: { tree: 10, tower: 6, pine: 8 } },
-  ruins: { ground: '#6a6a5a', ground2: '#666656', path: '#8a8a7a', sky: '#8a8a9a', fog: [25, 75], props: { pillar: 30, dead: 20, rock: 15, m_harabe_kapi: 5, m_ejder_heykeli: 3, m_diken: 6, m_kokler: 5 } },
-  demon: { ground: '#3a1a1a', ground2: '#361818', path: '#4a2a2a', sky: '#2a0a0a', fog: [20, 65], props: { spike: 35, lava: 12, lavarock: 15, m_diken: 10, m_harabe_kapi: 3, m_kokler: 6 } },
-  dragon_valley: { ground: '#7a8a5a', ground2: '#768656', path: '#9a8a6a', sky: '#c8b8a8', fog: [35, 95], props: { boulder: 30, bones: 15, tree: 10, m_ejder_heykeli: 6, m_boynuz: 8, m_totem: 3 } },
-  lake: { ground: '#6c9b4b', ground2: '#689748', path: '#b8996a', sky: '#a8d0e8', fog: [45, 110], props: { tree: 16, pine: 12, reed: 25, rock: 8 } },
-  dark_throne: { ground: '#1a1a22', ground2: '#18181f', path: '#2a2a35', sky: '#1a1028', fog: [20, 65], props: { pillar: 25, darkcrystal: 30, spike: 10, m_harabe_kapi: 4, m_diken: 8, m_kokler: 6 } },
+  ruins: { ground: '#6a6a5a', ground2: '#666656', path: '#8a8a7a', sky: '#8a8a9a', fog: [25, 75], props: { pillar: 30, dead: 20, rock: 15, m_harabe_kapi: 5, m_ejder_heykeli: 3, m_diken: 6, m_kokler: 5, m_s_kafatasi: 4, m_c_catlak: 3, m_c_nekro: 4 } },
+  demon: { ground: '#3a1a1a', ground2: '#361818', path: '#4a2a2a', sky: '#2a0a0a', fog: [20, 65], props: { spike: 35, lava: 12, lavarock: 15, m_diken: 10, m_harabe_kapi: 3, m_kokler: 6, m_s_nobetci: 5, m_s_taht: 3, m_c_kizil: 5, m_c_kor: 3 } },
+  dragon_valley: { ground: '#7a8a5a', ground2: '#768656', path: '#9a8a6a', sky: '#c8b8a8', fog: [35, 95], props: { boulder: 30, bones: 15, tree: 10, m_ejder_heykeli: 6, m_boynuz: 8, m_totem: 3, m_s_taht: 4, m_s_isik: 3, m_c_kor: 3 } },
+  lake: { ground: '#6c9b4b', ground2: '#689748', path: '#b8996a', sky: '#a8d0e8', fog: [45, 110], props: { tree: 16, pine: 12, reed: 25, rock: 8, m_s_isik: 2 } },
+  dark_throne: { ground: '#1a1a22', ground2: '#18181f', path: '#2a2a35', sky: '#1a1028', fog: [20, 65], props: { pillar: 25, darkcrystal: 30, spike: 10, m_harabe_kapi: 4, m_diken: 8, m_kokler: 6, m_s_kafatasi: 5, m_s_nobetci: 4, m_c_nekro: 6 } },
 };
 
 let group = null;
@@ -349,6 +349,8 @@ function buildVillage(th, rnd) {
   house(4.0, 15.4, 2.4, 1.9, 1.1, 0.9, r(1), v.wall, o(0));
   // meydanın tam ortasında Türk bayrağı; meydan ve sokaklar süs ipleriyle süslü
   const top = flagMonument(u(10), u(10), snow);
+  // meydanın dört köşesinde altın parıltılı çağırıcı dikilitaşları
+  for (const [x, z] of [[5.6, 5.6], [14.4, 5.6], [14.6, 14.8], [5.9, 14.6]]) modelProp('s_isik', u(x), u(z), rnd);
   const corners = [[6.7, 6.7], [13.3, 6.7], [13.3, 13.3], [6.7, 13.3]];
   for (const [x, z] of corners) bunting(u(10), top - 3.4, u(10), u(x), 4.1, u(z), 0.7);          // gönderden fenerlere
   corners.forEach(([x, z], i) => { const [x2, z2] = corners[(i + 1) % 4]; bunting(u(x), 4.1, u(z), u(x2), 4.1, u(z2), 0.8); });
@@ -610,24 +612,60 @@ const MODEL_PROPS = {
   diken: { h: 1.3, r: 0.35, v: 0.3 }, balcik: { h: 1.0, r: 0, v: 0.3 }, harabe_kapi: { h: 4.6, r: 0.4, v: 0.15 },
   ejder_heykeli: { h: 3.8, r: 0.35, v: 0.15 }, kokler: { h: 1.6, r: 0, v: 0.3 }, tezgah: { h: 1.2, r: 0.45, v: 0.1 },
   totem: { h: 2.6, r: 0.15, v: 0.15 }, pano: { h: 1.9, r: 0.3, v: 0.1 }, boynuz: { h: 1.0, r: 0, v: 0.3 },
+  // çağırıcı (summoner) yapıları: dokusuz, yükseklik/yer boyutuna göre boyanır. tint: [taş, parıltı]
+  s_nobetci: { f: 's_crimson-obsidian-sentinel', h: 3.6, r: 0.3, v: 0.2, tint: ['#2a2328', '#e0342a'] },
+  s_taht: { f: 's_emberstone-throne', h: 3.4, r: 0.35, v: 0.15, tint: ['#3a2a24', '#ff7a1c'] },
+  s_isik: { f: 's_radiant-obelisk', h: 3.8, r: 0.25, v: 0.2, tint: ['#8a8478', '#ffd86a'] },
+  s_kafatasi: { f: 's_skullbound-obelisk', h: 3.6, r: 0.3, v: 0.2, tint: ['#4a4650', '#c9b8ff'] },
+  s_sarmasik: { f: 's_verdant-spiral-obelisk', h: 3.6, r: 0.25, v: 0.2, tint: ['#4a5a44', '#5cff7a'] },
+  c_kor: { f: 's_runic-ember-circle', w: 7, r: 0, v: 0.2, tint: ['#3a2a26', '#ff8a2a'] },
+  c_catlak: { f: 's_cracked-runic-circle', w: 8, r: 0, v: 0.2, tint: ['#5a544c', '#ffb04a'] },
+  c_nekro: { f: 's_necropolis-circle', w: 8, r: 0, v: 0.2, tint: ['#3a3640', '#b07aff'] },
+  c_element: { f: 's_elemental-runic-circle', w: 8, r: 0, v: 0.2, tint: ['#5a6068', '#5ad8ff'] },
+  c_yesil: { f: 's_verdant-runic-circle', w: 7, r: 0, v: 0.2, tint: ['#3e4a38', '#6aff6a'] },
+  c_kizil: { f: 's_crimson-runed-circle', w: 7, r: 0, v: 0.2, tint: ['#352a2c', '#ff3a3a'] },
 };
+const SUM_MATS = new Map();
+function paintSummon(m, cfg, key) {
+  // dikey/yatay konuma göre taş + parıltı köşe renkleri; bir kez boyanır, tüm kopyalar paylaşır
+  if (!SUM_MATS.has(key)) {
+    SUM_MATS.set(key, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0.1, emissive: new THREE.Color(cfg.tint[1]), emissiveIntensity: 0.18 }));
+  }
+  const mat = SUM_MATS.get(key), A = new THREE.Color(cfg.tint[0]), B = new THREE.Color(cfg.tint[1]), c = new THREE.Color();
+  m.traverse((o) => {
+    if (!o.isMesh) return;
+    o.material = mat;
+    const g = o.geometry; if (g.userData.painted || !g.attributes.position) return;
+    g.userData.painted = true;
+    g.computeBoundingBox(); const bb = g.boundingBox, P = g.attributes.position, n = P.count, col = new Float32Array(n * 3);
+    const H = Math.max(bb.max.y - bb.min.y, 1e-3), cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2, R = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z) / 2 || 1;
+    for (let i = 0; i < n; i++) {
+      const h = (P.getY(i) - bb.min.y) / H, r = Math.hypot(P.getX(i) - cx, P.getZ(i) - cz) / R;
+      let k = cfg.w ? Math.min(1, Math.max(0, (h - 0.35) / 0.5)) : Math.min(1, Math.max(0, (r - 0.55) / 0.35)) * 0.8 + Math.min(1, Math.max(0, (h - 0.55) / 0.4)) * 0.35;
+      k = Math.min(1, k); c.copy(A).multiplyScalar(0.7 + 0.5 * h).lerp(B, k * 0.85);
+      col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  });
+}
 function modelProp(name, x, z, rnd) {
   const cfg = MODEL_PROPS[name], holder = new THREE.Group();
   holder.userData.prop = name;
   holder.rotation.y = rnd() * Math.PI * 2;
-  const H = cfg.h * (1 - cfg.v / 2 + rnd() * cfg.v);
+  const H = (cfg.h || cfg.w) * (1 - cfg.v / 2 + rnd() * cfg.v);
   add(holder, x, 0, z, false);
-  loadModel(`models/props/${name}.glb`).then((src) => {
+  loadModel(`models/props/${cfg.f || name}.glb`).then((src) => {
     const m = src.clone(true);
+    if (cfg.tint) paintSummon(m, cfg, name);
     const bb = new THREE.Box3().setFromObject(m), size = bb.getSize(new THREE.Vector3());
-    const s = H / Math.max(size.y, 1e-3);
+    const s = H / Math.max(cfg.w ? Math.max(size.x, size.z) : size.y, 1e-3);
     m.scale.setScalar(s);
     m.position.set(-(bb.min.x + bb.max.x) / 2 * s, -bb.min.y * s, -(bb.min.z + bb.max.z) / 2 * s);
     m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.userData.shared = true; } });
     holder.add(m);
   }).catch((e) => console.warn('Süs modeli yüklenemedi:', name, e));
   // çarpışma: modelin boyuna göre tahmini yarıçap (yükleme beklenmeden)
-  if (cfg.r) circles.push({ x, z, r: cfg.h * cfg.r });
+  if (cfg.r) circles.push({ x, z, r: (cfg.h || cfg.w) * cfg.r });
 }
 const PROP_BUILDERS = {
   ...Object.fromEntries(Object.keys(MODEL_PROPS).map((n) => ['m_' + n, (x, z, th, rnd) => modelProp(n, x, z, rnd)])),

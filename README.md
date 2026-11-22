@@ -505,3 +505,6 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 - Kayıtlara bak: `pm2 logs atabis-online --lines 30 --nostream`
 - Veritabanına bağlanamıyorsa `.env` içindeki `DATABASE_URL` değerini kontrol et.
 - Karakter modeli: `client/models/Soldier.glb` (three.js örnek modeli, ilk güncellemede otomatik iner).
+
+### 6.8 Çağırıcı (summoner) yapıları
+`client/models/props/s_*.glb`: 5 dikilitaş/taht + 6 rün çemberi (dokusuz FBX paketinden). `map.js` içinde `MODEL_PROPS` (`m_s_*`, `m_c_*`) köşe renkleriyle (taş + parıltı) boyanır; haritalara tema listelerinden, köy meydanına 4 altın dikilitaş olarak yerleştirilir.
