@@ -4,7 +4,16 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 6.3 (bu sürüm): kodla çizilen yaratıklar kalktı, Taş Golem, Kara Şövalye, kılıç animasyonları
+### Aşama 6.4 (bu sürüm): 3 yeni kanat, Masal Tilkisi, Horoz ve Tavuk evcil hayvan
+
+- **Yeni kanatlar** (kullanıcının getirdiği modeller; dokuları dosyada olmadığı için boyandı, yürürken çırpar):
+  - **Kuğu Kanadı** (beyaz tüylü, Sv. 30): Kostümcüde ve Nesne Market'te.
+  - **Yarasa Kanadı** (koyu kızıl zarlı, Sv. 45): Kostümcüde ve Nesne Market'te.
+  - **Işık Kanadı** (altın ışık telleri, Sv. 55, nadir): boss'lardan düşer, Nesne Market'te 350 EP.
+- **Yeni evcil hayvanlar:** **Masal Tilkisi** (giysili, kuyruğu sallanır; turuncu kürk, kızıl giysi), **Horoz** ve **Tavuk** (köydeki boss modelleri; Dev Tavuk ve Dev Horoz boss olarak da kaldı). Metin taşlarından, evcil hayvan sandığından düşer, Nesne Market'te satılır.
+- **Araç:** ASCII FBX 6.1 dosyaları da (eski Blender çıkışı) okunabiliyor.
+
+### Aşama 6.3: kodla çizilen yaratıklar kalktı, Taş Golem, Kara Şövalye, kılıç animasyonları
 
 - **Kodla çizilmiş bütün yaratıklar kaldırıldı.** Haritalardaki ve zindandaki 37 yaratık artık kullanıcının getirdiği modellerle görünür; farklı türler renk tonuyla ayırt edilir. Modeli olmayan yaratık kalmadı.
 - **Yeni modeller** (kullanıcının getirdiği):

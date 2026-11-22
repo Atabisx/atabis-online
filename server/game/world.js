@@ -22,7 +22,7 @@ const HORSE_QUEST = { level: 25, mob: 'vkurt', count: 20 };
 // balık tutarken takılanlar: balıklar, istiridye, yapraklar, efsun nesneleri ve nadiren pet sandığı
 const FISH_TABLE = [['b_hamsi', 34], ['b_sazan', 22], ['b_alabalik', 13], ['b_levrek', 8], ['b_yayin', 3], ['istiridye', 4], ['b_cizme', 5],
   ['yaprak_mor', 4], ['yaprak_mavi', 3], ['yaprak_kirmizi', 2], ['efsun', 2.5], ['efsun_degis', 2], ['pet_sandik', 1]];
-const PET_BOX = [['pet_kurt', 20], ['pet_tilki', 20], ['pet_ayi', 17], ['pet_baykus', 17], ['pet_yilan', 14], ['pet_uzayli', 9], ['pet_ejder', 3]];
+const PET_BOX = [['pet_kurt', 20], ['pet_tilki', 20], ['pet_ayi', 17], ['pet_baykus', 17], ['pet_yilan', 14], ['pet_uzayli', 9], ['pet_horoz', 12], ['pet_tavuk', 12], ['pet_fantazi_tilki', 8], ['pet_ejder', 3]];
 const PEARLS = [['inci_beyaz', 70], ['inci_mavi', 25], ['inci_kirmizi', 5]];
 function z0announce(p, msg) { if (p.zone) p.zone.emit('announce', msg); }
 function roll(table) {

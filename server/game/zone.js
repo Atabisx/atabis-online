@@ -276,7 +276,7 @@ class Zone {
       if (Math.random() < 0.35) this.makeDrop(best.x, best.z, p.id, { key: R.LEAVES[Math.floor(Math.random() * 3)], n: 1 + Math.floor(Math.random() * 3) });
       // evcil hayvan: %1,5 şans (Ejder Yavrusu bunların içinde çok nadir)
       if (Math.random() < 0.015) {
-        const pets = ['pet_kurt', 'pet_tilki', 'pet_ayi', 'pet_baykus', 'pet_yilan', 'pet_uzayli'];
+        const pets = ['pet_kurt', 'pet_tilki', 'pet_ayi', 'pet_baykus', 'pet_yilan', 'pet_uzayli', 'pet_horoz', 'pet_tavuk', 'pet_fantazi_tilki'];
         const key = Math.random() < 0.05 ? 'pet_ejder' : pets[Math.floor(Math.random() * pets.length)];
         if (R.ITEMS[key]) { this.makeDrop(best.x, best.z, p.id, { key }); this.hooks.announce(`${p.name}, ${best.name} kırarak ${R.ITEMS[key].name} buldu!`, this); }
       }

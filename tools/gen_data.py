@@ -190,7 +190,10 @@ def build_items():
              ('kanat_golge', 'Gölge Kanadı', 'bat', '#3a2550', '#b06bff', 50, 1600000, 1, {'atk': 12, 'hp': 250}),
              ('kanat_ejder', 'Ejder Kanadı', 'bat', '#a8251c', '#ff6a3d', 60, 0, 2, {'atk': 30, 'hp': 400, 'def': 15}),
              # hazır modelli kanat (client/models/wings/kanat_peri.glb)
-             ('kanat_peri', 'Peri Kanadı', 'model', '#b9a2e8', '#ffd6f0', 35, 700000, 1, {'hp': 250, 'mp': 200, 'def': 6})]
+             ('kanat_peri', 'Peri Kanadı', 'model', '#b9a2e8', '#ffd6f0', 35, 700000, 1, {'hp': 250, 'mp': 200, 'def': 6}),
+             ('kanat_kugu', 'Kuğu Kanadı', 'model', '#f4f1ea', '#fff8e0', 30, 600000, 1, {'hp': 220, 'def': 7}),
+             ('kanat_yarasa', 'Yarasa Kanadı', 'model', '#5a1420', '#ff3b2f', 45, 1300000, 1, {'atk': 16, 'hp': 150}),
+             ('kanat_isik', 'Işık Kanadı', 'model', '#fff6d8', '#ffd27a', 55, 0, 2, {'atk': 22, 'hp': 300, 'mp': 200})]
     for key, name, kind, color, glow, lv, pr, rar, st in WINGS:
         items[key] = {'name': name, 'slot': 'wings', 'lv': lv, 'price': pr or 5000000, 'rarity': rar, 'color': color,
                       'wing': {'kind': kind, 'color': color, 'glow': glow, **({'model': key, 'scale': 1.15} if kind == 'model' else {})}, 'desc': 'Sırtına takılan kanat. ' + ('Sadece boss\'lardan düşer.' if not pr else 'Kostümcüden alınır, boss\'lardan da düşebilir.'), **st}
@@ -208,10 +211,14 @@ def build_items():
             ('pet_ayi', 'Sekreter Kuşu', 'flyer', '#c9c2b0', {'hp': 600, 'def': 12}, 'Can +600, savunma +12', 'sekreter'),
             ('pet_baykus', 'Kuzgun', 'flyer', '#3a3550', {'atkspeed': 6, 'mp': 300}, 'Saldırı hızı +%6, mana +300', 'kuzgun'),
             ('pet_uzayli', 'Uzaylı Yaratık', 'dog', '#3a4430', {'atk': 25, 'dodge': 4}, 'Saldırı +25, kaçınma +%4', 'uzayli'),
-            ('pet_ejder', 'Ejder Yavrusu', 'dragon', '#5a1a14', {'atk': 40, 'crit': 4, 'hp': 400}, 'Saldırı +40, kritik +%4, can +400', 'ejder')]
+            ('pet_ejder', 'Ejder Yavrusu', 'dragon', '#5a1a14', {'atk': 40, 'crit': 4, 'hp': 400}, 'Saldırı +40, kritik +%4, can +400', 'ejder'),
+            ('pet_horoz', 'Horoz', 'frog', '#c0392b', {'atk': 15, 'crit': 3}, 'Saldırı +15, kritik +%3', 'horoz'),
+            ('pet_tavuk', 'Tavuk', 'frog', '#f4f1e8', {'hp': 300, 'mp': 150}, 'Can +300, mana +150', 'tavuk'),
+            ('pet_fantazi_tilki', 'Masal Tilkisi', 'dog', '#e07a2a', {'crit': 4, 'dodge': 4, 'mp': 200}, 'Kritik +%4, kaçınma +%4, mana +200', 'masal_tilki')]
+    PET_SCALE = {'horoz': 2.4, 'tavuk': 2.6, 'masal_tilki': 0.9}   # küçük modeller pet olunca büyütülür
     for key, name, shape, color, bonus, text, model in PETS:
         items[key] = {'name': name, 'slot': 'pet', 'lv': 1, 'price': 5000000, 'rarity': 2 if key == 'pet_ejder' else 1, 'color': color,
-                      'pet': {'shape': 'worm' if shape == 'snake' else shape, 'color': color, 'model': model}, 'bonus': bonus,
+                      'pet': {'shape': 'worm' if shape == 'snake' else shape, 'color': color, 'model': model, **({'scale': PET_SCALE[model]} if model in PET_SCALE else {})}, 'bonus': bonus,
                       'desc': f'Peşinden gelen evcil hayvan. {text}. Metin taşlarından düşer' + (' (çok nadir).' if key == 'pet_ejder' else '.')}
     for key, name, color in [('yaprak_mor', 'Mor Yaprak', '#9b59d0'), ('yaprak_mavi', 'Mavi Yaprak', '#3d8fe0'), ('yaprak_kirmizi', 'Kırmızı Yaprak', '#e0453a')]:
         items[key] = {'name': name, 'slot': 'material', 'desc': "Demircide 30. seviye ve üstü eşyaları +6'dan sonra yükseltmek için gerekir. Metin taşlarından düşer.",
@@ -403,7 +410,7 @@ def build(items):
             d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': 0,
                       'speed': 5.2, 'range': min(6.0, 2.6 * scale), 'cd': 2000, 'boss': True, 'respawn': 120,
                       'drops': [[k, 0.28] for k in own] + [[k, 0.12] for k in nxt] + [[k, 0.035] for k in leg]
-                               + [['kanat_ejder', 0.003], ['pet_ejder', 0.005], ['kanat_melek', 0.01], ['kanat_golge', 0.006], ['pet_kurt', 0.01]],
+                               + [['kanat_ejder', 0.003], ['pet_ejder', 0.005], ['kanat_melek', 0.01], ['kanat_golge', 0.006], ['kanat_isik', 0.003], ['pet_kurt', 0.01]],
                       'potions': [[('p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4'), 1.0],
                                   [('p_mp2' if lv < 40 else 'p_mp3' if lv < 75 else 'p_mp4'), 1.0],
                                   ['p_green', 0.3], ['p_speed', 0.3], ['efsun_degis', 0.2]],

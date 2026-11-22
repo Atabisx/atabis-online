@@ -12,10 +12,10 @@ const MALL = [
   ['oto_hp_1s', 5, 'Güçlendirme'], ['oto_hp_1g', 30, 'Güçlendirme'], ['oto_hp_20g', 250, 'Güçlendirme'],
   ['oto_mp_1s', 5, 'Güçlendirme'], ['oto_mp_1g', 30, 'Güçlendirme'], ['oto_mp_20g', 250, 'Güçlendirme'],
   ['pet_kurt', 100, 'Evcil hayvan'], ['pet_tilki', 100, 'Evcil hayvan'], ['pet_ayi', 100, 'Evcil hayvan'], ['pet_baykus', 100, 'Evcil hayvan'],
-  ['pet_yilan', 100, 'Evcil hayvan'], ['pet_uzayli', 150, 'Evcil hayvan'], ['pet_ejder', 400, 'Evcil hayvan'], ['pet_sandik', 40, 'Evcil hayvan'],
+  ['pet_yilan', 100, 'Evcil hayvan'], ['pet_uzayli', 150, 'Evcil hayvan'], ['pet_horoz', 100, 'Evcil hayvan'], ['pet_tavuk', 100, 'Evcil hayvan'], ['pet_fantazi_tilki', 180, 'Evcil hayvan'], ['pet_ejder', 400, 'Evcil hayvan'], ['pet_sandik', 40, 'Evcil hayvan'],
   ['kostum_altin', 50, 'Kostüm'], ['kostum_gece', 50, 'Kostüm'], ['kostum_kar', 50, 'Kostüm'], ['kostum_kizil', 50, 'Kostüm'],
   ['kostum_orman', 50, 'Kostüm'], ['kostum_gok', 50, 'Kostüm'],
-  ['kanat_melek', 80, 'Kanat'], ['kanat_buz', 120, 'Kanat'], ['kanat_ates', 150, 'Kanat'], ['kanat_peri', 150, 'Kanat'],
+  ['kanat_melek', 80, 'Kanat'], ['kanat_buz', 120, 'Kanat'], ['kanat_ates', 150, 'Kanat'], ['kanat_peri', 150, 'Kanat'], ['kanat_kugu', 120, 'Kanat'], ['kanat_yarasa', 180, 'Kanat'], ['kanat_isik', 350, 'Kanat'],
   ['kanat_golge', 200, 'Kanat'], ['kanat_ejder', 500, 'Kanat'],
   ['efsun', 3, 'Eşya'], ['efsun_degis', 5, 'Eşya'], ['kutsama', 8, 'Eşya'],
 ].filter(([k]) => R.ITEMS[k]);

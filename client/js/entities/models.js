@@ -38,6 +38,7 @@ export const MOB_MODELS = {
   uzayli:      { kind: 'skel', size: 1.4, clips: { idle: 'Idle', walk: 'Walk', run: 'Run', atk: ['Atk', 'Atk2'], die: 'Die' }, walkRate: 1.2 },
   kuzgun:      { kind: 'skel', size: 1.1, clips: {}, flap: /^(shoulder|Wing)/, flapAxis: [0, 0, 1], hover: 0.9 },
   sekreter:    { kind: 'bird', size: 2.0, legTop: 0.42, armX: 0.12, armMin: 0.45, shoulder: 0.7, headY: 0.82, tail: 0.2, freq: 12, amp: 0.5, graze: 0.6, grazeRate: 1.2 },
+  masal_tilki: { kind: 'humanoid', size: 1.1, legTop: 0.12, armX: 0.2, armMin: 0.3, shoulder: 0.5, headY: 0.6, tail: 0.3, freq: 9, amp: 0.4 },
   golem:       { kind: 'skel', size: 2.2, clips: { idle: 'Idle', walk: 'Walk', atk: 'Attack' }, walkRate: 1.1 },
   kara_sovalye: { kind: 'humanoid', size: 2.0, legTop: 0.45, armX: 0.17, armMin: 0.4, shoulder: 0.76, headY: 0.86, freq: 7, amp: 0.35 },
   yaratik:     { kind: 'humanoid', size: 1.9, legTop: 0.45, armX: 0.15, armMin: 0.42, shoulder: 0.74, headY: 0.82, freq: 7, amp: 0.4 },

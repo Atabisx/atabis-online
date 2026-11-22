@@ -123,7 +123,7 @@ export function buildPet(def) {
   const p = def.pet || {};
   const v = buildMob({ shape: p.shape || 'dog', color: p.color || def.color || '#999', scale: p.shape === 'dragon' ? 0.42 : p.shape === 'flyer' ? 0.38 : 0.5 });
   // gerçek modeli olan hayvanlar (kurt, köpek/tilki, yılan) küçültülmüş modelle gösterilir
-  if (p.model) attachMobModel(v, { style: { model: p.model }, scale: 0.45, color: p.color });
+  if (p.model) attachMobModel(v, { style: { model: p.model }, scale: p.scale || 0.45, color: p.color });
   v.root.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return v;
 }
