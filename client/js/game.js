@@ -235,12 +235,39 @@ const loader = new GLTFLoader();
 // helmet: false → kapüşonlu modele kask eşyası giydirilmez (iç içe geçmesin)
 const CHAR_MODELS = {
   savasci: { url: 'models/chars/savasci.glb', hide: ['sword'], skip: ['sword'] },        // barbar kız (kendi kılıçları gizli, oyunun silahı takılır)
-  ninja: { url: 'models/chars/ninja.glb' },                                              // başlıklı kızıl ninja (erkek)
+  ninja: { url: 'models/chars/ninja.glb', straight: 0.75 },                              // başlıklı kızıl ninja (erkek); beklerken dizleri dik
   sura: { url: 'models/chars/sura.glb', hide: ['spear'], skip: ['spear'], k: 1.1 },       // kanatlı kadın savaşçı (kanatlar boyu etkilemesin)
   saman: { url: 'models/chars/saman.glb', hide: ['prop'], skip: ['prop', 'outline'], k: 0.933 },
   okcu: { url: 'models/chars/okcu.glb', hide: ['crossbow'], skip: ['crossbow'] },        // iblis avcısı
 };
 const charModels = {};   // cls -> { scene, calib, clips }
+// bekleme duruşunda bükük dizleri düzeltir (s: 0 aynen, 1 tamamen dik); ayaklar yerde kalsın diye kalça yükselir
+function straightenIdle(sc, clips, s) {
+  const idle = clips.find((c) => c.name === 'Idle'); if (!idle) return;
+  const S = SkeletonUtils.clone(sc); S.updateMatrixWorld(true);
+  const bones = {}; S.traverse((o) => { if (o.isBone) bones[o.name] = o; });
+  const rest = {}; for (const [n, b] of Object.entries(bones)) rest[n] = b.quaternion.clone();
+  const hip = Object.values(bones).find((b) => /Hips$/.test(b.name));
+  const foot = Object.values(bones).find((b) => /LeftFoot$/.test(b.name));
+  if (!hip || !foot) return;
+  const footY = (clip) => {
+    const m = new THREE.AnimationMixer(S); const a = m.clipAction(clip); a.play(); m.update(0); S.updateMatrixWorld(true);
+    const y = foot.getWorldPosition(new V3()).y; a.stop(); m.uncacheRoot(S); return y;
+  };
+  const before = footY(idle);
+  const q = new THREE.Quaternion(), r = new THREE.Quaternion();
+  for (const t of idle.tracks) {
+    const m = t.name.match(/^(.*(?:Left|Right)(?:UpLeg|Leg|Foot))\.quaternion$/); if (!m || !rest[m[1]]) continue;
+    r.copy(rest[m[1]]);
+    for (let i = 0; i < t.values.length; i += 4) { q.fromArray(t.values, i).slerp(r, s).toArray(t.values, i); }
+  }
+  const dy = before - footY(idle);              // ayak bu kadar aşağı indi -> kalça bu kadar kalkmalı
+  const ht = idle.tracks.find((t) => t.name === hip.name + '.position'); if (!ht || !(dy > 0)) return;
+  hip.parent.updateMatrixWorld(true);
+  const w0 = hip.getWorldPosition(new V3()), p0 = hip.parent.worldToLocal(w0.clone()), p1 = hip.parent.worldToLocal(w0.clone().add(new V3(0, dy, 0)));
+  const d = p1.sub(p0);
+  for (let i = 0; i < ht.values.length; i += 3) { ht.values[i] += d.x; ht.values[i + 1] += d.y; ht.values[i + 2] += d.z; }
+}
 function loadGlb(url) { return new Promise((res) => loader.load(url, res, undefined, (e) => { console.warn('Model yüklenemedi:', url, e); res(null); })); }
 const modelReady = (async () => {
   const g = await loadGlb('models/Soldier.glb');
@@ -270,6 +297,7 @@ const modelReady = (async () => {
         if (part(o, ['outline'])) o.userData.outline = true;
       });
       const moves = retargetClips(g.scene, sc, g.animations.filter((a) => a.name !== 'TPose'));
+      if (cfg.straight) straightenIdle(sc, moves, cfg.straight);
       if (atk && cls !== 'saman') moves.push(...atkClips(retargetClips(atk.scene, sc, atk.animations)));
       for (const k of Object.keys(cc)) if (cc[k] && cc[k].bone) cc[k] = correctFrame(cc[k], moves);
       charModels[cls] = { scene: sc, calib: cc, clips: moves, cfg };

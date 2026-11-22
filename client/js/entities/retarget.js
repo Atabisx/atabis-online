@@ -33,6 +33,14 @@ export function retargetClips(srcScene, dstScene, clips, fps = 30) {
       C[k] = dT.lengthSq() > 1e-10 && dS.lengthSq() > 1e-10 ? new THREE.Quaternion().setFromUnitVectors(dT.normalize(), dS.normalize()) : new THREE.Quaternion();
     } else C[k] = (b.parent && C[key(b.parent)]) ? C[key(b.parent)].clone() : new THREE.Quaternion();
   }
+  // en yakın eşlenmiş ata ve (ara kemik varsa) atanın dinlenme dünya dönüşünden ebeveyninkine fark
+  const anc = {}, relP = {};
+  for (const b of dst) {
+    const k = key(b); let a = b.parent;
+    while (a && !(a.isBone && mapped.has(key(a)))) a = a.parent;
+    if (a) { anc[k] = key(a); relP[k] = restT[key(a)].clone().invert().multiply(restParentT[k]); }
+  }
+  const tmpQ = new THREE.Quaternion();
   const hipT = dst.find((b) => key(b) === 'Hips');
   const hipS = sb.Hips;
   const hipRestS = hipS ? wp(hipS) : null, hipRestT = hipT ? wp(hipT) : null;
@@ -56,7 +64,10 @@ export function retargetClips(srcScene, dstScene, clips, fps = 30) {
         sb[k].getWorldQuaternion(Ws);
         D.copy(Ws).multiply(inv.copy(restS[k]).invert());
         const w = (Wt[k] = Wt[k] || new THREE.Quaternion()).copy(D).multiply(C[k]).multiply(restT[k]);
-        const pk = b.parent && mapped.has(key(b.parent)) ? Wt[key(b.parent)] : restParentT[k];
+        // ebeveyn eşlenmemiş bir ara kemikse (CC4'te kalça ile bacak arasındaki leğen kemiği gibi),
+        // o ara kemik en yakın eşlenmiş atasıyla birlikte döner: dinlenme farkı korunur
+        const A = anc[k];
+        const pk = A ? (b.parent && mapped.has(key(b.parent)) ? Wt[A] : tmpQ.copy(Wt[A]).multiply(relP[k])) : restParentT[k];
         const l = inv.copy(pk).invert().multiply(w);
         l.toArray(q[k], i * 4);
       }
