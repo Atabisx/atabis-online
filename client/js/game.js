@@ -235,12 +235,23 @@ const loader = new GLTFLoader();
 // helmet: false → kapüşonlu modele kask eşyası giydirilmez (iç içe geçmesin)
 const CHAR_MODELS = {
   savasci: { url: 'models/chars/savasci.glb', hide: ['sword'], skip: ['sword'] },        // barbar kız (kendi kılıçları gizli, oyunun silahı takılır)
-  ninja: { url: 'models/chars/ninja.glb', straight: 0.75 },                              // başlıklı kızıl ninja (erkek); beklerken dizleri dik
+  ninja: { url: 'models/chars/ninja.glb', straight: 0.75, turn: 30 },                    // başlıklı kızıl ninja (erkek); beklerken dik ve öne dönük
   sura: { url: 'models/chars/sura.glb', hide: ['spear'], skip: ['spear'], k: 1.1 },       // kanatlı kadın savaşçı (kanatlar boyu etkilemesin)
   saman: { url: 'models/chars/saman.glb', hide: ['prop'], skip: ['prop', 'outline'], k: 0.933 },
   okcu: { url: 'models/chars/okcu.glb', hide: ['crossbow'], skip: ['crossbow'] },        // iblis avcısı
 };
 const charModels = {};   // cls -> { scene, calib, clips }
+// bekleme duruşu yana dönük (savaş duruşu): kalçayı dikey eksende 'deg' derece öne çevirir, gövde de onunla döner
+function turnIdle(sc, clips, deg) {
+  const idle = clips.find((c) => c.name === 'Idle'); if (!idle) return;
+  let hip = null; sc.traverse((o) => { if (!hip && o.isBone && /Hips$/.test(o.name)) hip = o; });
+  const t = hip && idle.tracks.find((x) => x.name === hip.name + '.quaternion'); if (!t) return;
+  sc.updateMatrixWorld(true);
+  const P = hip.parent.getWorldQuaternion(new THREE.Quaternion());
+  const R = new THREE.Quaternion().setFromAxisAngle(new V3(0, 1, 0), THREE.MathUtils.degToRad(deg));
+  const L = P.clone().invert().multiply(R).multiply(P), q = new THREE.Quaternion();
+  for (let i = 0; i < t.values.length; i += 4) q.fromArray(t.values, i).premultiply(L).toArray(t.values, i);
+}
 // bekleme duruşunda bükük dizleri düzeltir (s: 0 aynen, 1 tamamen dik); ayaklar yerde kalsın diye kalça yükselir
 function straightenIdle(sc, clips, s) {
   const idle = clips.find((c) => c.name === 'Idle'); if (!idle) return;
@@ -298,6 +309,7 @@ const modelReady = (async () => {
       });
       const moves = retargetClips(g.scene, sc, g.animations.filter((a) => a.name !== 'TPose'));
       if (cfg.straight) straightenIdle(sc, moves, cfg.straight);
+      if (cfg.turn) turnIdle(sc, moves, cfg.turn);
       if (atk && cls !== 'saman') moves.push(...atkClips(retargetClips(atk.scene, sc, atk.animations)));
       for (const k of Object.keys(cc)) if (cc[k] && cc[k].bone) cc[k] = correctFrame(cc[k], moves);
       charModels[cls] = { scene: sc, calib: cc, clips: moves, cfg };

@@ -12,7 +12,7 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
   - **Işık Kanadı** (altın ışık telleri, Sv. 55, nadir): boss'lardan düşer, Nesne Market'te 350 EP.
 - **Yeni evcil hayvanlar:** **Masal Tilkisi** (giysili, kuyruğu sallanır; turuncu kürk, kızıl giysi), **Horoz** ve **Tavuk** (köydeki boss modelleri; Dev Tavuk ve Dev Horoz boss olarak da kaldı). Metin taşlarından, evcil hayvan sandığından düşer, Nesne Market'te satılır.
 - **Araç:** ASCII FBX 6.1 dosyaları da (eski Blender çıkışı) okunabiliyor.
-- **Düzeltme:** Akıncı beklerken çömelmiş gibi duruyordu; dizleri dikleştirildi, ayaklar yerde kalacak şekilde kalçası yükseltildi. Animasyon aktarımında kalça ile bacak arasındaki ara kemik (CC4 modelleri) artık kalçayla birlikte dönüyor.
+- **Düzeltme:** Akıncı beklerken çömelmiş ve yana dönük (çapraz) duruyordu; artık dik ve karşıya dönük duruyor (dizler dikleştirildi, kalça 30° öne çevrildi), ayaklar yerde kalacak şekilde kalçası yükseltildi. Animasyon aktarımında kalça ile bacak arasındaki ara kemik (CC4 modelleri) artık kalçayla birlikte dönüyor.
 
 ### Aşama 6.3: kodla çizilen yaratıklar kalktı, Taş Golem, Kara Şövalye, kılıç animasyonları
 
