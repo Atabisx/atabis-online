@@ -23,6 +23,12 @@ MIXAMO = {
     # Unreal benzeri ikinci düzen (spine01, arm_l, knee_l, toe_l)
     'spine01': 'Spine', 'spine02': 'Spine1', 'spine03': 'Spine2', 'neck': 'Neck',
     'arm_l': 'LeftArm', 'arm_r': 'RightArm', 'knee_l': 'LeftLeg', 'knee_r': 'RightLeg', 'toe_l': 'LeftToeBase', 'toe_r': 'RightToeBase',
+    # Character Creator 4 (CC_Base_*)
+    'CC_Base_Hip': 'Hips', 'CC_Base_Waist': 'Spine', 'CC_Base_Spine01': 'Spine1', 'CC_Base_Spine02': 'Spine2', 'CC_Base_NeckTwist01': 'Neck', 'CC_Base_Head': 'Head',
+    'CC_Base_L_Clavicle': 'LeftShoulder', 'CC_Base_L_Upperarm': 'LeftArm', 'CC_Base_L_Forearm': 'LeftForeArm', 'CC_Base_L_Hand': 'LeftHand',
+    'CC_Base_R_Clavicle': 'RightShoulder', 'CC_Base_R_Upperarm': 'RightArm', 'CC_Base_R_Forearm': 'RightForeArm', 'CC_Base_R_Hand': 'RightHand',
+    'CC_Base_L_Thigh': 'LeftUpLeg', 'CC_Base_L_Calf': 'LeftLeg', 'CC_Base_L_Foot': 'LeftFoot', 'CC_Base_L_ToeBase': 'LeftToeBase',
+    'CC_Base_R_Thigh': 'RightUpLeg', 'CC_Base_R_Calf': 'RightLeg', 'CC_Base_R_Foot': 'RightFoot', 'CC_Base_R_ToeBase': 'RightToeBase',
 }
 # parmaklar: Biped "Bip001 L Finger1" -> LeftHandIndex1 vb.
 FING_B = {'0': 'Thumb', '1': 'Index', '2': 'Middle', '3': 'Ring', '4': 'Pinky'}
@@ -37,6 +43,8 @@ def mixname(n):
         side = 'Left' if m.group(1) == 'L' else 'Right'
         k = 4 if m.group(4) else (int(m.group(3)) + 1 if m.group(3) else 1)
         return f'mixamorig{side}Hand{FING_B[m.group(2)]}{k}'
+    m = re.match(r'CC_Base_([LR])_(Thumb|Index|Mid|Ring|Pinky)([123])$', n)   # CC4 parmakları
+    if m: return f"mixamorig{'Left' if m.group(1) == 'L' else 'Right'}Hand{'Middle' if m.group(2) == 'Mid' else m.group(2)}{m.group(3)}"
     m = re.match(r'(thumb|index|middle|ring|pinky)_([lr])$', n)          # parmak kökü: index_l -> LeftHandIndex1
     if m: return f"mixamorig{'Left' if m.group(2) == 'l' else 'Right'}Hand{FING_U[m.group(1)]}1"
     m = re.match(r'(thumb|index|middle|ring|pinky)_tip_([lr])$', n)

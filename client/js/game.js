@@ -235,7 +235,7 @@ const loader = new GLTFLoader();
 // helmet: false → kapüşonlu modele kask eşyası giydirilmez (iç içe geçmesin)
 const CHAR_MODELS = {
   savasci: { url: 'models/chars/savasci.glb', hide: ['sword'], skip: ['sword'] },        // barbar kız (kendi kılıçları gizli, oyunun silahı takılır)
-  ninja: { url: 'models/chars/ninja.glb' },                                              // zırhlı paralı asker (Merc_C, erkek)
+  ninja: { url: 'models/chars/ninja.glb' },                                              // başlıklı kızıl ninja (erkek)
   sura: { url: 'models/chars/sura.glb', hide: ['spear'], skip: ['spear'], k: 1.1 },       // kanatlı kadın savaşçı (kanatlar boyu etkilemesin)
   saman: { url: 'models/chars/saman.glb', hide: ['prop'], skip: ['prop', 'outline'], k: 0.933 },
   okcu: { url: 'models/chars/okcu.glb', hide: ['crossbow'], skip: ['crossbow'] },        // iblis avcısı

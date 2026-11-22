@@ -6,9 +6,9 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ### Aşama 6.2 (bu sürüm): Akıncı için yeni karakter
 
-- **Akıncı (ninja) artık zırhlı bir erkek paralı asker** (kullanıcının gönderdiği Merc_C modeli). Dosyada doku olmadığı için parçalarına göre boyandı: çelik zırh ve omuzluklar, deri kemer, heybe ve çizmeler, pirinç tokalar, kızıl bez. Model sadeleştirildi (5,9 MB → 3 MB); yürüme, koşma ve saldırı hareketleri diğer karakterlerden aktarılır.
+- **Akıncı (ninja) artık başlıklı kızıl bir ninja (erkek).** Kullanıcının gönderdiği Character Creator 4 modelinden: başka bir oyunun karakterine benzemesin diye sarı yelek ve kemer koyu kızıla, sarı kolluk ve tozluklar çelik griye boyandı, yüz maskesi çıkarıldı. Dil, gözyaşı ve göz gölgesi katmanları atıldı; model 60 MB'tan 4 MB'a indi. Yürüme, koşma ve saldırı hareketleri diğer karakterlerden aktarılır.
 - **Akıncı'nın sesi erkek:** kalın "ha" bağırışları ona verildi; kadın karakterler yine sadece kadın sesi kullanır.
-- `tools/fbxskin.py` bu iskelet düzenini de tanır (spine01, arm_l, knee_l, index_l, index_tip_l...).
+- `tools/fbxskin.py` Character Creator 4 (CC_Base_*) ve Unreal benzeri (spine01, arm_l, knee_l...) iskeletleri de tanır.
 
 ### Aşama 6.1: sadece 3D eşyalar, Metin2 tarzı envanter, kadın sesleri
 
