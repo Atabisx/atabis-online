@@ -241,6 +241,34 @@ export function updateMap(t) {
   }
 }
 // meydan: basamaklı taş kaide, gönder, altın alem ve dalgalanan bayrak
+// meydandaki anıt panosu: çerçeveli portre (client/img/ataturk.jpg) ve künye levhası
+function portraitBoard(X, Z, ry) {
+  const g = new THREE.Group(), W = 1.7, Hh = W * 773 / 560;
+  const tex = new THREE.TextureLoader().load('img/ataturk.jpg');
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const gold = new THREE.MeshStandardMaterial({ color: '#d9a83e', metalness: 0.75, roughness: 0.35 }), stone = texMat(stoneTex('#9a958c'));
+  const base = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.5, 1.0), stone); base.position.y = 0.25; g.add(base);
+  const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.6, 0.16), gold); post.position.y = 0.8; g.add(post);
+  const cy = 1.1 + Hh / 2 + 0.2;
+  const fr = new THREE.Mesh(new THREE.BoxGeometry(W + 0.3, Hh + 0.3, 0.1), gold); fr.position.set(0, cy, 0); g.add(fr);
+  for (const [sz, rot] of [[0.056, 0], [-0.056, Math.PI]]) {
+    const pic = new THREE.Mesh(new THREE.PlaneGeometry(W, Hh), new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: '#ffffff', emissiveIntensity: 0.55, roughness: 0.7 }));
+    pic.position.set(0, cy, sz); pic.rotation.y = rot; g.add(pic);
+  }
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 128;
+  const c = cv.getContext('2d'); c.fillStyle = '#1c1a17'; c.fillRect(0, 0, 512, 128);
+  c.strokeStyle = '#d9a83e'; c.lineWidth = 4; c.strokeRect(6, 6, 500, 116);
+  c.fillStyle = '#f2d98a'; c.textAlign = 'center'; c.font = 'bold 44px serif'; c.fillText('Mustafa Kemal Atatürk', 256, 60);
+  c.font = '30px serif'; c.fillText('1881 – 1938', 256, 104);
+  const ct = new THREE.CanvasTexture(cv); ct.colorSpace = THREE.SRGBColorSpace;
+  for (const [sz, rot] of [[0.51, 0], [-0.51, Math.PI]]) {
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.5), new THREE.MeshBasicMaterial({ map: ct }));
+    pl.position.set(0, 0.28, sz); pl.rotation.y = rot; g.add(pl);
+  }
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
+  g.position.set(X, 0, Z); g.rotation.y = ry; group.add(g);
+  circles.push({ x: X, z: Z, r: 1.3 });
+}
 function flagMonument(X, Z, snow) {
   const st = texMat(stoneTex('#9a958c'));
   [[2.3, 0.35], [1.75, 0.35], [1.2, 0.4]].reduce((y, [r, h]) => {
@@ -349,6 +377,7 @@ function buildVillage(th, rnd) {
   house(4.0, 15.4, 2.4, 1.9, 1.1, 0.9, r(1), v.wall, o(0));
   // meydanın tam ortasında Türk bayrağı; meydan ve sokaklar süs ipleriyle süslü
   const top = flagMonument(u(10), u(10), snow);
+  portraitBoard(u(10) + 5.2, u(7.3), 0);
   // meydanın dört köşesinde altın parıltılı çağırıcı dikilitaşları
   for (const [x, z] of [[5.6, 5.6], [14.4, 5.6], [14.6, 14.8], [5.9, 14.6]]) modelProp('s_isik', u(x), u(z), rnd);
   const corners = [[6.7, 6.7], [13.3, 6.7], [13.3, 13.3], [6.7, 13.3]];
