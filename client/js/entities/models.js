@@ -435,6 +435,14 @@ export const ITEM_MODELS = {
   demir_zirh: { armor: true, height: 0.5, y: -0.03, pads: false },
   // kask: başı saracak boy, dikey kaydırma
   kask: { armor: true, height: 0.36, y: -0.06 },
+  // kullanıcının getirdiği 9 miğfer (boynuzlu/kanatlı olanlar biraz daha uzun)
+  migfer1: { armor: true, height: 0.38, y: -0.05 }, migfer2: { armor: true, height: 0.36, y: -0.05 }, migfer3: { armor: true, height: 0.38, y: -0.05 },
+  migfer4: { armor: true, height: 0.38, y: -0.05 }, migfer5: { armor: true, height: 0.38, y: -0.05 }, migfer6: { armor: true, height: 0.38, y: -0.05 },
+  migfer7: { armor: true, height: 0.42, y: -0.03 }, migfer8: { armor: true, height: 0.42, y: -0.03 }, migfer9: { armor: true, height: 0.42, y: -0.03 },
+  // kalkanlar: sol ön kola takılır (boy: kalkanın yüksekliği)
+  kalkan1: { armor: true, height: 0.5, y: 0 }, kalkan2: { armor: true, height: 0.5, y: 0 }, kalkan3: { armor: true, height: 0.58, y: 0 },
+  kalkan4: { armor: true, height: 0.58, y: 0 }, kalkan5: { armor: true, height: 0.52, y: 0 }, kalkan6: { armor: true, height: 0.6, y: 0 },
+  kalkan7: { armor: true, height: 0.62, y: 0 }, kalkan8: { armor: true, height: 0.62, y: 0 }, kalkan9: { armor: true, height: 0.62, y: 0 },
 };
 // Modeli yüklenene kadar yedek mesh görünür; yüklenince yerine geçer
 export function itemModel(key, fallback) {

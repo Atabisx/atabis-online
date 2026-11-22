@@ -39,7 +39,7 @@ function createWorld(io) {
   // ---------- oyuncu yardımcıları ----------
   function looks(p) {
     const l = {};
-    for (const s of ['weapon', 'armor', 'helmet', 'costume', 'wings', 'pet']) l[s] = p.equip[s] ? p.equip[s].key : null;
+    for (const s of ['weapon', 'armor', 'helmet', 'shield', 'costume', 'wings', 'pet']) l[s] = p.equip[s] ? p.equip[s].key : null;
     // +9 parlaması için silah ve zırhın artısı
     l.up = { weapon: (p.equip.weapon && p.equip.weapon.up) || 0, armor: (p.equip.armor && p.equip.armor.up) || 0 };
     return l;
@@ -166,6 +166,9 @@ function createWorld(io) {
     p.quests = p.quests || {};
     p.quests.bag = 2;                                   // GM'nin üç envanter sayfası da açık
     if (!p.quests.gmPets) { giveAllPets(p); p.quests.gmPets = 1; }
+    // kalkan yuvası sonradan eklendi: GM'ye bir kez en iyi kalkan takılır
+    gmTarget = p;
+    if (!p.quests.gmShield) { if (!p.equip.shield) p.equip.shield = maxedItem(R.ITEMS.shield15_L ? 'shield15_L' : 'shield15'); p.quests.gmShield = 1; }
     if (p.quests.gmKit === 1) return;
     gmTarget = p;
     const cls = R.CLASSES[p.class] || {};
@@ -174,7 +177,7 @@ function createWorld(io) {
     // eski kuşanılanlar çantaya
     for (const slot of R.EQUIP_SLOTS) if (p.equip[slot] && p.inventory.length < R.invSize(p)) p.inventory.push(p.equip[slot]);
     p.equip = { weapon: maxedItem(top(wtype)), armor: maxedItem(top('armor')), helmet: maxedItem(top('helmet')),
-      shoes: maxedItem(top('shoes')), bracelet: maxedItem(top('bracelet')), earring: maxedItem(top('earring')) };
+      shoes: maxedItem(top('shoes')), bracelet: maxedItem(top('bracelet')), earring: maxedItem(top('earring')), shield: maxedItem(top('shield')) };
     const give = [['isin_yuzugu', 1], ['at_muhru', 1], ['olta', 1], ['yem', 200], ['p_hp4', 200], ['p_mp4', 200], ['p_green', 50], ['p_speed', 50], ['efsun', 100], ['efsun_degis', 100]];
     for (const [key, n] of give) {
       if (!R.ITEMS[key] || p.inventory.some((i) => i.key === key)) continue;

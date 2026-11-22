@@ -26,7 +26,7 @@ WEAPONS = [  # (tür, ad, sınıflar, uzunluk)
 ]
 GEAR = [  # (yuva, ad, fiyat çarpanı)
     ('armor', 'Zırh', 0.9), ('helmet', 'Miğfer', 0.6), ('shoes', 'Çizme', 0.5),
-    ('bracelet', 'Bilezik', 0.7), ('earring', 'Küpe', 0.7),
+    ('bracelet', 'Bilezik', 0.7), ('earring', 'Küpe', 0.7), ('shield', 'Kalkan', 0.65),
 ]
 
 
@@ -40,6 +40,16 @@ def weapon_model(wtype, i):
     return {0: 'sade_kilic', 1: 'kivrik_kilic', 2: 'katana', 3: 'katana', 4: 'lav_kilic', 5: 'lav_kilic',
             6: 'gumus_kilic', 7: 'mor_kilic', 8: 'kanatli_kilic', 9: 'talwar',
             10: 'savas_baltasi', 11: 'demir_balta', 12: 'altin_balta', 13: 'altin_balta'}.get(i, 'buz_balta')
+
+
+def helmet_model(i):
+    # kullanıcının getirdiği 9 miğfer (deri -> demir -> gümüş -> altın -> kara boynuzlu)
+    return 'migfer' + str({0: 2, 1: 2, 2: 1, 3: 1, 4: 3, 5: 3, 6: 4, 7: 4, 8: 5, 9: 5, 10: 6, 11: 6, 12: 7, 13: 8, 14: 8}.get(i, 9))
+
+
+def shield_model(i):
+    # kullanıcının getirdiği 9 runik kalkan (tahta -> demir -> gümüş -> altın -> kara)
+    return 'kalkan' + str({0: 1, 1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 4, 7: 4, 8: 5, 9: 6, 10: 6, 11: 7, 12: 7, 13: 8, 14: 8}.get(i, 9))
 
 
 def armor_model(i):
@@ -107,8 +117,12 @@ def build_items():
                     if armor_model(i):
                         it['model'] = armor_model(i)
                 if slot == 'helmet':
-                    it['model'] = 'kask'      # bütün miğferler 3D kask modeliyle
+                    it['model'] = helmet_model(i)
                     it['def'] = round((3 + 6 * i + 0.4 * i * i) * 0.6 * m)
+                elif slot == 'shield':
+                    it['model'] = shield_model(i)
+                    it['def'] = round((3 + 6 * i + 0.4 * i * i) * 0.5 * m)
+                    it['hp'] = round((15 + 12 * i) * m)
                 elif slot == 'shoes':
                     it['def'] = round((3 + 6 * i + 0.4 * i * i) * 0.4 * m)
                 elif slot == 'bracelet':
@@ -439,7 +453,7 @@ def build(items):
             entry['shop'] = {
                 'potions': potions,
                 'weapons': [k for k, v in items.items() if v['slot'] == 'weapon' and v.get('tier') in tiers and not k.endswith('_L')],
-                'armor': [k for k, v in items.items() if v['slot'] in ('armor', 'helmet', 'shoes', 'bracelet', 'earring')
+                'armor': [k for k, v in items.items() if v['slot'] in ('armor', 'helmet', 'shoes', 'bracelet', 'earring', 'shield')
                           and v.get('tier') in tiers and not k.endswith('_L')],
                 'cosmetics': [k for k, v in items.items() if v['slot'] in ('costume', 'wings', 'pet') and v['price'] < 5000000],
             }

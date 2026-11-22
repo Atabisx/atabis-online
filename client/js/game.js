@@ -662,6 +662,7 @@ function applyLook(p, look) {
     p.model.traverse((o) => { if (o.userData.hideWithWeapon) o.visible = !w; if (o.userData.ownHelmet) o.visible = !helmOk; });
     p.capes = []; p.robe = null;
     if (helmOk) attach(p, calib.helmet, h.model && ITEM_MODELS[h.model] ? itemModel(h.model, helmetMesh(h)) : helmetMesh(h));
+    attachShield(p, calib);
     setupAuras(p, wMesh, w, a);
     return;
   }
@@ -686,7 +687,17 @@ function applyLook(p, look) {
     if (!CLASS_LOOK[p.cls]) { attach(p, calib.chest, chestMesh(a)); attach(p, calib.padL, padMesh(a)); attach(p, calib.padR, padMesh(a)); }
   }
   if (h) attach(p, calib.helmet, h.model && ITEM_MODELS[h.model] ? itemModel(h.model, helmetMesh(h)) : helmetMesh(h));
+  attachShield(p, calib);
   setupAuras(p, wMesh, w, a);
+}
+// kalkan: sol ön kolun dış yüzüne; yüzü dışarı (sola), üst kenarı dirseğe doğru
+const SHIELD_Q = new THREE.Quaternion(Math.SQRT1_2, 0, -Math.SQRT1_2, 0);
+function attachShield(p, calib) {
+  const s = ITEMS[p.look.shield];
+  if (!s || !s.model || !ITEM_MODELS[s.model] || !calib.foreL) return;
+  const g = new THREE.Group(), m = itemModel(s.model, null);
+  m.quaternion.copy(SHIELD_Q); m.position.set(-0.07, -0.02, 0);
+  g.add(m); attach(p, calib.foreL, g);
 }
 
 const calibBase = () => calib;
@@ -1335,14 +1346,15 @@ let myLevel = 1;
 let myName = '';
 let myGm = false;
 let selected = null;   // {uid} veya {slot}
-const EQUIP = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring'];
+const EQUIP = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring', 'shield'];
 const BONUS_NAMES = { maxhp: ['Maks. Can', ''], maxmp: ['Maks. Mana', ''], atk: ['Saldırı', ''], def: ['Savunma', ''], crit: ['Kritik', '%'],
   atkspeed: ['Saldırı Hızı', '%'], movespeed: ['Hareket Hızı', '%'], monster: ['Canavarlara Güç', '%'], hpsteal: ['Can Çalma', '%'] };
-const SLOT_NAMES = { costume: 'Kostüm', wings: 'Kanat', pet: 'Evcil hayvan', stone: 'Ruh taşı', material: 'Malzeme', weapon: 'Silah', armor: 'Zırh', helmet: 'Miğfer', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', potion: 'İksir', use: 'Kullanılır', fish: 'Balık', gem: 'Değerli taş' };
+const SLOT_NAMES = { costume: 'Kostüm', wings: 'Kanat', pet: 'Evcil hayvan', stone: 'Ruh taşı', material: 'Malzeme', weapon: 'Silah', armor: 'Zırh', helmet: 'Miğfer', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', shield: 'Kalkan', potion: 'İksir', use: 'Kullanılır', fish: 'Balık', gem: 'Değerli taş' };
 const ICONS = {
   weapon: '<path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/>',
   armor: '<path d="M8 3 4 6v5l3 1v9h10v-9l3-1V6l-4-3-2 2h-4z"/>',
   helmet: '<path d="M4 15a8 8 0 0 1 16 0v3H4z"/><path d="M12 7v-3"/>',
+  shield: '<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M12 3v18"/>',
   shoes: '<path d="M4 4h6v9l9 3v4H4z"/>',
   bracelet: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="4"/>',
   earring: '<path d="M12 3v5"/><circle cx="12" cy="14" r="5"/>',
@@ -1367,6 +1379,7 @@ function iconBuilder(key, def) {
     return g;
   };
   if (s === 'helmet') return () => (def.model && ITEM_MODELS[def.model] ? itemModel(def.model, helmetMesh(def)) : helmetMesh(def));
+  if (s === 'shield' && def.model && ITEM_MODELS[def.model]) return () => itemModel(def.model, null);
   if (s === 'wings' && def.wing && def.wing.model) return () => { const g = buildWings(def.wing); g.children[0].rotation.y = 0; return g; };   // simgede süslü yüz öne
   if (s === 'shoes') return () => icons.bootsMesh(def);
   if (s === 'bracelet') return () => icons.braceletMesh(def);
@@ -1389,7 +1402,7 @@ function iconBuilder(key, def) {
   if (key === 'isin_yuzugu') return () => icons.ringMesh();
   return null;
 }
-const ICON_POSE = { weapon: { rz: -0.8, ry: 0.35 }, armor: { ry: 0.45, rx: 0.08 }, helmet: { ry: 0.65, rx: 0.1 }, shoes: { ry: 0.55, rx: 0.2 },
+const ICON_POSE = { weapon: { rz: -0.8, ry: 0.35 }, armor: { ry: 0.45, rx: 0.08 }, helmet: { ry: 0.65, rx: 0.1 }, shield: { ry: 0.35, rx: 0.05 }, shoes: { ry: 0.55, rx: 0.2 },
   bracelet: { ry: 0.3 }, earring: { ry: 0.4 }, wings: { ry: 0.25, rx: 0.15 }, potion: { ry: 0.3, rx: 0.1 }, fish: { ry: 0.5 }, gem: { rx: 0.5 }, use: { ry: 0.5, rx: 0.15 }, stone: { rx: 0.4, ry: 0.3 }, material: { rx: 0.3, ry: 0.4 } };
 function itemIcon(key, def, size = 26, slot) {
   if (def && key) {
@@ -2854,7 +2867,7 @@ export function lobbyMode(mode) {
   lobby.mode = mode;
   if (mode === 'login') lobbyShowChar(null);
 }
-const lookFromEquip = (e) => ({ weapon: e && e.weapon ? e.weapon.key : null, armor: e && e.armor ? e.armor.key : null, helmet: e && e.helmet ? e.helmet.key : null });
+const lookFromEquip = (e) => ({ weapon: e && e.weapon ? e.weapon.key : null, armor: e && e.armor ? e.armor.key : null, helmet: e && e.helmet ? e.helmet.key : null, shield: e && e.shield ? e.shield.key : null });
 // c: { id, name, class, level, equip } — sunakta gösterilecek karakter (null: kimse)
 export async function lobbyShowChar(c) {
   const key = c ? `${c.id}|${c.class}|${JSON.stringify(lookFromEquip(c.equip))}` : null;

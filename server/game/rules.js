@@ -9,9 +9,9 @@ const MAX_LEVEL = 120;
 const INV_SIZE = 45;            // bir envanter sayfası (Metin2 gibi 5×9)
 // açılmış envanter sayfası kadar yuva (1. sayfa hep açık; 2. ve 3. sayfa görevlerle açılır)
 const invSize = (p) => INV_SIZE * (1 + Math.max(0, Math.min(2, (p && p.quests && p.quests.bag) || 0)));
-const EQUIP_SLOTS = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring', 'costume', 'wings', 'pet'];
+const EQUIP_SLOTS = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring', 'shield', 'costume', 'wings', 'pet'];
 // yükseltilebilen, efsunlanabilen, taş takılabilen ekipman (görünüş eşyaları hariç)
-const GEAR_SLOTS = EQUIP_SLOTS.slice(0, 6);
+const GEAR_SLOTS = EQUIP_SLOTS.slice(0, 7);
 const BASE_SPEED = 6;          // m/sn
 const MELEE_RANGE = 4.4;
 const SKILL_UNLOCK = 5;        // beceriler bu seviyede açılır

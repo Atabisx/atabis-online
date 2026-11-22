@@ -78,16 +78,17 @@ const CATS = [
   ['silah', 'Silahlar', (d) => d.slot === 'weapon'],
   ['zirh', 'Zırh', (d) => d.slot === 'armor'],
   ['kask', 'Kask', (d) => d.slot === 'helmet'],
+  ['kalkan', 'Kalkan', (d) => d.slot === 'shield'],
   ['taki', 'Ayakkabı ve Takı', (d) => ['shoes', 'bracelet', 'earring'].includes(d.slot)],
   ['kozmetik', 'Kanat, Kostüm, Pet', (d) => ['wings', 'costume', 'pet'].includes(d.slot)],
   ['iksir', 'İksir ve Kullanılan', (d) => ['potion', 'use'].includes(d.slot)],
   ['diger', 'Diğer', (d) => ['stone', 'gem', 'material', 'fish'].includes(d.slot) || !d.slot],
 ];
-const SLOT_ICON = { weapon: '⚔️', armor: '🛡️', helmet: '⛑️', shoes: '👢', bracelet: '📿', earring: '💎', wings: '🪽', costume: '👘', pet: '🐾', potion: '🧪', use: '📜', stone: '🔮', gem: '💠', material: '🧱', fish: '🐟' };
+const SLOT_ICON = { weapon: '⚔️', armor: '🛡️', helmet: '⛑️', shield: '🛡️', shoes: '👢', bracelet: '📿', earring: '💎', wings: '🪽', costume: '👘', pet: '🐾', potion: '🧪', use: '📜', stone: '🔮', gem: '💠', material: '🧱', fish: '🐟' };
 const WEAPON_ICON = { sword: '⚔️', dagger: '🗡️', bow: '🏹', staff: '🪄' };
-const ORDER = ['weapon:sword', 'weapon:dagger', 'weapon:bow', 'weapon:staff', 'armor', 'helmet', 'shoes', 'bracelet', 'earring', 'wings', 'costume', 'pet', 'potion', 'use', 'stone', 'gem', 'material', 'fish'];
+const ORDER = ['weapon:sword', 'weapon:dagger', 'weapon:bow', 'weapon:staff', 'armor', 'helmet', 'shield', 'shoes', 'bracelet', 'earring', 'wings', 'costume', 'pet', 'potion', 'use', 'stone', 'gem', 'material', 'fish'];
 const SLOT_ORDER = (d) => { const k = d.slot === 'weapon' ? 'weapon:' + d.type : d.slot; const i = ORDER.indexOf(k); return i < 0 ? 99 : i; };
-const SLOT_NAME = { weapon: 'Silah', armor: 'Zırh', helmet: 'Kask', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', wings: 'Kanat', costume: 'Kostüm', pet: 'Evcil hayvan', potion: 'İksir', use: 'Kullanılan', stone: 'Taş', gem: 'Mücevher', material: 'Malzeme', fish: 'Balık' };
+const SLOT_NAME = { weapon: 'Silah', armor: 'Zırh', helmet: 'Kask', shield: 'Kalkan', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', wings: 'Kanat', costume: 'Kostüm', pet: 'Evcil hayvan', potion: 'İksir', use: 'Kullanılan', stone: 'Taş', gem: 'Mücevher', material: 'Malzeme', fish: 'Balık' };
 const has3D = (d) => !!((d.model && ITEM_MODELS[d.model]) || d.wing || d.pet || ['shoes', 'bracelet', 'earring', 'potion', 'fish', 'weapon', 'gem', 'stone'].includes(d.slot));
 function icon(d) {
   const e = d.slot === 'weapon' ? WEAPON_ICON[d.type] || '⚔️' : SLOT_ICON[d.slot] || '📦';

@@ -574,7 +574,7 @@ body.ingame #autoBtn { display: flex; }
 #invright { display: flex; flex-direction: column; gap: 0; }
 #equipcol { --es: 48px; width: auto; display: grid; gap: 5px; padding: 8px; border-radius: 4px; border: 1px solid #3e3320;
   grid-template-columns: repeat(3, var(--es)); grid-template-rows: var(--es) var(--es) var(--es) var(--es) auto; justify-content: center; align-content: center;
-  grid-template-areas: "ear helm wing" "weap arm pet" "weap arm cos" "brac shoe ." "stat stat stat";
+  grid-template-areas: "ear helm wing" "weap arm pet" "weap arm cos" "brac shoe shld" "stat stat stat";
   background: radial-gradient(ellipse at 50% 45%, rgba(232,181,74,.10), transparent 60%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath fill='%23ffffff' fill-opacity='.05' d='M50 6a12 12 0 1 1 0 24a12 12 0 1 1 0-24zM30 34h40l10 34-8 3-6-20v66H54V82h-8v35H34V51l-6 20-8-3z'/%3E%3C/svg%3E") center/62% no-repeat, #0f0d09; }
 .eq { position: relative; height: auto !important; width: 100%; padding: 0; justify-content: center; border-radius: 4px; border: 1px solid #4a3c22;

@@ -4,7 +4,14 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 6.4 (bu sürüm): 3 yeni kanat, Masal Tilkisi, Horoz ve Tavuk evcil hayvan
+### Aşama 6.5 (bu sürüm): kalkan yuvası, 9 kalkan ve 9 miğfer
+
+- **Yeni yuva: Kalkan** (Metin2'deki gibi). Envanterde ayakkabının yanında; bütün sınıflar takabilir. Savunma ve can verir, demircide yükseltilir, efsunlanır. Kalkan sol ön kola takılır, herkes görür.
+- **9 runik kalkan** (kullanıcının getirdiği dokulu modeller): Acemi'den İmparator'a 16 kademe. Tahta yuvarlak → demirli → gümüş → altın → kara boynuzlu. Kostümcü/Zırhçı'da satılır, canavarlardan düşer.
+- **9 yeni miğfer**: bütün miğfer kademeleri artık kendi modeliyle görünür (deri → demir → gümüş → altın boynuzlu/kanatlı → kara boynuzlu).
+- GM karakterine bir kez en iyi kalkan takılır.
+
+### Aşama 6.4: 3 yeni kanat, Masal Tilkisi, Horoz ve Tavuk evcil hayvan
 
 - **Yeni kanatlar** (kullanıcının getirdiği modeller; dokuları dosyada olmadığı için boyandı, yürürken çırpar):
   - **Kuğu Kanadı** (beyaz tüylü, Sv. 30): Kostümcüde ve Nesne Market'te.
