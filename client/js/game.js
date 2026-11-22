@@ -658,11 +658,9 @@ function applyLook(p, look) {
       }
     });
     // kendi kıyafeti olan karakter: kostüm parçası ve renk boyası yok; silah takılıysa kendi asası gizlenir
-    const helmOk = h && !(p.charCfg && p.charCfg.helmet === false);
-    p.model.traverse((o) => { if (o.userData.hideWithWeapon) o.visible = !w; if (o.userData.ownHelmet) o.visible = !helmOk; });
+    // miğfer ve kalkan karakterde görünmez: takılınca sadece güç verir (modelin kendi başlığı hep görünür)
+    p.model.traverse((o) => { if (o.userData.hideWithWeapon) o.visible = !w; if (o.userData.ownHelmet) o.visible = true; });
     p.capes = []; p.robe = null;
-    if (helmOk) attach(p, calib.helmet, h.model && ITEM_MODELS[h.model] ? itemModel(h.model, helmetMesh(h)) : helmetMesh(h));
-    attachShield(p, calib);
     setupAuras(p, wMesh, w, a);
     return;
   }
@@ -675,7 +673,7 @@ function applyLook(p, look) {
   if (p.model && p.model.parent && cl) { const base = 1 / calib.k; p.model.parent.scale.set(base * cl.bulk, base, base * cl.bulk); }
   p.capes = [];
   p.robe = null;
-  const outfit = cl ? buildOutfit(p.cls, { metal: cos && cos.tint ? cos.tint : a && a.color && a.color !== '#ffffff' ? a.color : null, tier: a ? a.tier : null, legendary: (a && a.rarity >= 2) || !!cos, hasHelmet: !!h }) : [];
+  const outfit = cl ? buildOutfit(p.cls, { metal: cos && cos.tint ? cos.tint : a && a.color && a.color !== '#ffffff' ? a.color : null, tier: a ? a.tier : null, legendary: (a && a.rarity >= 2) || !!cos, hasHelmet: false }) : [];
   for (const [where, mesh] of outfit) {
     if (!calib[where]) continue;
     attach(p, calib[where], mesh);
@@ -686,18 +684,8 @@ function applyLook(p, look) {
     // sınıflı karakterde zırh, takımın kendisidir (renk ve süs); sınıfsızlarda eski göğüslük
     if (!CLASS_LOOK[p.cls]) { attach(p, calib.chest, chestMesh(a)); attach(p, calib.padL, padMesh(a)); attach(p, calib.padR, padMesh(a)); }
   }
-  if (h) attach(p, calib.helmet, h.model && ITEM_MODELS[h.model] ? itemModel(h.model, helmetMesh(h)) : helmetMesh(h));
-  attachShield(p, calib);
+  // miğfer ve kalkan karakterde görünmez: takılınca sadece güç verir
   setupAuras(p, wMesh, w, a);
-}
-// kalkan: sol ön kolun dış yüzüne; yüzü dışarı (sola), üst kenarı dirseğe doğru
-const SHIELD_Q = new THREE.Quaternion(Math.SQRT1_2, 0, -Math.SQRT1_2, 0);
-function attachShield(p, calib) {
-  const s = ITEMS[p.look.shield];
-  if (!s || !s.model || !ITEM_MODELS[s.model] || !calib.foreL) return;
-  const g = new THREE.Group(), m = itemModel(s.model, null);
-  m.quaternion.copy(SHIELD_Q); m.position.set(-0.07, -0.02, 0);
-  g.add(m); attach(p, calib.foreL, g);
 }
 
 const calibBase = () => calib;

@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { mat, glowMat, seededRandom } from '../util.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { loadModel } from '../entities/models.js';
 import { groundTex, cobbleTex, plasterTex, woodTex, roofTex, stoneTex, boxGeo, planeGeo, texMat } from './textures.js';
 
 const S = 2.5;
@@ -16,27 +17,27 @@ const THEMES = {
   // tek köy: karlı kış köyü, üzerine kar yağar
   village_winter: { ground: '#eef3f6', ground2: '#e6edf1', path: '#b9c3cc', plaza: '#cfd8df', sky: '#c9d6e2', fog: [40, 100], snow: true,
     village: { wall: '#e4d6bc', roofs: ['#7a3b2a', '#4a5868', '#6a4a32'], snowRoof: true }, props: { snowpine: 34, rock: 6, snowman: 4, snowpile: 14 } },
-  pine_forest: { ground: '#5e8a45', ground2: '#5a8642', path: '#8a7a55', sky: '#a8c8dc', fog: [35, 95], props: { pine: 70, tree: 12, rock: 14, mushroom: 14, log: 10 } },
+  pine_forest: { ground: '#5e8a45', ground2: '#5a8642', path: '#8a7a55', sky: '#a8c8dc', fog: [35, 95], props: { pine: 70, tree: 12, rock: 14, mushroom: 14, log: 10, m_totem: 2 } },
   // iki ayrı çöl: sarı kum tepeleri ve kızıl kanyon
-  desert_dunes: { ground: '#e6c27a', ground2: '#e0bc74', path: '#cfa860', sky: '#f6e3b4', fog: [50, 125], props: { dune: 26, cactus: 34, bones: 14, sandrock: 10, palm: 6 } },
-  desert_canyon: { ground: '#b5562f', ground2: '#ae512c', path: '#8f4426', sky: '#e8a070', fog: [35, 100], props: { mesa: 20, canyonrock: 32, deadbush: 22, bones: 8 } },
-  castle: { ground: '#5a6a48', ground2: '#566645', path: '#8a877e', sky: '#9aa8b8', fog: [35, 100], props: { wallseg: 16, tower: 9, banner: 14, pine: 14, rock: 10 } },
+  desert_dunes: { ground: '#e6c27a', ground2: '#e0bc74', path: '#cfa860', sky: '#f6e3b4', fog: [50, 125], props: { dune: 26, cactus: 34, bones: 14, sandrock: 10, palm: 6, m_boynuz: 8 } },
+  desert_canyon: { ground: '#b5562f', ground2: '#ae512c', path: '#8f4426', sky: '#e8a070', fog: [35, 100], props: { mesa: 20, canyonrock: 32, deadbush: 22, bones: 8, m_tezgah: 4, m_totem: 4, m_pano: 3, m_boynuz: 5 } },
+  castle: { ground: '#5a6a48', ground2: '#566645', path: '#8a877e', sky: '#9aa8b8', fog: [35, 100], props: { wallseg: 16, tower: 9, banner: 14, pine: 14, rock: 10, m_pano: 5, m_ejder_heykeli: 3 } },
   village_green: { ground: '#6c9b4b', ground2: '#689748', path: '#b8996a', sky: '#9cc6e4', fog: [45, 95], village: { wall: '#e6d7b6', roofs: ['#3d5a80', '#a8452f'] }, props: { tree: 14, pine: 10, rock: 6 } },
   village_pine: { ground: '#5e8a45', ground2: '#5a8642', path: '#a8895a', sky: '#a8c8dc', fog: [40, 90], village: { wall: '#d9c39a', roofs: ['#7d2f20', '#5a3d24'] }, props: { pine: 30, tree: 6, rock: 8 } },
-  forest_mist: { ground: '#4f7a40', ground2: '#4b763c', path: '#7a6a4a', sky: '#b8c4c8', fog: [18, 60], props: { tree: 45, pine: 25, rock: 10, mushroom: 15 } },
-  rocky: { ground: '#8a8070', ground2: '#857b6b', path: '#a89a80', sky: '#b8c8d8', fog: [40, 100], props: { boulder: 40, rock: 30, dead: 8 } },
+  forest_mist: { ground: '#4f7a40', ground2: '#4b763c', path: '#7a6a4a', sky: '#b8c4c8', fog: [18, 60], props: { tree: 45, pine: 25, rock: 10, mushroom: 15, m_kokler: 8, m_diken: 6 } },
+  rocky: { ground: '#8a8070', ground2: '#857b6b', path: '#a89a80', sky: '#b8c8d8', fog: [40, 100], props: { boulder: 40, rock: 30, dead: 8, m_totem: 3, m_pano: 3, m_tezgah: 2 } },
   desert: { ground: '#d9b56a', ground2: '#d4b065', path: '#c9a35a', sky: '#f0d9a8', fog: [45, 110], props: { cactus: 30, sandrock: 25, bones: 6 } },
   desert_village: { ground: '#d4b06a', ground2: '#cfab65', path: '#b8955a', sky: '#f0d9a8', fog: [45, 110], village: { wall: '#e0c89a', roofs: ['#8a6440', '#c9a35a'] }, props: { cactus: 18, sandrock: 15, palm: 10 } },
-  swamp: { ground: '#4a5a35', ground2: '#465631', path: '#5a4a35', sky: '#8a9a7a', fog: [15, 55], props: { dead: 30, pool: 14, reed: 30, mushroom: 10 } },
-  snow: { ground: '#e8eef2', ground2: '#e2e9ee', path: '#c8d0d8', sky: '#d8e4ee', fog: [30, 85], snow: true, props: { snowpine: 55, rock: 20, snowpile: 16 } },
+  swamp: { ground: '#4a5a35', ground2: '#465631', path: '#5a4a35', sky: '#8a9a7a', fog: [15, 55], props: { dead: 30, pool: 14, reed: 30, mushroom: 10, m_balcik: 10, m_kokler: 10, m_diken: 6, m_totem: 3 } },
+  snow: { ground: '#e8eef2', ground2: '#e2e9ee', path: '#c8d0d8', sky: '#d8e4ee', fog: [30, 85], snow: true, props: { snowpine: 55, rock: 20, snowpile: 16, m_boynuz: 4 } },
   ice_cave: { ground: '#c8dce8', ground2: '#c2d6e2', path: '#a8c0d0', sky: '#4a6a88', fog: [22, 70], snow: true, props: { crystal: 50, icerock: 30 } },
-  volcanic: { ground: '#3a2a24', ground2: '#362620', path: '#4a3a30', sky: '#5a3a30', fog: [25, 75], props: { lava: 14, lavarock: 35, dead: 10 } },
+  volcanic: { ground: '#3a2a24', ground2: '#362620', path: '#4a3a30', sky: '#5a3a30', fog: [25, 75], props: { lava: 14, lavarock: 35, dead: 10, m_kokler: 5 } },
   castle_town: { ground: '#6a8a50', ground2: '#66864c', path: '#9a978e', sky: '#a8b8c8', fog: [40, 95], village: { wall: '#b8b4aa', roofs: ['#2f4766', '#4a5060'] }, props: { tree: 10, tower: 6, pine: 8 } },
-  ruins: { ground: '#6a6a5a', ground2: '#666656', path: '#8a8a7a', sky: '#8a8a9a', fog: [25, 75], props: { pillar: 30, dead: 20, rock: 15 } },
-  demon: { ground: '#3a1a1a', ground2: '#361818', path: '#4a2a2a', sky: '#2a0a0a', fog: [20, 65], props: { spike: 35, lava: 12, lavarock: 15 } },
-  dragon_valley: { ground: '#7a8a5a', ground2: '#768656', path: '#9a8a6a', sky: '#c8b8a8', fog: [35, 95], props: { boulder: 30, bones: 15, tree: 10 } },
+  ruins: { ground: '#6a6a5a', ground2: '#666656', path: '#8a8a7a', sky: '#8a8a9a', fog: [25, 75], props: { pillar: 30, dead: 20, rock: 15, m_harabe_kapi: 5, m_ejder_heykeli: 3, m_diken: 6, m_kokler: 5 } },
+  demon: { ground: '#3a1a1a', ground2: '#361818', path: '#4a2a2a', sky: '#2a0a0a', fog: [20, 65], props: { spike: 35, lava: 12, lavarock: 15, m_diken: 10, m_harabe_kapi: 3, m_kokler: 6 } },
+  dragon_valley: { ground: '#7a8a5a', ground2: '#768656', path: '#9a8a6a', sky: '#c8b8a8', fog: [35, 95], props: { boulder: 30, bones: 15, tree: 10, m_ejder_heykeli: 6, m_boynuz: 8, m_totem: 3 } },
   lake: { ground: '#6c9b4b', ground2: '#689748', path: '#b8996a', sky: '#a8d0e8', fog: [45, 110], props: { tree: 16, pine: 12, reed: 25, rock: 8 } },
-  dark_throne: { ground: '#1a1a22', ground2: '#18181f', path: '#2a2a35', sky: '#1a1028', fog: [20, 65], props: { pillar: 25, darkcrystal: 30, spike: 10 } },
+  dark_throne: { ground: '#1a1a22', ground2: '#18181f', path: '#2a2a35', sky: '#1a1028', fog: [20, 65], props: { pillar: 25, darkcrystal: 30, spike: 10, m_harabe_kapi: 4, m_diken: 8, m_kokler: 6 } },
 };
 
 let group = null;
@@ -526,7 +527,32 @@ function banner(X, Z, rnd) {
   add(new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 4), mat('#e8b54a')), X, 5.15, Z);
 }
 
+// kullanıcının getirdiği dokulu süs modelleri: boy (m), çarpışma yarıçapı oranı (0: içinden geçilir), boy oynaması
+const MODEL_PROPS = {
+  diken: { h: 1.3, r: 0.35, v: 0.3 }, balcik: { h: 1.0, r: 0, v: 0.3 }, harabe_kapi: { h: 4.6, r: 0.4, v: 0.15 },
+  ejder_heykeli: { h: 3.8, r: 0.35, v: 0.15 }, kokler: { h: 1.6, r: 0, v: 0.3 }, tezgah: { h: 1.2, r: 0.45, v: 0.1 },
+  totem: { h: 2.6, r: 0.15, v: 0.15 }, pano: { h: 1.9, r: 0.3, v: 0.1 }, boynuz: { h: 1.0, r: 0, v: 0.3 },
+};
+function modelProp(name, x, z, rnd) {
+  const cfg = MODEL_PROPS[name], holder = new THREE.Group();
+  holder.userData.prop = name;
+  holder.rotation.y = rnd() * Math.PI * 2;
+  const H = cfg.h * (1 - cfg.v / 2 + rnd() * cfg.v);
+  add(holder, x, 0, z, false);
+  loadModel(`models/props/${name}.glb`).then((src) => {
+    const m = src.clone(true);
+    const bb = new THREE.Box3().setFromObject(m), size = bb.getSize(new THREE.Vector3());
+    const s = H / Math.max(size.y, 1e-3);
+    m.scale.setScalar(s);
+    m.position.set(-(bb.min.x + bb.max.x) / 2 * s, -bb.min.y * s, -(bb.min.z + bb.max.z) / 2 * s);
+    m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.userData.shared = true; } });
+    holder.add(m);
+  }).catch((e) => console.warn('Süs modeli yüklenemedi:', name, e));
+  // çarpışma: modelin boyuna göre tahmini yarıçap (yükleme beklenmeden)
+  if (cfg.r) circles.push({ x, z, r: cfg.h * cfg.r });
+}
 const PROP_BUILDERS = {
+  ...Object.fromEntries(Object.keys(MODEL_PROPS).map((n) => ['m_' + n, (x, z, th, rnd) => modelProp(n, x, z, rnd)])),
   snowman: (x, z) => snowman(x, z),
   snowpile: (x, z, th, rnd) => snowpile(x, z, 0.9 + rnd() * 1.4),
   log: (x, z, th, rnd) => fallenLog(x, z, rnd),
@@ -602,7 +628,7 @@ function mergeStatic(root) {
 export function loadMap(scene, def) {
   if (group) {
     scene.remove(group);
-    group.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+    group.traverse((o) => { if (o.geometry && !o.userData.shared) o.geometry.dispose(); });
   }
   colliders.length = 0; circles.length = 0;
   group = new THREE.Group();

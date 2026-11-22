@@ -4,9 +4,22 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 6.5 (bu sürüm): kalkan yuvası, 9 kalkan ve 9 miğfer
+### Aşama 6.6 (bu sürüm): harita süsleri; miğfer ve kalkan görünmez
 
-- **Yeni yuva: Kalkan** (Metin2'deki gibi). Envanterde ayakkabının yanında; bütün sınıflar takabilir. Savunma ve can verir, demircide yükseltilir, efsunlanır. Kalkan sol ön kola takılır, herkes görür.
+- **Miğfer ve kalkan artık karakterde görünmez**: takılınca sadece güç verirler (savunma, can, efsun). Envanterde simgeleri görünür; karakterin kendi başlığı/saçı hep görünür.
+- **9 dokulu harita süsü** (kullanıcının getirdiği modeller), temasına uygun haritalara dağıtıldı:
+  - Dikenli sarmaşık: Sisli Orman, Kara Bataklık, Lanetli Harabeler, İblis Kulesi, Kara Taht
+  - Yeşil balçık: Kara Bataklık
+  - Mor köklü harabe kapı: Lanetli Harabeler, İblis Kulesi, Kara Taht
+  - Taş ejder heykeli: Ejder Vadisi, Ejder Kalesi, Lanetli Harabeler
+  - Çatlaktan çıkan kökler: Sisli Orman, Kara Bataklık, Volkan, Harabeler, İblis Kulesi, Kara Taht
+  - Kanlı tezgâh, kafatası totemi, pençe izli pano: Taş Vadisi, Kızıl Kanyon, Ejder Kalesi
+  - Boynuz yığını: Kuru Çöl, Kızıl Kanyon, Karlı Dağlar, Ejder Vadisi
+  Büyük süslerin (kapı, heykel, totem, tezgâh) içinden geçilmez.
+
+### Aşama 6.5: kalkan yuvası, 9 kalkan ve 9 miğfer
+
+- **Yeni yuva: Kalkan** (Metin2'deki gibi). Envanterde ayakkabının yanında; bütün sınıflar takabilir. Savunma ve can verir, demircide yükseltilir, efsunlanır. 
 - **9 runik kalkan** (kullanıcının getirdiği dokulu modeller): Acemi'den İmparator'a 16 kademe. Tahta yuvarlak → demirli → gümüş → altın → kara boynuzlu. Kostümcü/Zırhçı'da satılır, canavarlardan düşer.
 - **9 yeni miğfer**: bütün miğfer kademeleri artık kendi modeliyle görünür (deri → demir → gümüş → altın boynuzlu/kanatlı → kara boynuzlu).
 - GM karakterine bir kez en iyi kalkan takılır.
