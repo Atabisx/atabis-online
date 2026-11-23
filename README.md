@@ -4,7 +4,13 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 6.9 (bu sürüm): savaşçı, ninja ve sura için yeni karakterler
+### Aşama 7.0 (bu sürüm): Avcı için yeni karakter
+
+- **Avcı (okçu):** Kızıl Gölge Kılıcı — kızıl pelerinli, maskeli erkek savaşçı. Sesi artık erkek sesi. Elindeki büyük kızıl kılıç kesildi, oyunun silahı takılır.
+- `tools/glbrig.py --limb 0.1`: kolun yanından sarkan pelerin kola bağlanmaz, gövdeyle kalır (kol kalkınca pelerin kopmasın).
+- Şaman (Kam) eski modeliyle kaldı.
+
+### Aşama 6.9: savaşçı, ninja ve sura için yeni karakterler
 
 - **Alp (savaşçı):** Şafak Şövalyesi — kızıl saçlı, kırmızı pelerinli, gümüş zırhlı kadın şövalye.
 - **Akıncı (ninja):** Gölge Kılıcı — kızıl atkılı, at kuyruklu kadın ninja. Sesi artık kadın sesi.

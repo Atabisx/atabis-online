@@ -59,7 +59,7 @@ def main():
     ap.add_argument('src'); ap.add_argument('joints'); ap.add_argument('dst')
     ap.add_argument('--voxel', type=float, default=0.01); ap.add_argument('--cut', default='')
     ap.add_argument('--power', type=float, default=5.0); ap.add_argument('--smooth', type=int, default=8)
-    ap.add_argument('--solid', action='store_true'); ap.add_argument('--hops', type=int, default=2); ap.add_argument('--torso', type=float, default=0.75); ap.add_argument('--facing', type=float, default=10.0); ap.add_argument('--shell', type=int, default=0)
+    ap.add_argument('--solid', action='store_true'); ap.add_argument('--hops', type=int, default=2); ap.add_argument('--torso', type=float, default=0.75); ap.add_argument('--limb', type=float, default=0.0, help='kol yarıçapı sınırı (0: yok)'); ap.add_argument('--facing', type=float, default=10.0); ap.add_argument('--shell', type=int, default=0)
     ap.add_argument('--dump', default='', help='ağırlıkları .npz olarak da yaz (deneme için)')
     a = ap.parse_args()
 
@@ -132,6 +132,9 @@ def main():
         g = dijkstra(G, directed=False, indices=np.unique(seeds), min_only=True)
         e = seg_dist(P, a0, b0)
         D[:, bi] = np.maximum(g[pv], e * 0.999) + h * 0.5
+        if a.limb and any(n.endswith(x) for x in ('Arm', 'ForeArm', 'Hand')):
+            # kola yakın sarkan pelerin kola bağlanmasın: kol kemiğinden bu yarıçaptan uzak noktalar kola gitmez
+            D[e > a.limb * (1.4 if n.endswith('Hand') else 1.0), bi] = np.inf
         if a.facing and any(n.endswith(x) for x in ('Arm', 'ForeArm', 'Hand')):
             # kemik yüzeyin arkasında olmalı: yüzey normali kemikten dışarı bakmıyorsa (kola yaslanan gövde gibi) uzak say
             ab = b0 - a0; t = np.clip(((P - a0) @ ab) / max(ab @ ab, 1e-12), 0, 1)

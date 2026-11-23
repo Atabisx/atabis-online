@@ -240,7 +240,7 @@ const CHAR_MODELS = {
   ninja: { url: 'models/chars/ninja.glb', k: 1.0 },                                       // Gölge Kılıcı (kızıl atkılı kadın ninja; at kuyruğu boyu etkilemesin)
   sura: { url: 'models/chars/sura.glb', k: 1.03 },                                        // Altın Fırtına İmparatoru (siyah-altın zırhlı erkek)
   saman: { url: 'models/chars/saman.glb', hide: ['prop'], skip: ['prop', 'outline'], k: 0.933 },
-  okcu: { url: 'models/chars/okcu.glb', hide: ['crossbow'], skip: ['crossbow'] },        // iblis avcısı
+  okcu: { url: 'models/chars/okcu.glb' },                                                // Kızıl Gölge Kılıcı (kızıl pelerinli erkek; elindeki kılıç kesildi)
 };
 const charModels = {};   // cls -> { scene, calib, clips }
 // bekleme duruşu yana dönük (savaş duruşu): kalçayı dikey eksende 'deg' derece öne çevirir, gövde de onunla döner
