@@ -4,7 +4,15 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 6.7 (bu sürüm): köy meydanında Türk bayrağı, süslü köy
+### Aşama 6.8 (bu sürüm): bilezik, küpe ve taç modelleri
+
+- **Bilezikler artık kullanıcının modelleriyle:** Sv. 1-29 Kırmızı Boncuklu Bilezik (altın çanlı), Sv. 36-64 Boho Zincir Bilezik (taşlı zincir, halka hâline getirildi), Sv. 71 ve üstü Altın Yılan Bilezik (kendi kuyruğunu ısıran yılan).
+- **Küpeler artık kullanıcının modelleriyle:** Sv. 1-29 Damla Zincir Küpe, Sv. 36-64 Güneş Halka Küpe, Sv. 71 ve üstü Boho Taşlı Halka Küpe.
+- **İki yeni taç (miğfer yuvası, sadece boss'lardan nadiren düşer):** Mücevherli Gümüş Taç (Sv. 43; Savunma +42, Can +160, Mana +100) ve Kutsal Altın Taç (Sv. 71; Savunma +85, Can +320, Mana +200).
+- Takılar ve taçlar envanterde, dükkânda, yönetim panelinde ve yere düştüğünde kendi 3D modeliyle görünür. Miğfer ve kalkan gibi karakterin üstünde görünmezler, takılınca güç verirler.
+- **Araç:** `tools/takiglb.py` takı modellerini telefona uygun hâle getirir: meshopt ile sıkıştırılmış GLB'leri açar (`tools/meshopt.py`), sadeleştirir, dokuyu 512 piksel JPEG yapar; bir setten tek parça seçebilir (`--list`, `--part`) ve düz kayışı halkaya kıvırabilir (`--bend`).
+
+### Aşama 6.7: köy meydanında Türk bayrağı, süslü köy
 
 - **Atabis Köyü meydanının tam ortasında Türk bayrağı:** basamaklı taş kaide, metal gönder, altın alem; bayrak rüzgârda dalgalanır. Oranlar 2893 sayılı Türk Bayrağı Kanunu'ndaki ölçülere göre çizildi (en G, boy 1,5G; hilal ve yıldız ölçüleri). Meydandaki kuyu kaldırıldı.
 - **Köy süslendi:** gönderden meydanın dört köşesindeki fenerlere ve fenerler arasına kırmızı-beyaz flamalı süs ipleri, köşe fenerlerinde küçük dalgalanan bayraklar, ana sokaklarda karşılıklı flamalar.

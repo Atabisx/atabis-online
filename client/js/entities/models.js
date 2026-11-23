@@ -449,6 +449,10 @@ export const ITEM_MODELS = {
   kalkan1: { armor: true, height: 0.5, y: 0 }, kalkan2: { armor: true, height: 0.5, y: 0 }, kalkan3: { armor: true, height: 0.58, y: 0 },
   kalkan4: { armor: true, height: 0.58, y: 0 }, kalkan5: { armor: true, height: 0.52, y: 0 }, kalkan6: { armor: true, height: 0.6, y: 0 },
   kalkan7: { armor: true, height: 0.62, y: 0 }, kalkan8: { armor: true, height: 0.62, y: 0 }, kalkan9: { armor: true, height: 0.62, y: 0 },
+  // kullanıcının getirdiği takılar (tools/takiglb.py ile hazırlandı); fit: en uzun kenarı bu boya (m) getirilir
+  kirmizi_bilezik: { armor: true, fit: 0.5, y: 0 }, yilan_bilezik: { armor: true, fit: 0.5, y: 0 }, boho_bilezik: { armor: true, fit: 0.55, y: 0 },
+  boho_kupe: { armor: true, fit: 0.5, y: 0 }, damla_kupe: { armor: true, fit: 0.5, y: 0 }, gunes_kupe: { armor: true, fit: 0.5, y: 0 },
+  gumus_tac: { armor: true, fit: 0.5, y: 0 }, kutsal_tac: { armor: true, fit: 0.5, y: 0 },
 };
 // Modeli yüklenene kadar yedek mesh görünür; yüklenince yerine geçer
 export function itemModel(key, fallback) {
@@ -466,7 +470,7 @@ export function itemModel(key, fallback) {
     const box = new THREE.Box3().setFromObject(m);
     const h = Math.max(0.001, box.max.y - box.min.y);
     if (spec.armor) {
-      const k = spec.height / h;
+      const k = spec.fit ? spec.fit / Math.max(0.001, box.max.x - box.min.x, h, box.max.z - box.min.z) : spec.height / h;
       m.scale.multiplyScalar(k);
       m.position.set(-(box.min.x + box.max.x) / 2 * k, -(box.min.y + h / 2) * k + spec.y, -(box.min.z + box.max.z) / 2 * k);
     } else {

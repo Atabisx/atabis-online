@@ -52,6 +52,16 @@ def shield_model(i):
     return 'kalkan' + str({0: 1, 1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 4, 7: 4, 8: 5, 9: 6, 10: 6, 11: 7, 12: 7, 13: 8, 14: 8}.get(i, 9))
 
 
+def bracelet_model(i):
+    # kullanıcının getirdiği bilezikler: kırmızı boncuklu -> boho zincir -> altın yılan
+    return 'kirmizi_bilezik' if i <= 4 else 'boho_bilezik' if i <= 9 else 'yilan_bilezik'
+
+
+def earring_model(i):
+    # kullanıcının getirdiği küpeler: damla zincir -> güneş halka -> boho taşlı halka
+    return 'damla_kupe' if i <= 4 else 'gunes_kupe' if i <= 9 else 'boho_kupe'
+
+
 def armor_model(i):
     if i <= 1:
         return 'demir_zirh'
@@ -126,9 +136,11 @@ def build_items():
                 elif slot == 'shoes':
                     it['def'] = round((3 + 6 * i + 0.4 * i * i) * 0.4 * m)
                 elif slot == 'bracelet':
+                    it['model'] = bracelet_model(i)
                     it['atk'] = round((2 + 3 * i) * m)
                     it['hp'] = round((20 + 15 * i) * m)
                 elif slot == 'earring':
+                    it['model'] = earring_model(i)
                     it['hp'] = round((30 + 25 * i) * m)
                     it['def'] = round((1 + 1.5 * i) * m)
                 items[f'{slot}{i}{suf}'] = it
@@ -211,6 +223,13 @@ def build_items():
     for key, name, kind, color, glow, lv, pr, rar, st in WINGS:
         items[key] = {'name': name, 'slot': 'wings', 'lv': lv, 'price': pr or 5000000, 'rarity': rar, 'color': color,
                       'wing': {'kind': kind, 'color': color, 'glow': glow, **({'model': key, 'scale': 1.15} if kind == 'model' else {})}, 'desc': 'Sırtına takılan kanat. ' + ('Sadece boss\'lardan düşer.' if not pr else 'Kostümcüden alınır, boss\'lardan da düşebilir.'), **st}
+    # taçlar (kullanıcının getirdiği modeller): miğfer yerine takılır, sadece boss'lardan nadiren düşer
+    # (fiyat dükkânda satılmaz, sadece NPC'ye satarken çeyreği alınır; 'tier' yok ki sıradan düşme listelerine girmesin)
+    CROWNS = [('tac_gumus', 'Mücevherli Gümüş Taç', 'gumus_tac', '#c9cdd8', 43, 400000, {'def': 42, 'hp': 160, 'mp': 100}),
+              ('tac_kutsal', 'Kutsal Altın Taç', 'kutsal_tac', '#e8b54a', 71, 1200000, {'def': 85, 'hp': 320, 'mp': 200})]
+    for key, name, model, color, lv, pr, st in CROWNS:
+        items[key] = {'name': name, 'slot': 'helmet', 'lv': lv, 'rarity': 2, 'color': color, 'price': pr, 'model': model,
+                      'desc': 'Başa takılan taç. Sadece boss\'lardan düşer.', **st}
     COSTUMES = [('kostum_altin', 'Altın Kostüm', '#e8b54a', 250000), ('kostum_gece', 'Gece Kostümü', '#2b2445', 250000),
                 ('kostum_kar', 'Kar Kostümü', '#eef4ff', 250000), ('kostum_kizil', 'Kızıl Kostüm', '#b8321f', 250000),
                 ('kostum_orman', 'Orman Kostümü', '#3f7a3a', 250000), ('kostum_gok', 'Gök Kostümü', '#3d8fe0', 250000)]
@@ -426,7 +445,8 @@ def build(items):
             d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': 0,
                       'speed': 5.2, 'range': min(6.0, 2.6 * scale), 'cd': 2000, 'boss': True, 'respawn': 120,
                       'drops': [[k, 0.28] for k in own] + [[k, 0.12] for k in nxt] + [[k, 0.035] for k in leg]
-                               + [['kanat_ejder', 0.003], ['pet_ejder', 0.005], ['kanat_melek', 0.01], ['kanat_golge', 0.006], ['kanat_isik', 0.003], ['pet_kurt', 0.01]],
+                               + [['kanat_ejder', 0.003], ['pet_ejder', 0.005], ['kanat_melek', 0.01], ['kanat_golge', 0.006], ['kanat_isik', 0.003], ['pet_kurt', 0.01],
+                                  ['tac_gumus', 0.006], ['tac_kutsal', 0.003]],
                       'potions': [[('p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4'), 1.0],
                                   [('p_mp2' if lv < 40 else 'p_mp3' if lv < 75 else 'p_mp4'), 1.0],
                                   ['p_green', 0.3], ['p_speed', 0.3], ['efsun_degis', 0.2]],

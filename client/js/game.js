@@ -1292,6 +1292,9 @@ function dropMesh(d) {
   } else if (def.slot === 'armor') {
     shape = def.plate ? chestMesh(def) : new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.34, 0.2), mat('#d9cfb8'));
     shape.position.y = 0.3;
+  } else if (def.model && ITEM_MODELS[def.model] && ['bracelet', 'earring', 'helmet'].includes(def.slot) && ITEM_MODELS[def.model].fit) {
+    // takı ve taç: yerde kendi modeliyle görünür
+    shape = itemModel(def.model, null); shape.position.y = 0.35;
   } else if (def.slot === 'helmet') {
     shape = helmetMesh(def); shape.position.y = 0.2; shape.scale.setScalar(1.4);
   } else if (def.slot === 'potion') {
@@ -1370,8 +1373,8 @@ function iconBuilder(key, def) {
   if (s === 'shield' && def.model && ITEM_MODELS[def.model]) return () => itemModel(def.model, null);
   if (s === 'wings' && def.wing && def.wing.model) return () => { const g = buildWings(def.wing); g.children[0].rotation.y = 0; return g; };   // simgede süslü yüz öne
   if (s === 'shoes') return () => icons.bootsMesh(def);
-  if (s === 'bracelet') return () => icons.braceletMesh(def);
-  if (s === 'earring') return () => icons.earringMesh(def);
+  if (s === 'bracelet') return () => (def.model && ITEM_MODELS[def.model] ? itemModel(def.model, null) : icons.braceletMesh(def));
+  if (s === 'earring') return () => (def.model && ITEM_MODELS[def.model] ? itemModel(def.model, null) : icons.earringMesh(def));
   if (s === 'potion') return () => icons.potionMesh(def);
   if (s === 'gem') return () => icons.pearlMesh(def.color);
   if (s === 'fish') return () => (key === 'b_cizme' ? icons.bootsMesh({ color: '#5a4a3a' }) : icons.fishMesh(def.color));
