@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { mat, esc } from './util.js';
-import { loadMap, updateMap, colliders, circles, BOUNDS, groundH, blockedAt } from './world/map.js';
+import { loadMap, updateMap, colliders, circles, BOUNDS, groundH, blockedAt, hasGround, setGroundEnabled } from './world/map.js';
 import { buildMob } from './entities/mobs.js';
 import { itemModel, ITEM_MODELS, attachMountModel, MOUNT } from './entities/models.js';
 import { buildOutfit, undersuitColor } from './entities/outfits.js';
@@ -196,7 +196,7 @@ function createStone(s) {
 // her karede: rün nabzı, vurulunca parlama, dönen kırıklar, ışık zerreleri
 function updateStones(dt, t) {
   for (const s of Object.values(stones)) {
-    s.group.position.y = groundH(s.x, s.z);
+    if (hasGround()) s.group.position.y = groundH(s.x, s.z);
     if (s.shake > 0) { s.shake -= dt; s.rock.position.x = (Math.random() - 0.5) * 0.25; } else s.rock.position.x = 0;
     if (!s.mat) continue;
     s.flash = Math.max(0, s.flash - dt * 3);
@@ -1270,7 +1270,7 @@ function updateMobs(dt) {
   for (const m of Object.values(mobs)) {
     m.t += dt;
     m.v.root.position.lerp(m.target, 1 - Math.exp(-10 * dt));
-    m.v.root.position.y = groundH(m.v.root.position.x, m.v.root.position.z);
+    if (hasGround()) m.v.root.position.y = groundH(m.v.root.position.x, m.v.root.position.z);
     m.v.root.rotation.y = angleLerp(m.v.root.rotation.y, m.ry, 1 - Math.exp(-10 * dt));
     if (m.atkT > 0) m.atkT = Math.max(0, m.atkT - dt);
     const atk = m.atkT > 0 ? Math.sin((1 - m.atkT / 0.4) * Math.PI) : 0;
@@ -2847,6 +2847,7 @@ function duelBanner(text, kind) {
 const lobby = { st: null, mode: 'off', char: null, charKey: null, show: [], t: 0, yaw: 0, drag: 0 };
 // mode: 'login' (kamera sunağın çevresinde döner), 'select' (seçili karakter sunakta), 'off'
 export function lobbyMode(mode) {
+  setGroundEnabled(mode === 'off');   // karakter seçme sahnesi düz platformda
   if (mode === lobby.mode) return;
   if (mode !== 'off') sfx.music('giris');   // giriş ve karakter seçme müziği
   if (mode === 'off') {
@@ -2997,7 +2998,8 @@ function loop() {
 
   for (const p of Object.values(players)) {
     if (p.id !== myId && !p.npc) p.group.position.lerp(p.target, 1 - Math.exp(-10 * dt));
-    p.group.position.y = groundH(p.group.position.x, p.group.position.z);   // adalı/arenalı haritada zemine bas
+    // adalı/arenalı haritada zemine bas; karakter seçme sahnesindeki (platformdaki) karaktere dokunma
+    if (hasGround() && !String(p.id).startsWith('lobby')) p.group.position.y = groundH(p.group.position.x, p.group.position.z);
     p.group.rotation.y = angleLerp(p.group.rotation.y, p.ry, 1 - Math.exp(-14 * dt));
     if (!updateAtkAnim(p, dt)) setAnim(p, p.moving && p.swingT <= 0 && !p.mounted ? 'Run' : 'Idle');
     if (p.mixer) p.mixer.update(dt);
@@ -3033,7 +3035,7 @@ function loop() {
   updateCorpses(dt);
   updateStones(dt, clock.elapsedTime);
   for (const s of Object.values(stones)) placeLabel(s.label, s.x, 4.6 + s.group.position.y, s.z);
-  for (const s of Object.values(stallObjs)) s.group.position.y = groundH(s.x, s.z);
+  if (hasGround()) for (const s of Object.values(stallObjs)) s.group.position.y = groundH(s.x, s.z);
   for (const d of Object.values(drops)) {
     d.t += dt;
     d.spin.rotation.y += dt * 1.5;

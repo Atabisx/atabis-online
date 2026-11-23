@@ -28,7 +28,7 @@ function init() {
 const SAMPLE_NAMES = ['swing_sword0', 'swing_sword1', 'swing_sword2', 'swing_heavy0', 'swing_heavy1', 'swing_dagger0', 'swing_dagger1', 'swing_staff',
   'bow_shot', 'hit_flesh0', 'hit_flesh1', 'hit_flesh2', 'hit_crit', 'hit_stone', 'hit_armor', 'hit_arrow',
   ...['hya0', 'hya2', 'hya3', 'hya4', 'hya5', 'hya7', 'sharp1', 'myst0'].map((n) => 'voice_' + n),   // kadın sesleri
-  ...['ha0', 'ha1', 'ha2', 'ha3', 'ha4', 'ha6', 'ha7', 'ha8', 'hya1', 'hya6', 'sharp0', 'myst1'].map((n) => 'voice_' + n)];   // erkek (Akıncı)
+  ...['ha0', 'ha1', 'ha2', 'ha3', 'ha4', 'ha6', 'ha7', 'ha8', 'hya1', 'hya6', 'sharp0', 'myst1'].map((n) => 'voice_' + n)];   // erkek sesleri (Alp, Yalaz)
 const samples = {};
 function loadSamples() {
   for (const n of SAMPLE_NAMES) {
@@ -212,9 +212,9 @@ export function hit(kind, crit, pos) {
 const FEMALE_LIGHT = ['hya4', 'hya0', 'hya5'];
 const FEMALE_STRONG = ['hya0', 'hya2', 'hya3', 'hya4', 'hya5', 'hya7'];
 const VOICES = {
-  savasci: { light: ['ha1', 'ha2', 'ha6'], strong: ['ha0', 'ha3', 'ha4', 'ha7', 'ha8', 'hya6'], magic: ['sharp1', 'myst1'], rate: 0.97 },
-  ninja: { light: FEMALE_LIGHT, strong: ['hya0', 'hya4', 'hya5', 'hya7', 'sharp1'], magic: ['sharp0', 'hya4'], rate: 1.04 },
-  sura: { light: ['ha1', 'ha2', 'ha6'], strong: ['ha0', 'ha3', 'ha4', 'ha7', 'ha8', 'hya1', 'hya6'], magic: ['myst0', 'myst1'], rate: 0.95 },
+  savasci: { light: ['ha1', 'ha2', 'ha6'], strong: ['ha0', 'ha3', 'ha4', 'ha7', 'ha8', 'hya6'], magic: ['sharp0', 'myst1'], rate: 0.97 },
+  ninja: { light: FEMALE_LIGHT, strong: ['hya0', 'hya4', 'hya5', 'hya7', 'sharp1'], magic: ['sharp1', 'hya4'], rate: 1.04 },
+  sura: { light: ['ha1', 'ha2', 'ha6'], strong: ['ha0', 'ha3', 'ha4', 'ha7', 'ha8', 'hya1', 'hya6'], magic: ['sharp0', 'myst1'], rate: 0.95 },
   saman: { light: FEMALE_LIGHT, strong: FEMALE_STRONG, magic: ['myst0', 'sharp1'], rate: 1.05 },
   okcu: { light: FEMALE_LIGHT, strong: ['hya2', 'hya3', 'hya7', 'sharp1'], magic: ['sharp1', 'hya7'], rate: 1.0 },
 };

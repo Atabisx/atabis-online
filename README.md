@@ -4,7 +4,12 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 7.2 (bu sürüm): karakterler yere basıyor, eski köy geri döndü
+### Aşama 7.3 (bu sürüm): karakter seçme ekranı ve sesler
+
+- **Düzeltme:** karakter seçme ekranında karakter platformun içine gömülüyordu. Sebebi, adalı haritalar için eklenen zemin yüksekliğinin platformdaki karakteri de yere (y=0) çekmesiydi. Zemin yüksekliği artık sadece yükseklik verisi olan haritalarda ve oyun içinde uygulanır; seçme ekranında kapalıdır.
+- **Sesler:** Alp'in bütün bağırışları erkek sesi; Akıncı, Kam ve Avcı'nınkiler kadın sesi (büyü bağırışları dahil). Yalaz erkek sesi.
+
+### Aşama 7.2: karakterler yere basıyor, eski köy geri döndü
 
 - **Düzeltme:** yeni karakterler (iskeleti sonradan eklenenler) yere gömülü duruyordu. `tools/glbrig.py` artık modelin ayak tabanını y=0'a koyar (mixamo düzeni); bütün karakterler yeniden hazırlandı.
 - **Binek:** kaplanın eyer yüksekliği düzeltildi, binici artık havada durmuyor, sırtına oturuyor.

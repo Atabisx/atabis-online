@@ -57,8 +57,11 @@ function hmCell(x, z) {
   return i < 0 || j < 0 || i >= HM.nx || j >= HM.nz ? -1 : i * HM.nz + j;
 }
 // yürünen zeminin yüksekliği (model haritası yoksa ya da ızgara dışında 0)
+// karakter seçme sahnesi açıkken kapalı (sahne haritanın ortasında durur, yükseklik onu etkilemesin)
+let GROUND_ON = true;
+export function setGroundEnabled(on) { GROUND_ON = !!on; }
 export function groundH(x, z) {
-  if (!HM) return 0;
+  if (!HM || !GROUND_ON) return 0;
   const fx = (x - HM.cx - HM.x0) / HM.cell - 0.5, fz = (z - HM.cz - HM.z0) / HM.cell - 0.5;
   const i = Math.floor(fx), j = Math.floor(fz);
   if (i < 0 || j < 0 || i >= HM.nx - 1 || j >= HM.nz - 1) return 0;
@@ -66,8 +69,10 @@ export function groundH(x, z) {
   const a = h[i * n + j], b = h[(i + 1) * n + j], c = h[i * n + j + 1], d = h[(i + 1) * n + j + 1];
   return ((a * (1 - tx) + b * tx) * (1 - tz) + (c * (1 - tx) + d * tx) * tz) * HM.hScale;
 }
+// bu haritada yükseklik verisi var mı (yoksa yer düz, y'ye dokunulmaz)
+export function hasGround() { return !!HM && GROUND_ON; }
 // ev, ağaç, uçurum gibi içine yürünmeyen hücre
-export function blockedAt(x, z) { const k = hmCell(x, z); return k >= 0 && HM.block[k] === 1; }
+export function blockedAt(x, z) { const k = GROUND_ON ? hmCell(x, z) : -1; return k >= 0 && HM.block[k] === 1; }
 function add(mesh, x, y, z, cast = true) {
   mesh.position.set(x, y, z);
   mesh.castShadow = cast; mesh.receiveShadow = true;
