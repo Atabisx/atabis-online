@@ -9,6 +9,7 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 - **Beş özel zırh ve Uşak Ceketi artık karakterin üstünde görünür** (bütün sınıflarda). Giysi her sınıfın bedenine önceden oturtuldu (`tools/wornglb.py`): göğüs enine/derinliğine ve boyuna göre ölçeklenir, ceketin kolları karakterin kollarına, Ağır Plaka'nın kol ve bacakları karakterinkilere çevrilir. Deri ağırlıkları bedenden aktarıldığı için yürürken ve saldırırken karakterle birlikte hareket eder; giysinin altında kalan beden gizlenir ki içinden taşmasın.
   - Kostüm zırhın üstüne gelir: ikisi de takılıysa kostüm görünür. Diğer kostümler eskisi gibi kıyafeti boyar.
   - Giysiler takılınca iner (`models/worn/*.bin.gz`, sınıf başına 300-600 KB) ve telefonda saklanır.
+  - **GM:** beş özel zırh ve Uşak Ceketi bir kez çantaya verilir; `/zirhlar` komutu eksik olanları yeniden verir.
 
 ### Aşama 7.4: özel zırhlar, Uşak Ceketi, tepeli haritalar
 
