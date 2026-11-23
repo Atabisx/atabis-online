@@ -2,7 +2,7 @@
 // Oyun kodu (html/js/css/json) her zaman önce sunucudan istenir, böylece güncellemeler hemen gelir;
 // ağ yoksa son kopya kullanılır. 3D modeller ve resimler bir kez indirilip saklanır.
 const VERSION = 'atabis-v1';
-const ASSETS = /\.(glb|png|jpg|jpeg|webp|woff2?|wav)$/i;
+const ASSETS = /\.(glb|gz|png|jpg|jpeg|webp|woff2?|wav)$/i;
 
 self.addEventListener('install', (e) => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => {

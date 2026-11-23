@@ -465,6 +465,76 @@ export const ITEM_MODELS = {
   zirh_kemik: { armor: true, fit: 0.6, y: 0 }, zirh_paladin: { armor: true, fit: 0.6, y: 0 }, zirh_altin_pul: { armor: true, fit: 0.6, y: 0 },
   zirh_kizil_pul: { armor: true, fit: 0.6, y: 0 }, zirh_agir_plaka: { armor: true, fit: 0.75, y: 0 }, kostum_usak: { armor: true, fit: 0.7, y: 0 },
 };
+// ---------- giyilebilir zırh/kostüm (tools/wornglb.py) ----------
+// Her sınıfın karakterine önceden oturtulmuş, deri ağırlıklı giysi; doku eşyanın kendi GLB'sinden gelir.
+// hide: giysinin altında kalan beden üçgenleri (içinden taşmasın diye gizlenir)
+export const WORN = new Set(['zirh_kemik', 'zirh_paladin', 'zirh_altin_pul', 'zirh_kizil_pul', 'zirh_agir_plaka', 'kostum_usak']);
+const wornCache = {};
+async function fetchGz(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(url + ' ' + r.status);
+  const b = new Uint8Array(await r.arrayBuffer());
+  if (b[0] !== 0x1f || b[1] !== 0x8b) return b.buffer;               // sunucu zaten açtıysa
+  return new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+}
+function parseWorn(buf) {
+  const dv = new DataView(buf);
+  if (dv.getUint32(0, true) !== 0x31575441) throw new Error('ATW1 değil');
+  const jl = dv.getUint32(4, true);
+  const h = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 8, jl)));
+  let off = 8 + jl;
+  const take = (C, n) => { const a = new C(buf, off, n); off += a.byteLength; off += (4 - (off % 4)) % 4; return a; };
+  const nv = h.nv;
+  const qp = take(Int16Array, nv * 3), qn = take(Int8Array, nv * 4), qu = take(Uint16Array, nv * 2);
+  const ji = take(Uint8Array, nv * 4), jw = take(Uint8Array, nv * 4);
+  const idx = take(h.i32 ? Uint32Array : Uint16Array, h.nt * 3), hide = take(Uint32Array, h.nh * 2);
+  const pos = new Float32Array(nv * 3), nrm = new Float32Array(nv * 3), uv = new Float32Array(nv * 2);
+  for (let i = 0; i < nv; i++) {
+    for (let k = 0; k < 3; k++) {
+      pos[i * 3 + k] = h.lo[k] + ((qp[i * 3 + k] + 32768) / 65535) * h.sc[k];
+      nrm[i * 3 + k] = qn[i * 4 + k] / 127;
+    }
+    uv[i * 2] = qu[i * 2] / 65535; uv[i * 2 + 1] = qu[i * 2 + 1] / 65535;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  g.setAttribute('skinIndex', new THREE.BufferAttribute(ji, 4));
+  g.setAttribute('skinWeight', new THREE.BufferAttribute(jw, 4, true));
+  g.setIndex(new THREE.BufferAttribute(idx.slice(), 1));
+  g.computeBoundingSphere();
+  return { geometry: g, hide };
+}
+// beden geometrisinin, giysinin örttüğü üçgenleri çıkarılmış kopyası (noktalar ortak)
+function bodyWithout(base, hide) {
+  const src = base.index.array, keep = new Uint8Array(src.length / 3).fill(1);
+  for (let i = 0; i < hide.length; i += 2) keep.fill(0, hide[i], hide[i] + hide[i + 1]);
+  let n = 0; for (const k of keep) n += k;
+  const out = new src.constructor(n * 3);
+  for (let t = 0, o = 0; t < keep.length; t++) if (keep[t]) { out[o++] = src[t * 3]; out[o++] = src[t * 3 + 1]; out[o++] = src[t * 3 + 2]; }
+  const g = new THREE.BufferGeometry();
+  for (const [k, v] of Object.entries(base.attributes)) g.setAttribute(k, v);
+  g.setIndex(new THREE.BufferAttribute(out, 1));
+  g.boundingSphere = base.boundingSphere; g.boundingBox = base.boundingBox;
+  return g;
+}
+export function loadWorn(key, cls) {
+  const id = key + '_' + cls;
+  if (!wornCache[id]) {
+    wornCache[id] = Promise.all([fetchGz(`models/worn/${id}.bin.gz`), loadModel(`models/items/${key}.glb`)]).then(([buf, scene]) => {
+      const w = parseWorn(buf);
+      let mat = null; scene.traverse((o) => { if (!mat && o.isMesh) mat = o.material; });
+      w.material = mat ? mat.clone() : new THREE.MeshStandardMaterial({ color: '#888888' });
+      w.material.side = THREE.DoubleSide;
+      const bodies = new Map();
+      w.bodyFor = (base) => { if (!bodies.has(base)) bodies.set(base, bodyWithout(base, w.hide)); return bodies.get(base); };
+      return w;
+    }).catch((e) => { console.warn('Giysi yüklenemedi:', id, e); return null; });
+  }
+  return wornCache[id];
+}
+
 // Modeli yüklenene kadar yedek mesh görünür; yüklenince yerine geçer
 export function itemModel(key, fallback) {
   const spec = ITEM_MODELS[key];

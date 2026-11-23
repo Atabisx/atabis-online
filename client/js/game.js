@@ -5,7 +5,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { mat, esc } from './util.js';
 import { loadMap, updateMap, colliders, circles, BOUNDS, groundH, blockedAt, hasGround, setGroundEnabled } from './world/map.js';
 import { buildMob } from './entities/mobs.js';
-import { itemModel, ITEM_MODELS, attachMountModel, MOUNT } from './entities/models.js';
+import { itemModel, ITEM_MODELS, attachMountModel, MOUNT, WORN, loadWorn } from './entities/models.js';
 import { buildOutfit, undersuitColor } from './entities/outfits.js';
 import { retargetClips, correctFrame } from './entities/retarget.js';
 import * as sfx from './audio.js';
@@ -651,14 +651,17 @@ function applyLook(p, look) {
   if (w) { wMesh = weaponMesh(w); attach(p, calib.sword, wMesh); }
   const cos = ITEMS[p.look.costume];
   if (p.custom) {
-    // kostüm: modelin kendi kıyafetini kostüm rengine boyar
+    // giyilebilir kostüm/zırh karakterin üstünde görünür (kostüm zırhı örter); öbür kostümler kıyafeti boyar
+    const wornOf = (d) => (d && d.model && WORN.has(d.model) ? d.model : null);
+    const cosWorn = wornOf(cos);
+    dressWorn(p, cosWorn || wornOf(a));
     p.model.traverse((o) => {
       if (!o.isMesh || o.userData.outline) return;
       for (const m of [].concat(o.material)) {
         if (!m.userData.base) continue;
         m.color.copy(m.userData.base);
-        if (cos && cos.tint) m.color.lerp(new THREE.Color(cos.tint), 0.42);
-        if (m.emissive) m.emissive.set(cos && cos.tint ? cos.tint : '#000000'), m.emissiveIntensity = cos ? 0.08 : 0;
+        if (cos && cos.tint && !cosWorn) m.color.lerp(new THREE.Color(cos.tint), 0.42);
+        if (m.emissive) m.emissive.set(cos && cos.tint && !cosWorn ? cos.tint : '#000000'), m.emissiveIntensity = cos && !cosWorn ? 0.08 : 0;
       }
     });
     // kendi kıyafeti olan karakter: kostüm parçası ve renk boyası yok; silah takılıysa kendi asası gizlenir
@@ -692,6 +695,28 @@ function applyLook(p, look) {
   setupAuras(p, wMesh, w, a);
 }
 
+// giysiyi karakterin kendi iskeletine bağlar; örttüğü beden üçgenleri gizlenir
+function dressWorn(p, key) {
+  if ((p.worn ? p.worn.key : null) === key) return;
+  const body = p.bodyMesh;
+  if (p.worn) {
+    if (p.worn.mesh) p.worn.mesh.removeFromParent();
+    if (body) body.geometry = body.userData.baseGeo;
+    p.worn = null;
+  }
+  if (!key || !body) return;
+  const cur = p.worn = { key, mesh: null };
+  loadWorn(key, p.cls).then((w) => {
+    if (!w || p.worn !== cur || !body.parent) return;
+    const m = new THREE.SkinnedMesh(w.geometry, w.material);
+    m.position.copy(body.position); m.quaternion.copy(body.quaternion); m.scale.copy(body.scale);
+    m.bind(body.skeleton, body.bindMatrix);
+    m.frustumCulled = false; m.castShadow = true;
+    body.parent.add(m);
+    body.geometry = w.bodyFor(body.userData.baseGeo);
+    cur.mesh = m;
+  });
+}
 const calibBase = () => calib;
 // ---------- oyuncular ----------
 const players = {};
@@ -714,6 +739,7 @@ function createPlayer(p) {
         o.frustumCulled = false;   // derili model: animasyonda sınır kutusu dışına taşabilir
         o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone();
         for (const m of [].concat(o.material)) { m.userData.base = m.color.clone(); if (!cm) obj.materials.push(m); }
+        if (cm && o.isSkinnedMesh && !o.userData.outline && !obj.bodyMesh) { obj.bodyMesh = o; o.userData.baseGeo = o.geometry; }
       }
     });
     const wrap = new THREE.Group();

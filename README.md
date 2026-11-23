@@ -4,7 +4,13 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 7.4 (bu sürüm): özel zırhlar, Uşak Ceketi, tepeli haritalar
+### Aşama 7.5 (bu sürüm): zırh ve kostüm karakterin üstünde
+
+- **Beş özel zırh ve Uşak Ceketi artık karakterin üstünde görünür** (bütün sınıflarda). Giysi her sınıfın bedenine önceden oturtuldu (`tools/wornglb.py`): göğüs enine/derinliğine ve boyuna göre ölçeklenir, ceketin kolları karakterin kollarına, Ağır Plaka'nın kol ve bacakları karakterinkilere çevrilir. Deri ağırlıkları bedenden aktarıldığı için yürürken ve saldırırken karakterle birlikte hareket eder; giysinin altında kalan beden gizlenir ki içinden taşmasın.
+  - Kostüm zırhın üstüne gelir: ikisi de takılıysa kostüm görünür. Diğer kostümler eskisi gibi kıyafeti boyar.
+  - Giysiler takılınca iner (`models/worn/*.bin.gz`, sınıf başına 300-600 KB) ve telefonda saklanır.
+
+### Aşama 7.4: özel zırhlar, Uşak Ceketi, tepeli haritalar
 
 - **Beş özel zırh** (kullanıcının modelleri; bütün sınıflar giyer, efsanevi): Kemik Hayalet Göğüslüğü (Sv. 30), Gök Paladin Zırhı (Sv. 45), Altın Pullu Zırh (Sv. 60), Kızıl Pullu Savaş Zırhı (Sv. 75), Ağır Plaka Zırh (Sv. 90). Aynı seviyedeki efsanevi zırhtan güçlü, ayrıca can verir.
   - Sadece **metin taşlarından**, zor düşer: taşın seviyesi zırhın seviyesi ile +14 arasındaysa her taşta **%1,5** (ör. Sv. 30 zırhı Sv. 30-44 taşlardan). Düşünce haritaya duyurulur.
