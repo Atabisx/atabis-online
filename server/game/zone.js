@@ -111,8 +111,11 @@ class Zone {
     return true;
   }
   randomSpot() {
+    // spawnBox: [x0, z0, x1, z1] – yaratıklar haritanın bu bölgesinde doğar (köy hayvanları köprü yakasında)
+    const sb = this.def.spawnBox;
     for (let i = 0; i < 60; i++) {
-      const x = rand(this.bounds.min + 5, this.bounds.max - 5), z = rand(this.bounds.min + 5, this.bounds.max - 5);
+      const x = sb ? rand(Math.max(sb[0], this.bounds.min + 5), Math.min(sb[2], this.bounds.max - 5)) : rand(this.bounds.min + 5, this.bounds.max - 5);
+      const z = sb ? rand(Math.max(sb[1], this.bounds.min + 5), Math.min(sb[3], this.bounds.max - 5)) : rand(this.bounds.min + 5, this.bounds.max - 5);
       if (this.safeFrom(x, z)) return [x, z];
     }
     return [this.bounds.max - 15, this.bounds.max - 15];

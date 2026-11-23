@@ -4,7 +4,16 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 7.0 (bu sürüm): Avcı için yeni karakter
+### Aşama 7.1 (bu sürüm): ada köy, arena savaş meydanı, savaş kaplanı
+
+- **Atabis Köyü artık Uyanış Adası:** kodla çizilen karlı köy kalktı; köy, kullanıcının getirdiği yeşil ada modeli (evler, meydanlar, şelaleler, kristal dağ). Doğuş noktası ve bütün dükkâncılar (Market, Silahçı, Zırhçı, Işınlayıcı, Seyis, Demirci, Kostümcü) adanın orta meydanında. Türk bayrağı ve pano da meydanda.
+- Ada düz değil: karakterler, yaratıklar, evcil hayvanlar, düşen eşyalar ve efektler zeminin yüksekliğine göre yürür. Evlere, ağaçlara, kayalara ve dik yamaçlara girilmez. Adanın çevresi yumuşak bir yamaçla yere iner; doğu ucundan köprüye yürünür.
+- **Köy hayvanları** (tavuk, horoz, domuz, inek) köprünün doğu yakasında otlar; boss'lar yine köprünün ötesinde.
+- **Savaş Meydanı (krallık savaşı) artık Nexus Arenası:** ortada mavi havuzlu dairesel arena. Üsler: kuzey meydanı, güneybatı ve güneydoğu yolunun ucu.
+- **Savaş Kaplanı:** Demir Kaplan Şövalyesi modelinden binicisi kesilip zırhlı kaplan bineği yapıldı. Savaş Atı Mührü artık **Savaş Kaplanı Mührü** (50. seviye görevi); At Mührü yine at. GM'ye bir kez mühür verilir.
+- **Araç:** `tools/mapglb.py` diorama gibi tek parça harita modelinden yürünecek zemin yüksekliği ve engel ızgarası çıkarır (`client/models/maps/*.json`).
+
+### Aşama 7.0: Avcı için yeni karakter
 
 - **Avcı (okçu):** Kızıl Gölge Kılıcı — kızıl pelerinli, maskeli erkek savaşçı. Sesi artık erkek sesi. Elindeki büyük kızıl kılıç kesildi, oyunun silahı takılır.
 - `tools/glbrig.py --limb 0.1`: kolun yanından sarkan pelerin kola bağlanmaz, gövdeyle kalır (kol kalkınca pelerin kopmasın).

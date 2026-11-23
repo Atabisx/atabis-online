@@ -401,21 +401,29 @@ export function attachMobModel(v, def) {
   }).catch((e) => console.warn('Yaratık modeli yüklenemedi:', name, e));
 }
 
-// ---------- binek atı ----------
-// riderY: oturan binicinin modelinin yerden yüksekliği (kalça eyere gelir)
-export const MOUNT = { name: 'at', riderY: 0.5, riderZ: -0.28 };
-export function attachMountModel(v) {
-  const spec = MOB_MODELS.at;
-  loadModel('models/mobs/at.glb').then((scene) => {
+// ---------- binekler: at (At Mührü) ve savaş kaplanı (Savaş Mührü) ----------
+// riderY: oturan binicinin modelinin yerden yüksekliği (kalça eyere gelir); riderZ: eyerin gövde ortasına göre yeri
+export const MOUNTS = {
+  at: { file: 'at', spec: MOB_MODELS.at, riderY: 0.5, riderZ: -0.28 },
+  // kullanıcının getirdiği Demir Kaplan Şövalyesi modelinden binicisi kesilerek çıkarıldı
+  kaplan: { file: 'kaplan_binek', spec: { kind: 'quad', size: 1.35, legTop: 0.43, head: 0.21, tail: 0.1, freq: 7, amp: 0.42 }, riderY: 0.66, riderZ: -0.23 },
+};
+export const MOUNT = MOUNTS.at;
+export function attachMountModel(v, kind = 'at') {
+  const M = MOUNTS[kind] || MOUNTS.at;
+  v.mountKind = kind;
+  loadModel(`models/mobs/${M.file}.glb`).then((scene) => {
+    if (v.mountKind !== kind) return;   // bu arada binek değiştiyse eskisini koyma
     for (const c of [...v.root.children]) if (!c.userData.keep) v.root.remove(c);
-    const inst = animatedInstance(scene, spec);
-    // eyer binicinin altına gelsin diye at biraz öne kaydırılır
-    inst.holder.children[0].position.z += -MOUNT.riderZ;
+    const inst = animatedInstance(scene, M.spec);
+    // eyer binicinin altına gelsin diye binek biraz öne kaydırılır
+    inst.holder.children[0].position.z += -M.riderZ;
     v.root.add(inst.holder);
     v.update = inst.update;
+    v.riderY = M.riderY;
     v.modelLoaded = true;
     if (v.onModel) v.onModel();
-  }).catch((e) => console.warn('At modeli yüklenemedi', e));
+  }).catch((e) => console.warn('Binek modeli yüklenemedi', kind, e));
 }
 
 // ---------- silah ve zırh modelleri ----------

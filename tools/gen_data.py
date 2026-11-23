@@ -200,7 +200,7 @@ def build_items():
                             'lv': 1, 'price': 2500000, 'rarity': 3, 'color': '#4fd1c5'}
     items['at_muhru'] = {'name': 'At Mührü', 'slot': 'use', 'desc': 'Kullanınca atına biner ya da iner. Atlıyken %60 daha hızlısın.',
                          'lv': 25, 'price': 0, 'rarity': 2, 'color': '#c9a35a'}
-    items['savas_muhru'] = {'name': 'Savaş Atı Mührü', 'slot': 'use', 'desc': 'Kullanınca zırhlı savaş atına biner ya da iner. Atın üstünde saldırabilirsin; at %76 daha hızlıdır.', 'lv': 50, 'price': 0, 'rarity': 2, 'color': '#e8b54a'}
+    items['savas_muhru'] = {'name': 'Savaş Kaplanı Mührü', 'slot': 'use', 'desc': 'Kullanınca zırhlı savaş kaplanına biner ya da iner. Kaplanın üstünde saldırabilirsin; kaplan %76 daha hızlıdır.', 'lv': 50, 'price': 0, 'rarity': 2, 'color': '#e8b54a'}
 
     # ruh taşları (Metin2 gibi): metin taşlarından düşer, silah/zırh yuvalarına takılır, demircide +4'e kadar yükselir
     for key, name, target, stat, vals, color, desc in STONES:
@@ -296,7 +296,7 @@ def mob_stats(lv, boss=False):
 # (anahtar, ad, seviye, şekil, renk, ölçek, saldırganlık yarıçapı, hız, menzil)
 # bütün yaratıklar kullanıcının getirdiği modellerle (kodla çizilen yaratık yok)
 MAPS = [
-    {'name': 'Atabis Köyü', 'lv': 1, 'theme': 'village_winter', 'village': True,
+    {'name': 'Atabis Köyü', 'lv': 1, 'theme': 'ada', 'village': True,
      # köy hayvanları: gerçek boylarında, uysal (sen vurmadan saldırmazlar)
      # 9. alan: {'model': client/models/mobs/<ad>.glb} – kullanıcının eklediği modeller
      # tavuk ve horoz modelleri küçük olduğu için büyütüldü; vuruş menzili boydan bağımsız ('range')
@@ -470,6 +470,15 @@ def build(items):
         if m.get('village'):
             entry['river'] = VILLAGE_RIVER
             entry['villageR'] = VILLAGE_RADIUS
+            # köy: kullanıcının getirdiği Uyanış Adası modeli (tools/takiglb.py + tools/mapglb.py ile hazırlandı)
+            entry['model'] = {'file': 'ada_koy', 'scale': 70, 'x': 25, 'z': 25}
+            entry['spawn'] = [24.6, 33.7]
+            # dükkâncılar adanın meydanlarında (engelsiz, doğuşla aynı düzlükte seçildi)
+            entry['npcs'] = {'teleport': [24.6, 16.7], 'market': [15.6, 29.7], 'weapons': [33.6, 29.7], 'armor': [17.1, 20.7],
+                             'blacksmith': [31.1, 21.2], 'stable': [24.6, 41.7], 'cosmetic': [42.0, 22.0]}
+            entry['flag'] = [27.1, 5.2]
+            # köy hayvanları köprünün doğu yakasında otlar (adanın dışı, boss'ların berisi)
+            entry['spawnBox'] = [110, -40, 165, 90]
         if i in SHOPS:
             potions, tiers = SHOPS[i]
             entry['shop'] = {
@@ -486,9 +495,11 @@ def build(items):
                  'spawn': [25, 22], 'portals': [], 'lake': {'x': 25, 'z': 44, 'r': 15},
                  'shop': {'potions': ['yem', 'p_hp1', 'p_mp1'], 'weapons': [], 'armor': []}})
     # krallık savaşı meydanı: sadece savaş sırasında girilir, üç krallığın üssü üç köşede
-    maps.append({'id': len(maps), 'name': 'Savaş Meydanı', 'minLevel': 20, 'theme': 'ruins', 'village': False, 'hidden': True, 'war': True,
+    # model: kullanıcının getirdiği Nexus Arena; üsler arenanın kuzey meydanında ve iki güney yolunun ucunda
+    maps.append({'id': len(maps), 'name': 'Savaş Meydanı', 'minLevel': 20, 'theme': 'arena', 'village': False, 'hidden': True, 'war': True,
                  'tier': 0, 'seed': 5151, 'bounds': [-15, 65], 'spawns': [], 'bosses': [], 'stoneDrops': [], 'stones': 0,
-                 'spawn': [25, 25], 'portals': [], 'bases': {'1': [-8, 25], '2': [52, -6], '3': [52, 56]}})
+                 'spawn': [25, 24.7], 'portals': [], 'bases': {'1': [24.9, 4.7], '2': [-0.6, 55.2], '3': [49.9, 55.2]},
+                 'model': {'file': 'arena', 'scale': 45, 'x': 25, 'z': 25}})
     # grup zindanı: Karanlık Mağara (dalgalar + kraliçe), zindan kapısından girilir
     mobs['zorumcek'] = dict(mob_stats(32), name='Mağara Yaratığı', shape='spider', color='#3a2f45', scale=0.8, aggro=12, speed=6.2,
                             range=2.2, cd=1300, respawn=0, drops=[], potions=[['p_hp2', 0.15]], style={'model': 'uzayli', 'tint': '#8a6aa0'})

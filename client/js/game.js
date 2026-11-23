@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { mat, esc } from './util.js';
-import { loadMap, updateMap, colliders, circles, BOUNDS } from './world/map.js';
+import { loadMap, updateMap, colliders, circles, BOUNDS, groundH, blockedAt } from './world/map.js';
 import { buildMob } from './entities/mobs.js';
 import { itemModel, ITEM_MODELS, attachMountModel, MOUNT } from './entities/models.js';
 import { buildOutfit, undersuitColor } from './entities/outfits.js';
@@ -31,6 +31,7 @@ document.body.prepend(renderer.domElement);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 220);
 fx.initFx(scene, camera, renderer);
+fx.setGround(groundH);   // model haritalarında efektler zemine otursun
 
 const hemi = new THREE.HemisphereLight('#dfefff', '#4a6a35', 1.1);
 scene.add(hemi);
@@ -75,7 +76,7 @@ function placeLabel(label, x, y, z) {
   label.el.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -100%)`;
 }
 function floatText(text, x, y, z, crit) {
-  tmpV.set(x, y, z).project(camera);
+  tmpV.set(x, y + groundH(x, z), z).project(camera);
   const el = document.createElement('div');
   el.className = 'dmg' + (crit ? ' crit' : '');
   el.textContent = text;
@@ -195,6 +196,7 @@ function createStone(s) {
 // her karede: rün nabzı, vurulunca parlama, dönen kırıklar, ışık zerreleri
 function updateStones(dt, t) {
   for (const s of Object.values(stones)) {
+    s.group.position.y = groundH(s.x, s.z);
     if (s.shake > 0) { s.shake -= dt; s.rock.position.x = (Math.random() - 0.5) * 0.25; } else s.rock.position.x = 0;
     if (!s.mat) continue;
     s.flash = Math.max(0, s.flash - dt * 3);
@@ -860,7 +862,7 @@ function updateCosmetics(p, dt, t) {
   if (d > 25) pet.root.position.set(tx, 0, tz);
   else if (moving) { const k = Math.min(1, dt * (2 + d * 1.6)); pet.root.position.x += dx * k; pet.root.position.z += dz * k; pet.root.rotation.y = angleLerp(pet.root.rotation.y, Math.atan2(dx, dz), 1 - Math.exp(-8 * dt)); }
   pet.t += dt;
-  pet.root.position.y = pet.fly ? 1.1 + Math.sin(pet.t * 3) * 0.15 : 0;
+  pet.root.position.y = (pet.fly ? 1.1 + Math.sin(pet.t * 3) * 0.15 : 0) + groundH(pet.root.position.x, pet.root.position.z);
   if (pet.v.update) pet.v.update(pet.t, moving, 0, dt);
 }
 // lonca adı etiketin üstünde
@@ -871,21 +873,24 @@ function setGuildTag(obj, name) {
   t.textContent = `[${name}]`;
 }
 // at: binince karakterin altına at modeli gelir
+// on: false ya da binek türü ('at', 'kaplan'); eski sunucudan true gelirse at
 function setMount(p, on) {
-  p.mounted = on;
-  if (on && !p.horse) {
-    // önce kodla çizilmiş at görünür, heybeli at modeli yüklenince onunla değişir
-    p.horse = buildMob({ shape: 'horse', color: '#6b4a2e', scale: 1 }, null);
+  const kind = on === true ? 'at' : on || null;
+  p.mounted = kind;
+  if (kind && p.horse && p.horse.mountKind !== kind) { p.group.remove(p.horse.root); p.horse = null; }
+  if (kind && !p.horse) {
+    // önce kodla çizilmiş at görünür, binek modeli yüklenince onunla değişir
+    p.horse = buildMob({ shape: 'horse', color: kind === 'kaplan' ? '#3a3632' : '#6b4a2e', scale: 1 }, null);
     p.group.add(p.horse.root);
     p.horse.onModel = () => { if (p.mounted) seatRider(p); };
-    attachMountModel(p.horse);
+    attachMountModel(p.horse, kind);
   }
   // at, binicinin baktığı yöne baksın (karakter modelleri FACE_OFFSET kadar dönük)
   if (p.horse) { p.horse.root.visible = on; p.horse.root.rotation.y = -FACE_OFFSET; }
   seatRider(p);
 }
 function riderBaseY(p) {
-  const lift = p.mounted ? (p.horse && p.horse.modelLoaded ? MOUNT.riderY : 1.0) : 0;
+  const lift = p.mounted ? (p.horse && p.horse.modelLoaded ? (p.horse.riderY || MOUNT.riderY) : 1.0) : 0;
   const calib = p.calib || calibBase();
   return (calib ? -calib.minY / calib.k : 0) + lift;
 }
@@ -1265,11 +1270,12 @@ function updateMobs(dt) {
   for (const m of Object.values(mobs)) {
     m.t += dt;
     m.v.root.position.lerp(m.target, 1 - Math.exp(-10 * dt));
+    m.v.root.position.y = groundH(m.v.root.position.x, m.v.root.position.z);
     m.v.root.rotation.y = angleLerp(m.v.root.rotation.y, m.ry, 1 - Math.exp(-10 * dt));
     if (m.atkT > 0) m.atkT = Math.max(0, m.atkT - dt);
     const atk = m.atkT > 0 ? Math.sin((1 - m.atkT / 0.4) * Math.PI) : 0;
     if (!(m.frozenUntil > performance.now())) m.v.update(m.t, m.moving, atk, dt);
-    placeLabel(m.label, m.v.root.position.x, m.height + 0.4, m.v.root.position.z);
+    placeLabel(m.label, m.v.root.position.x, m.height + 0.4 + m.v.root.position.y, m.v.root.position.z);
   }
 }
 
@@ -1696,8 +1702,8 @@ function renderShop() {
     else if (st === 'available' || (!st && myLevel >= 25)) body = '<p>Kızılçam Ormanı\'ndaki <b>Vahşi Kurt</b>lar atlarımıza saldırıyor. <b>20</b> tanesini yen, sana kendi atını vereyim.</p><button class="btn" data-quest="accept">Görevi kabul et</button>';
     else if (st === 'active') body = `<p>Vahşi Kurt: <b>${q.horseKills || 0} / 20</b></p><p class="muted">Kızılçam Ormanı'nda (Sv. 15, köyün doğusundaki geçitten) bulabilirsin.</p>`;
     else if (st === 'ready') body = '<p>Harika iş çıkardın! Atın seni bekliyor.</p><button class="btn" data-quest="claim">At Mührü\'nü al</button>';
-    else if (q.warhorse === 'done') body = '<p>Savaş atın hazır! Savaş Atı Mührü ile binip inebilirsin. Atın üstündeyken saldırabilirsin; beceri kullanırsan atından inersin.</p>';
-    else body = `<p>Atına iyi bak. Envanterindeki At Mührü ile binip inebilirsin. Atlıyken saldırırsan ya da beceri kullanırsan atından inersin.</p><p class="muted">${myLevel >= 50 ? 'Savaş Atı görevi Menü › Görevler\'de seni bekliyor: Sv. 45+ 100 canavar yen, atın üstünde savaşmayı öğret.' : '50. seviyede sana bir savaş atı görevim olacak: atın üstünde savaşabileceksin.'}</p>`;
+    else if (q.warhorse === 'done') body = '<p>Savaş kaplanın hazır! Savaş Kaplanı Mührü ile binip inebilirsin. Kaplanın üstündeyken saldırabilirsin; beceri kullanırsan ondan inersin.</p>';
+    else body = `<p>Atına iyi bak. Envanterindeki At Mührü ile binip inebilirsin. Atlıyken saldırırsan ya da beceri kullanırsan atından inersin.</p><p class="muted">${myLevel >= 50 ? 'Savaş Kaplanı görevi Menü › Görevler\'de seni bekliyor: Sv. 45+ 100 canavar yen, zırhlı kaplanını kazan.' : '50. seviyede sana bir savaş kaplanı görevim olacak: üstünde savaşabileceksin.'}</p>`;
     html = `<div style="display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5">${body}</div>`;
   } else if (shopKind === 'teleport') {
     for (const m of MAPS) {
@@ -2201,21 +2207,22 @@ function wbCastFx(c) {
 const effects = [];
 function ringFx(x, z, r, color, dur = 0.5, y = 0.15) {
   const m = new THREE.Mesh(new THREE.RingGeometry(0.6, 1, 40), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
-  m.rotation.x = -Math.PI / 2; m.position.set(x, y, z);
+  m.rotation.x = -Math.PI / 2; m.position.set(x, y + groundH(x, z), z);
   scene.add(m);
   effects.push({ m, t: 0, dur, update(k) { const s = 0.3 + k * r; m.scale.set(s, s, s); m.material.opacity = 0.85 * (1 - k); } });
 }
 function beamFx(x, z, color, dur = 1.2, h = 6) {
   const m = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.2, h, 16, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false }));
-  m.position.set(x, h / 2, z);
+  const gy = groundH(x, z);
+  m.position.set(x, gy + h / 2, z);
   scene.add(m);
-  effects.push({ m, t: 0, dur, update(k) { m.material.opacity = 0.5 * (1 - k); m.scale.set(1 + k * 0.4, 0.3 + k, 1 + k * 0.4); m.position.y = h / 2 * (0.3 + k); } });
+  effects.push({ m, t: 0, dur, update(k) { m.material.opacity = 0.5 * (1 - k); m.scale.set(1 + k * 0.4, 0.3 + k, 1 + k * 0.4); m.position.y = gy + h / 2 * (0.3 + k); } });
 }
 function boltFx(from, to, color, dur = 0.35) {
-  const a = new THREE.Vector3(from.x, 1.5, from.z), b = new THREE.Vector3(to.x, 1.5, to.z);
+  const a = new THREE.Vector3(from.x, 1.5 + groundH(from.x, from.z), from.z), b = new THREE.Vector3(to.x, 1.5 + groundH(to.x, to.z), to.z);
   const len = Math.max(0.1, Math.hypot(b.x - a.x, b.z - a.z));
   const m = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, len), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 }));
-  m.position.set((a.x + b.x) / 2, 1.5, (a.z + b.z) / 2);
+  m.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
   m.rotation.y = Math.atan2(b.x - a.x, b.z - a.z);
   scene.add(m);
   effects.push({ m, t: 0, dur, update(k) { m.material.opacity = 0.9 * (1 - k); } });
@@ -2285,7 +2292,7 @@ function enterMap(data) {
       npc.ry = npc.group.rotation.y = Math.atan2(25 - n.x, 25 - n.z);
     }
   }
-  for (const p of Object.values(data.players)) { const o = createPlayer(p); if (p.mounted) setMount(o, true); }
+  for (const p of Object.values(data.players)) { const o = createPlayer(p); if (p.mounted) setMount(o, p.mounted); }
   for (const m of data.mobs) createMob(m);
   for (const s of data.stones) createStone(s);
   for (const d of data.drops) createDrop(d);
@@ -2415,7 +2422,7 @@ export function startGame(sock, opts = {}) {
     if (kind === 'freeze') fx.iceBlock(pos, sec, Math.max(0.8, (m.height || 1.6) / 1.7));
     else fx.stunStars(pos, sec, (m.height || 1.6) + 0.35);
   });
-  socket.on('playerJoin', (p) => { const o = createPlayer(p); if (p.mounted) setMount(o, true); log(`<b>${esc(p.name)}</b> haritaya geldi.`); });
+  socket.on('playerJoin', (p) => { const o = createPlayer(p); if (p.mounted) setMount(o, p.mounted); log(`<b>${esc(p.name)}</b> haritaya geldi.`); });
   socket.on('playerLeave', ({ id }) => removePlayer(id));
   socket.on('playerLevel', ({ id, level }) => { const p = players[id]; if (p) { p.level = level; updateLabelText(p); levelUpFx(p); } });
   socket.on('playerDied', ({ id }) => { const p = players[id]; if (p) p.dead = true; });
@@ -2559,8 +2566,8 @@ arrowGeo.rotateZ(-Math.PI / 2); arrowGeo.rotateY(Math.PI / 2);
 const arrowMat = new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
 function shootArrow(p, target) {
   const m = new THREE.Mesh(arrowGeo, arrowMat);
-  const from = p.group.position.clone(); from.y = 1.4;
-  const to = new V3(target.x, 1.6, target.z);
+  const from = p.group.position.clone(); from.y += 1.4;
+  const to = new V3(target.x, 1.6 + groundH(target.x, target.z), target.z);
   m.position.copy(from); m.lookAt(to);
   scene.add(m);
   arrows.push({ m, from, to, t: 0, dur: Math.max(0.12, from.distanceTo(to) / 40) });
@@ -2942,8 +2949,16 @@ function loop() {
     const moving = !amDead && mag > 0.15 && me.swingT <= 0;   // saldırırken yürünmez
     if (moving) {
       const dir = autoDir || new V3().addScaledVector(camRight, ix).addScaledVector(camFwd, -iy).normalize();
+      const prevX = me.group.position.x, prevZ = me.group.position.z;
       me.group.position.addScaledVector(dir, SPEED * CLASS_SPEED() * mag * dt);
       collide(me.group.position);
+      // model haritasında ev/ağaç/uçurum: önce yalnız x ya da z ile kaymayı dene, olmazsa dur
+      const P = me.group.position;
+      if (blockedAt(P.x, P.z) && !blockedAt(prevX, prevZ)) {
+        if (!blockedAt(P.x, prevZ)) P.z = prevZ;
+        else if (!blockedAt(prevX, P.z)) P.x = prevX;
+        else { P.x = prevX; P.z = prevZ; }
+      }
       me.ry = Math.atan2(dir.x, dir.z) + FACE_OFFSET;
     }
     me.moving = moving;
@@ -2982,6 +2997,7 @@ function loop() {
 
   for (const p of Object.values(players)) {
     if (p.id !== myId && !p.npc) p.group.position.lerp(p.target, 1 - Math.exp(-10 * dt));
+    p.group.position.y = groundH(p.group.position.x, p.group.position.z);   // adalı/arenalı haritada zemine bas
     p.group.rotation.y = angleLerp(p.group.rotation.y, p.ry, 1 - Math.exp(-14 * dt));
     if (!updateAtkAnim(p, dt)) setAnim(p, p.moving && p.swingT <= 0 && !p.mounted ? 'Run' : 'Idle');
     if (p.mixer) p.mixer.update(dt);
@@ -3011,21 +3027,22 @@ function loop() {
       p.slashT -= dt;
       p.slash.material.opacity = Math.max(0, p.slashT / 0.3) * 0.7;
     } else p.slash.material.opacity = 0;
-    placeLabel(p.label, p.group.position.x, p.labelY || 2.4, p.group.position.z);
+    placeLabel(p.label, p.group.position.x, (p.labelY || 2.4) + p.group.position.y, p.group.position.z);
   }
   updateMobs(dt);
   updateCorpses(dt);
   updateStones(dt, clock.elapsedTime);
-  for (const s of Object.values(stones)) placeLabel(s.label, s.x, 4.6, s.z);
+  for (const s of Object.values(stones)) placeLabel(s.label, s.x, 4.6 + s.group.position.y, s.z);
+  for (const s of Object.values(stallObjs)) s.group.position.y = groundH(s.x, s.z);
   for (const d of Object.values(drops)) {
     d.t += dt;
     d.spin.rotation.y += dt * 1.5;
-    d.group.position.y = Math.sin(d.t * 3) * 0.08;
+    d.group.position.y = Math.sin(d.t * 3) * 0.08 + groundH(d.group.position.x, d.group.position.z);
     placeLabel(d.label, d.x, 1.3, d.z);
   }
   for (const pt of mapInfo.portals) {
     if (pt.label) placeLabel(pt.label, pt.x, 6.2, pt.z);
-  for (const st of Object.values(stallObjs)) placeLabel(st.label, st.x, 3.1, st.z);
+  for (const st of Object.values(stallObjs)) placeLabel(st.label, st.x, 3.1 + st.group.position.y, st.z);
     if (pt.field) pt.field.material.opacity = 0.35 + Math.sin(now / 300) * 0.12;
   }
   updateArrows(dt);

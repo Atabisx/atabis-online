@@ -45,7 +45,7 @@ function createWorld(io) {
     return l;
   }
   const publicPlayer = (p) => ({ id: p.id, name: p.name, cls: p.class, x: p.x, z: p.z, ry: p.ry, level: p.level,
-    look: looks(p), hp: p.hp, maxHp: p.maxHp, dead: !!p.dead, mounted: !!p.mounted, gm: !!p.gm,
+    look: looks(p), hp: p.hp, maxHp: p.maxHp, dead: !!p.dead, mounted: p.mounted || false, gm: !!p.gm,
     guild: p.guild ? p.guild.name : null, empire: p.empire || 0 });
   function recalc(p) {
     p.maxHp = R.maxHp(p);
@@ -85,8 +85,9 @@ function createWorld(io) {
     p.buffs[stat] = { value, until: Date.now() + sec * 1000, src };
     recalc(p); sendInv(p); sendBuffs(p);
   }
+  // on: false ya da binek türü ('at', 'kaplan')
   function setMounted(p, on) {
-    if (!!p.mounted === on) return;
+    if ((p.mounted || false) === on) return;
     p.mounted = on;
     sendInv(p);
     if (p.zone) p.zone.emit('mount', { id: p.id, on });
@@ -169,6 +170,10 @@ function createWorld(io) {
     // kalkan yuvası sonradan eklendi: GM'ye bir kez en iyi kalkan takılır
     gmTarget = p;
     if (!p.quests.gmShield) { if (!p.equip.shield) p.equip.shield = maxedItem(R.ITEMS.shield15_L ? 'shield15_L' : 'shield15'); p.quests.gmShield = 1; }
+    // savaş kaplanı sonradan eklendi: GM denesin diye bir kez mühür verilir
+    if (!p.quests.gmKaplan && !p.inventory.some((i) => i.key === 'savas_muhru') && p.inventory.length < R.invSize(p)) {
+      p.inventory.push({ uid: p.nextUid++, key: 'savas_muhru', n: 1 }); p.quests.gmKaplan = 1;
+    }
     if (p.quests.gmKit === 1) return;
     gmTarget = p;
     const cls = R.CLASSES[p.class] || {};
@@ -178,7 +183,7 @@ function createWorld(io) {
     for (const slot of R.EQUIP_SLOTS) if (p.equip[slot] && p.inventory.length < R.invSize(p)) p.inventory.push(p.equip[slot]);
     p.equip = { weapon: maxedItem(top(wtype)), armor: maxedItem(top('armor')), helmet: maxedItem(top('helmet')),
       shoes: maxedItem(top('shoes')), bracelet: maxedItem(top('bracelet')), earring: maxedItem(top('earring')), shield: maxedItem(top('shield')) };
-    const give = [['isin_yuzugu', 1], ['at_muhru', 1], ['olta', 1], ['yem', 200], ['p_hp4', 200], ['p_mp4', 200], ['p_green', 50], ['p_speed', 50], ['efsun', 100], ['efsun_degis', 100]];
+    const give = [['isin_yuzugu', 1], ['at_muhru', 1], ['savas_muhru', 1], ['olta', 1], ['yem', 200], ['p_hp4', 200], ['p_mp4', 200], ['p_green', 50], ['p_speed', 50], ['efsun', 100], ['efsun_degis', 100]];
     for (const [key, n] of give) {
       if (!R.ITEMS[key] || p.inventory.some((i) => i.key === key)) continue;
       if (p.inventory.length >= R.invSize(p)) break;
@@ -722,8 +727,9 @@ function createWorld(io) {
       }
       if (it.key === 'at_muhru' || it.key === 'savas_muhru') {
         if (p.zone && p.zone.def.safe && !p.mounted) { notice(p, 'Burada ata binemezsin.'); return; }
-        setMounted(p, !p.mounted);
-        notice(p, p.mounted ? 'Atına bindin.' : 'Atından indin.');
+        const kind = it.key === 'savas_muhru' ? 'kaplan' : 'at';
+        setMounted(p, p.mounted ? false : kind);
+        notice(p, p.mounted ? (kind === 'kaplan' ? 'Savaş kaplanına bindin.' : 'Atına bindin.') : 'Bineğinden indin.');
         return;
       }
       if (it.key === 'olta' || it.key === 'yem') { notice(p, 'Balık tutmak için Gümüş Göl kıyısına git.'); return; }

@@ -82,7 +82,7 @@ function makePoints() {
 export function emit(x, y, z, o = {}) {
   if (P.n >= MAXP) return;
   const i = P.n++;
-  P.pos[i * 3] = x; P.pos[i * 3 + 1] = y; P.pos[i * 3 + 2] = z;
+  P.pos[i * 3] = x; P.pos[i * 3 + 1] = y + groundFn(x, z); P.pos[i * 3 + 2] = z;
   P.vel[i * 3] = o.vx || 0; P.vel[i * 3 + 1] = o.vy || 0; P.vel[i * 3 + 2] = o.vz || 0;
   tmpC.set(tc(o.color) || '#ffffff');
   P.col[i * 3] = tmpC.r; P.col[i * 3 + 1] = tmpC.g; P.col[i * 3 + 2] = tmpC.b;
@@ -117,9 +117,14 @@ function updateParticles(dt) {
 
 // ---------- kalıcı olmayan mesh efektleri ----------
 const effects = [];
+// zemin yüksekliği (adalı/arenalı haritalarda yer düz değil): efektler zemine oturur
+let groundFn = () => 0;
+export function setGround(fn) { groundFn = fn || (() => 0); }
 function addFx(obj, dur, update, opts = {}) {
-  if (obj) scene.add(obj);
-  const e = { obj, t: 0, dur, update, follow: opts.follow, onEnd: opts.onEnd, tint: TINT };
+  // efekt kendi x/z'sini her karede değiştirebilir; yükseklik, sarmalayan grupla ayrıca verilir
+  let lift = null;
+  if (obj) { lift = new THREE.Group(); lift.add(obj); lift.position.y = groundFn(obj.position.x, obj.position.z); scene.add(lift); }
+  const e = { obj, lift, t: 0, dur, update, follow: opts.follow, onEnd: opts.onEnd, tint: TINT };
   effects.push(e);
   return e;
 }
@@ -461,8 +466,9 @@ export function updateFx(dt, alive = () => true) {
     TINT = e.tint;
     try {
       e.update(k, dt, e);
+      if (e.lift) e.lift.position.y = groundFn(e.obj.position.x, e.obj.position.z);
       if (k >= 1) {
-        if (e.obj) { scene.remove(e.obj); disposeObj(e.obj); }
+        if (e.obj) { scene.remove(e.lift || e.obj); disposeObj(e.obj); }
         if (e.onEnd) e.onEnd();
         effects.splice(i, 1);
       }
@@ -473,7 +479,7 @@ export function updateFx(dt, alive = () => true) {
   updateParticles(dt);
 }
 export function clearFx() {
-  for (const e of effects) if (e.obj) { scene.remove(e.obj); disposeObj(e.obj); }
+  for (const e of effects) if (e.obj) { scene.remove(e.lift || e.obj); disposeObj(e.obj); }
   effects.length = 0; auras.length = 0; P.n = 0;
 }
 

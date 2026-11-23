@@ -8,8 +8,8 @@ const MAIN = [
     reward: 'Envanterin 2. sayfası açılır (+45 yuva).' },
   { id: 'bag3', name: 'Çanta Ustası II', lv: 30, after: 'bag2', text: '10 metin taşı kır ve 3 boss yen.', goals: { stone: 10, boss: 3 },
     reward: 'Envanterin 3. sayfası açılır (+45 yuva).' },
-  { id: 'warhorse', name: 'Savaş Atı', lv: 50, needHorse: true, text: 'Seviyesi 45 ve üstü 100 canavar yen. (Önce Seyis\'in at görevini bitirmiş olmalısın.)',
-    goals: { kill45: 100 }, reward: 'Savaş Atı Mührü: atın üstündeyken saldırabilirsin ve atın daha hızlı koşar.' },
+  { id: 'warhorse', name: 'Savaş Kaplanı', lv: 50, needHorse: true, text: 'Seviyesi 45 ve üstü 100 canavar yen. (Önce Seyis\'in at görevini bitirmiş olmalısın.)',
+    goals: { kill45: 100 }, reward: 'Savaş Kaplanı Mührü: zırhlı kaplana binersin; üstündeyken saldırabilirsin ve attan hızlı koşar.' },
 ];
 const LABEL = { kill: 'Canavar', kill45: 'Canavar (Sv. 45+)', stone: 'Metin', boss: 'Boss' };
 
@@ -58,7 +58,7 @@ function createMainQuests(W) {
     if (id === 'bag2') p.quests.bag = Math.max(1, p.quests.bag || 0);
     if (id === 'bag3') p.quests.bag = Math.max(2, p.quests.bag || 0);
     if (id === 'warhorse') {
-      // eski At Mührü'nün yerine Savaş Atı Mührü
+      // eski At Mührü'nün yerine Savaş Kaplanı Mührü
       const old = p.inventory.findIndex((i) => i.key === 'at_muhru');
       if (old >= 0) p.inventory.splice(old, 1);
       if (!W.addItem(p, 'savas_muhru', 1)) { if (old >= 0) W.addItem(p, 'at_muhru', 1); W.notice(p, 'Envanterinde yer aç.'); return; }

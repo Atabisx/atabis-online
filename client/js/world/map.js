@@ -22,6 +22,8 @@ const THEMES = {
   desert_dunes: { ground: '#e6c27a', ground2: '#e0bc74', path: '#cfa860', sky: '#f6e3b4', fog: [50, 125], props: { dune: 26, cactus: 34, bones: 14, sandrock: 10, palm: 6, m_boynuz: 8, m_s_isik: 4, m_c_catlak: 3 } },
   desert_canyon: { ground: '#b5562f', ground2: '#ae512c', path: '#8f4426', sky: '#e8a070', fog: [35, 100], props: { mesa: 20, canyonrock: 32, deadbush: 22, bones: 8, m_tezgah: 4, m_totem: 4, m_pano: 3, m_boynuz: 5, m_s_isik: 3, m_c_catlak: 3, m_c_kor: 2 } },
   castle: { ground: '#5a6a48', ground2: '#566645', path: '#8a877e', sky: '#9aa8b8', fog: [35, 100], props: { wallseg: 16, tower: 9, banner: 14, pine: 14, rock: 10, m_pano: 5, m_ejder_heykeli: 3, m_s_isik: 3, m_s_nobetci: 3, m_c_kizil: 2 } },
+  ada: { ground: '#6f9a4c', ground2: '#678f46', path: '#b8996a', sky: '#a9cfe8', fog: [70, 170], props: { tree: 26, pine: 18, rock: 8 } },
+  arena: { ground: '#5f7a48', ground2: '#5a7444', path: '#9a978e', sky: '#9fb4c8', fog: [60, 140], props: {} },
   village_green: { ground: '#6c9b4b', ground2: '#689748', path: '#b8996a', sky: '#9cc6e4', fog: [45, 95], village: { wall: '#e6d7b6', roofs: ['#3d5a80', '#a8452f'] }, props: { tree: 14, pine: 10, rock: 6 } },
   village_pine: { ground: '#5e8a45', ground2: '#5a8642', path: '#a8895a', sky: '#a8c8dc', fog: [40, 90], village: { wall: '#d9c39a', roofs: ['#7d2f20', '#5a3d24'] }, props: { pine: 30, tree: 6, rock: 8 } },
   forest_mist: { ground: '#4f7a40', ground2: '#4b763c', path: '#7a6a4a', sky: '#b8c4c8', fog: [18, 60], props: { tree: 45, pine: 25, rock: 10, mushroom: 15, m_kokler: 8, m_diken: 6, m_s_sarmasik: 5, m_c_yesil: 4 } },
@@ -41,6 +43,31 @@ const THEMES = {
 };
 
 let group = null;
+// ---------- model haritaları (köy adası, arena): zemin yüksekliği ve engel ızgarası ----------
+// tools/mapglb.py üretir: h (dm), engel ve modelin kendi yüzeyi (core) RLE; ızgara model merkezine göre metre
+let HM = null;
+function unRle(r, n) {
+  const a = new Uint8Array(n); let i = 0, v = r.start ? 1 : 0;
+  for (const k of r.runs) { if (v) a.fill(1, i, i + k); i += k; v ^= 1; }
+  return a;
+}
+function hmCell(x, z) {
+  if (!HM) return -1;
+  const i = Math.floor((x - HM.cx - HM.x0) / HM.cell), j = Math.floor((z - HM.cz - HM.z0) / HM.cell);
+  return i < 0 || j < 0 || i >= HM.nx || j >= HM.nz ? -1 : i * HM.nz + j;
+}
+// yürünen zeminin yüksekliği (model haritası yoksa ya da ızgara dışında 0)
+export function groundH(x, z) {
+  if (!HM) return 0;
+  const fx = (x - HM.cx - HM.x0) / HM.cell - 0.5, fz = (z - HM.cz - HM.z0) / HM.cell - 0.5;
+  const i = Math.floor(fx), j = Math.floor(fz);
+  if (i < 0 || j < 0 || i >= HM.nx - 1 || j >= HM.nz - 1) return 0;
+  const tx = fx - i, tz = fz - j, h = HM.h, n = HM.nz;
+  const a = h[i * n + j], b = h[(i + 1) * n + j], c = h[i * n + j + 1], d = h[(i + 1) * n + j + 1];
+  return ((a * (1 - tx) + b * tx) * (1 - tz) + (c * (1 - tx) + d * tx) * tz) * HM.hScale;
+}
+// ev, ağaç, uçurum gibi içine yürünmeyen hücre
+export function blockedAt(x, z) { const k = hmCell(x, z); return k >= 0 && HM.block[k] === 1; }
 function add(mesh, x, y, z, cast = true) {
   mesh.position.set(x, y, z);
   mesh.castShadow = cast; mesh.receiveShadow = true;
@@ -770,12 +797,46 @@ function mergeStatic(root) {
   for (const l of keep) { const p = new THREE.Vector3(); l.getWorldPosition(p); l.parent.remove(l); l.position.copy(p); out.add(l); }
   return out;
 }
+// harita modeli (tek parça diorama) + çevresindeki yumuşak tepe eteği; yükseklik verisi gelince konumlar oturur
+function buildModelMap(def, th, onReady) {
+  const M = def.model, holder = new THREE.Group(), token = {};
+  holder.userData.token = token; group.add(holder);
+  const base = `models/maps/${M.file}`;
+  fetch(base + '.json').then((r) => r.json()).then((d) => {
+    if (group !== holder.parent) return;   // bu arada harita değişti
+    const n = d.nx * d.nz, h = new Float32Array(d.h);
+    HM = { ...d, h, block: unRle(d.block, n), core: unRle(d.core, n), cx: M.x, cz: M.z };
+    // etek örgüsü: adanın dışında yerden kenara yükselen toprak; modelin kendi yüzeyinin altına gömülür
+    const step = 2, sx = Math.floor((d.nx - 1) / step), sz = Math.floor((d.nz - 1) / step);
+    const geo = new THREE.PlaneGeometry(sx * step * d.cell, sz * step * d.cell, sx, sz);
+    geo.rotateX(-Math.PI / 2);
+    const P = geo.attributes.position, ox = M.x + d.x0 + (sx * step * d.cell) / 2 + d.cell / 2, oz = M.z + d.z0 + (sz * step * d.cell) / 2 + d.cell / 2;
+    for (let k = 0; k < P.count; k++) {
+      const wx = P.getX(k) + ox, wz = P.getZ(k) + oz, c = hmCell(wx, wz);
+      P.setY(k, c >= 0 && HM.core[c] ? groundH(wx, wz) - 2.5 : groundH(wx, wz) - 0.03);
+    }
+    geo.computeVertexNormals();
+    const tex = groundTex(th.ground, th.ground2, !!th.snow);
+    const skirt = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex }));
+    skirt.position.set(ox, 0, oz); skirt.receiveShadow = true;
+    holder.add(skirt);
+    if (onReady) onReady();
+    return loadModel(base + '.glb').then((src) => {
+      if (group !== holder.parent) return;
+      const m = src.clone(true);
+      m.scale.setScalar(M.scale);
+      m.position.set(M.x, -d.y0 * M.scale, M.z);
+      m.traverse((o) => { if (o.isMesh) { o.receiveShadow = true; o.castShadow = false; o.userData.shared = true; if (o.material) o.material.side = THREE.DoubleSide; } });
+      holder.add(m);
+    });
+  }).catch((e) => console.warn('Harita modeli yüklenemedi:', M.file, e));
+}
 export function loadMap(scene, def) {
   if (group) {
     scene.remove(group);
     group.traverse((o) => { if (o.geometry && !o.userData.shared) o.geometry.dispose(); });
   }
-  colliders.length = 0; circles.length = 0; wavers.length = 0; dynamic = [];
+  colliders.length = 0; circles.length = 0; wavers.length = 0; dynamic = []; HM = null;
   group = new THREE.Group();
   const [bmin, bmax] = def.bounds || [-15, 65];
   BOUNDS.min = bmin; BOUNDS.max = bmax;
@@ -795,7 +856,24 @@ export function loadMap(scene, def) {
   plane(bmin - 5, 23, bmax + 5, 27, th.path, 0.02, new THREE.MeshLambertMaterial({ map: groundTex(th.path, darker(th.path, 0.85), !!th.snow) }));
 
   const npcs = [];
-  if (def.village && th.village) {
+  if (def.model) {
+    // kullanıcının getirdiği harita modeli (köy adası / arena); kodla çizilen köy kurulmaz
+    let lift = null;
+    if (def.flag) {
+      // meydandaki Türk bayrağı ve pano: yükseklik bilinince yerine oturur
+      const main = group; group = new THREE.Group();
+      const [fx, fz] = def.flag;
+      flagMonument(fx, fz, !!th.snow);
+      portraitBoard(fx + 4.5, fz - 1.2, 0);
+      const fg = group; group = main; group.add(fg);
+      lift = () => { fg.position.y = groundH(fx, fz); };
+    }
+    buildModelMap(def, th, lift);
+    if (def.village) for (const [k, n] of Object.entries(NPC_SPOTS)) {
+      const at = def.npcs && def.npcs[k];
+      npcs.push(at ? { ...n, x: at[0], z: at[1] } : { ...n });
+    }
+  } else if (def.village && th.village) {
     const main = group; group = new THREE.Group();
     buildVillage(th, rnd);
     if (def.villageR) buildOuterVillage(th, rnd, def.villageR);
@@ -819,6 +897,7 @@ export function loadMap(scene, def) {
 
   // doğa: köy merkezinden, yoldan ve geçitlerden uzak
   const blocked = (x, z) => {
+    if (def.model && Math.hypot(x - def.model.x, z - def.model.z) < def.model.scale * 0.98 + 6) return true;
     if (z > 20 && z < 30) return true;
     if (def.village && Math.hypot(x - 25, z - 25) < (def.villageR ? def.villageR + 3 : 21)) return true;
     if (def.river && Math.abs(x - def.river.x) < def.river.w / 2 + 4) return true;
