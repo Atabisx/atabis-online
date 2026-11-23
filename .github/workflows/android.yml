@@ -9,7 +9,7 @@ on:
       server_url:
         description: "Oyun sunucusunun adresi (ör. http://1.2.3.4:3100)"
         required: true
-        default: "http://SUNUCU_IP:3100"
+        default: "http://156.233.34.211:3100/"
 
 permissions:
   contents: write
