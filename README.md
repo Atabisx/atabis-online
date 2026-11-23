@@ -4,7 +4,16 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 7.1 (bu sürüm): ada köy, arena savaş meydanı, savaş kaplanı
+### Aşama 7.2 (bu sürüm): karakterler yere basıyor, eski köy geri döndü
+
+- **Düzeltme:** yeni karakterler (iskeleti sonradan eklenenler) yere gömülü duruyordu. `tools/glbrig.py` artık modelin ayak tabanını y=0'a koyar (mixamo düzeni); bütün karakterler yeniden hazırlandı.
+- **Binek:** kaplanın eyer yüksekliği düzeltildi, binici artık havada durmuyor, sırtına oturuyor.
+- **Karakter değişikliği:** Alp (savaşçı) artık Kızıl Gölge Kılıcı (erkek sesi), Avcı artık Şafak Şövalyesi (kadın sesi). **Kam (şaman):** kullanıcının getirdiği boynuzlu taçlı Baş Büyücü; elindeki asası kesildi, oyunun asası takılır.
+- **Atabis Köyü** eski karlı köyüne döndü (çitler, evler, bayrak, dükkâncılar eski yerlerinde; hayvanlar eskisi gibi).
+- **Uyanış Adası** artık **Kızılçam Ormanı**nın ortasında (boss'ların olduğu ikinci harita); zemin yüksekliği ve engeller orada geçerli.
+- `tools/glbrig.py --minpart`: silah kesildikten sonra kalan küçük kırıntıları atar.
+
+### Aşama 7.1: ada köy, arena savaş meydanı, savaş kaplanı
 
 - **Atabis Köyü artık Uyanış Adası:** kodla çizilen karlı köy kalktı; köy, kullanıcının getirdiği yeşil ada modeli (evler, meydanlar, şelaleler, kristal dağ). Doğuş noktası ve bütün dükkâncılar (Market, Silahçı, Zırhçı, Işınlayıcı, Seyis, Demirci, Kostümcü) adanın orta meydanında. Türk bayrağı ve pano da meydanda.
 - Ada düz değil: karakterler, yaratıklar, evcil hayvanlar, düşen eşyalar ve efektler zeminin yüksekliğine göre yürür. Evlere, ağaçlara, kayalara ve dik yamaçlara girilmez. Adanın çevresi yumuşak bir yamaçla yere iner; doğu ucundan köprüye yürünür.

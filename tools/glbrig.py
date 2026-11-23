@@ -59,7 +59,8 @@ def main():
     ap.add_argument('src'); ap.add_argument('joints'); ap.add_argument('dst')
     ap.add_argument('--voxel', type=float, default=0.01); ap.add_argument('--cut', default='')
     ap.add_argument('--power', type=float, default=5.0); ap.add_argument('--smooth', type=int, default=8)
-    ap.add_argument('--solid', action='store_true'); ap.add_argument('--hops', type=int, default=2); ap.add_argument('--torso', type=float, default=0.75); ap.add_argument('--limb', type=float, default=0.0, help='kol yarıçapı sınırı (0: yok)'); ap.add_argument('--facing', type=float, default=10.0); ap.add_argument('--shell', type=int, default=0)
+    ap.add_argument('--solid', action='store_true'); ap.add_argument('--hops', type=int, default=2); ap.add_argument('--minpart', type=int, default=400); ap.add_argument('--torso', type=float, default=0.75); ap.add_argument('--limb', type=float, default=0.0, help='kol yarıçapı sınırı (0: yok)'); ap.add_argument('--facing', type=float, default=10.0); ap.add_argument('--shell', type=int, default=0)
+    ap.add_argument('--keep-origin', dest='keep_origin', action='store_true', help='ayakları y=0a indirme')
     ap.add_argument('--dump', default='', help='ağırlıkları .npz olarak da yaz (deneme için)')
     a = ap.parse_args()
 
@@ -82,9 +83,23 @@ def main():
             keep &= ~((C[:, 0] > x0) & (C[:, 0] < x1) & (C[:, 1] > y0) & (C[:, 1] < y1) & (C[:, 2] > z0) & (C[:, 2] < z1))
         print('kesilen üçgen:', int((~keep).sum()))
         T = T[keep]
+        # kesimden arta kalan küçük kopuk kırıntıları (silahın ince uçları gibi) at
+        from scipy.sparse.csgraph import connected_components
+        _, pid = np.unique(np.round(P * 1e4).astype(np.int64), axis=0, return_inverse=True); pid = pid.ravel()
+        E = np.concatenate([pid[T[:, [0, 1]]], pid[T[:, [1, 2]]]]); nn = pid.max() + 1
+        _, lab = connected_components(sparse.coo_matrix((np.ones(len(E)), (E[:, 0], E[:, 1])), shape=(nn, nn)), directed=False)
+        comp = lab[pid[T[:, 0]]]; cnt = np.bincount(comp)
+        small = cnt[comp] < a.minpart
+        print('atılan kırıntı üçgeni:', int(small.sum()))
+        T = T[~small]
     used = np.unique(T); rm = np.full(len(P), -1); rm[used] = np.arange(len(used))
     P, N, T = P[used], N[used], rm[T]
     if U is not None: U = U[used]
+    # mixamo düzeni: ayak tabanı y=0'da (kalça ~1 birim yukarıda). Oyunun kalça hareketi aktarımı ve
+    # boy ölçümü bu düzene göre; merkezi ortada kalan modeller yere gömülüyordu
+    if not a.keep_origin:
+        y0 = P[:, 1].min(); P[:, 1] -= y0
+        for k in J: J[k] = J[k] - np.array([0, y0, 0])
 
     # ---- dolu vokseller ----
     h = a.voxel; lo = P.min(0) - 3 * h

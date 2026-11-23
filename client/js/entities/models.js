@@ -406,7 +406,7 @@ export function attachMobModel(v, def) {
 export const MOUNTS = {
   at: { file: 'at', spec: MOB_MODELS.at, riderY: 0.5, riderZ: -0.28 },
   // kullanıcının getirdiği Demir Kaplan Şövalyesi modelinden binicisi kesilerek çıkarıldı
-  kaplan: { file: 'kaplan_binek', spec: { kind: 'quad', size: 1.35, legTop: 0.43, head: 0.21, tail: 0.1, freq: 7, amp: 0.42 }, riderY: 0.66, riderZ: -0.23 },
+  kaplan: { file: 'kaplan_binek', spec: { kind: 'quad', size: 1.35, legTop: 0.43, head: 0.21, tail: 0.1, freq: 7, amp: 0.42 }, riderY: 0.25, riderZ: -0.23 },   // eyer (sırt) yerden 1.2 m; kalça ~0.95 m
 };
 export const MOUNT = MOUNTS.at;
 export function attachMountModel(v, kind = 'at') {

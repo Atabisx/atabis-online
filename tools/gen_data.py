@@ -296,7 +296,7 @@ def mob_stats(lv, boss=False):
 # (anahtar, ad, seviye, şekil, renk, ölçek, saldırganlık yarıçapı, hız, menzil)
 # bütün yaratıklar kullanıcının getirdiği modellerle (kodla çizilen yaratık yok)
 MAPS = [
-    {'name': 'Atabis Köyü', 'lv': 1, 'theme': 'ada', 'village': True,
+    {'name': 'Atabis Köyü', 'lv': 1, 'theme': 'village_winter', 'village': True,
      # köy hayvanları: gerçek boylarında, uysal (sen vurmadan saldırmazlar)
      # 9. alan: {'model': client/models/mobs/<ad>.glb} – kullanıcının eklediği modeller
      # tavuk ve horoz modelleri küçük olduğu için büyütüldü; vuruş menzili boydan bağımsız ('range')
@@ -470,15 +470,9 @@ def build(items):
         if m.get('village'):
             entry['river'] = VILLAGE_RIVER
             entry['villageR'] = VILLAGE_RADIUS
-            # köy: kullanıcının getirdiği Uyanış Adası modeli (tools/takiglb.py + tools/mapglb.py ile hazırlandı)
+        if i == 1:
+            # Kızılçam Ormanı: ortasında kullanıcının getirdiği Uyanış Adası modeli (tools/takiglb.py + tools/mapglb.py)
             entry['model'] = {'file': 'ada_koy', 'scale': 70, 'x': 25, 'z': 25}
-            entry['spawn'] = [24.6, 33.7]
-            # dükkâncılar adanın meydanlarında (engelsiz, doğuşla aynı düzlükte seçildi)
-            entry['npcs'] = {'teleport': [24.6, 16.7], 'market': [15.6, 29.7], 'weapons': [33.6, 29.7], 'armor': [17.1, 20.7],
-                             'blacksmith': [31.1, 21.2], 'stable': [24.6, 41.7], 'cosmetic': [42.0, 22.0]}
-            entry['flag'] = [27.1, 5.2]
-            # köy hayvanları köprünün doğu yakasında otlar (adanın dışı, boss'ların berisi)
-            entry['spawnBox'] = [110, -40, 165, 90]
         if i in SHOPS:
             potions, tiers = SHOPS[i]
             entry['shop'] = {

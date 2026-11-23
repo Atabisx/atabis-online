@@ -236,13 +236,13 @@ const loader = new GLTFLoader();
 // k: boy ölçeği (verilmezse ölçülür); helm: kask takılınca gizlenen kendi miğferi;
 // helmet: false → kapüşonlu modele kask eşyası giydirilmez (iç içe geçmesin)
 const CHAR_MODELS = {
-  // savaşçı, ninja, sura: kullanıcının getirdiği iskeletsiz modeller, tools/glbrig.py ile iskelet giydirildi;
+  // hepsi kullanıcının getirdiği iskeletsiz modeller; tools/glbrig.py ile iskelet giydirildi (ayak tabanı y=0),
   // ellerindeki kendi silahları kesildi (oyunun silahı takılır). k: saç/topuz boyu saymasın diye ölçek
-  savasci: { url: 'models/chars/savasci.glb' },                                           // Şafak Şövalyesi (kızıl saçlı, pelerinli kadın şövalye)
-  ninja: { url: 'models/chars/ninja.glb', k: 1.0 },                                       // Gölge Kılıcı (kızıl atkılı kadın ninja; at kuyruğu boyu etkilemesin)
-  sura: { url: 'models/chars/sura.glb', k: 1.03 },                                        // Altın Fırtına İmparatoru (siyah-altın zırhlı erkek)
-  saman: { url: 'models/chars/saman.glb', hide: ['prop'], skip: ['prop', 'outline'], k: 0.933 },
-  okcu: { url: 'models/chars/okcu.glb' },                                                // Kızıl Gölge Kılıcı (kızıl pelerinli erkek; elindeki kılıç kesildi)
+  savasci: { url: 'models/chars/savasci.glb' },                // Kızıl Gölge Kılıcı (kızıl pelerinli, maskeli erkek)
+  ninja: { url: 'models/chars/ninja.glb', k: 1.0 },            // Gölge Kılıcı (kızıl atkılı kadın ninja; at kuyruğu boyu etkilemesin)
+  sura: { url: 'models/chars/sura.glb', k: 1.03 },             // Altın Fırtına İmparatoru (siyah-altın zırhlı erkek)
+  saman: { url: 'models/chars/saman.glb' },                    // Baş Büyücü (boynuzlu taçlı, mor zırhlı kadın; asası kesildi)
+  okcu: { url: 'models/chars/okcu.glb' },                      // Şafak Şövalyesi (kızıl saçlı, pelerinli kadın şövalye)
 };
 const charModels = {};   // cls -> { scene, calib, clips }
 // bekleme duruşu yana dönük (savaş duruşu): kalçayı dikey eksende 'deg' derece öne çevirir, gövde de onunla döner
