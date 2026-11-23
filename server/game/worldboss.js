@@ -105,7 +105,7 @@ function createWorldBoss(W) {
     const give = (key, n = 1) => { if (R.ITEMS[key] && addItem(p, key, n)) items.push([key, n]); };
     let yang = Math.round((killed ? 60000 : 25000) + (killed ? 2500000 : 800000) * share);
     if (killed) {
-      if (rank === 1) { yang += 1500000; give('pet_sandik', 2); give('efsun_degis', 5); if (Math.random() < 0.25) give('kanat_ejder', 1); }
+      if (rank === 1) { yang += 1500000; give('pet_sandik', 2); give('efsun_degis', 5); if (Math.random() < 0.25) give('kanat_isik', 1); }
       else if (rank <= 3) { yang += 700000; give('pet_sandik', 1); give('efsun_degis', 3); }
       else if (rank <= 10) { yang += 250000; give('efsun_degis', 2); give('efsun', 2); }
       give('kutsama', 1); give('efsun', 1);

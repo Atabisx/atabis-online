@@ -1073,3 +1073,37 @@ export function skillPose(sk) {
   if (sk.combo == null) return { cast: 'push' };
   return {};
 }
+
+// ---------- boss saldırıları: türüne göre görünür vuruş ----------
+// from: boss gövdesinin ortası, to: hedefin ayak noktası, shape: yaratığın şekli
+export function bossStrike(from, to, color, shape, scale = 1, hasBreath = false) {
+  if (!scene) return;
+  color = tc(color || '#ff6a3d');
+  const dx = to.x - from.x, dz = to.z - from.z, d = Math.max(0.5, Math.hypot(dx, dz)), dir = Math.atan2(dx, dz);
+  const s = Math.min(1.6, Math.max(0.8, scale));
+  if (shape === 'golem' || shape === 'bear' || shape === 'frog' || shape === 'boar') {
+    // ağır gövdeli: hedefin üstüne yumruk/gövde vuruşu, yer çatlar
+    groundSlam(to.x, to.z, color, 2.2 * s, 0.6);
+    pillar(to.x, to.z, color, 2.4, 0.35, { r: 0.6 });
+  } else if (shape === 'ghost' || shape === 'skeleton') {
+    // büyücü: hedefe yıldırım, altında büyü çemberi patlar
+    lightning({ x: from.x, y: from.y + 0.8, z: from.z }, { x: to.x, y: 1.0, z: to.z }, color, 0.35);
+    magicCircle(to.x, to.z, 1.6 * s, color, 0.7);
+    shockwave(to.x, to.z, 2.4 * s, color, 0.5);
+    burst(to.x, 1.0, to.z, [color, '#ffffff'], 26, 6, { size: 0.3, life: 0.5 });
+    flash(to.x, 1.2, to.z, color, 30, 0.3);
+  } else if (shape === 'dragon') {
+    // ejder: (alev nefesi ayrıca) pençe dalgası ve hedefte patlama
+    if (!hasBreath) for (let i = 0; i < 30; i++) emit(from.x + dx / d, from.y, from.z + dz / d, { vx: dx / d * rnd(7, 11) + rnd(-1.4, 1.4), vy: rnd(-0.4, 1), vz: dz / d * rnd(7, 11) + rnd(-1.4, 1.4), color: i % 3 ? color : '#ffd23f', size: rnd(0.35, 0.65), life: rnd(0.3, 0.5), drag: 2, grow: 1.2 });
+    crescentWave(from.x, from.z, dir, color, { r: 1.8 * s, dist: d, speed: 18, tilt: 0.5 });
+    shockwave(to.x, to.z, 2.6 * s, color, 0.55);
+    burst(to.x, 0.6, to.z, [color, '#ffd23f', '#ffffff'], 34, 7, { up: 2, size: 0.35, life: 0.6, gravity: 6 });
+    flash(to.x, 1.0, to.z, color, 45, 0.35);
+  } else {
+    // savaşçı/yırtıcı: hedefe uçan kılıç/pençe dalgası, çarpınca kıvılcım ve halka
+    crescentWave(from.x, from.z, dir, color, { r: 1.5 * s, dist: d, speed: 16, tilt: shape === 'humanoid' ? 0.35 : -0.6 });
+    shockwave(to.x, to.z, 1.8 * s, color, 0.45);
+    burst(to.x, 1.0, to.z, [color, '#ffffff'], 22, 6, { size: 0.28, life: 0.45 });
+    flash(to.x, 1.0, to.z, color, 30, 0.3);
+  }
+}

@@ -5,7 +5,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { mat, esc } from './util.js';
 import { loadMap, updateMap, colliders, circles, BOUNDS, groundH, blockedAt, hasGround, setGroundEnabled } from './world/map.js';
 import { buildMob } from './entities/mobs.js';
-import { itemModel, ITEM_MODELS, attachMountModel, MOUNT, WORN, loadWorn } from './entities/models.js';
+import { itemModel, ITEM_MODELS, attachMountModel, MOUNT, WORN, loadWorn, loadModel } from './entities/models.js';
 import { buildOutfit, undersuitColor } from './entities/outfits.js';
 import { retargetClips, correctFrame } from './entities/retarget.js';
 import * as sfx from './audio.js';
@@ -74,6 +74,32 @@ function placeLabel(label, x, y, z) {
   const sx = (tmpV.x * 0.5 + 0.5) * window.innerWidth;
   const sy = (-tmpV.y * 0.5 + 0.5) * window.innerHeight;
   label.el.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -100%)`;
+}
+// 12500 -> 12.5k, 1250000 -> 1.25M
+function fmtK(n) {
+  n = Math.round(n);
+  if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 1 : 2).replace(/\.?0+$/, '') + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(n >= 1e5 ? 0 : 1).replace(/\.0$/, '') + 'k';
+  return String(n);
+}
+// kendi vuruşların: son vuruş ve 6 sn içindeki toplam ekranın üstünde
+const dmgMeter = { el: null, total: 0, hits: 0, last: 0, at: 0, timer: null };
+function meterHit(dmg, crit) {
+  if (!dmgMeter.el) {
+    const el = document.createElement('div'); el.id = 'dmgMeter';
+    el.innerHTML = '<div class="dmLast"></div><div class="dmSum"></div>';
+    document.getElementById('hud').appendChild(el); dmgMeter.el = el;
+  }
+  const now = performance.now();
+  if (now - dmgMeter.at > 6000) { dmgMeter.total = 0; dmgMeter.hits = 0; }
+  dmgMeter.total += dmg; dmgMeter.hits++; dmgMeter.at = now;
+  const el = dmgMeter.el;
+  el.querySelector('.dmLast').textContent = (crit ? 'KRİTİK ' : '') + fmtK(dmg);
+  el.querySelector('.dmSum').textContent = `Toplam ${fmtK(dmgMeter.total)} · ${dmgMeter.hits} vuruş`;
+  el.classList.toggle('crit', !!crit);
+  el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop', 'show');
+  clearTimeout(dmgMeter.timer);
+  dmgMeter.timer = setTimeout(() => el.classList.remove('show'), 6000);
 }
 function floatText(text, x, y, z, crit) {
   tmpV.set(x, y + groundH(x, z), z).project(camera);
@@ -774,7 +800,8 @@ function createPlayer(p) {
   obj.label = makeLabel(p.npc ? p.name : `${p.name} · Sv. ${obj.level}`, p.npc ? '#7be08f' : p.gm ? '#ffe14a' : p.id === myId ? '#e8b54a' : '#8ec5ff', !p.npc);
   if (p.gm) {
     // Metin2 tarzı GM rozeti
-    const b = document.createElement('span'); b.className = 'gmtag'; b.textContent = 'GM';
+    const b = document.createElement('div'); b.className = 'gmtag';
+    b.innerHTML = '<span class="gmcrown">♛</span><span class="gmtxt">GM</span>';
     obj.label.el.insertBefore(b, obj.label.tn);
     obj.label.el.classList.add('gm');
   }
@@ -1424,16 +1451,27 @@ function iconBuilder(key, def) {
   if (key === 'pet_sandik') return () => icons.chestBoxMesh('#5a3a6a', '#ffd36b');
   if (def.timed && def.timed.kind === 'expring') return () => icons.ringMesh('#ffd23f');
   if (def.timed) return () => icons.potionMesh({ ...def, color: def.color });
-  if (key === 'at_muhru' || key === 'savas_muhru') return () => icons.medalMesh();
+  if (key === 'at_muhru' || key === 'savas_muhru') return () => mountIcon(key === 'at_muhru' ? 'at' : 'kaplan_binek');
   if (key === 'isin_yuzugu') return () => icons.ringMesh();
   return null;
 }
+// binek mührü simgesi: bineğin kendi 3D modeli (yandan, hafif önden)
+function mountIcon(file) {
+  const g = new THREE.Group();
+  g.userData.ready = loadModel(`models/mobs/${file}.glb`).then((sc) => {
+    const m = SkeletonUtils.clone(sc);
+    m.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
+    g.add(m);
+  }).catch(() => g.add(icons.medalMesh()));
+  return g;
+}
+const MOUNT_ICON_POSE = { ry: -1.05, rx: 0.12 };
 const ICON_POSE = { weapon: { rz: -0.8, ry: 0.35 }, armor: { ry: 0.45, rx: 0.08 }, helmet: { ry: 0.65, rx: 0.1 }, shield: { ry: 0.35, rx: 0.05 }, shoes: { ry: 0.55, rx: 0.2 },
   bracelet: { ry: 0.3 }, earring: { ry: 0.4 }, wings: { ry: 0.25, rx: 0.15 }, potion: { ry: 0.3, rx: 0.1 }, fish: { ry: 0.5 }, gem: { rx: 0.5 }, use: { ry: 0.5, rx: 0.15 }, stone: { rx: 0.4, ry: 0.3 }, material: { rx: 0.3, ry: 0.4 } };
 function itemIcon(key, def, size = 26, slot) {
   if (def && key) {
     const b = iconBuilder(key, def);
-    const url = b && icons.iconURL(key, b, ICON_POSE[def.slot]);
+    const url = b && icons.iconURL(key, b, key === 'at_muhru' || key === 'savas_muhru' ? MOUNT_ICON_POSE : ICON_POSE[def.slot]);
     if (url) return `<img class="ico3d" src="${url}" width="${size + 8}" height="${size + 8}" alt="" draggable="false">`;
   }
   return iconSvg(def, size, slot);
@@ -2485,12 +2523,13 @@ export function startGame(sock, opts = {}) {
     p.swingT = SWING_T; p.combo = combo || 0;
     p.slashT = 0.3;
   });
-  socket.on('hit', ({ id, kind, dmg, crit, hp, max, miss }) => {
+  socket.on('hit', ({ id, kind, dmg, crit, hp, max, miss, by }) => {
+    if (by === myId && !miss && dmg > 0) meterHit(dmg, crit);
     if (kind === 'player') {
       const p = players[id]; if (!p) return;
       const pos = p.group.position;
       if (p.label.hp && max) p.label.hp.style.width = Math.max(0, 100 * hp / max) + '%';
-      floatText(miss ? 'ISKA' : (crit ? 'KRİTİK ' : '') + '-' + dmg, pos.x, 2.6, pos.z, crit);
+      floatText(miss ? 'ISKA' : (crit ? 'KRİTİK ' : '') + '-' + fmtK(dmg), pos.x, 2.6, pos.z, crit);
       if (!miss) { sfx.hit('player', crit, pos); fx.hitSpark({ x: pos.x, y: 1.2, z: pos.z }, crit, 'mob'); }
       if (id === myId && !miss) { document.body.classList.add('hurt'); setTimeout(() => document.body.classList.remove('hurt'), 180); }
       return;
@@ -2498,7 +2537,7 @@ export function startGame(sock, opts = {}) {
     if (kind === 'mob') {
       const m = mobs[id]; if (!m) return;
       m.hp = hp; m.label.hp.style.width = (100 * hp / m.max) + '%';
-      floatText((crit ? 'KRİTİK ' : '') + '-' + dmg, m.v.root.position.x, m.height + 0.6, m.v.root.position.z, crit);
+      floatText((crit ? 'KRİTİK ' : '') + '-' + fmtK(dmg), m.v.root.position.x, m.height + 0.6, m.v.root.position.z, crit);
       sfx.hit('mob', crit, m.v.root.position);
       fx.hitSpark(m.v.root.position, crit, 'mob');
       if (m.v.hit && hp > 0) m.v.hit();
@@ -2507,7 +2546,7 @@ export function startGame(sock, opts = {}) {
       s.hp = hp; s.label.hp.style.width = (100 * hp / s.max) + '%'; s.shake = 0.2; s.flash = crit ? 1 : 0.6;
       sfx.hit('stone', crit, s);
       fx.hitSpark({ x: s.x, y: 0.6, z: s.z }, crit, 'stone');
-      floatText((crit ? 'KRİTİK ' : '') + '-' + dmg, s.x, 4.4, s.z, crit);
+      floatText((crit ? 'KRİTİK ' : '') + '-' + fmtK(dmg), s.x, 4.4, s.z, crit);
     }
   });
   socket.on('mobSpawn', (m) => createMob(m));
@@ -2523,12 +2562,17 @@ export function startGame(sock, opts = {}) {
     if (miss) { const p = players[target]; if (p) floatText('ISKA', p.group.position.x, 2.4, p.group.position.z, false); return; }
     if (target === myId) sfx.hurt(); else if (m) sfx.mobAttack(m.v.root.position);
     const p = players[target];
+    // boss'ların saldırı efekti: türüne göre pençe/kılıç dalgası, yere vuruş, büyü patlaması
+    if (m && p && m.def && m.def.boss) {
+      const mp = m.v.root.position, st = m.def.style || {};
+      fx.bossStrike({ x: mp.x, y: (m.height || 2) * 0.45, z: mp.z }, p.group.position, st.aura || m.def.color, m.def.shape, m.def.scale || 1, !!st.breath);
+    }
     // ateş püskürten yaratıklar (ör. Ateş Kertenkelesi)
     if (m && p && m.def && m.def.style && m.def.style.breath) {
       const mp = m.v.root.position;
       fx.breath({ x: mp.x, y: (m.height || 2) * 0.45, z: mp.z }, p.group.position, m.def.style.breath);
     }
-    if (p) floatText('-' + dmg, p.group.position.x, 2.4, p.group.position.z, false);
+    if (p) floatText('-' + fmtK(dmg), p.group.position.x, 2.4, p.group.position.z, false);
     if (target === myId) document.body.classList.add('hurt'), setTimeout(() => document.body.classList.remove('hurt'), 180);
   });
   socket.on('mobHeal', ({ id, hp, max }) => { const m = mobs[id]; if (m) { m.hp = hp; if (max) m.max = max; m.label.hp.style.width = (100 * hp / (m.max || hp)) + '%'; } });

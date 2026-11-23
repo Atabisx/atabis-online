@@ -179,7 +179,9 @@ function expGain(mobLv, playerLv, base) {
   return base;
 }
 // Kaldırılan eşyalar (hançer, yay) eski kayıtlarda kılıca çevrilir; bilinmeyen anahtarlar atılır
-const OLD_KEYS = { d_wood: 'w_wood', d_iron: 'w_iron', d_venom: 'w_shadow', b_wood: 'w_wood', b_horn: 'w_iron', b_storm: 'w_steel' };
+const OLD_KEYS = { d_wood: 'w_wood', d_iron: 'w_iron', d_venom: 'w_shadow', b_wood: 'w_wood', b_horn: 'w_iron', b_storm: 'w_steel',
+  // kaldırılan kodla yapılmış kanatlar: elindekiler benzer modelli kanada çevrilir
+  kanat_melek: 'kanat_kugu', kanat_buz: 'kanat_peri', kanat_ates: 'kanat_yarasa', kanat_golge: 'kanat_yarasa', kanat_ejder: 'kanat_isik' };
 function fixKey(k) {
   if (ITEMS[k]) return k;
   const m = /^(dagger|bow)(\d+)(_L)?$/.exec(String(k));

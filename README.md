@@ -4,7 +4,18 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 7.5 (bu sürüm): zırh ve kostüm karakterin üstünde
+### Aşama 7.6 (bu sürüm): boss düzeni, boss saldırı efektleri, GM rozeti, hasar sayacı
+
+- **Her haritada tek tür boss** (2 tane, köyde 3): hepsi kullanıcının getirdiği modellerle, seviyeleri biraz düşürüldü.
+  - Köydeki hayvan boss'ları (Dev Tavuk, Dev Horoz, Domuz Reisi, Deli Boğa, Kuduz Köpek) kaldırıldı; köprünün ötesinde artık Sv. 8 **Kaplan Adam** var.
+  - Sıra: Kaplan Adam 8 · Cehennem Şövalyesi 19 · Su Elementali 26 · Kadim Taş Golem 33 · Sırtlan Reisi 40 · Lav Canavarı 47 · Kurbağa Kralı 54 · Buz Devi 61 · Ayaz Kraliçesi 68 · Ateş Ejderhası 75 · Kara Şövalye Lordu 82 · Çürük Ağaç Ruhu 89 · Mor İblis Lordu 96 · Gök Ejderi 103 · Hiçlik Ejderi 110.
+- **Boss'ların saldırı efekti:** ağır gövdeliler yere vurur (çatlak, toz, sarsıntı), büyücüler yıldırım ve büyü çemberi, ejderler alev ve pençe dalgası, savaşçılar/yırtıcılar hedefe uçan kılıç/pençe dalgası.
+- **Kodla yapılmış kanatlar kaldırıldı** (Melek, Buz, Ateş, Gölge, Ejder); yalnız modelli kanatlar kaldı (Peri, Kuğu, Yarasa, Işık). Elinde eskisi olanınki benzer modelli kanada çevrilir.
+- **At ve Savaş Kaplanı mührünün simgesi** artık bineğin kendi 3D modeli.
+- **GM rozeti** ismin üstünde, Metin2 tarzı: parlayan, süzülen altın "♛ GM".
+- **Hasar binlik "k" ile yazılır** (12.5k, 1.2M); kendi vuruşların ekranın üstünde büyük yazar: son vuruş ve son 6 saniyenin toplamı.
+
+### Aşama 7.5: zırh ve kostüm karakterin üstünde
 
 - **Beş özel zırh ve Uşak Ceketi artık karakterin üstünde görünür** (bütün sınıflarda). Giysi her sınıfın bedenine önceden oturtuldu (`tools/wornglb.py`): göğüs enine/derinliğine ve boyuna göre ölçeklenir, ceketin kolları karakterin kollarına, Ağır Plaka'nın kol ve bacakları karakterinkilere çevrilir. Deri ağırlıkları bedenden aktarıldığı için yürürken ve saldırırken karakterle birlikte hareket eder; giysinin altında kalan beden gizlenir ki içinden taşmasın.
   - Kostüm zırhın üstüne gelir: ikisi de takılıysa kostüm görünür. Diğer kostümler eskisi gibi kıyafeti boyar.
