@@ -461,6 +461,9 @@ export const ITEM_MODELS = {
   kirmizi_bilezik: { armor: true, fit: 0.5, y: 0 }, yilan_bilezik: { armor: true, fit: 0.5, y: 0 }, boho_bilezik: { armor: true, fit: 0.55, y: 0 },
   boho_kupe: { armor: true, fit: 0.5, y: 0 }, damla_kupe: { armor: true, fit: 0.5, y: 0 }, gunes_kupe: { armor: true, fit: 0.5, y: 0 },
   gumus_tac: { armor: true, fit: 0.5, y: 0 }, kutsal_tac: { armor: true, fit: 0.5, y: 0 },
+  // özel zırhlar ve Uşak Ceketi (kullanıcının modelleri; simge, yerde ve panelde görünür)
+  zirh_kemik: { armor: true, fit: 0.6, y: 0 }, zirh_paladin: { armor: true, fit: 0.6, y: 0 }, zirh_altin_pul: { armor: true, fit: 0.6, y: 0 },
+  zirh_kizil_pul: { armor: true, fit: 0.6, y: 0 }, zirh_agir_plaka: { armor: true, fit: 0.75, y: 0 }, kostum_usak: { armor: true, fit: 0.7, y: 0 },
 };
 // Modeli yüklenene kadar yedek mesh görünür; yüklenince yerine geçer
 export function itemModel(key, fallback) {

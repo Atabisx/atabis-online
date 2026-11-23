@@ -97,7 +97,9 @@ function stoneUpCost(g) { return 5000 * (g + 1) * (g + 1); }
 // metin taşlarından düşen ruh taşı türleri (items.json'daki tüm taşlar)
 const STONE_TYPES = [...new Set(Object.values(ITEMS).filter((d) => d.stone).map((d) => d.stone.type))];
 const LEAVES = ['yaprak_mor', 'yaprak_mavi', 'yaprak_kirmizi'];
-function leafNeed(def, up) { return (def.lv || 1) >= 30 && up >= 6 ? up + 1 : 0; }
+function leafNeed(def, up) { if (def.leaves) return def.leaves; return (def.lv || 1) >= 30 && up >= 6 ? up + 1 : 0; }   // özel zırhlar her basamakta 'leaves' kadar
+// metin taşından düşen özel eşyalar: [anahtar, en düşük taş sv, en yüksek taş sv]
+const STONE_SPECIALS = Object.entries(ITEMS).filter(([, d]) => d.stoneDrop).map(([k, d]) => [k, d.stoneDrop[0], d.stoneDrop[1]]);
 // yükseltmenin eşyaya kattığı değerler
 function upBonus(def, up) {
   if (!up) return { atk: 0, def: 0, hp: 0 };
@@ -200,7 +202,7 @@ function fixEquip(eq) {
 }
 const skillLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 
-module.exports = { STONE_TYPES, CLASS_KEYS, fixKey, fixItems, fixEquip,
+module.exports = { STONE_TYPES, STONE_SPECIALS, CLASS_KEYS, fixKey, fixItems, fixEquip,
   ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, invSize, EQUIP_SLOTS, GEAR_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
   BONUS_TYPES, rollBonus, maxBonus, MAX_UP, LEAVES, leafNeed, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
   speedMul, attackCooldown, playerDamage, mobDamage, expGain, skillLabel,

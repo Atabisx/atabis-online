@@ -802,6 +802,36 @@ function mergeStatic(root) {
   for (const l of keep) { const p = new THREE.Vector3(); l.getWorldPosition(p); l.parent.remove(l); l.position.copy(p); out.add(l); }
   return out;
 }
+// ---------- vahşi haritalarda tepeler (3D arazi) ----------
+// tohumdan her açılışta aynı çıkan yumuşak tepeler; yol, geçit, doğuş ve harita kenarı düz kalır
+const HILL_AMP = { rocky: 6, snow: 6.5, volcanic: 6, dragon_valley: 7, dark_throne: 5, demon: 5, castle: 4, ruins: 4, desert_dunes: 3.5,
+  desert_canyon: 5, pine_forest: 3.5, forest_mist: 3, swamp: 1.2, ice_cave: 2.5 };
+function makeHills(def, rnd, bmin, bmax) {
+  const amp = (HILL_AMP[def.theme] || 0) * 1.6; if (!amp) return null;
+  const N = 48, lat = new Float32Array(N * N);
+  for (let i = 0; i < lat.length; i++) lat[i] = rnd();
+  const sm = (t) => t * t * (3 - 2 * t);
+  const vn = (x, z) => {
+    const xi = Math.floor(x), zi = Math.floor(z), tx = sm(x - xi), tz = sm(z - zi);
+    const g = (a, b) => lat[((a % N) + N) % N * N + ((b % N) + N) % N];
+    return (g(xi, zi) * (1 - tx) + g(xi + 1, zi) * tx) * (1 - tz) + (g(xi, zi + 1) * (1 - tx) + g(xi + 1, zi + 1) * tx) * tz;
+  };
+  const cell = 1.5, x0 = bmin - 35, z0 = bmin - 35, nx = Math.ceil((bmax - bmin + 70) / cell) + 1, nz = nx;
+  const h = new Float32Array(nx * nz);
+  const flats = [[def.spawn[0], def.spawn[1], 12], ...def.portals.map((p) => [p.x, p.z, 11])];
+  const ss = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+  for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
+    const x = x0 + (i + 0.5) * cell, z = z0 + (j + 0.5) * cell;
+    let n = vn(x / 38, z / 38) * 0.62 + vn(x / 16 + 7, z / 16 + 3) * 0.28 + vn(x / 7 + 2, z / 7 + 9) * 0.1;
+    n = Math.max(0, n - 0.32) / 0.68;                             // düz ovalar arasında tepeler
+    let m = ss(6, 15, Math.abs(z - 25));                          // ana yol düz
+    const d = Math.min(x - bmin, bmax - x, z - bmin, bmax - z);
+    m *= ss(2, 12, d);                                            // harita kenarı (duvar) düz
+    for (const [fx, fz, r] of flats) m *= ss(r * 0.5, r * 1.6, Math.hypot(x - fx, z - fz));
+    h[i * nz + j] = n * amp * m * 10;                             // dm cinsinden (hScale 0.1)
+  }
+  return { cell, x0, z0, nx, nz, h, hScale: 0.1, block: new Uint8Array(nx * nz), core: new Uint8Array(nx * nz), cx: 0, cz: 0 };
+}
 // harita modeli (tek parça diorama) + çevresindeki yumuşak tepe eteği; yükseklik verisi gelince konumlar oturur
 function buildModelMap(def, th, onReady) {
   const M = def.model, holder = new THREE.Group(), token = {};
@@ -854,8 +884,19 @@ export function loadMap(scene, def) {
 
   // zemin: doğal gürültülü doku (çim, kar, kum, toprak)
   const gsize = span + 70;
-  const ground = new THREE.Mesh(planeGeo(gsize, gsize), new THREE.MeshLambertMaterial({ map: groundTex(th.ground, th.ground2, !!th.snow) }));
-  ground.rotation.x = -Math.PI / 2;
+  // vahşi haritalar düz değil: yumuşak tepeler (köy, göl, savaş ve zindan haritaları düz kalır)
+  if (!def.model && !def.village && !def.safe && !def.hidden) HM = makeHills(def, seededRandom((def.seed || 1) * 13 + 5), bmin, bmax);
+  let groundGeo = planeGeo(gsize, gsize);
+  if (HM) {
+    const seg = Math.round(gsize / 2.5);
+    groundGeo = new THREE.PlaneGeometry(gsize, gsize, seg, seg);
+    const uv = groundGeo.attributes.uv, P = groundGeo.attributes.position;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * gsize, uv.getY(i) * gsize);
+    for (let i = 0; i < P.count; i++) P.setZ(i, groundH(mid + P.getX(i), mid - P.getY(i)));
+    groundGeo.computeVertexNormals();
+  }
+  const ground = new THREE.Mesh(groundGeo, new THREE.MeshLambertMaterial({ map: groundTex(th.ground, th.ground2, !!th.snow) }));
+  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
   add(ground, mid, 0, mid, false);
   // geçitleri birbirine bağlayan ana yol: toprak doku
   plane(bmin - 5, 23, bmax + 5, 27, th.path, 0.02, new THREE.MeshLambertMaterial({ map: groundTex(th.path, darker(th.path, 0.85), !!th.snow) }));
@@ -912,7 +953,8 @@ export function loadMap(scene, def) {
     return false;
   };
   // büyük haritalarda süs sayısı alanla birlikte artar (telefon için ölçülü)
-  const density = Math.max(1, Math.min(2.3, ((span + 20) / 100) ** 1.4));
+  const density = Math.max(1, Math.min(2.3, ((span + 20) / 100) ** 1.4)) * (HM && !def.model ? 1.25 : 1);
+  const propStart = group.children.length;
   for (const [kind, base] of Object.entries(th.props)) {
     const build = PROP_BUILDERS[kind];
     if (!build) continue;
@@ -925,6 +967,11 @@ export function loadMap(scene, def) {
       build(x, z, th, rnd);
       placed++;
     }
+  }
+  // tepeli haritada süsler bulundukları yerin yüksekliğine oturur (biraz gömülü: yamaçta havada kalmasın)
+  if (HM && !def.model) for (let i = propStart; i < group.children.length; i++) {
+    const o = group.children[i];
+    o.position.y += groundH(o.position.x, o.position.z) - 0.15;
   }
 
   // harita kenarını belli eden alçak duvar

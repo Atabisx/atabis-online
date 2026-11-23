@@ -236,6 +236,22 @@ def build_items():
     for key, name, color, pr in COSTUMES:
         items[key] = {'name': name, 'slot': 'costume', 'lv': 1, 'price': pr, 'rarity': 1, 'color': color, 'tint': color,
                       'desc': 'Zırhının görünüşünü değiştirir (istatistik vermez). Kostümcüden alınır.'}
+    # özel zırhlar (kullanıcının getirdiği modeller): 30. seviyeden sonra her 15 seviyede bir; bütün sınıflar giyer.
+    # Sadece metin taşlarından, nadiren düşer (taşın seviyesi zırhın seviyesi ile +14 arasındaysa).
+    # Yükseltmenin her basamağı üç renk yapraktan 5'er tane ister ('leaves').
+    SPECIAL_ARMORS = [('zirh_kemik', 'Kemik Hayalet Göğüslüğü', 30, '#d8d4c8'), ('zirh_paladin', 'Gök Paladin Zırhı', 45, '#5aa0e0'),
+                      ('zirh_altin_pul', 'Altın Pullu Zırh', 60, '#e8b54a'), ('zirh_kizil_pul', 'Kızıl Pullu Savaş Zırhı', 75, '#c0392b'),
+                      ('zirh_agir_plaka', 'Ağır Plaka Zırh', 90, '#c9ccd2')]
+    for key, name, lv, color in SPECIAL_ARMORS:
+        i = (lv - 1) / 7.0   # bu seviyedeki sıradan zırh kademesi
+        items[key] = {'name': name, 'slot': 'armor', 'lv': lv, 'rarity': 2, 'color': color, 'price': lv * 20000, 'model': key,   # fiyat sadece NPC'ye satış için (dükkânda yok)
+                     
+                      'def': round((3 + 6 * i + 0.4 * i * i) * 1.5), 'hp': lv * 10, 'leaves': 5, 'stoneDrop': [lv, lv + 14],
+                      'desc': f'Bütün sınıflar giyer. Sadece Sv. {lv}-{lv + 14} metin taşlarından nadiren düşer. Her yükseltme 5\'er Mor, Mavi ve Kırmızı Yaprak ister.'}
+    # Uşak Ceketi: istatistik veren kostüm (efsunda çıkabilen en yüksek Maks. Can + saldırı 50)
+    items['kostum_usak'] = {'name': 'Uşak Ceketi', 'slot': 'costume', 'lv': 1, 'price': 3000000, 'rarity': 2, 'color': '#2a2a30',
+                            'tint': '#2a2a30', 'model': 'kostum_usak', 'atk': 50, 'hp': 600,
+                            'desc': 'Siyah kuyruklu uşak ceketi. Saldırı +50, Maks. Can +600 (efsunun en yüksek değeri). Kostümcüden alınır.'}
     # evcil hayvanlar metin taşlarından düşer; her biri farklı bir güç verir
     # sadece kullanıcının getirdiği modellerle evcil hayvanlar (anahtarlar eski kayıtlar bozulmasın diye korunur)
     PETS = [('pet_kurt', 'Kurt Yavrusu', 'wolf', '#8a8f99', {'crit': 5}, 'Kritik vuruş +%5', 'kurt'),

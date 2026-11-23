@@ -275,6 +275,12 @@ class Zone {
         this.makeDrop(best.x, best.z, p.id, { key: `tas_${STONE_TYPES[Math.floor(Math.random() * STONE_TYPES.length)]}_${g}`, n: 1 });
       }
       if (Math.random() < 0.03) this.makeDrop(best.x, best.z, p.id, { key: 'kutsama', n: 1 });
+      // özel zırhlar: taşın seviyesine uyanlar, her biri %1,5 (zor) şansla
+      for (const [key, lo, hi] of R.STONE_SPECIALS) {
+        if (best.lv < lo || best.lv > hi || Math.random() >= 0.015) continue;
+        this.makeDrop(best.x, best.z, p.id, { key });
+        this.hooks.announce(`${p.name}, ${best.name} kırarak ${R.ITEMS[key].name} buldu!`, this);
+      }
       // demirci yaprakları: %35 şansla 1-3 adet (rengi rastgele)
       if (Math.random() < 0.35) this.makeDrop(best.x, best.z, p.id, { key: R.LEAVES[Math.floor(Math.random() * 3)], n: 1 + Math.floor(Math.random() * 3) });
       // evcil hayvan: %1,5 şans (Ejder Yavrusu bunların içinde çok nadir)

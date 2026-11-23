@@ -4,7 +4,15 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 7.3 (bu sürüm): karakter seçme ekranı ve sesler
+### Aşama 7.4 (bu sürüm): özel zırhlar, Uşak Ceketi, tepeli haritalar
+
+- **Beş özel zırh** (kullanıcının modelleri; bütün sınıflar giyer, efsanevi): Kemik Hayalet Göğüslüğü (Sv. 30), Gök Paladin Zırhı (Sv. 45), Altın Pullu Zırh (Sv. 60), Kızıl Pullu Savaş Zırhı (Sv. 75), Ağır Plaka Zırh (Sv. 90). Aynı seviyedeki efsanevi zırhtan güçlü, ayrıca can verir.
+  - Sadece **metin taşlarından**, zor düşer: taşın seviyesi zırhın seviyesi ile +14 arasındaysa her taşta **%1,5** (ör. Sv. 30 zırhı Sv. 30-44 taşlardan). Düşünce haritaya duyurulur.
+  - **Yükseltme:** her basamak (+0'dan +9'a) Mor, Mavi ve Kırmızı Yapraktan **5'er** ister.
+- **Uşak Ceketi (kostüm):** Saldırı +50, Can +600 (efsunda çıkan en yüksek Maks. Can). Kostümcüde 3.000.000 Yang.
+- **Tepeli haritalar:** köy, göl, savaş meydanı ve zindanlar dışındaki bütün vahşi haritalarda yumuşak tepeler var (taşlı/karlı/volkanik haritalarda daha yüksek). Yol, geçitler ve doğuş noktası düz kalır; ağaçlar, kayalar, metin taşları, yaratıklar ve oyuncular tepeye oturur. Süs sayısı biraz arttı.
+
+### Aşama 7.3: karakter seçme ekranı ve sesler
 
 - **Düzeltme:** karakter seçme ekranında karakter platformun içine gömülüyordu. Sebebi, adalı haritalar için eklenen zemin yüksekliğinin platformdaki karakteri de yere (y=0) çekmesiydi. Zemin yüksekliği artık sadece yükseklik verisi olan haritalarda ve oyun içinde uygulanır; seçme ekranında kapalıdır.
 - **Sesler:** Alp'in bütün bağırışları erkek sesi; Akıncı, Kam ve Avcı'nınkiler kadın sesi (büyü bağırışları dahil). Yalaz erkek sesi.

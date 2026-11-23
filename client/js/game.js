@@ -1297,10 +1297,10 @@ function dropMesh(d) {
     }
   } else if (def.slot === 'weapon') {
     shape = weaponMesh(def); shape.rotation.z = Math.PI / 2.4; shape.position.y = 0.35; shape.scale.setScalar(1.2);
-  } else if (def.slot === 'armor') {
+  } else if (def.slot === 'armor' && !(def.model && ITEM_MODELS[def.model] && ITEM_MODELS[def.model].fit)) {
     shape = def.plate ? chestMesh(def) : new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.34, 0.2), mat('#d9cfb8'));
     shape.position.y = 0.3;
-  } else if (def.model && ITEM_MODELS[def.model] && ['bracelet', 'earring', 'helmet'].includes(def.slot) && ITEM_MODELS[def.model].fit) {
+  } else if (def.model && ITEM_MODELS[def.model] && ['bracelet', 'earring', 'helmet', 'armor', 'costume'].includes(def.slot) && ITEM_MODELS[def.model].fit) {
     // takı ve taç: yerde kendi modeliyle görünür
     shape = itemModel(def.model, null); shape.position.y = 0.35;
   } else if (def.slot === 'helmet') {
@@ -1380,6 +1380,7 @@ function iconBuilder(key, def) {
   if (s === 'helmet') return () => (def.model && ITEM_MODELS[def.model] ? itemModel(def.model, helmetMesh(def)) : helmetMesh(def));
   if (s === 'shield' && def.model && ITEM_MODELS[def.model]) return () => itemModel(def.model, null);
   if (s === 'wings' && def.wing && def.wing.model) return () => { const g = buildWings(def.wing); g.children[0].rotation.y = 0; return g; };   // simgede süslü yüz öne
+  if (s === 'costume' && def.model && ITEM_MODELS[def.model]) return () => itemModel(def.model, null);
   if (s === 'shoes') return () => icons.bootsMesh(def);
   if (s === 'bracelet') return () => (def.model && ITEM_MODELS[def.model] ? itemModel(def.model, null) : icons.braceletMesh(def));
   if (s === 'earring') return () => (def.model && ITEM_MODELS[def.model] ? itemModel(def.model, null) : icons.earringMesh(def));
@@ -1443,7 +1444,7 @@ const SOCKETS = { weapon: 3, armor: 3 };
 const upgradeCost = (def, up) => Math.round((2000 + (def.lv || 1) * 300) * (up + 1) * (1 + up * 0.35));
 const stoneUpCost = (g) => 5000 * (g + 1) * (g + 1);
 const LEAVES = ['yaprak_mor', 'yaprak_mavi', 'yaprak_kirmizi'];
-const leafNeed = (def, up) => ((def.lv || 1) >= 30 && up >= 6 ? up + 1 : 0);
+const leafNeed = (def, up) => (def.leaves ? def.leaves : (def.lv || 1) >= 30 && up >= 6 ? up + 1 : 0);   // özel zırhlar: her basamakta 5'er
 const countItem = (key) => inv.inventory.reduce((a, i) => a + (i.key === key ? (i.n || 1) : 0), 0);
 function upBonus(def, up) {
   if (!up) return { atk: 0, def: 0, hp: 0 };
