@@ -4,7 +4,15 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 6.8 (bu sürüm): bilezik, küpe ve taç modelleri
+### Aşama 6.9 (bu sürüm): savaşçı, ninja ve sura için yeni karakterler
+
+- **Alp (savaşçı):** Şafak Şövalyesi — kızıl saçlı, kırmızı pelerinli, gümüş zırhlı kadın şövalye.
+- **Akıncı (ninja):** Gölge Kılıcı — kızıl atkılı, at kuyruklu kadın ninja. Sesi artık kadın sesi.
+- **Yalaz (sura):** Altın Fırtına İmparatoru — siyah-altın zırhlı, uzun saçlı erkek. Sesi artık kalın erkek sesi.
+- Modellerin iskeleti yoktu: `tools/glbrig.py` mixamo iskeletini eklem konumlarına (`tools/rig/*.json`) oturtur, her noktayı modelin içinden en yakın kemiğe bağlar (yana sarkan el kalçaya değil koluna gider), birbirine değen el-gövde yüzeylerini ayırır. Yürüme, koşma ve saldırı hareketleri diğer karakterlerden aktarılır.
+- Ellerindeki kendi kılıçları kesildi, oyunun silahı takılır. Modeller 15-18 MB'tan 2,5-3 MB'a indi.
+
+### Aşama 6.8: bilezik, küpe ve taç modelleri
 
 - **Bilezikler artık kullanıcının modelleriyle:** Sv. 1-29 Kırmızı Boncuklu Bilezik (altın çanlı), Sv. 36-64 Boho Zincir Bilezik (taşlı zincir, halka hâline getirildi), Sv. 71 ve üstü Altın Yılan Bilezik (kendi kuyruğunu ısıran yılan).
 - **Küpeler artık kullanıcının modelleriyle:** Sv. 1-29 Damla Zincir Küpe, Sv. 36-64 Güneş Halka Küpe, Sv. 71 ve üstü Boho Taşlı Halka Küpe.

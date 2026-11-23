@@ -234,9 +234,11 @@ const loader = new GLTFLoader();
 // k: boy ölçeği (verilmezse ölçülür); helm: kask takılınca gizlenen kendi miğferi;
 // helmet: false → kapüşonlu modele kask eşyası giydirilmez (iç içe geçmesin)
 const CHAR_MODELS = {
-  savasci: { url: 'models/chars/savasci.glb', hide: ['sword'], skip: ['sword'] },        // barbar kız (kendi kılıçları gizli, oyunun silahı takılır)
-  ninja: { url: 'models/chars/ninja.glb', straight: 0.75, turn: 30 },                    // başlıklı kızıl ninja (erkek); beklerken dik ve öne dönük
-  sura: { url: 'models/chars/sura.glb', hide: ['spear'], skip: ['spear'], k: 1.1 },       // kanatlı kadın savaşçı (kanatlar boyu etkilemesin)
+  // savaşçı, ninja, sura: kullanıcının getirdiği iskeletsiz modeller, tools/glbrig.py ile iskelet giydirildi;
+  // ellerindeki kendi silahları kesildi (oyunun silahı takılır). k: saç/topuz boyu saymasın diye ölçek
+  savasci: { url: 'models/chars/savasci.glb' },                                           // Şafak Şövalyesi (kızıl saçlı, pelerinli kadın şövalye)
+  ninja: { url: 'models/chars/ninja.glb', k: 1.0 },                                       // Gölge Kılıcı (kızıl atkılı kadın ninja; at kuyruğu boyu etkilemesin)
+  sura: { url: 'models/chars/sura.glb', k: 1.03 },                                        // Altın Fırtına İmparatoru (siyah-altın zırhlı erkek)
   saman: { url: 'models/chars/saman.glb', hide: ['prop'], skip: ['prop', 'outline'], k: 0.933 },
   okcu: { url: 'models/chars/okcu.glb', hide: ['crossbow'], skip: ['crossbow'] },        // iblis avcısı
 };

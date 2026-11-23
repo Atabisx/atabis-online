@@ -1,0 +1,9 @@
+{
+  "_not": "Shadow Blade -> ninja (Akıncı). Karakterin solu +x, yüzü +z. Sağ bacak geride, sağ kol yana ve geriye açık.",
+  "Hips": [-0.1, 0.06, -0.07], "Spine": [-0.1, 0.17, -0.04], "Spine1": [-0.1, 0.29, -0.035], "Spine2": [-0.1, 0.41, -0.05],
+  "Neck": [-0.1, 0.58, -0.08], "Head": [-0.1, 0.65, -0.08], "HeadTop_End": [-0.1, 0.84, -0.12],
+  "LeftShoulder": [-0.03, 0.54, -0.06], "LeftArm": [0.04, 0.51, -0.05], "LeftForeArm": [0.1, 0.27, 0.0], "LeftHand": [0.1, 0.01, 0.15],
+  "RightShoulder": [-0.17, 0.54, -0.08], "RightArm": [-0.24, 0.5, -0.14], "RightForeArm": [-0.33, 0.29, -0.23], "RightHand": [-0.46, 0.01, -0.22],
+  "LeftUpLeg": [0.0, 0.0, -0.06], "LeftLeg": [0.045, -0.37, -0.07], "LeftFoot": [0.15, -0.82, -0.08], "LeftToeBase": [0.2, -0.91, 0.07],
+  "RightUpLeg": [-0.2, 0.0, -0.12], "RightLeg": [-0.26, -0.37, -0.15], "RightFoot": [-0.25, -0.82, -0.25], "RightToeBase": [-0.35, -0.91, -0.17]
+}

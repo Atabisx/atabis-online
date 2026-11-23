@@ -70,6 +70,9 @@ def walk(ni, M):
         for p in j['meshes'][n['mesh']]['primitives']:
             P = read(p['attributes']['POSITION']); P = P @ M[:3, :3].T + M[:3, 3]
             U = read(p['attributes']['TEXCOORD_0']) if 'TEXCOORD_0' in p['attributes'] else np.zeros((len(P), 2))
+            if p.get('material') is not None:   # KHR_texture_transform (ölçek + kaydırma) dokuya göre uygulanır
+                tt = j['materials'][p['material']].get('pbrMetallicRoughness', {}).get('baseColorTexture', {}).get('extensions', {}).get('KHR_texture_transform')
+                if tt: U = U * np.array(tt.get('scale', [1, 1])) + np.array(tt.get('offset', [0, 0]))
             I = read(p['indices']).ravel().astype(np.int64) if 'indices' in p else np.arange(len(P))
             Ts.append(I.reshape(-1, 3) + sum(len(x) for x in Ps)); Ps.append(P); Us.append(U); mats.add(p.get('material'))
     for c in n.get('children', []): walk(c, M)

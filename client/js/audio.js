@@ -207,14 +207,14 @@ export function hit(kind, crit, pos) {
 }
 // Metin2 tarzı vuruş bağırışları (gerçek ses kayıtları, audio/sfx/voice_*.wav):
 // 'light' sıradan vuruşta ara sıra kısa bağırış, 'strong' 3. kombo ve becerilerde, 'magic' büyülerde.
-// Kadın karakterler (Alp, Yalaz, Kam, Avcı) sadece ince (kadın) kayıtları kullanır, perdeleri kalınlaştırılmaz.
-// Akıncı erkek (paralı asker modeli): kalın "ha" kayıtları ve erkek gibi duyulan bağırışlar onda.
+// Kadın karakterler (Alp, Akıncı, Kam, Avcı) sadece ince (kadın) kayıtları kullanır, perdeleri kalınlaştırılmaz.
+// Yalaz (sura) erkek (Altın Fırtına İmparatoru): kalın "ha" kayıtları ve erkek gibi duyulan bağırışlar onda.
 const FEMALE_LIGHT = ['hya4', 'hya0', 'hya5'];
 const FEMALE_STRONG = ['hya0', 'hya2', 'hya3', 'hya4', 'hya5', 'hya7'];
 const VOICES = {
   savasci: { light: FEMALE_LIGHT, strong: ['hya2', 'hya3', 'hya7', 'sharp1'], magic: ['sharp1', 'hya7'], rate: 1.0 },
-  ninja: { light: ['ha1', 'ha2', 'ha6'], strong: ['ha0', 'ha3', 'ha4', 'ha7', 'ha8', 'hya1', 'hya6'], magic: ['sharp0', 'myst1'], rate: 0.97 },
-  sura: { light: FEMALE_LIGHT, strong: ['hya2', 'hya3', 'hya7', 'sharp1'], magic: ['myst0'], rate: 1.02 },
+  ninja: { light: FEMALE_LIGHT, strong: ['hya0', 'hya4', 'hya5', 'hya7', 'sharp1'], magic: ['sharp0', 'hya4'], rate: 1.04 },
+  sura: { light: ['ha1', 'ha2', 'ha6'], strong: ['ha0', 'ha3', 'ha4', 'ha7', 'ha8', 'hya1', 'hya6'], magic: ['myst0', 'myst1'], rate: 0.95 },
   saman: { light: FEMALE_LIGHT, strong: FEMALE_STRONG, magic: ['myst0', 'sharp1'], rate: 1.05 },
   okcu: { light: FEMALE_LIGHT, strong: ['hya0', 'hya4', 'hya5', 'hya3'], magic: ['hya4'], rate: 1.04 },
 };
