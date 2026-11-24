@@ -318,6 +318,12 @@ const modelReady = (async () => {
   // kılıç saldırı animasyonları (kullanıcının getirdiği 3 klip): Soldier'la aynı yöne çevrilir
   const atk = await loadGlb('models/anim/kilic_anim.glb');
   if (atk) { try { atk.scene.rotation.y = calibrate(atk.scene).faceOffset - calib.faceOffset; } catch (e) { console.warn('Kılıç animasyonu hazırlanamadı', e); } }
+  // KinemIQ / Quaternius kılıç animasyonları (CC0): kılıçla bekleme, kılıç savurma, kılıçla savunma
+  const kq = {};
+  await Promise.all([['idle', 'kq_kilic_bekle'], ['slash', 'kq_kilic_vurus'], ['block', 'kq_kilic_blok']].map(async ([k, f]) => {
+    const g2 = await loadGlb(`models/anim/${f}.glb`); if (!g2) return;
+    try { g2.scene.rotation.y = calibrate(g2.scene).faceOffset - calib.faceOffset; kq[k] = g2; } catch (e) { console.warn('KinemIQ animasyonu hazırlanamadı', f, e); }
+  }));
   await Promise.all(Object.entries(CHAR_MODELS).map(async ([cls, cfg]) => {
     const c = await loadGlb(cfg.url); if (!c) return;
     try {
@@ -341,6 +347,7 @@ const modelReady = (async () => {
       if (cfg.straight) straightenIdle(sc, moves, cfg.straight);
       if (cfg.turn) turnIdle(sc, moves, cfg.turn);
       if (atk && cls !== 'saman') moves.push(...atkClips(retargetClips(atk.scene, sc, atk.animations)));
+      if (cls !== 'saman') moves.push(...kqClips(sc, kq));
       for (const k of Object.keys(cc)) if (cc[k] && cc[k].bone) cc[k] = correctFrame(cc[k], moves);
       charModels[cls] = { scene: sc, calib: cc, clips: moves, cfg };
     } catch (e) { console.warn('Karakter modeli hazırlanamadı', cls, e); }
@@ -1055,16 +1062,48 @@ function atkClips(clips) {
   });
   return out;
 }
+// KinemIQ kılıç klipleri: kılıçla bekleme (Idle yerine, savaş duruşu), 4. vuruş, savunma
+function kqClips(sc, kq) {
+  const out = [];
+  const one = (g2, name) => { const c = retargetClips(g2.scene, sc, g2.animations)[0]; if (c) c.name = name; return c; };
+  if (kq.idle) {
+    const c = one(kq.idle, 'SwordIdle'); if (c) out.push(c);
+  }
+  if (kq.slash) {
+    const c = one(kq.slash, 'kqslash');
+    if (c) { const sub = THREE.AnimationUtils.subclip(c, 'Atk3', 3, 40, 30); sub.userData = { speed: 1.5 }; out.push(sub); }
+  }
+  if (kq.block) {
+    const c = one(kq.block, 'kqblock');
+    if (c) { const sub = THREE.AnimationUtils.subclip(c, 'Block', 0, 30, 30); sub.userData = { speed: 1.4 }; out.push(sub); }
+  }
+  return out;
+}
+// tek seferlik klip (savunma): bekleme/koşmanın üstüne kısa süre oynar
+function playOnce(p, name) {
+  const act = p.actions && p.actions[name]; if (!act || p.mounted || p.dead) return;
+  const sp = (act.getClip().userData || {}).speed || 1.4, from = p.actions[p.current];
+  act.reset(); act.setLoop(THREE.LoopOnce, 1); act.clampWhenFinished = true; act.setEffectiveTimeScale(sp); act.setEffectiveWeight(1); act.play();
+  if (from && from !== act) act.crossFadeFrom(from, 0.12, false);
+  p.current = name; p.atkT = act.getClip().duration / sp;
+}
 // yeni vuruş başladıysa kılıç klipini oynat; bitince bekleme/koşmaya yumuşak geçiş
 function updateAtkAnim(p, dt) {
   const prev = p.prevSwingT || 0; p.prevSwingT = p.swingT;
-  const act = p.actions && p.actions['Atk' + (p.combo || 0)];
+  // ilk vuruşta eski savurma ile KinemIQ savurması sırayla (her vuruş aynı görünmesin)
+  const fresh = p.swingT > prev + 1e-4;
+  if (fresh) {
+    let an = 'Atk' + (p.combo || 0);
+    if (!(p.combo || 0) && p.actions && p.actions.Atk3) { p.altAtk = !p.altAtk; if (p.altAtk) an = 'Atk3'; }
+    p.lastAtk = an;
+  }
+  const act = p.actions && p.actions[p.lastAtk || 'Atk0'];
   if (p.swingT > prev + 1e-4 && act && !p.mounted && !p.dead) {
     const sp = (act.getClip().userData || {}).speed || 1.5;
     const from = p.actions[p.current];
     act.reset(); act.setLoop(THREE.LoopOnce, 1); act.clampWhenFinished = true; act.setEffectiveTimeScale(sp); act.setEffectiveWeight(1); act.play();
     if (from && from !== act) act.crossFadeFrom(from, 0.1, false);
-    p.current = 'Atk' + (p.combo || 0);
+    p.current = p.lastAtk || 'Atk0';
     p.atkT = act.getClip().duration / sp;
   }
   if (p.atkT > 0) {
@@ -2537,6 +2576,8 @@ export function startGame(sock, opts = {}) {
       if (p.label.hp && max) p.label.hp.style.width = Math.max(0, 100 * hp / max) + '%';
       floatText(miss ? 'ISKA' : (crit ? 'KRİTİK ' : '') + '-' + fmtK(dmg), pos.x, 2.6, pos.z, crit);
       if (!miss) { sfx.hit('player', crit, pos); fx.hitSpark({ x: pos.x, y: 1.2, z: pos.z }, crit, 'mob'); }
+      // dururken vurulan kılıçlı karakter kılıcıyla savunur (KinemIQ savunma)
+      if (!miss && !p.moving && !(p.atkT > 0) && p.actions && p.actions.Block && Math.random() < 0.5) playOnce(p, 'Block');
       if (id === myId && !miss) { document.body.classList.add('hurt'); setTimeout(() => document.body.classList.remove('hurt'), 180); }
       return;
     }
@@ -3094,7 +3135,9 @@ function loop() {
     // adalı/arenalı haritada zemine bas; karakter seçme sahnesindeki (platformdaki) karaktere dokunma
     if (hasGround() && !String(p.id).startsWith('lobby')) p.group.position.y = groundH(p.group.position.x, p.group.position.z);
     p.group.rotation.y = angleLerp(p.group.rotation.y, p.ry, 1 - Math.exp(-14 * dt));
-    if (!updateAtkAnim(p, dt)) setAnim(p, p.moving && p.swingT <= 0 && !p.mounted ? 'Run' : 'Idle');
+    // kılıç tutan karakter dururken KinemIQ kılıçla bekleme duruşunda
+    const idleName = p.actions.SwordIdle && p.look && p.look.weapon && !p.mounted ? 'SwordIdle' : 'Idle';
+    if (!updateAtkAnim(p, dt)) setAnim(p, p.moving && p.swingT <= 0 && !p.mounted ? 'Run' : idleName);
     if (p.mixer) p.mixer.update(dt);
     if (p.mounted && p.horse) p.horse.update(clock.elapsedTime, p.moving, 0, dt);
     skillPoseUpdate(p, dt);

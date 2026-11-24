@@ -4,7 +4,15 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 7.9 (bu sürüm): yüksek seviye tam zırhlar
+### Aşama 8.0 (bu sürüm): KinemIQ kılıç animasyonları
+
+- KinemIQ'nun ücretsiz (CC0) paketinden üç kılıç animasyonu kılıç kullanan dört sınıfa (Alp, Akıncı, Yalaz, Avcı) aktarıldı (`client/models/anim/kq_*.glb`; kemik adları mixamo'ya çevrildi):
+  - **Kılıçla bekleme:** silah elindeyken dururken savaş duruşu.
+  - **Kılıç savurma:** ilk vuruş sırayla eski savurma ve bu yeni savurma (her vuruş aynı görünmesin).
+  - **Kılıçla savunma:** dururken vurulunca yarı yarıya kılıcını kaldırıp savunur.
+- Hareketler: Quaternius'un Universal Animation Library'si (CC0), KinemIQ aktarımı. Teşekkürler Quaternius ve KinemIQ.
+
+### Aşama 7.9: yüksek seviye tam zırhlar
 
 - Dört yeni özel zırh (kullanıcının modelleri), hepsi miğferli tam takım ve karakterin üstünde görünür:
   Yıldızdökme Muhafız Zırhı (Sv. 95), Altın Nöbetçi Zırhı (Sv. 100), Altın Paladin Zırhı (Sv. 105), Ejder Plaka Zırhı (Sv. 110).
