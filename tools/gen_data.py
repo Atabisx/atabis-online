@@ -232,12 +232,15 @@ def build_items():
     for key, name, color, pr in COSTUMES:
         items[key] = {'name': name, 'slot': 'costume', 'lv': 1, 'price': pr, 'rarity': 1, 'color': color, 'tint': color,
                       'desc': 'Zırhının görünüşünü değiştirir (istatistik vermez). Kostümcüden alınır.'}
-    # özel zırhlar (kullanıcının getirdiği modeller): 30. seviyeden sonra her 15 seviyede bir; bütün sınıflar giyer.
+    # özel zırhlar (kullanıcının getirdiği modeller): 30. seviyeden sonra her 15 seviyede bir, sonra 95-110; bütün sınıflar giyer.
     # Sadece metin taşlarından, nadiren düşer (taşın seviyesi zırhın seviyesi ile +14 arasındaysa).
     # Yükseltmenin her basamağı üç renk yapraktan 5'er tane ister ('leaves').
     SPECIAL_ARMORS = [('zirh_kemik', 'Kemik Hayalet Göğüslüğü', 30, '#d8d4c8'), ('zirh_paladin', 'Gök Paladin Zırhı', 45, '#5aa0e0'),
                       ('zirh_altin_pul', 'Altın Pullu Zırh', 60, '#e8b54a'), ('zirh_kizil_pul', 'Kızıl Pullu Savaş Zırhı', 75, '#c0392b'),
-                      ('zirh_agir_plaka', 'Ağır Plaka Zırh', 90, '#c9ccd2')]
+                      ('zirh_agir_plaka', 'Ağır Plaka Zırh', 90, '#c9ccd2'),
+                      # yüksek seviye tam takımlar (miğferli): Kara Taht / Ejder Vadisi metinlerinden
+                      ('zirh_yildiz', 'Yıldızdökme Muhafız Zırhı', 95, '#8fb8ff'), ('zirh_auric', 'Altın Nöbetçi Zırhı', 100, '#d08a2a'),
+                      ('zirh_altin_paladin', 'Altın Paladin Zırhı', 105, '#e8cf8a'), ('zirh_ejderplaka', 'Ejder Plaka Zırhı', 110, '#6a6f7a')]
     for key, name, lv, color in SPECIAL_ARMORS:
         i = (lv - 1) / 7.0   # bu seviyedeki sıradan zırh kademesi
         items[key] = {'name': name, 'slot': 'armor', 'lv': lv, 'rarity': 2, 'color': color, 'price': lv * 20000, 'model': key,   # fiyat sadece NPC'ye satış için (dükkânda yok)

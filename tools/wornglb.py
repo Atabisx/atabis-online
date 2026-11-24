@@ -25,6 +25,10 @@ ITEMS = {
     'zirh_agir_plaka': {'suit': True},
     'kostum_usak': {'bottom': 'knee', 'wide': 1.2, 'deep': 1.3, 'sleeves': True},
     'zirh_ejderderi': {'bottom': 'hips', 'wide': 1.2, 'deep': 1.3},
+    # tam boy, miğferli takımlar (miğfer karakterin başına oturur)
+    'zirh_yildiz': {'suit': True, 'helm': True}, 'zirh_altin_paladin': {'suit': True, 'helm': True}, 'zirh_auric': {'suit': True, 'helm': True},
+    # parça parça (havada duran) Ejder Plaka: her parça kendi kemiğine
+    'zirh_ejderplaka': {'pieces': True},
 }
 # sınıfa özel ölçü düzeltmesi (gerekirse): {"sınıf": {"wide": .., "deep": ..}}
 CLASS_FIX = {}
@@ -243,14 +247,74 @@ def cluster(A, N, U, AT, cell, uvcell=UVCELL):
     return avg(A), avg(N), avg(U), T
 
 
+def label_pieces(A, AT, res=400):
+    # ayrık parçalı takım (havada duran zırh parçaları): ön görünüşte ayrı duran bölgeler
+    from scipy import ndimage
+    lo = A.min(0); sc = (res - 1) / np.ptp(A[:, 0]); H = int(np.ptp(A[:, 1]) * sc) + 1
+    grid = np.zeros((res, H), bool); a, b, c = A[AT[:, 0]], A[AT[:, 1]], A[AT[:, 2]]
+    for w in [(1, 0, 0), (0, 1, 0), (0, 0, 1), (.5, .5, 0), (0, .5, .5), (.5, 0, .5), (1/3, 1/3, 1/3)]:
+        Q = a * w[0] + b * w[1] + c * w[2]
+        grid[np.clip(((Q[:, 0] - lo[0]) * sc).astype(int), 0, res - 1), np.clip(((Q[:, 1] - lo[1]) * sc).astype(int), 0, H - 1)] = True
+    lab, n = ndimage.label(ndimage.binary_dilation(grid, iterations=1))
+    cc = (a + b + c) / 3
+    return lab[np.clip(((cc[:, 0] - lo[0]) * sc).astype(int), 0, res - 1), np.clip(((cc[:, 1] - lo[1]) * sc).astype(int), 0, H - 1)]
+
+
+def place_piece(X, top_src, bot_src, top_dst, bot_dst, girth=1.0):
+    # parçanın üst-alt eksenini hedef kemik doğrultusuna çevir, boyunu uydur (kesit 'girth' ile aynı oranda)
+    d0 = bot_src - top_src; d1 = bot_dst - top_dst
+    k = np.linalg.norm(d1) / np.linalg.norm(d0)
+    R = rodrigues(d0, d1)
+    return top_dst + ((X - top_src) @ R.T) * k * girth
+
+
+def fit_pieces(A, AT, J, P):
+    # helm başa, göğüs+omuzluk+kemer gövdeye, eldivenler ön kola-ele, dizlikler baldıra-ayağa.
+    # Parçalar önce gruplanır (bir zırh parçası birkaç ayrı bölge olabilir), her grup birlikte yerleşir.
+    tl = label_pieces(A, AT)
+    lo, hi = A.min(0), A.max(0); cx = (lo[0] + hi[0]) / 2; hw = (hi[0] - lo[0]) / 2; H = hi[1] - lo[1]
+    groups = {}
+    for k in np.unique(tl):
+        if k == 0: continue
+        tm = tl == k; X = A[np.unique(AT[tm])]
+        c = (X.min(0) + X.max(0)) / 2; u = (c[0] - cx) / hw; v = (c[1] - lo[1]) / H
+        side = 'Left' if u > 0 else 'Right'
+        if v > 0.8 and abs(u) < 0.25: g = 'helm'
+        elif v < 0.3: g = 'leg' + side
+        elif abs(u) > 0.62 and v < 0.6: g = 'arm' + side
+        else: g = 'torso'
+        groups[g] = groups.get(g, np.zeros(len(AT), bool)) | tm
+    Q = np.full_like(A, np.nan); allow = np.ones(len(A)); keep = np.zeros(len(AT), bool)
+    for g, tm in groups.items():
+        vi = np.unique(AT[tm]); X = A[vi]; c = (X.min(0) + X.max(0)) / 2
+        top = np.array([c[0], X[:, 1].max(), c[2]]); bot = np.array([c[0], X[:, 1].min(), c[2]])
+        if g == 'helm':
+            hb = J['Neck'] + (J['Head'] - J['Neck']) * 0.3; ht = J['HeadTop_End'] + (J['HeadTop_End'] - J['Head']) * 0.45
+            Y = place_piece(X, top, bot, ht, hb)
+        elif g.startswith('leg'):
+            sd = g[3:]; foot = J[sd + 'Foot']; toe = J[sd + 'ToeBase']
+            Y = place_piece(X, top, bot, J[sd + 'Leg'] + np.array([0, 0.09, 0.02]), np.array([(foot[0] + toe[0]) / 2, 0.0, (foot[2] + toe[2]) / 2]), 1.1)
+        elif g.startswith('arm'):
+            sd = g[3:]; hm = J[sd + 'HandMiddle1']; tip = hm + (hm - J[sd + 'Hand']) * 0.9
+            Y = place_piece(X, top, bot, J[sd + 'ForeArm'] + (J[sd + 'Hand'] - J[sd + 'ForeArm']) * 0.15, tip, 1.15)
+        else:
+            Y = fit(X, J, P, {'bottom': 'hips', 'wide': 1.3, 'deep': 1.4, 'top': 0.06}); allow[vi] = 0
+        Q[vi] = Y; keep |= tm
+    print('  gruplar:', sorted(groups))
+    return Q, AT[keep], allow
+
 def build(cls, key):
     P, T, Jt, W, names, J = read_char(os.path.join(ROOT, 'chars', cls + '.glb'))
     A, AN, U, AT, _, _ = glbrig.read_glb(os.path.join(ROOT, 'items', key + '.glb'))
     spec = dict(ITEMS[key])
     if not spec.get('suit'): spec.update({k: v * (1.0 if k == 'wide' and 'sleeves' in spec else 1) for k, v in CLASS_FIX.get(cls, {}).items()})
-    if spec.get('suit'): AT = drop_head(A, AT)
+    if spec.get('suit') and not spec.get('helm'): AT = drop_head(A, AT)
     A, AN, U, AT = cluster(A, AN, U, AT, CELL * (A[:, 1].max() - A[:, 1].min()))
-    if spec.get('suit'):
+    if spec.get('pieces'):
+        Q, AT, allow = fit_pieces(A, AT, J, P)
+        ref = 1.0 / np.nanmedian(np.linalg.norm(Q[AT[:, 0]] - Q[AT[:, 1]], axis=1) / np.linalg.norm(A[AT[:, 0]] - A[AT[:, 1]], axis=1))
+        Q = np.nan_to_num(Q)
+    elif spec.get('suit'):
         Q = fit_suit(A, J, P); allow = np.ones(len(Q))
         ref = (A[:, 1].max() - A[:, 1].min()) / J['HeadTop_End'][1]
     else:

@@ -4,7 +4,14 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 7.8 (bu sürüm): özel silahlar, Ejder Derisi Zırh; eski köy geri
+### Aşama 7.9 (bu sürüm): yüksek seviye tam zırhlar
+
+- Dört yeni özel zırh (kullanıcının modelleri), hepsi miğferli tam takım ve karakterin üstünde görünür:
+  Yıldızdökme Muhafız Zırhı (Sv. 95), Altın Nöbetçi Zırhı (Sv. 100), Altın Paladin Zırhı (Sv. 105), Ejder Plaka Zırhı (Sv. 110).
+- Bütün sınıflar giyer; yalnız kendi seviyesi ile +14 arasındaki metin taşlarından %1,5 düşer (İblis Kulesi, Ejder Vadisi, Kara Taht), yükseltme 5'er yaprak ister. GM'ye `/zirhlar` ile verilir.
+- `tools/wornglb.py`: miğferli tam takım (`helm`) ve havada duran parçalı takım (`pieces`: miğfer başa, göğüs gövdeye, eldivenler ön kola, dizlikler baldıra) desteği.
+
+### Aşama 7.8: özel silahlar, Ejder Derisi Zırh; eski köy geri
 
 - **Ejderarması Savaş Çekici (Sv. 100):** Alp ve Yalaz; saldırı 385.
 - **Magma takımı (Sv. 90)** ve **Ayaz takımı (Sv. 80)**, kullanıcının iki silah takımından parça parça ayrıldı:

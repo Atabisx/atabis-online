@@ -465,6 +465,7 @@ export const ITEM_MODELS = {
   zirh_kemik: { armor: true, fit: 0.6, y: 0 }, zirh_paladin: { armor: true, fit: 0.6, y: 0 }, zirh_altin_pul: { armor: true, fit: 0.6, y: 0 },
   zirh_kizil_pul: { armor: true, fit: 0.6, y: 0 }, zirh_agir_plaka: { armor: true, fit: 0.75, y: 0 }, kostum_usak: { armor: true, fit: 0.7, y: 0 },
   zirh_ejderderi: { armor: true, fit: 0.6, y: 0 },
+  zirh_yildiz: { armor: true, fit: 0.75, y: 0 }, zirh_auric: { armor: true, fit: 0.75, y: 0 }, zirh_altin_paladin: { armor: true, fit: 0.75, y: 0 }, zirh_ejderplaka: { armor: true, fit: 0.75, y: 0 },
   // kullanıcının silah takımları (Ayaz Sv. 80, Magma Sv. 90) ve Ejderarması Savaş Çekici (Sv. 100)
   ayaz_kilic: { grip: 0.1, len: 1.15, center: true }, magma_kilic: { grip: 0.1, len: 1.15, center: true },
   ayaz_buyukkilic: { grip: 0.1, len: 1.4, center: true }, magma_buyukkilic: { grip: 0.1, len: 1.4, center: true },
@@ -479,7 +480,7 @@ export const ITEM_MODELS = {
 // ---------- giyilebilir zırh/kostüm (tools/wornglb.py) ----------
 // Her sınıfın karakterine önceden oturtulmuş, deri ağırlıklı giysi; doku eşyanın kendi GLB'sinden gelir.
 // hide: giysinin altında kalan beden üçgenleri (içinden taşmasın diye gizlenir)
-export const WORN = new Set(['zirh_kemik', 'zirh_paladin', 'zirh_altin_pul', 'zirh_kizil_pul', 'zirh_agir_plaka', 'kostum_usak', 'zirh_ejderderi']);
+export const WORN = new Set(['zirh_kemik', 'zirh_paladin', 'zirh_altin_pul', 'zirh_kizil_pul', 'zirh_agir_plaka', 'kostum_usak', 'zirh_ejderderi', 'zirh_yildiz', 'zirh_auric', 'zirh_altin_paladin', 'zirh_ejderplaka']);
 const wornCache = {};
 async function fetchGz(url) {
   const r = await fetch(url);
