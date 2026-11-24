@@ -26,8 +26,10 @@ WEAPONS = [  # (tür, ad, sınıflar, uzunluk)
 ]
 GEAR = [  # (yuva, ad, fiyat çarpanı)
     ('armor', 'Zırh', 0.9), ('helmet', 'Miğfer', 0.6), ('shoes', 'Çizme', 0.5),
-    ('bracelet', 'Bilezik', 0.7), ('earring', 'Küpe', 0.7), ('shield', 'Kalkan', 0.65),
+    ('bracelet', 'Bilezik', 0.7), ('earring', 'Küpe', 0.7), ('shield', 'Kalkan', 0.65), ('necklace', 'Kolye', 0.7),
 ]
+# Metin2 gibi evrim: +9 olan eşya demircide bir üst kademedeki eşyaya dönüşür (Sv. 70-99 sunucusu: 9. kademeden 14.'ye)
+EVOLVE_FROM, EVOLVE_TO = 9, 14
 
 
 # Kullanıcının eklediği 3D modeller (client/models/items/*.glb): hangi kademede hangisi görünür
@@ -143,6 +145,10 @@ def build_items():
                     it['model'] = earring_model(i)
                     it['hp'] = round((30 + 25 * i) * m)
                     it['def'] = round((1 + 1.5 * i) * m)
+                elif slot == 'necklace':
+                    # kolye: can ve mana (Metin2 gibi)
+                    it['hp'] = round((40 + 30 * i) * m)
+                    it['mp'] = round((25 + 18 * i) * m)
                 items[f'{slot}{i}{suf}'] = it
 
     # iksirler (üst üste biner)
@@ -157,8 +163,8 @@ def build_items():
         items[key] = {'name': name, 'slot': 'potion', 'mana': mp, 'lv': lv, 'price': cost,
                       'rarity': 0, 'color': '#3d7fc4', 'stack': 200}
     # süreli güçlendirme iksirleri (5 dakika)
-    items['p_green'] = {'name': 'Yeşil İksir', 'slot': 'potion', 'buff': {'stat': 'atkspeed', 'value': 20, 'dur': 300},
-                        'desc': '5 dakika saldırı hızı +%20', 'lv': 1, 'price': 150, 'rarity': 1, 'color': '#4fbf5a', 'stack': 200}
+    items['p_green'] = {'name': 'Yeşil İksir', 'slot': 'potion', 'buff': {'stat': 'atk', 'value': 120, 'dur': 300},
+                        'desc': '5 dakika saldırı gücü +120. Metin taşlarından düşer.', 'lv': 1, 'price': 150, 'rarity': 1, 'color': '#4fbf5a', 'stack': 200}
     items['p_speed'] = {'name': 'Hız İksiri', 'slot': 'potion', 'buff': {'stat': 'movespeed', 'value': 25, 'dur': 300},
                         'desc': '5 dakika hareket hızı +%25', 'lv': 1, 'price': 150, 'rarity': 1, 'color': '#f2c94c', 'stack': 200}
 
@@ -265,15 +271,15 @@ def build_items():
         items[key] = {'name': name, 'slot': 'weapon', 'type': wtype, 'classes': classes, 'lv': lv, 'rarity': 2, 'color': color,
                       'atk': atk, 'glow': True, 'price': lv * 25000, 'model': key, 'leaves': 5, 'stoneDrop': [lv, lv + 14],
                       'len': 1.55 if wtype == 'staff' else 0.95,
-                      'desc': f"{', '.join(CLS_TR[c] for c in classes)} kullanır. Sadece Sv. {lv}-{lv + 14} metin taşlarından nadiren düşer. Her yükseltme 5'er Mor, Mavi ve Kırmızı Yaprak ister."}
+                      'desc': f"{', '.join(CLS_TR[c] for c in classes)} kullanır. Sadece Sv. {lv}-{lv + 14} metin taşlarından nadiren düşer. Her yükseltme 5'er Mor, Yeşil ve Kırmızı Yaprak ister."}
     for pre, setname, lv, color, df, hp in [('ayaz', 'Ayaz', 80, '#bfe6ff', 104, 250), ('magma', 'Magma', 90, '#ff5a2a', 122, 290)]:
         items[f'{pre}_kalkan'] = {'name': f'{setname} Kalkanı', 'slot': 'shield', 'lv': lv, 'rarity': 2, 'color': color, 'price': lv * 20000,
                                   'model': f'{pre}_kalkan', 'def': df, 'hp': hp, 'leaves': 5, 'stoneDrop': [lv, lv + 14],
-                                  'desc': f"Sadece Sv. {lv}-{lv + 14} metin taşlarından nadiren düşer. Her yükseltme 5'er Mor, Mavi ve Kırmızı Yaprak ister."}
+                                  'desc': f"Sadece Sv. {lv}-{lv + 14} metin taşlarından nadiren düşer. Her yükseltme 5'er Mor, Yeşil ve Kırmızı Yaprak ister."}
     i70 = (70 - 1) / 7.0
     items['zirh_ejderderi'] = {'name': 'Ejder Derisi Zırh', 'slot': 'armor', 'lv': 70, 'rarity': 2, 'color': '#2c3f8a', 'price': 70 * 20000,
                                'model': 'zirh_ejderderi', 'def': round((3 + 6 * i70 + 0.4 * i70 * i70) * 1.5), 'hp': 700, 'leaves': 5, 'stoneDrop': [70, 84],
-                               'desc': "Bütün sınıflar giyer. Sadece Sv. 70-84 metin taşlarından nadiren düşer. Her yükseltme 5'er Mor, Mavi ve Kırmızı Yaprak ister."}
+                               'desc': "Bütün sınıflar giyer. Sadece Sv. 70-84 metin taşlarından nadiren düşer. Her yükseltme 5'er Mor, Yeşil ve Kırmızı Yaprak ister."}
     # Uşak Ceketi: istatistik veren kostüm (efsunda çıkabilen en yüksek Maks. Can + saldırı 50)
     items['kostum_usak'] = {'name': 'Uşak Ceketi', 'slot': 'costume', 'lv': 1, 'price': 3000000, 'rarity': 2, 'color': '#2a2a30',
                             'tint': '#2a2a30', 'model': 'kostum_usak', 'atk': 50, 'hp': 600,
@@ -295,12 +301,22 @@ def build_items():
         items[key] = {'name': name, 'slot': 'pet', 'lv': 1, 'price': 5000000, 'rarity': 2 if key == 'pet_ejder' else 1, 'color': color,
                       'pet': {'shape': 'worm' if shape == 'snake' else shape, 'color': color, 'model': model, **({'scale': PET_SCALE[model]} if model in PET_SCALE else {})}, 'bonus': bonus,
                       'desc': f'Peşinden gelen evcil hayvan. {text}. Metin taşlarından düşer' + (' (çok nadir).' if key == 'pet_ejder' else '.')}
-    for key, name, color in [('yaprak_mor', 'Mor Yaprak', '#9b59d0'), ('yaprak_mavi', 'Mavi Yaprak', '#3d8fe0'), ('yaprak_kirmizi', 'Kırmızı Yaprak', '#e0453a')]:
-        items[key] = {'name': name, 'slot': 'material', 'desc': "Demircide 30. seviye ve üstü eşyaları +6'dan sonra yükseltmek için gerekir. Metin taşlarından düşer.",
+    for key, name, color in [('yaprak_mor', 'Mor Yaprak', '#9b59d0'), ('yaprak_mavi', 'Yeşil Yaprak', '#4fbf5a'), ('yaprak_kirmizi', 'Kırmızı Yaprak', '#e0453a')]:
+        items[key] = {'name': name, 'slot': 'material', 'desc': "Demircide eşyaları +6'dan sonra yükseltmek ve +9'dan sonra evrimleştirmek için gerekir. Metin taşlarından düşer.",
                       'lv': 1, 'price': 400, 'rarity': 1, 'color': color, 'stack': 200}
     # Kutsama Kağıdı: demircide yükseltme başarısız olursa eşya seviyesi düşmez
     items['kutsama'] = {'name': 'Kutsama Kağıdı', 'slot': 'use', 'desc': 'Demircide yükseltme başarısız olursa eşyanın artısı düşmez (kağıt harcanır).',
                         'lv': 1, 'price': 75000, 'rarity': 2, 'color': '#f2e2a0', 'stack': 200}
+
+    # evrim zinciri: kademe i (+9) -> kademe i+1 (+0); efsanevi (_L) olanlar efsanevi olana
+    for k, v in list(items.items()):
+        t = v.get('tier')
+        if t is None or not (EVOLVE_FROM <= t < EVOLVE_TO):
+            continue
+        base = k[:-2] if k.endswith('_L') else k
+        nxt = base[:len(base) - len(str(t))] + str(t + 1) + ('_L' if k.endswith('_L') else '')
+        if nxt in items and items[nxt]['slot'] == v['slot']:
+            v['evolve'] = nxt
 
     # eski sürümden kalan eşyalar (var olan karakterler bozulmasın)
     legacy = json.load(open(os.path.join(ROOT, 'items.json'), encoding='utf8')) if os.path.exists(
@@ -347,7 +363,8 @@ MAPS = [
               ('domuz', 'Domuz', 3, 'boar', '#e8a0a0', 1.0, 0, 4.0, {'model': 'domuz'}),
               ('inek', 'İnek', 5, 'bear', '#a0522d', 1.0, 0, 3.2, {'model': 'inek'})],
      # köprünün ötesinde kullanıcının boss modelinden düşük seviyeli boss ('n' tane); her haritada tek tür boss
-     'bosses': [('kaplanadam', 'Kaplan Adam', 8, 'humanoid', '#e67e22', 1.4, {'model': 'kaplan_adam', 'aura': '#ffb347', 'n': 3})]},
+     # Sv. 70-99 sunucusu: köyde boss doğmaz ('n': 0), verisi korunur
+     'bosses': [('kaplanadam', 'Kaplan Adam', 8, 'humanoid', '#e67e22', 1.4, {'model': 'kaplan_adam', 'aura': '#ffb347', 'n': 0})]},
     {'name': 'Kızılçam Ormanı', 'lv': 15, 'theme': 'pine_forest',
      'mobs': [('vkurt', 'Vahşi Kurt', 15, 'wolf', '#5a4a3a', 1.15, 10, 5.8, {'model': 'kurt'}),
               ('kkaplan', 'Benekli Kaplan', 17, 'wolf', '#e67e22', 1.1, 8, 5.2, {'model': 'kaplan'}),
@@ -420,9 +437,36 @@ MAPS = [
      'bosses': [('hiclikejder', 'Hiçlik Ejderi', 110, 'dragon', '#3a1a4a', 2.4, {'model': 'ejder', 'aura': '#8a5aff', 'tint': '#3a1a5a', 'breath': '#b06bff', 'hitR': 3.6, 'n': 2})]},
 ]
 
+# ---------------------------------------------------------------- Sv. 70-99 sunucusu
+# Oyunda açık haritalar (bu sırayla geçitlerle bağlı): köy, 3 metin haritası, 2 boss (level atlama) haritası.
+# Diğer haritalar ve boss'ları silinmez; 'hidden' olur, yaratık çıkmaz (veriler mobs.json'da kalır).
+ACTIVE = [0, 9, 12, 10, 13, 11]   # seviyeye göre: metin 70 -> boss 70 -> metin 80 -> boss 85 -> metin 90
+METIN_MAPS = {  # harita sırası -> (ad, en düşük seviye, taş seviye aralığı, eşya kademesi)
+    9: ('Volkan Metin Ovası', 70, [70, 79], 10),
+    10: ('Kale Metin Meydanı', 80, [80, 89], 11),
+    11: ('Lanetli Metin Harabesi', 90, [90, 99], 13),
+}
+# level atlama haritaları: oyundaki en iyi boss modelleri, çok sayıda, hızlı doğar ve bol tecrübe verir
+LEVEL_MAPS = {
+    12: ('Boss Vadisi', 70, 'demon', 11, [
+        ('lb_ejder', 'Ateş Ejderhası', 74, 'dragon', '#c0392b', 1.5, {'model': 'ejder', 'aura': '#ff6a3d', 'breath': '#ff6a3d', 'hitR': 2.4, 'n': 3}),
+        ('lb_sovalye', 'Kara Şövalye Lordu', 77, 'humanoid', '#1a1a1a', 1.6, {'model': 'kara_sovalye', 'aura': '#8a7dff', 'n': 3}),
+        ('lb_agac', 'Çürük Ağaç Ruhu', 80, 'humanoid', '#5a6a2a', 1.6, {'model': 'curuk_agac', 'aura': '#9aff5a', 'hitR': 2.6, 'n': 3}),
+        ('lb_lav', 'Lav Canavarı', 83, 'frog', '#b0362b', 2.1, {'model': 'lav_canavari', 'aura': '#ff3b2f', 'breath': '#ff6a3d', 'n': 3})]),
+    13: ('Ejder Boss Vadisi', 85, 'dragon_valley', 13, [
+        ('lb_iblis', 'Mor İblis Lordu', 87, 'humanoid', '#6a3a9a', 1.9, {'model': 'iblis_mor', 'aura': '#b06bff', 'hitR': 2.4, 'n': 3}),
+        ('lb_kaplan', 'Kaplan Adam Kral', 90, 'humanoid', '#e67e22', 1.8, {'model': 'kaplan_adam', 'aura': '#ffb347', 'n': 3}),
+        ('lb_gokejder', 'Gök Ejderi', 94, 'dragon', '#7fb3ff', 1.9, {'model': 'ejder', 'aura': '#7fb3ff', 'tint': '#1f6fff', 'breath': '#7fb3ff', 'hitR': 3.0, 'n': 3}),
+        ('lb_hiclik', 'Hiçlik Ejderi', 98, 'dragon', '#3a1a4a', 2.3, {'model': 'ejder', 'aura': '#8a5aff', 'tint': '#3a1a5a', 'breath': '#b06bff', 'hitR': 3.4, 'n': 3})]),
+}
+LEVEL_BOSS_EXP = 2.2    # sıradan boss tecrübesinin katı
+LEVEL_BOSS_HP = 0.6     # sıradan boss canının katı (hızlı kesilsin)
+LEVEL_BOSS_RESPAWN = 40  # saniye
+
 # tek köy var: bütün alışveriş Atabis Köyü'nde (harita sırası -> (iksirler, satılan kademeler))
 SHOPS = {
-    0: (['p_hp1', 'p_hp2', 'p_hp3', 'p_hp4', 'p_mp1', 'p_mp2', 'p_mp3', 'p_mp4', 'p_green', 'p_speed', 'kutsama', 'isin_yuzugu'], list(range(0, 11))),
+    # kırmızı ve mavi iksirler satıcıda; yeşil iksir sadece metin taşlarından düşer. Eşyalar 9-10. kademe (gerisi evrimle)
+    0: (['p_hp2', 'p_hp3', 'p_hp4', 'p_mp2', 'p_mp3', 'p_mp4', 'p_speed', 'kutsama', 'isin_yuzugu'], [9, 10]),
 }
 
 # harita sınırları: köy haritası orta boy, vahşi haritalar büyük
@@ -440,7 +484,17 @@ def tier_for_map(i):
 def build(items):
     mobs, maps = {}, []
     for i, m in enumerate(MAPS):
-        tier = tier_for_map(i)
+        m = dict(m)
+        if i in METIN_MAPS:
+            m['name'], m['lv'], m['stoneLv'], m['tier'] = METIN_MAPS[i]
+            m['mobCount'], m['stones'] = 10, 14
+            m['bosses'] = [b[:6] + ({**b[6], 'n': 0},) for b in m['bosses']]   # boss'lar sadece level atlama haritalarında
+        if i in LEVEL_MAPS:
+            m['name'], m['lv'], m['theme'], m['tier'], new = LEVEL_MAPS[i]
+            # eski boss'lar ve yaratıklar doğmaz ama verileri kalır
+            m['bosses'] = list(new) + [b[:6] + ({**b[6], 'n': 0},) for b in m['bosses']]
+            m['mobCount'], m['levelMap'], m['stones'] = 0, True, 0
+        tier = m.get('tier', tier_for_map(i))
         spawns, bosses = [], []
         own = [k for k, v in items.items() if v.get('tier') == tier and not k.endswith('_L')]
         nxt = [k for k, v in items.items() if v.get('tier') == min(tier + 1, len(TIERS) - 1) and not k.endswith('_L')]
@@ -459,7 +513,8 @@ def build(items):
                       'potions': [[('p_hp1' if lv < 15 else 'p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4'), 0.08],
                                   [('p_mp1' if lv < 15 else 'p_mp2' if lv < 40 else 'p_mp3' if lv < 75 else 'p_mp4'), 0.05]]})
             mobs[key] = d
-            spawns.append({'mob': key, 'count': 26 if i == 0 else 20})
+            if m.get('mobCount', 1):
+                spawns.append({'mob': key, 'count': m.get('mobCount', 26 if i == 0 else 20)})
         for key, name, lv, shape, color, scale, style in m['bosses']:
             d = mob_stats(lv, boss=True)
             style = dict(style); hit_r = style.pop('hitR', None)   # çok büyük boss'larda gövde yarıçapı
@@ -476,6 +531,10 @@ def build(items):
             if hit_r:
                 d['hitR'] = hit_r
                 d['range'] = hit_r + 3.0
+            if m.get('levelMap') and copies:
+                d['exp'] = int(d['exp'] * LEVEL_BOSS_EXP)
+                d['hp'] = int(d['hp'] * LEVEL_BOSS_HP)
+                d['respawn'] = LEVEL_BOSS_RESPAWN
             mobs[key] = d
             bosses.extend([key] * copies)
         lo, hi = VILLAGE_BOUNDS if m.get('village') else WILD_BOUNDS
@@ -484,11 +543,22 @@ def build(items):
             'village': bool(m.get('village')), 'tier': tier, 'seed': 1000 + i * 97,
             'bounds': [lo, hi],
             'spawns': spawns, 'bosses': bosses,
-            'stoneDrops': own, 'stones': 6 if m.get('village') else 5,
+            'stoneDrops': own, 'stones': m.get('stones', 6 if m.get('village') else 5),
             'spawn': [25, 29] if m.get('village') else [lo + 8, 25],
-            'portals': ([{'to': i - 1, 'x': lo + 3, 'z': 25}] if i > 0 else []) +
-                       ([{'to': i + 1, 'x': hi - 3, 'z': 25}] if i < len(MAPS) - 1 else []),
+            'portals': [],
         }
+        if i in ACTIVE:
+            k = ACTIVE.index(i)
+            if k > 0: entry['portals'].append({'to': ACTIVE[k - 1], 'x': lo + 3, 'z': 25})
+            if k < len(ACTIVE) - 1: entry['portals'].append({'to': ACTIVE[k + 1], 'x': hi - 3, 'z': 25})
+        else:
+            # oyunda olmayan eski harita: gizli ve boş (yaratık ve boss verileri mobs.json'da kalır)
+            entry.update({'hidden': True, 'retired': True, 'spawns': [], 'bosses': [], 'stones': 0})
+        if m.get('stoneLv'):
+            entry['stoneLv'] = m['stoneLv']
+            entry['metin'] = True
+        if m.get('levelMap'):
+            entry['levelMap'] = True
         if m.get('village'):
             entry['river'] = VILLAGE_RIVER
             entry['villageR'] = VILLAGE_RADIUS
@@ -500,7 +570,7 @@ def build(items):
             entry['shop'] = {
                 'potions': potions,
                 'weapons': [k for k, v in items.items() if v['slot'] == 'weapon' and v.get('tier') in tiers and not k.endswith('_L')],
-                'armor': [k for k, v in items.items() if v['slot'] in ('armor', 'helmet', 'shoes', 'bracelet', 'earring', 'shield')
+                'armor': [k for k, v in items.items() if v['slot'] in ('armor', 'helmet', 'shoes', 'bracelet', 'earring', 'shield', 'necklace')
                           and v.get('tier') in tiers and not k.endswith('_L')],
                 'cosmetics': [k for k, v in items.items() if v['slot'] in ('costume', 'wings', 'pet') and v['price'] < 5000000],
             }

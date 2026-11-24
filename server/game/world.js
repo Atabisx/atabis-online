@@ -160,6 +160,27 @@ function createWorld(io) {
     }
     return it;
   }
+  // Sv. 70-99 sunucusu: her karakter (yeni ya da eski) bir kez 70. seviyeye çıkar ve başlangıç setini alır:
+  // at, ışınlanma yüzüğü, kılıç (Kam'a asa), zırh, miğfer, kalkan, küpe, kolye ve iksirler. Dolu yuvadakiler çantaya gider.
+  function startKit(p) {
+    p.quests = p.quests || {};
+    if (p.quests.kit70) return;
+    if (p.level < R.START_LEVEL) { p.level = R.START_LEVEL; p.exp = 0; }
+    const kit = R.startKit(p.class);
+    const room = () => p.inventory.length < R.invSize(p);
+    for (const [slot, key] of Object.entries(kit.equip)) {
+      if (!R.ITEMS[key]) continue;
+      const it = { uid: p.nextUid++, key };
+      if (!p.equip[slot]) p.equip[slot] = it; else if (room()) p.inventory.push(it);
+    }
+    for (const [key, n] of kit.inv) {
+      if (!R.ITEMS[key] || !room()) continue;
+      if ((key === 'at_muhru' || key === 'isin_yuzugu') && p.inventory.some((i) => i.key === key)) continue;
+      p.inventory.push({ uid: p.nextUid++, key, n });
+    }
+    p.quests.horse = 'done';      // at baştan verildi: Seyis görevi gerekmez
+    p.quests.kit70 = 1;
+  }
   let gmTarget = null;
   function p_nextUid() { return gmTarget.nextUid++; }
   function setupGm(p) {
@@ -169,6 +190,7 @@ function createWorld(io) {
     if (!p.quests.gmPets) { giveAllPets(p); p.quests.gmPets = 1; }
     // kalkan yuvası sonradan eklendi: GM'ye bir kez en iyi kalkan takılır
     gmTarget = p;
+    if (!p.quests.gmNeck) { if (!p.equip.necklace) p.equip.necklace = maxedItem(R.ITEMS.necklace15_L ? 'necklace15_L' : 'necklace15'); p.quests.gmNeck = 1; }
     if (!p.quests.gmShield) { if (!p.equip.shield) p.equip.shield = maxedItem(R.ITEMS.shield15_L ? 'shield15_L' : 'shield15'); p.quests.gmShield = 1; }
     // savaş kaplanı sonradan eklendi: GM denesin diye bir kez mühür verilir
     if (!p.quests.gmKaplan && !p.inventory.some((i) => i.key === 'savas_muhru') && p.inventory.length < R.invSize(p)) {
@@ -184,7 +206,7 @@ function createWorld(io) {
     // eski kuşanılanlar çantaya
     for (const slot of R.EQUIP_SLOTS) if (p.equip[slot] && p.inventory.length < R.invSize(p)) p.inventory.push(p.equip[slot]);
     p.equip = { weapon: maxedItem(top(wtype)), armor: maxedItem(top('armor')), helmet: maxedItem(top('helmet')),
-      shoes: maxedItem(top('shoes')), bracelet: maxedItem(top('bracelet')), earring: maxedItem(top('earring')), shield: maxedItem(top('shield')) };
+      shoes: maxedItem(top('shoes')), bracelet: maxedItem(top('bracelet')), earring: maxedItem(top('earring')), shield: maxedItem(top('shield')), necklace: maxedItem(top('necklace')) };
     const give = [['isin_yuzugu', 1], ['at_muhru', 1], ['savas_muhru', 1], ['olta', 1], ['yem', 200], ['p_hp4', 200], ['p_mp4', 200], ['p_green', 50], ['p_speed', 50], ['efsun', 100], ['efsun_degis', 100]];
     for (const [key, n] of give) {
       if (!R.ITEMS[key] || p.inventory.some((i) => i.key === key)) continue;
@@ -590,6 +612,7 @@ function createWorld(io) {
     for (const s of R.EQUIP_SLOTS) if (p.equip[s] === undefined) p.equip[s] = null;
     p.gm = config.gmNames.includes(String(p.name).toLocaleLowerCase('tr-TR'));
     if (p.gm) setupGm(p);
+    else startKit(p);
     recalc(p);
     if (!p.hp || p.hp <= 0) p.hp = p.maxHp;
     if (p.mp == null) p.mp = p.maxMp;
@@ -967,9 +990,11 @@ function createWorld(io) {
       if (!portal || Math.hypot(portal.x - p.x, portal.z - p.z) > 5) return;
       const target = R.MAPS[portal.to];
       if (!p.gm && p.level < target.minLevel) { notice(p, `${target.name} için en az ${target.minLevel}. seviye olmalısın.`); return; }
-      const forward = portal.to > z.id;
+      // karşı haritada bu haritaya dönen geçidin biraz içinde belir
+      const back = (target.portals || []).find((pt) => pt.to === z.id);
       const b = boundsOf(target);
-      moveToZone(p, portal.to, forward ? [b.min + 8, 25] : [b.max - 8, 25]);
+      const pos = back ? [back.x + (back.x < (b.min + b.max) / 2 ? 5 : -5), back.z] : (portal.to > z.id ? [b.min + 8, 25] : [b.max - 8, 25]);
+      moveToZone(p, portal.to, pos);
     });
 
     // köylerdeki ışınlayıcı
@@ -1032,7 +1057,26 @@ function createWorld(io) {
       }
       if (!R.GEAR_SLOTS.includes(def.slot)) { notice(p, 'Bu eşya yükseltilemez.'); return; }
       const up = target.up || 0;
-      if (up >= R.MAX_UP) { notice(p, `${def.name} zaten +${R.MAX_UP}.`); return; }
+      // +9: Metin2 gibi evrim, bir üst kademedeki eşyaya dönüşür (+0, efsun ve taşlar korunur)
+      if (up >= R.MAX_UP && def.evolve && R.ITEMS[def.evolve]) {
+        const nd = R.ITEMS[def.evolve], cost = R.evolveCost(nd);
+        if (p.yang < cost) { notice(p, `Evrim için yeterli Yang yok (${cost.toLocaleString('tr-TR')} gerekli).`); return; }
+        const miss = R.LEAVES.filter((k) => countItem(p, k) < R.EVOLVE_LEAVES);
+        if (miss.length) { notice(p, `Evrim için ${R.EVOLVE_LEAVES}'ar ${R.LEAVES.map((k) => R.ITEMS[k].name).join(', ')} gerekir. Eksik: ${miss.map((k) => R.ITEMS[k].name).join(', ')}.`); return; }
+        for (const k of R.LEAVES) takeItem(p, k, R.EVOLVE_LEAVES);
+        p.yang -= cost;
+        const ok = Math.random() * 100 < R.EVOLVE_CHANCE;
+        if (ok) { target.key = def.evolve; target.up = 0; }
+        const msg = ok ? `Evrim başarılı! ${def.name} +9 → ${nd.name} oldu.` : `Evrim başarısız… ${def.name} +9 olarak kaldı (yapraklar harcandı).`;
+        notice(p, msg);
+        socket.emit('upgraded', { ok, name: ok ? nd.name : def.name, up: target.up || 0, evolved: ok });
+        social.progress(p, 'upgrade');
+        recalc(p); sendInv(p); sendHp(p); sendMp(p);
+        if (p.zone) p.zone.emit('look', { id: p.id, look: looks(p) });
+        if (ok && p.zone) hooks.announce(`${p.name}, ${def.name} +9 eşyasını ${nd.name} olarak evrimleştirdi!`, p.zone);
+        return;
+      }
+      if (up >= R.MAX_UP) { notice(p, `${def.name} zaten +${R.MAX_UP}${def.evolve ? '' : ' ve son kademe'}.`); return; }
       const cost = R.upgradeCost(def, up);
       if (p.yang < cost) { notice(p, `Yeterli Yang yok (${cost.toLocaleString('tr-TR')} gerekli).`); return; }
       const scroll = data && data.scroll ? p.inventory.find((i) => i.key === 'kutsama') : null;

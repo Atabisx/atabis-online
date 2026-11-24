@@ -127,95 +127,118 @@ function log(html) {
 // ---------- metin taşları ----------
 const stones = {};
 // ---------- metin taşları (Metin2 tarzı) ----------
-// Uzun, sivri, kırık yüzlü koyu bir taş; yüzeyinde parlayan oyma rünler ve çatlaklar,
-// dibinde moloz, çevresinde dönen kristal kırıkları ve yükselen ışık zerreleri.
+// İri, koyu, yontulmuş bir kaya; her yüzünde oyulmuş, içi ışıyan büyük bir yazı sütunu.
+// Adı ve rün rengi taşın seviyesinden gelir (Gölge, Sertlik, Şeytan, Düşüş, Ölüm, Katliam, Pung-Ma…).
 const stoneTexCache = {};
-function stoneTextures(color) {
-  if (stoneTexCache[color]) return stoneTexCache[color];
+function stoneTextures(rune, rock = '#3e3a48') {
+  const ck = rune + rock;
+  if (stoneTexCache[ck]) return stoneTexCache[ck];
   const W = 256, H = 512;
   const base = document.createElement('canvas'); base.width = W; base.height = H;
   const glowC = document.createElement('canvas'); glowC.width = W; glowC.height = H;
   const g = base.getContext('2d'), e = glowC.getContext('2d');
-  const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#4a4e5a'); gr.addColorStop(0.6, '#2c2f38'); gr.addColorStop(1, '#1c1e25');
+  const rc = new THREE.Color(rock), hex = (c) => '#' + c.getHexString();
+  const gr = g.createLinearGradient(0, 0, 0, H);
+  gr.addColorStop(0, hex(rc.clone().multiplyScalar(1.35))); gr.addColorStop(0.55, rock); gr.addColorStop(1, hex(rc.clone().multiplyScalar(0.55)));
   g.fillStyle = gr; g.fillRect(0, 0, W, H);
-  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  for (let i = 0; i < 1400; i++) { const v = 30 + rnd() * 60; g.fillStyle = `rgba(${v},${v + 4},${v + 12},${0.25 + rnd() * 0.3})`; g.fillRect(rnd() * W, rnd() * H, 1 + rnd() * 3, 1 + rnd() * 3); }
+  let seed = 11 + [...ck].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 100000, 0);   // her taş türünün kendi yazısı
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  // kaya dokusu: benekler, lekeler, yosun izi
+  for (let i = 0; i < 2600; i++) { const v = rnd() < 0.5 ? 0 : 255; g.fillStyle = `rgba(${v},${v},${v},${0.03 + rnd() * 0.06})`; g.fillRect(rnd() * W, rnd() * H, 1 + rnd() * 4, 1 + rnd() * 4); }
+  for (let i = 0; i < 14; i++) { const r = 12 + rnd() * 30; const gg = g.createRadialGradient(0, 0, 0, 0, 0, r); gg.addColorStop(0, 'rgba(0,0,0,0.25)'); gg.addColorStop(1, 'rgba(0,0,0,0)');
+    g.save(); g.translate(rnd() * W, rnd() * H); g.fillStyle = gg; g.fillRect(-r, -r, r * 2, r * 2); g.restore(); }
   e.fillStyle = '#000'; e.fillRect(0, 0, W, H);
-  // çatlaklar: kayada koyu, parıltıda renkli
-  for (let c = 0; c < 9; c++) {
-    let x = rnd() * W, y = rnd() * H;
-    g.strokeStyle = 'rgba(10,10,14,0.8)'; g.lineWidth = 2; e.strokeStyle = color; e.lineWidth = 1.5; e.shadowColor = color; e.shadowBlur = 6;
-    g.beginPath(); e.beginPath(); g.moveTo(x, y); e.moveTo(x, y);
-    for (let k = 0; k < 7; k++) { x += (rnd() - 0.5) * 40; y += 10 + rnd() * 30; g.lineTo(x, y); e.lineTo(x, y); }
-    g.stroke(); e.stroke();
+  // ince çatlaklar (sadece kayada)
+  for (let c = 0; c < 6; c++) {
+    let x = rnd() * W, y = rnd() * H * 0.3;
+    g.strokeStyle = 'rgba(0,0,0,0.55)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, y);
+    for (let k = 0; k < 8; k++) { x += (rnd() - 0.5) * 30; y += 12 + rnd() * 26; g.lineTo(x, y); }
+    g.stroke();
   }
-  // oyma rünler: her yüzde dikey bir sıra (kayada oyuk, parıltıda ışık)
+  // büyük oyma yazı: Metin2'deki gibi yüzün ortasında dikey dört işaret
   const glyph = (ctx, cx, cy, sz, r) => {
     ctx.beginPath();
-    for (let k = 0; k < 4; k++) {
-      const t = Math.floor(r() * 4);
-      if (t === 0) { ctx.moveTo(cx - sz, cy - sz + k * sz * 0.6); ctx.lineTo(cx + sz, cy - sz + k * sz * 0.6); }
-      else if (t === 1) { const ox = (r() - 0.5) * sz; ctx.moveTo(cx + ox, cy - sz); ctx.lineTo(cx + ox, cy + sz); }
-      else if (t === 2) { ctx.moveTo(cx - sz, cy + sz); ctx.lineTo(cx + sz, cy - sz); }
-      else { const a0 = r() * 3; ctx.moveTo(cx + Math.cos(a0) * sz * 0.55, cy + Math.sin(a0) * sz * 0.55); ctx.arc(cx, cy, sz * 0.55, a0, a0 + 3); }
+    const n = 3 + Math.floor(r() * 3);
+    for (let k = 0; k < n; k++) {
+      const t = Math.floor(r() * 5);
+      const yy = cy - sz + r() * sz * 2;
+      if (t === 0) { ctx.moveTo(cx - sz, yy); ctx.lineTo(cx + sz, yy); }
+      else if (t === 1) { const ox = (r() - 0.5) * sz * 1.4; ctx.moveTo(cx + ox, cy - sz); ctx.lineTo(cx + ox, cy + sz); }
+      else if (t === 2) { ctx.moveTo(cx - sz * 0.8, cy + sz * 0.9); ctx.quadraticCurveTo(cx, cy, cx + sz * 0.2, cy - sz); }
+      else if (t === 3) { ctx.moveTo(cx + sz * 0.9, cy + sz * 0.9); ctx.lineTo(cx, cy); }
+      else { ctx.rect(cx - sz * 0.45, yy - sz * 0.3, sz * 0.9, sz * 0.6); }
     }
     ctx.stroke();
   };
-  e.lineCap = g.lineCap = 'round';
-  for (let col = 0; col < 7; col++) {
-    const cx = (col + 0.5) * W / 7;
-    for (let row = 0; row < 4; row++) {
-      const s0 = seed;
-      g.strokeStyle = 'rgba(8,8,12,0.9)'; g.lineWidth = 5; g.shadowBlur = 0; glyph(g, cx, H * 0.38 + row * 44, 11, rnd);
-      seed = s0;
-      e.strokeStyle = color; e.lineWidth = 3.5; e.shadowColor = color; e.shadowBlur = 10; glyph(e, cx, H * 0.38 + row * 44, 11, rnd);
-    }
+  g.lineCap = e.lineCap = 'square'; g.lineJoin = e.lineJoin = 'miter';
+  // çerçeve: oyulmuş dikey kartuş
+  g.strokeStyle = 'rgba(0,0,0,0.45)'; g.lineWidth = 5; g.strokeRect(W * 0.3, H * 0.2, W * 0.4, H * 0.62);
+  e.strokeStyle = rune; e.globalAlpha = 0.35; e.lineWidth = 2; e.strokeRect(W * 0.3, H * 0.2, W * 0.4, H * 0.62); e.globalAlpha = 1;
+  for (let row = 0; row < 4; row++) {
+    const cy = H * 0.28 + row * H * 0.155, s0 = seed;
+    g.strokeStyle = 'rgba(5,5,8,0.95)'; g.lineWidth = 11; glyph(g, W / 2, cy, 22, rnd);
+    seed = s0;
+    e.strokeStyle = rune; e.lineWidth = 6; e.shadowColor = rune; e.shadowBlur = 14; glyph(e, W / 2, cy, 22, rnd);
+    e.shadowBlur = 0;
   }
-  const mk = (c) => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
-  return (stoneTexCache[color] = { map: mk(base), emissiveMap: mk(glowC) });
+  const mk = (c) => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
+  return (stoneTexCache[ck] = { map: mk(base), emissiveMap: mk(glowC) });
+}
+// taş biçimleri: 0 dik dikili taş, 1 sivri tepeli kaya, 2 eğik yarık taş, 3 iki tepeli kaya
+function stoneGeometry(shape, rr) {
+  const dims = [[1.7, 3.5, 1.2], [2.1, 3.2, 1.6], [1.6, 3.7, 1.25], [2.3, 3.0, 1.5]][shape % 4];
+  const geo = new THREE.BoxGeometry(dims[0], dims[1], dims[2], 6, 10, 5);
+  const pos = geo.attributes.position, hh = dims[1] / 2;
+  const n = (x, y, z) => Math.sin(x * 3.1 + y * 1.7) * Math.cos(z * 2.9 - y * 2.3) + Math.sin(x * 7.3 - z * 5.1 + y * 4.7) * 0.4;
+  for (let i = 0; i < pos.count; i++) {
+    let x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    const t = (y + hh) / dims[1];                       // 0 dip, 1 tepe
+    let taper = 1.08 - t * 0.32;                        // aşağısı geniş
+    if (shape % 4 === 1) taper *= 1 - Math.pow(t, 3) * 0.75;   // sivri tepe
+    x *= taper; z *= taper;
+    // tepe: yuvarlatılmış ya da eğik kırık
+    if (t > 0.85) {
+      const k = (t - 0.85) / 0.15;
+      if (shape % 4 === 0) y -= k * (x / dims[0] + 0.5) * 0.45;
+      if (shape % 4 === 2) y -= k * (0.5 - x / dims[0]) * 0.7;
+      if (shape % 4 === 3) y -= k * Math.max(0, 0.35 - Math.abs(x / dims[0])) * 1.4;
+      x *= 1 - k * 0.18; z *= 1 - k * 0.18;
+    }
+    const d = n(x, y, z) * 0.07 + (rr() - 0.5) * 0.035;
+    const len = Math.hypot(x, z) || 1;
+    pos.setXYZ(i, x + (x / len) * d, y + (t > 0.97 ? d * 0.5 : 0), z + (z / len) * d);
+  }
+  geo.computeVertexNormals();
+  geo.translate(0, hh, 0);
+  return geo;
 }
 function createStone(s) {
   if (stones[s.id]) return;
-  const color = s.color === 'purple' ? '#9a7dff' : '#ff4a2f';
-  const tex = stoneTextures(color);
+  const color = s.rune || (s.color === 'purple' ? '#9a7dff' : '#ff4a2f');
+  const tex = stoneTextures(color, s.rock);
   const g = new THREE.Group();
-  const stoneMat = new THREE.MeshStandardMaterial({ map: tex.map, emissiveMap: tex.emissiveMap, emissive: new THREE.Color(color), emissiveIntensity: 1.3, roughness: 0.9, metalness: 0.05, flatShading: true });
-  // ana gövde: 7 köşeli, yukarı daralan, yüzeyi kırık
-  const geo = new THREE.CylinderGeometry(0.18, 1.0, 3.6, 7, 5);
-  const pos = geo.attributes.position;
+  const stoneMat = new THREE.MeshStandardMaterial({ map: tex.map, emissiveMap: tex.emissiveMap, emissive: new THREE.Color(color), emissiveIntensity: 1.2, roughness: 0.95, metalness: 0.02, flatShading: true });
   let sd = (s.id * 9301 + 49297) % 233280; const rr = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280);
-  for (let i = 0; i < pos.count; i++) {
-    const y = pos.getY(i);
-    if (Math.abs(y) < 1.79) { pos.setX(i, pos.getX(i) * (0.85 + rr() * 0.3)); pos.setZ(i, pos.getZ(i) * (0.85 + rr() * 0.3)); }
-    pos.setY(i, y + (rr() - 0.5) * 0.15);
-  }
-  geo.computeVertexNormals();
-  const body = new THREE.Mesh(geo, stoneMat); body.position.y = 1.8; body.castShadow = true; body.rotation.y = rr() * 3;
-  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.7, 7), stoneMat); tip.position.y = 3.9; tip.castShadow = true;
-  const inner = new THREE.Group(); inner.add(body, tip);
-  // dipte moloz
-  const rubbleMat = new THREE.MeshStandardMaterial({ map: tex.map, roughness: 0.95, flatShading: true });
-  for (let i = 0; i < 7; i++) {
-    const a = i / 7 * Math.PI * 2 + rr(), r = 1.0 + rr() * 0.5;
-    const m = new THREE.Mesh(new THREE.DodecahedronGeometry(0.18 + rr() * 0.22, 0), rubbleMat);
-    m.position.set(Math.cos(a) * r, 0.12, Math.sin(a) * r); m.rotation.set(rr() * 3, rr() * 3, 0); m.castShadow = true;
+  const body = new THREE.Mesh(stoneGeometry(s.shape || 0, rr), stoneMat);
+  body.castShadow = true; body.receiveShadow = true; body.rotation.y = rr() * Math.PI * 2; body.position.y = -0.15;
+  const inner = new THREE.Group(); inner.add(body);
+  if (s.big) inner.scale.setScalar(1.25);
+  // dipte toprağa gömülü kaya parçaları
+  const rubbleMat = new THREE.MeshStandardMaterial({ map: tex.map, roughness: 1, flatShading: true });
+  for (let i = 0; i < 9; i++) {
+    const a = i / 9 * Math.PI * 2 + rr(), r = 1.15 + rr() * 0.6;
+    const m = new THREE.Mesh(new THREE.DodecahedronGeometry(0.16 + rr() * 0.26, 0), rubbleMat);
+    m.position.set(Math.cos(a) * r, 0.05, Math.sin(a) * r); m.rotation.set(rr() * 3, rr() * 3, 0); m.scale.y = 0.6; m.castShadow = true;
     g.add(m);
   }
-  // çevresinde dönen parlayan kristal kırıkları
-  const shards = new THREE.Group(); shards.position.y = 2.2;
-  const shardMat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.6, roughness: 0.3 });
-  for (let i = 0; i < 4; i++) {
-    const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0), shardMat); m.scale.y = 2;
-    const a = i / 4 * Math.PI * 2; m.position.set(Math.cos(a) * 1.6, Math.sin(i * 2) * 0.5, Math.sin(a) * 1.6);
-    shards.add(m);
-  }
-  // yerde nabız gibi atan ışık
-  const glow = new THREE.Mesh(new THREE.CircleGeometry(2.8, 32), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.25, depthWrite: false, blending: THREE.AdditiveBlending }));
+  const shards = new THREE.Group();     // eski sürümle uyum: boş grup
+  // yerde hafif ışık halkası
+  const glow = new THREE.Mesh(new THREE.RingGeometry(1.3, 2.6, 40), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.12, depthWrite: false, blending: THREE.AdditiveBlending }));
   glow.rotation.x = -Math.PI / 2; glow.position.y = 0.06;
   g.add(inner, shards, glow);
   g.position.set(s.x, 0, s.z);
   scene.add(g);
-  const label = makeLabel(`${s.name} · Sv. ${s.lv}`, s.color === 'purple' ? '#c8d0ff' : '#ffb4a3', true);
+  const label = makeLabel(`${s.name} · Sv. ${s.lv}`, s.rune ? '#' + new THREE.Color(s.rune).lerp(new THREE.Color('#ffffff'), 0.45).getHexString() : s.color === 'purple' ? '#c8d0ff' : '#ffb4a3', true);
   label.hp.style.width = (100 * s.hp / s.max) + '%';
   stones[s.id] = { ...s, group: g, rock: inner, label, shake: 0, mat: stoneMat, glow, shards, glowColor: color, flash: 0, wisp: 0, phase: rr() * 6 };
 }
@@ -226,12 +249,12 @@ function updateStones(dt, t) {
     if (s.shake > 0) { s.shake -= dt; s.rock.position.x = (Math.random() - 0.5) * 0.25; } else s.rock.position.x = 0;
     if (!s.mat) continue;
     s.flash = Math.max(0, s.flash - dt * 3);
-    const pulse = 1.1 + Math.sin(t * 2.2 + s.phase) * 0.35;
+    const pulse = 1.0 + Math.sin(t * 1.6 + s.phase) * 0.3;
     s.mat.emissiveIntensity = pulse + s.flash * 2.5;
-    s.glow.material.opacity = 0.18 + Math.sin(t * 2.2 + s.phase) * 0.07 + s.flash * 0.3;
+    s.glow.material.opacity = 0.11 + Math.sin(t * 1.6 + s.phase) * 0.04 + s.flash * 0.3;
     s.shards.rotation.y += dt * 0.8;
     s.wisp += dt;
-    if (s.wisp > 0.18) { s.wisp = 0; fx.stoneWisp(s, s.glowColor); }
+    if (s.wisp > 0.35) { s.wisp = 0; fx.stoneWisp(s, s.glowColor); }
   }
 }
 function removeStone(id) {
@@ -1437,10 +1460,10 @@ let myLevel = 1;
 let myName = '';
 let myGm = false;
 let selected = null;   // {uid} veya {slot}
-const EQUIP = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring', 'shield'];
+const EQUIP = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring', 'shield', 'necklace'];
 const BONUS_NAMES = { maxhp: ['Maks. Can', ''], maxmp: ['Maks. Mana', ''], atk: ['Saldırı', ''], def: ['Savunma', ''], crit: ['Kritik', '%'],
   atkspeed: ['Saldırı Hızı', '%'], movespeed: ['Hareket Hızı', '%'], monster: ['Canavarlara Güç', '%'], hpsteal: ['Can Çalma', '%'] };
-const SLOT_NAMES = { costume: 'Kostüm', wings: 'Kanat', pet: 'Evcil hayvan', stone: 'Ruh taşı', material: 'Malzeme', weapon: 'Silah', armor: 'Zırh', helmet: 'Miğfer', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', shield: 'Kalkan', potion: 'İksir', use: 'Kullanılır', fish: 'Balık', gem: 'Değerli taş' };
+const SLOT_NAMES = { costume: 'Kostüm', wings: 'Kanat', pet: 'Evcil hayvan', stone: 'Ruh taşı', material: 'Malzeme', weapon: 'Silah', armor: 'Zırh', helmet: 'Miğfer', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', shield: 'Kalkan', necklace: 'Kolye', potion: 'İksir', use: 'Kullanılır', fish: 'Balık', gem: 'Değerli taş' };
 const ICONS = {
   weapon: '<path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/>',
   armor: '<path d="M8 3 4 6v5l3 1v9h10v-9l3-1V6l-4-3-2 2h-4z"/>',
@@ -1449,6 +1472,7 @@ const ICONS = {
   shoes: '<path d="M4 4h6v9l9 3v4H4z"/>',
   bracelet: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="4"/>',
   earring: '<path d="M12 3v5"/><circle cx="12" cy="14" r="5"/>',
+  necklace: '<path d="M5 4c0 7 3 10 7 11 4-1 7-4 7-11"/><path d="M12 15l-2.5 3 2.5 3 2.5-3z"/>',
   potion: '<path d="M9 3h6"/><path d="M10 3v5L6 15a5 5 0 0 0 4.5 6h3A5 5 0 0 0 18 15l-4-7V3"/>',
   use: '<path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/>',
   fish: '<path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0z"/><path d="M18 12l3-3v6z"/>',
@@ -1476,6 +1500,7 @@ function iconBuilder(key, def) {
   if (s === 'shoes') return () => icons.bootsMesh(def);
   if (s === 'bracelet') return () => (def.model && ITEM_MODELS[def.model] ? itemModel(def.model, null) : icons.braceletMesh(def));
   if (s === 'earring') return () => (def.model && ITEM_MODELS[def.model] ? itemModel(def.model, null) : icons.earringMesh(def));
+  if (s === 'necklace') return () => icons.necklaceMesh(def);
   if (s === 'potion') return () => icons.potionMesh(def);
   if (s === 'gem') return () => icons.pearlMesh(def.color);
   if (s === 'fish') return () => (key === 'b_cizme' ? icons.bootsMesh({ color: '#5a4a3a' }) : icons.fishMesh(def.color));
@@ -1506,7 +1531,7 @@ function mountIcon(file) {
 }
 const MOUNT_ICON_POSE = { ry: -1.05, rx: 0.12 };
 const ICON_POSE = { weapon: { rz: -0.8, ry: 0.35 }, armor: { ry: 0.45, rx: 0.08 }, helmet: { ry: 0.65, rx: 0.1 }, shield: { ry: 0.35, rx: 0.05 }, shoes: { ry: 0.55, rx: 0.2 },
-  bracelet: { ry: 0.3 }, earring: { ry: 0.4 }, wings: { ry: 0.25, rx: 0.15 }, potion: { ry: 0.3, rx: 0.1 }, fish: { ry: 0.5 }, gem: { rx: 0.5 }, use: { ry: 0.5, rx: 0.15 }, stone: { rx: 0.4, ry: 0.3 }, material: { rx: 0.3, ry: 0.4 } };
+  bracelet: { ry: 0.3 }, earring: { ry: 0.4 }, necklace: { ry: 0.25, rx: 0.1 }, wings: { ry: 0.25, rx: 0.15 }, potion: { ry: 0.3, rx: 0.1 }, fish: { ry: 0.5 }, gem: { rx: 0.5 }, use: { ry: 0.5, rx: 0.15 }, stone: { rx: 0.4, ry: 0.3 }, material: { rx: 0.3, ry: 0.4 } };
 function itemIcon(key, def, size = 26, slot) {
   if (def && key) {
     const b = iconBuilder(key, def);
@@ -1752,7 +1777,18 @@ function renderSmith() {
           if (!ok) can = false;
           return `<span class="leaf${ok ? '' : ' miss'}" style="--c:${ITEMS[k].color}">${itemIcon(k, ITEMS[k], 18)}${have}/${need}</span>`; }).join('') + '</span>';
       }
-      info = up < 9 ? `+${up} → +${up + 1} · Şans %${UP_CHANCE[up]} · ${upgradeCost(def, up).toLocaleString('tr-TR')} Yang<br><small class="${up >= 4 && !smithScroll ? 'warn' : ''}">${risk}</small>${leafHtml}` : 'En yüksek seviye (+9)';
+      info = up < 9 ? `+${up} → +${up + 1} · Şans %${UP_CHANCE[up]} · ${upgradeCost(def, up).toLocaleString('tr-TR')} Yang<br><small class="${up >= 4 && !smithScroll ? 'warn' : ''}">${risk}</small>${leafHtml}` : 'En yüksek seviye (+9) · son kademe';
+      // +9 eşya Metin2 gibi bir üst kademedeki eşyaya evrimleşir (sunucudaki rules.js ile aynı sayılar)
+      const nd = up >= 9 && def.evolve && ITEMS[def.evolve];
+      if (nd) {
+        can = true; btn = 'Evrimleştir';
+        const cost = Math.round((nd.lv || 1) * 12000);
+        if (inv.yang < cost) can = false;
+        const lh = '<span class="leaves">' + LEAVES.map((k) => { const have = countItem(k), ok = have >= 10;
+          if (!ok) can = false;
+          return `<span class="leaf${ok ? '' : ' miss'}" style="--c:${ITEMS[k].color}">${itemIcon(k, ITEMS[k], 18)}${have}/10</span>`; }).join('') + '</span>';
+        info = `<span class="evo">+9 → ${itemIcon(def.evolve, nd, 16)} <b style="color:${RARITY[nd.rarity]}">${esc(nd.name)}</b> (Sv. ${nd.lv})</span><br>Şans %60 · ${cost.toLocaleString('tr-TR')} Yang<br><small>Başarısızsa +9 kalır, efsun ve taşlar korunur.</small>${lh}`;
+      }
     }
     html += `<div class="srow">${itemIcon(it.key, def, 26)}<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(itemName(it, def))}</b>${eq ? ' <small class="eqtag">kuşanılı</small>' : ''}${it.n > 1 ? ' <small>x' + it.n + '</small>' : ''}<br><small>${info}</small></span>` +
       `<button data-up='${JSON.stringify(ref)}' ${can ? '' : 'disabled'}>${btn}</button></div>`;
@@ -2441,7 +2477,7 @@ export function startGame(sock, opts = {}) {
   socket.on('mapChange', (data) => { setTimeout(() => social.refreshWb(), 50); if (MAPS[data.map] && MAPS[data.map].worldBoss) camYaw = Math.PI;   // ejder yuvasında kamera boss'a bakar
   amDead = false; auto.target = null; auto.skip.clear(); if (auto.on && data && MAPS[data.map] && (MAPS[data.map].safe || MAPS[data.map].war)) setAuto(false); deadEl.classList.remove('open'); setFishState('idle'); enterMap(data); updateToolButtons(); renderSkillbar(); refreshFoes(); if (!(currentMap && currentMap.dungeon)) social.clearDungeon(); });
   socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (depotWin.classList.contains('open')) renderDepot(); if (shopKind) renderShop(); renderSmith(); if (trade) renderTrade(); social.refreshGuild(); social.refreshStallWins(); });
-  socket.on('upgraded', ({ ok, name, up, stone }) => smithResult(ok, ok ? (stone ? `BAŞARILI · ${name}` : `BAŞARILI · ${name} +${up}`) : (stone ? 'BAŞARISIZ · taş kırıldı' : `BAŞARISIZ · ${name} +${up}`)));
+  socket.on('upgraded', ({ ok, name, up, stone, evolved }) => smithResult(ok, evolved ? `EVRİM · ${name}` : ok ? (stone ? `BAŞARILI · ${name}` : `BAŞARILI · ${name} +${up}`) : (stone ? 'BAŞARISIZ · taş kırıldı' : `BAŞARISIZ · ${name} +${up}`)));
   socket.on('socketed', ({ ok }) => { if (ok) sfx.enchant(); else sfx.hit('stone', false, null); });
   // ---------- sohbet, fısıltı, arkadaşlar, düello ----------
   socket.on('whisper', ({ from, to, text }) => {

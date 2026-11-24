@@ -142,7 +142,9 @@ let chosenEmpire = 1 + Math.floor(Math.random() * 3);
 function openCreate() {
   const list = $('classList');
   list.innerHTML = '';
+  if (CLASSES[chosenClass] && CLASSES[chosenClass].retired) chosenClass = 'savasci';
   for (const [key, c] of Object.entries(CLASSES)) {
+    if (c.retired) continue;      // kaldırılan sınıf (Avcı) yeni karakterde seçilemez
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'classbtn' + (key === chosenClass ? ' sel' : '');
@@ -167,7 +169,7 @@ function openCreate() {
   $('createMsg').textContent = '';
   show('createScreen');
   // seçilen sınıf sunakta başlangıç eşyalarıyla görünür
-  lobbyShowChar({ id: 'yeni', class: chosenClass, level: 1, equip: { weapon: { key: cl.startWeapon }, armor: { key: 'armor0' } } });
+  lobbyShowChar({ id: 'yeni', class: chosenClass, level: 70, equip: { weapon: { key: chosenClass === 'saman' ? 'staff9' : 'sword9' }, armor: { key: 'armor9' }, helmet: { key: 'helmet9' }, shield: { key: 'shield9' } } });
 }
 $('createBack').addEventListener('click', () => { show('charScreen'); renderCharacters(); });
 $('createForm').addEventListener('submit', async (e) => {

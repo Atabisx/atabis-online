@@ -50,6 +50,7 @@
   "def": 3,
   "range": 12,
   "color": "#1e8449",
-  "startWeapon": "sword0"
+  "startWeapon": "sword0",
+  "retired": true
  }
 }

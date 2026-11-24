@@ -25,18 +25,18 @@ function routes(app) {
         return res.status(400).json({ error: 'Karakter adı 3-14 karakter olmalı; harf, rakam ve _ kullanılabilir.' });
       }
       if (!CLASSES[cls]) return res.status(400).json({ error: 'Geçersiz sınıf.' });
+      if (CLASSES[cls].retired) return res.status(400).json({ error: `${CLASSES[cls].name} sınıfı artık seçilemiyor.` });
       const count = await db.query('SELECT count(*)::int AS n FROM characters WHERE account_id = $1', [req.account.id]);
       if (count.rows[0].n >= config.maxCharactersPerAccount) {
         return res.status(400).json({ error: `Bir hesapta en fazla ${config.maxCharactersPerAccount} karakter olabilir.` });
       }
       const taken = await db.query('SELECT 1 FROM characters WHERE lower(name) = lower($1)', [name]);
       if (taken.rowCount) return res.status(409).json({ error: 'Bu karakter adı alınmış.' });
-      const equip = { weapon: { uid: 1, key: CLASSES[cls].startWeapon }, armor: { uid: 2, key: 'armor0' },
-                      helmet: null, shoes: null, bracelet: null, earring: null };
-      const inventory = [{ uid: 3, key: 'p_hp1', n: 10 }];   // başlangıç iksirleri
+      // Sv. 70-99 sunucusu: karakter 70. seviyede başlar; başlangıç seti (at, ışınlanma yüzüğü, kılıç, zırh…)
+      // ilk girişte oyun sunucusunda verilir (world.js startKit)
       const r = await db.query(
-        'INSERT INTO characters (account_id, name, class, equip, inventory, empire) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-        [req.account.id, name, cls, JSON.stringify(equip), JSON.stringify(inventory), empire]);
+        'INSERT INTO characters (account_id, name, class, equip, inventory, empire, level) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+        [req.account.id, name, cls, JSON.stringify({}), JSON.stringify([]), empire, R.START_LEVEL]);
       res.json({ character: publicChar(r.rows[0]) });
     } catch (e) {
       if (e.code === '23505') return res.status(409).json({ error: 'Bu karakter adı alınmış.' });

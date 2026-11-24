@@ -132,6 +132,24 @@ export function earringMesh(def) {
   g.add(hook, link, cap, drop, tip);
   return g;
 }
+// kolye: altın zincir, ortada taşlı madalyon
+export function necklaceMesh(def) {
+  const g = new THREE.Group();
+  const gold = std(def.trim || '#e8b54a', 1, 0.2);
+  const chain = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.016, 8, 48, Math.PI * 1.25), gold);
+  chain.rotation.z = -Math.PI * 1.125;   // yay aşağı sarkar chain.position.y = 0.18;
+  for (let i = 0; i < 9; i++) {
+    const a = -Math.PI / 2 - Math.PI * 0.55 + (i / 8) * Math.PI * 1.1;
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), std(def.color, 0.7, 0.3));
+    b.position.set(Math.cos(a) * 0.34, 0.18 + Math.sin(a) * 0.34, 0.01); g.add(b);
+  }
+  const gemColor = def.rarity >= 3 ? '#ff3b5c' : def.rarity >= 2 ? '#8a7dff' : '#4fd1c5';
+  const frame = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.025, 10, 28), gold); frame.position.y = -0.24;
+  const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.1, 1), glow(gemColor, 0.6)); gem.position.y = -0.24; gem.scale.set(1, 1.2, 0.6);
+  const bail = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.012, 6, 14), gold); bail.position.y = -0.1;
+  g.add(chain, frame, gem, bail);
+  return g;
+}
 export function potionMesh(def) {
   const g = new THREE.Group();
   const liquid = def.color || '#ff3b2f';

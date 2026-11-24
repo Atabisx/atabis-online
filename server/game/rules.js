@@ -5,13 +5,14 @@ const MOBS = require('../../shared/mobs.json');
 const MAPS = require('../../shared/maps.json');
 const SKILLS = require('../../shared/skills.json');
 
-const MAX_LEVEL = 120;
+const MAX_LEVEL = 99;          // Sv. 70-99 sunucusu
+const START_LEVEL = 70;         // yeni karakterler bu seviyede başlar
 const INV_SIZE = 45;            // bir envanter sayfası (Metin2 gibi 5×9)
 // açılmış envanter sayfası kadar yuva (1. sayfa hep açık; 2. ve 3. sayfa görevlerle açılır)
 const invSize = (p) => INV_SIZE * (1 + Math.max(0, Math.min(2, (p && p.quests && p.quests.bag) || 0)));
-const EQUIP_SLOTS = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring', 'shield', 'costume', 'wings', 'pet'];
+const EQUIP_SLOTS = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring', 'shield', 'necklace', 'costume', 'wings', 'pet'];
 // yükseltilebilen, efsunlanabilen, taş takılabilen ekipman (görünüş eşyaları hariç)
-const GEAR_SLOTS = EQUIP_SLOTS.slice(0, 7);
+const GEAR_SLOTS = EQUIP_SLOTS.slice(0, 8);
 const BASE_SPEED = 6;          // m/sn
 const MELEE_RANGE = 4.4;
 const SKILL_UNLOCK = 5;        // beceriler bu seviyede açılır
@@ -120,7 +121,7 @@ function totals(p) {
     const it = p.equip[slot];
     const def = it && ITEMS[it.key];
     if (!def) continue;
-    s.atk += def.atk || 0; s.def += def.def || 0; s.hp += def.hp || 0;
+    s.atk += def.atk || 0; s.def += def.def || 0; s.hp += def.hp || 0; s.mp += def.mp || 0;
     // evcil hayvan ve kanat gibi eşyaların özel bonusları (kritik, delici, mana, hız…)
     if (def.bonus) for (const [k, v] of Object.entries(def.bonus)) s[k] = (s[k] || 0) + v;
     const ub = upBonus(def, it.up || 0);
@@ -202,9 +203,21 @@ function fixEquip(eq) {
   }
   return eq;
 }
+// Metin2 gibi evrim: +9 eşya bir üst kademedeki eşyaya dönüşür (artı sıfırlanır, efsun ve taşlar kalır)
+const EVOLVE_CHANCE = 60;
+const EVOLVE_LEAVES = 10;      // her renk yapraktan
+function evolveCost(def) { return Math.round((def.lv || 1) * 12000); }
+// başlangıç seti: Sv. 70 karakterin kuşandığı ve çantasındakiler
+function startKit(cls) {
+  const w = cls === 'saman' ? 'staff9' : 'sword9';
+  return {
+    equip: { weapon: w, armor: 'armor9', helmet: 'helmet9', shield: 'shield9', earring: 'earring9', necklace: 'necklace9' },
+    inv: [['at_muhru', 1], ['isin_yuzugu', 1], ['p_hp3', 100], ['p_mp3', 100], ['p_green', 5]],
+  };
+}
 const skillLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 
-module.exports = { STONE_TYPES, STONE_SPECIALS, CLASS_KEYS, fixKey, fixItems, fixEquip,
+module.exports = { START_LEVEL, EVOLVE_CHANCE, EVOLVE_LEAVES, evolveCost, startKit, STONE_TYPES, STONE_SPECIALS, CLASS_KEYS, fixKey, fixItems, fixEquip,
   ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, invSize, EQUIP_SLOTS, GEAR_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
   BONUS_TYPES, rollBonus, maxBonus, MAX_UP, LEAVES, leafNeed, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
   speedMul, attackCooldown, playerDamage, mobDamage, expGain, skillLabel,

@@ -5,7 +5,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ITEM_MODELS, MOB_MODELS, itemModel } from './entities/models.js';
 import { buildMob } from './entities/mobs.js';
 import { buildWings, buildPet } from './entities/cosmetics.js';
-import { bootsMesh, braceletMesh, earringMesh, potionMesh, crystalMesh, fishMesh, pearlMesh } from './icons.js';
+import { bootsMesh, braceletMesh, earringMesh, necklaceMesh, potionMesh, crystalMesh, fishMesh, pearlMesh } from './icons.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -79,17 +79,17 @@ const CATS = [
   ['zirh', 'Zırh', (d) => d.slot === 'armor'],
   ['kask', 'Kask', (d) => d.slot === 'helmet'],
   ['kalkan', 'Kalkan', (d) => d.slot === 'shield'],
-  ['taki', 'Ayakkabı ve Takı', (d) => ['shoes', 'bracelet', 'earring'].includes(d.slot)],
+  ['taki', 'Ayakkabı ve Takı', (d) => ['shoes', 'bracelet', 'earring', 'necklace'].includes(d.slot)],
   ['kozmetik', 'Kanat, Kostüm, Pet', (d) => ['wings', 'costume', 'pet'].includes(d.slot)],
   ['iksir', 'İksir ve Kullanılan', (d) => ['potion', 'use'].includes(d.slot)],
   ['diger', 'Diğer', (d) => ['stone', 'gem', 'material', 'fish'].includes(d.slot) || !d.slot],
 ];
-const SLOT_ICON = { weapon: '⚔️', armor: '🛡️', helmet: '⛑️', shield: '🛡️', shoes: '👢', bracelet: '📿', earring: '💎', wings: '🪽', costume: '👘', pet: '🐾', potion: '🧪', use: '📜', stone: '🔮', gem: '💠', material: '🧱', fish: '🐟' };
+const SLOT_ICON = { weapon: '⚔️', armor: '🛡️', helmet: '⛑️', shield: '🛡️', shoes: '👢', bracelet: '📿', earring: '💎', necklace: '📿', wings: '🪽', costume: '👘', pet: '🐾', potion: '🧪', use: '📜', stone: '🔮', gem: '💠', material: '🧱', fish: '🐟' };
 const WEAPON_ICON = { sword: '⚔️', dagger: '🗡️', bow: '🏹', staff: '🪄' };
-const ORDER = ['weapon:sword', 'weapon:dagger', 'weapon:bow', 'weapon:staff', 'armor', 'helmet', 'shield', 'shoes', 'bracelet', 'earring', 'wings', 'costume', 'pet', 'potion', 'use', 'stone', 'gem', 'material', 'fish'];
+const ORDER = ['weapon:sword', 'weapon:dagger', 'weapon:bow', 'weapon:staff', 'armor', 'helmet', 'shield', 'shoes', 'bracelet', 'earring', 'necklace', 'wings', 'costume', 'pet', 'potion', 'use', 'stone', 'gem', 'material', 'fish'];
 const SLOT_ORDER = (d) => { const k = d.slot === 'weapon' ? 'weapon:' + d.type : d.slot; const i = ORDER.indexOf(k); return i < 0 ? 99 : i; };
-const SLOT_NAME = { weapon: 'Silah', armor: 'Zırh', helmet: 'Kask', shield: 'Kalkan', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', wings: 'Kanat', costume: 'Kostüm', pet: 'Evcil hayvan', potion: 'İksir', use: 'Kullanılan', stone: 'Taş', gem: 'Mücevher', material: 'Malzeme', fish: 'Balık' };
-const has3D = (d) => !!((d.model && ITEM_MODELS[d.model]) || d.wing || d.pet || ['shoes', 'bracelet', 'earring', 'potion', 'fish', 'weapon', 'gem', 'stone'].includes(d.slot));
+const SLOT_NAME = { weapon: 'Silah', armor: 'Zırh', helmet: 'Kask', shield: 'Kalkan', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', necklace: 'Kolye', wings: 'Kanat', costume: 'Kostüm', pet: 'Evcil hayvan', potion: 'İksir', use: 'Kullanılan', stone: 'Taş', gem: 'Mücevher', material: 'Malzeme', fish: 'Balık' };
+const has3D = (d) => !!((d.model && ITEM_MODELS[d.model]) || d.wing || d.pet || ['shoes', 'bracelet', 'earring', 'necklace', 'potion', 'fish', 'weapon', 'gem', 'stone'].includes(d.slot));
 function icon(d) {
   const e = d.slot === 'weapon' ? WEAPON_ICON[d.type] || '⚔️' : SLOT_ICON[d.slot] || '📦';
   const border = d.rarity >= 2 ? '#e8b54a' : d.rarity === 1 ? '#6fb3ff' : d.color || '#333';
@@ -329,6 +329,7 @@ function itemObject(d, key) {
   if (d.slot === 'shoes') return { obj: bootsMesh(d) };
   if (d.slot === 'bracelet') return { obj: braceletMesh(d) };
   if (d.slot === 'earring') return { obj: earringMesh(d) };
+  if (d.slot === 'necklace') return { obj: necklaceMesh(d) };
   if (d.slot === 'potion') return { obj: potionMesh(d) };
   if (d.slot === 'fish') return { obj: fishMesh(d.color || '#8ab') };
   if (d.slot === 'gem') return { obj: pearlMesh(d.color || '#fff') };

@@ -52,6 +52,17 @@ function seeded(seed) {
 const rand = (a, b) => a + Math.random() * (b - a);
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
+// Metin2'deki taş adları (seviyeye göre), rün rengi, kaya rengi ve biçim
+const STONE_TYPES_BY_LV = [
+  [10, 'Keder Metini', '#7fd0ff', '#5a5e66', 0], [30, 'Savaş Metini', '#ff8a3d', '#5c5650', 1], [50, 'Açgözlülük Metini', '#ffd23f', '#5a5448', 2],
+  [70, 'Gölge Metini', '#b07bff', '#3e3a48', 3], [75, 'Sertlik Metini', '#5fe0a0', '#4a4f4c', 0], [80, 'Şeytan Metini', '#ff3b2f', '#3a2c2c', 1],
+  [85, 'Düşüş Metini', '#7fb3ff', '#3c4250', 2], [90, 'Ölüm Metini', '#d0d0ff', '#2c2c34', 3], [95, 'Katliam Metini', '#ff4a8a', '#3a2a34', 0],
+  [999, 'Pung-Ma Metini', '#ffb347', '#2a2622', 1]];
+function stoneType(lv) {
+  const t = STONE_TYPES_BY_LV.find((r) => lv < r[0]);
+  return { name: t[1], rune: t[2], rock: t[3], shape: t[4] };
+}
+
 class Zone {
   constructor(io, def, hooks, opts = {}) {
     this.io = io;
@@ -143,21 +154,26 @@ class Zone {
     const free = this.stoneSpots.map((_, i) => i).filter((i) => !used.has(i));
     if (!free.length) return;
     const spot = free[Math.floor(Math.random() * free.length)];
-    const lv = this.def.minLevel + 4;
-    const purple = Math.random() < 0.3;
-    const hp = Math.round((100 + lv * lv * 2.5 + lv * 20) * (purple ? 7 : 5));
-    const id = this.nextId++;
-    const s = { id, spot, x: this.stoneSpots[spot][0], z: this.stoneSpots[spot][1], lv, hp, max: hp,
-                name: purple ? 'Gölge Metini' : 'Ölüm Metini', color: purple ? 'purple' : 'red' };
-    this.stones.set(id, s);
+    const s = this.makeStone(this.stoneSpots[spot][0], this.stoneSpots[spot][1]);
+    s.spot = spot;
+    this.stones.set(s.id, s);
     this.emit('stoneSpawn', s);
+  }
+  // Metin2 gibi: taşın adı ve rün rengi seviyesinden gelir; metin haritalarında seviye aralıktan rastgele
+  makeStone(x, z) {
+    const r = this.def.stoneLv;
+    const lv = r ? r[0] + Math.floor(Math.random() * (r[1] - r[0] + 1)) : this.def.minLevel + 4;
+    const big = Math.random() < 0.2;    // büyük taş: daha dayanıklı, iki kat ganimet
+    const t = stoneType(lv);
+    const hp = Math.round((100 + lv * lv * 2.5 + lv * 20) * (big ? 7 : 5));
+    return { id: this.nextId++, spot: -1, x, z, lv, hp, max: hp, name: (big ? 'Büyük ' : '') + t.name, color: big ? 'purple' : 'red',
+             rune: t.rune, rock: t.rock, shape: t.shape, big };
   }
   // etkinlik metini: rastgele yerde, kırılınca yeniden çıkmaz
   spawnExtraStone() {
     const [x, z] = this.randomSpot();
-    const lv = this.def.minLevel + 4, purple = Math.random() < 0.4;
-    const hp = Math.round((100 + lv * lv * 2.5 + lv * 20) * (purple ? 7 : 5));
-    const s = { id: this.nextId++, spot: -1, extra: true, x, z, lv, hp, max: hp, name: purple ? 'Gölge Metini' : 'Ölüm Metini', color: purple ? 'purple' : 'red' };
+    const s = this.makeStone(x, z);
+    s.extra = true;
     this.stones.set(s.id, s);
     this.emit('stoneSpawn', s);
     return s;
@@ -264,7 +280,12 @@ class Zone {
       const own = this.def.stoneDrops;
       const n = best.color === 'purple' ? 2 : 1;
       for (let i = 0; i < n; i++) if (Math.random() < 0.6) this.makeDrop(best.x, best.z, p.id, { key: own[Math.floor(Math.random() * own.length)] });
-      if (Math.random() < 0.15) this.makeDrop(best.x, best.z, p.id, { key: 'efsun', n: 1 });   // efsun nesnesi sadece taşlardan
+      // Metin2 gibi taş ganimeti: efsun nesnesi, efsun değiştirme, yeşil (saldırı gücü), kırmızı ve mavi iksir
+      if (Math.random() < 0.22) this.makeDrop(best.x, best.z, p.id, { key: 'efsun', n: 1 });
+      if (Math.random() < 0.10) this.makeDrop(best.x, best.z, p.id, { key: 'efsun_degis', n: 1 });
+      if (Math.random() < 0.30) this.makeDrop(best.x, best.z, p.id, { key: 'p_green', n: 1 + Math.floor(Math.random() * 2) });
+      if (Math.random() < 0.45) this.makeDrop(best.x, best.z, p.id, { key: best.lv >= 75 ? 'p_hp4' : 'p_hp3', n: 2 + Math.floor(Math.random() * 4) });
+      if (Math.random() < 0.35) this.makeDrop(best.x, best.z, p.id, { key: best.lv >= 75 ? 'p_mp4' : 'p_mp3', n: 2 + Math.floor(Math.random() * 4) });
       // ruh taşları (Metin2 gibi sadece metinlerden): üst haritalarda daha yüksek dereceli
       const STONE_TYPES = R.STONE_TYPES;
       if (Math.random() < (best.color === 'purple' ? 0.55 : 0.35)) {
@@ -281,8 +302,8 @@ class Zone {
         this.makeDrop(best.x, best.z, p.id, { key });
         this.hooks.announce(`${p.name}, ${best.name} kırarak ${R.ITEMS[key].name} buldu!`, this);
       }
-      // demirci yaprakları: %35 şansla 1-3 adet (rengi rastgele)
-      if (Math.random() < 0.35) this.makeDrop(best.x, best.z, p.id, { key: R.LEAVES[Math.floor(Math.random() * 3)], n: 1 + Math.floor(Math.random() * 3) });
+      // demirci yaprakları (kırmızı, yeşil, mor): %50 şansla 1-3 adet (rengi rastgele)
+      if (Math.random() < 0.5) this.makeDrop(best.x, best.z, p.id, { key: R.LEAVES[Math.floor(Math.random() * 3)], n: 1 + Math.floor(Math.random() * 3) });
       // evcil hayvan: %1,5 şans (Ejder Yavrusu bunların içinde çok nadir)
       if (Math.random() < 0.015) {
         const pets = ['pet_kurt', 'pet_tilki', 'pet_ayi', 'pet_baykus', 'pet_yilan', 'pet_uzayli', 'pet_horoz', 'pet_tavuk', 'pet_fantazi_tilki'];

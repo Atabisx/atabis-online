@@ -4,7 +4,22 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 8.0 (bu sürüm): KinemIQ kılıç animasyonları
+### Aşama 8.1 (bu sürüm): Sv. 70-99 sunucusu
+
+- **Seviye 70-99:** yeni karakterler 70. seviyede başlar, son seviye 99. Eski karakterler ilk girişte 70'e çıkar.
+- **Başlangıç seti** (her karaktere bir kez): At Mührü, Işınlanma Yüzüğü, kılıç (Kam'a asa), zırh, miğfer, kalkan, küpe, kolye, 100'er kırmızı/mavi iksir, 5 yeşil iksir. Dolu yuvadakiler çantaya gider; Seyis at görevi gerekmez.
+- **Haritalar** (geçitlerle bu sırayla bağlı): Atabis Köyü → Volkan Metin Ovası (Sv. 70-79 taşlar) → Boss Vadisi (Sv. 70) → Kale Metin Meydanı (80-89) → Ejder Boss Vadisi (Sv. 85) → Lanetli Metin Harabesi (90-99).
+  - Metin haritalarında 14 taş, az yaratık, boss yok.
+  - Boss vadilerinde oyunun en iyi boss modelleri 12'şer tane, 40 sn'de doğar, normal boss'un 2,2 katı tecrübe verir.
+  - Eski haritalar ve boss'ları silinmedi: gizli ve boş (veriler `mobs.json`'da).
+- **Metin2 tarzı taşlar:** iri, koyu, yontulmuş kaya; yüzlerinde oyulmuş ışıyan yazı. Adı ve rengi seviyeden: Gölge, Sertlik, Şeytan, Düşüş, Ölüm, Katliam, Pung-Ma Metini; %20 Büyük taş (2 kat ganimet).
+- **Taş ganimeti:** efsun nesnesi, efsun değiştirme nesnesi, yeşil iksir (5 dk saldırı gücü +120), kırmızı ve mavi iksir, kırmızı/yeşil/mor yaprak (Mavi Yaprak artık Yeşil Yaprak).
+- **Dükkân:** kırmızı ve mavi iksirler, 9-10. kademe eşyalar. Yeşil iksir satılmaz.
+- **Kolye yuvası:** yeni kuşanma yeri (can + mana).
+- **Evrim (Metin2 gibi):** +9 olan kılıç, asa, zırh, miğfer, kalkan, küpe, kolye, bilezik ve çizme demircide bir üst kademedeki eşyaya dönüşür (9 → 14. kademe). %60 şans, 10'ar yaprak ve Yang; başarısızsa +9 kalır, efsun ve taşlar korunur.
+- **Avcı sınıfı** yeni karakterde seçilemez (var olan Avcılar oynamaya devam eder).
+
+### Aşama 8.0: KinemIQ kılıç animasyonları
 
 - KinemIQ'nun ücretsiz (CC0) paketinden üç kılıç animasyonu kılıç kullanan dört sınıfa (Alp, Akıncı, Yalaz, Avcı) aktarıldı (`client/models/anim/kq_*.glb`; kemik adları mixamo'ya çevrildi):
   - **Kılıçla bekleme:** silah elindeyken dururken savaş duruşu.
