@@ -15,8 +15,8 @@ ROOT = os.path.join(os.path.dirname(__file__), '..', 'shared')
 TIERS = [
     (1, 'Acemi', '#b08a5a'), (8, 'Demir', '#c9d1d9'), (15, 'Çelik', '#a9b8c9'), (22, 'Gümüş', '#e3e8ee'),
     (29, 'Kızıl', '#c0392b'), (36, 'Kum', '#d9b56a'), (43, 'Akrep', '#8e6b3a'), (50, 'Zehir', '#6fd36f'),
-    (57, 'Buz', '#9fd8ff'), (64, 'Kristal', '#c8d0ff'), (71, 'Alev', '#ff6a3d'), (78, 'Kara', '#4a5060'),
-    (85, 'Lanetli', '#8a7dff'), (92, 'İblis', '#b0362b'), (99, 'Ejder', '#ffb347'), (106, 'İmparator', '#ffd700'),
+    (57, 'Buz', '#9fd8ff'), (64, 'Kristal', '#c8d0ff'), (71, 'Ayaz', '#bfe6ff'), (78, 'Kara', '#4a5060'),
+    (85, 'Magma', '#ff5a2a'), (92, 'İblis', '#b0362b'), (99, 'Ejder', '#ffb347'), (106, 'İmparator', '#ffd700'),
 ]
 
 WEAPONS = [  # (tür, ad, sınıflar, uzunluk)
@@ -36,12 +36,13 @@ EVOLVE_FROM, EVOLVE_TO = 9, 14
 def weapon_model(wtype, i):
     # kullanıcının getirdiği silah modelleri (client/models/items/<ad>.glb)
     if wtype == 'staff':
-        return 'kraliyet_asasi'
+        return {11: 'ayaz_asa', 12: 'ayaz_asa', 13: 'magma_asa', 14: 'magma_asa'}.get(i, 'kraliyet_asasi')
     if wtype != 'sword':
         return None
+    # 9-14: Sv. 70-99 evrim zinciri, her basamak farklı ve daha gösterişli (Ayaz -> Magma -> Ejderarması)
     return {0: 'sade_kilic', 1: 'kivrik_kilic', 2: 'katana', 3: 'katana', 4: 'lav_kilic', 5: 'lav_kilic',
-            6: 'gumus_kilic', 7: 'mor_kilic', 8: 'kanatli_kilic', 9: 'talwar',
-            10: 'savas_baltasi', 11: 'demir_balta', 12: 'altin_balta', 13: 'altin_balta'}.get(i, 'buz_balta')
+            6: 'gumus_kilic', 7: 'mor_kilic', 8: 'kanatli_kilic', 9: 'kanatli_kilic',
+            10: 'ayaz_kilic', 11: 'ayaz_buyukkilic', 12: 'magma_kilic', 13: 'magma_buyukkilic', 14: 'ejder_cekic'}.get(i, 'buz_balta')
 
 
 def helmet_model(i):
@@ -61,10 +62,16 @@ def bracelet_model(i):
 
 def earring_model(i):
     # kullanıcının getirdiği küpeler: damla zincir -> güneş halka -> boho taşlı halka
-    return 'damla_kupe' if i <= 4 else 'gunes_kupe' if i <= 9 else 'boho_kupe'
+    return 'damla_kupe' if i <= 4 else 'gunes_kupe' if i <= 9 or i in (11, 13) else 'boho_kupe'
+
+
+# Sv. 70-99 evrim zinciri: her basamakta başka bir tam zırh (karakterin üstünde giyili görünür)
+EVO_ARMORS = {9: 'zirh_paladin', 10: 'zirh_altin_pul', 11: 'zirh_kizil_pul', 12: 'zirh_yildiz', 13: 'zirh_altin_paladin', 14: 'zirh_ejderplaka'}
 
 
 def armor_model(i):
+    if i in EVO_ARMORS:
+        return EVO_ARMORS[i]
     if i <= 1:
         return 'demir_zirh'
     if 2 <= i <= 5:
@@ -109,7 +116,7 @@ def build_items():
             rarity = 2 if legendary else (1 if i >= 11 else 0)
             for wtype, wname, classes, length in WEAPONS:
                 if wtype == 'sword' and i >= 10:
-                    wname = 'Balta'          # üst kademelerde savaşçı ve sura balta taşır
+                    wname = {10: 'Kılıç', 11: 'Büyük Kılıç', 12: 'Kılıç', 13: 'Büyük Kılıç', 14: 'Savaş Çekici'}.get(i, 'Balta')          # üst kademelerde savaşçı ve sura balta taşır
                 items[f'{wtype}{i}{suf}'] = {
                     'name': f'{pre}{tname} {wname}', 'slot': 'weapon', 'type': wtype, 'classes': classes,
                     'lv': lv, 'tier': i, 'atk': round((6 + 9 * i + 0.6 * i * i) * m), 'rarity': rarity,
@@ -199,7 +206,10 @@ def build_items():
     items['pet_sandik'] = {'name': 'Pet Sandığı', 'slot': 'use', 'desc': 'Aç: içinden rastgele bir evcil hayvan çıkar (Ejder Yavrusu çok nadir). Balık tutarken nadiren takılır.', 'lv': 1, 'price': 0, 'rarity': 2, 'color': '#b48ad9', 'stack': 50}
     items['istiridye'] = {'name': 'İstiridye', 'slot': 'use', 'desc': 'Aç: içinden nadiren inci çıkar.', 'lv': 1, 'price': 40, 'rarity': 1, 'color': '#c8c0b0', 'stack': 200}
     for key, name, value, color in [('inci_beyaz', 'Beyaz İnci', 3000, '#f4f1e8'), ('inci_mavi', 'Mavi İnci', 9000, '#7fb3ff'), ('inci_kirmizi', 'Kırmızı İnci', 30000, '#ff6a5a')]:
-        items[key] = {'name': name, 'slot': 'gem', 'lv': 1, 'price': value * 4, 'rarity': 2, 'color': color, 'stack': 200}
+        items[key] = {'name': name, 'slot': 'gem', 'lv': 1, 'price': value * 4, 'rarity': 2, 'color': color, 'stack': 200,
+                      'desc': 'Balıklardan (%25) ve istiridyeden çıkar. 5 tanesi demircide +9 evrimi için gerekir. ' + {
+                          'inci_beyaz': '5 Beyaz İnci → 1 Mavi İnci dönüştürülebilir.', 'inci_mavi': '5 Mavi İnci → 1 Kırmızı İnci dönüştürülebilir.',
+                          'inci_kirmizi': '5 Kırmızı İnci → 3 Kutsama Kağıdı ve 2 Efsun Değiştirme dönüştürülebilir.'}[key]}
     # at
     # Işınlanma Yüzüğü: her yerden ışınlanma penceresi; kullanınca bitmez, pahalı
     items['isin_yuzugu'] = {'name': 'Işınlanma Yüzüğü', 'slot': 'use', 'desc': 'Her yerden ışınlanma penceresini açar. Kullanınca bitmez.',
@@ -487,7 +497,7 @@ def build(items):
         m = dict(m)
         if i in METIN_MAPS:
             m['name'], m['lv'], m['stoneLv'], m['tier'] = METIN_MAPS[i]
-            m['mobCount'], m['stones'] = 10, 14
+            m['mobCount'], m['stones'] = 0, 28      # sadece metin taşları, haritaya dengeli dağılmış
             m['bosses'] = [b[:6] + ({**b[6], 'n': 0},) for b in m['bosses']]   # boss'lar sadece level atlama haritalarında
         if i in LEVEL_MAPS:
             m['name'], m['lv'], m['theme'], m['tier'], new = LEVEL_MAPS[i]

@@ -1573,7 +1573,8 @@ const SOCKETS = { weapon: 3, armor: 3 };
 const upgradeCost = (def, up) => Math.round((2000 + (def.lv || 1) * 300) * (up + 1) * (1 + up * 0.35));
 const stoneUpCost = (g) => 5000 * (g + 1) * (g + 1);
 const LEAVES = ['yaprak_mor', 'yaprak_mavi', 'yaprak_kirmizi'];
-const leafNeed = (def, up) => (def.leaves ? def.leaves : (def.lv || 1) >= 30 && up >= 6 ? up + 1 : 0);   // özel zırhlar: her basamakta 5'er
+const leafNeed = (def, up) => (def.leaves ? 3 : (def.lv || 1) >= 30 && up >= 6 ? 3 : 0);   // yapraklar her renkten 3'er
+const PEARL_KEYS = ['inci_beyaz', 'inci_mavi', 'inci_kirmizi'];
 const countItem = (key) => inv.inventory.reduce((a, i) => a + (i.key === key ? (i.n || 1) : 0), 0);
 function upBonus(def, up) {
   if (!up) return { atk: 0, def: 0, hp: 0 };
@@ -1699,6 +1700,7 @@ function renderDetail() {
   if (equipped) buttons = '<button data-act="unequip">Çıkar</button>';
   else if (def.slot === 'potion' || def.slot === 'use') buttons = '<button data-act="use">Kullan</button><button class="alt" data-act="drop">Yere at</button>';
   else if (def.slot === 'fish' && def.open) buttons = `<button data-act="use">Aç</button>${(it.n || 1) > 1 ? `<button data-act="openall">Hepsini aç (${Math.min(50, it.n)})</button>` : ''}<button class="alt" data-act="drop">Yere at</button>`;
+  else if (PEARL_KEYS.includes(it.key)) buttons = (countItem(it.key) >= 5 ? `<button data-act="pearl" style="background:${def.color};color:#111">Dönüştür (5 → ${it.key === 'inci_kirmizi' ? 'Kutsama x3 + Değiştirme x2' : ITEMS[PEARL_KEYS[PEARL_KEYS.indexOf(it.key) + 1]].name})</button>` : `<button disabled>Dönüştürmek için 5 gerekir (${countItem(it.key)}/5)</button>`) + '<button class="alt" data-act="drop">Yere at</button>';
   else if (def.slot === 'fish' || def.slot === 'gem' || def.slot === 'material') buttons = '<button class="alt" data-act="drop">Yere at</button>';
   else if (def.slot === 'stone') buttons = `<button data-act="socket" style="background:${def.color};color:#111">${def.stone.for === 'weapon' ? 'Silaha tak' : 'Zırha tak'}</button><button class="alt" data-act="drop">Yere at</button>`;
   else buttons = '<button data-act="equip">Giy</button><button class="alt" data-act="drop">Yere at</button>';
@@ -1733,6 +1735,7 @@ detailEl.addEventListener('click', (e) => {
   if (b.dataset.act === 'drop') socket.emit('dropItem', selected.uid);
   if (b.dataset.act === 'openall' && it) { socket.emit('openAll', it.uid); sfx.click(); return; }
   if (b.dataset.act === 'use' && it) { socket.emit('useItem', it.uid); if (ITEMS[it.key] && ITEMS[it.key].slot === 'potion') sfx.potion(); return; }
+  if (b.dataset.act === 'pearl' && it) { socket.emit('pearl', it.uid); return; }
   if (b.dataset.act === 'enchant') { socket.emit('enchant', selected.slot ? { slot: selected.slot } : { uid: selected.uid }); return; }
   if (b.dataset.act === 'reroll') { socket.emit('reroll', selected.slot ? { slot: selected.slot } : { uid: selected.uid }); return; }
   if (b.dataset.act === 'socket' && it) {
@@ -1784,10 +1787,13 @@ function renderSmith() {
         can = true; btn = 'Evrimleştir';
         const cost = Math.round((nd.lv || 1) * 12000);
         if (inv.yang < cost) can = false;
-        const lh = '<span class="leaves">' + LEAVES.map((k) => { const have = countItem(k), ok = have >= 10;
+        const pearls = PEARL_KEYS.reduce((a, k) => a + countItem(k), 0);
+        if (pearls < 5) can = false;
+        const lh = '<span class="leaves">' + LEAVES.map((k) => { const have = countItem(k), ok = have >= 3;
           if (!ok) can = false;
-          return `<span class="leaf${ok ? '' : ' miss'}" style="--c:${ITEMS[k].color}">${itemIcon(k, ITEMS[k], 18)}${have}/10</span>`; }).join('') + '</span>';
-        info = `<span class="evo">+9 → ${itemIcon(def.evolve, nd, 16)} <b style="color:${RARITY[nd.rarity]}">${esc(nd.name)}</b> (Sv. ${nd.lv})</span><br>Şans %60 · ${cost.toLocaleString('tr-TR')} Yang<br><small>Başarısızsa +9 kalır, efsun ve taşlar korunur.</small>${lh}`;
+          return `<span class="leaf${ok ? '' : ' miss'}" style="--c:${ITEMS[k].color}">${itemIcon(k, ITEMS[k], 18)}${have}/3</span>`; }).join('') +
+          `<span class="leaf${pearls >= 5 ? '' : ' miss'}" style="--c:#f4f1e8">${itemIcon('inci_beyaz', ITEMS.inci_beyaz, 18)}${pearls}/5 inci</span></span>`;
+        info = `<span class="evo">+9 → ${itemIcon(def.evolve, nd, 16)} <b style="color:${RARITY[nd.rarity]}">${esc(nd.name)}</b> (Sv. ${nd.lv})</span><br>Şans %60 · ${cost.toLocaleString('tr-TR')} Yang<br><small>Başarısızsa +9 kalır, efsun ve taşlar korunur. Yeni eşya başka görünümde.</small>${lh}`;
       }
     }
     html += `<div class="srow">${itemIcon(it.key, def, 26)}<span class="grow"><b style="color:${RARITY[def.rarity]}">${esc(itemName(it, def))}</b>${eq ? ' <small class="eqtag">kuşanılı</small>' : ''}${it.n > 1 ? ' <small>x' + it.n + '</small>' : ''}<br><small>${info}</small></span>` +
@@ -2472,12 +2478,14 @@ export function startGame(sock, opts = {}) {
     setStats(data.stats.level, data.stats.exp, data.stats.need);
     myEmpire = data.empire || 0;
     if (!myEmpire && !myGm) setTimeout(() => social.askEmpire(), 1500);
+    if (data.guide) setTimeout(() => openGuide(0), 900);     // ilk giriş: başlangıç rehberi
     if (opts.onWelcome) opts.onWelcome();
   });
-  socket.on('mapChange', (data) => { setTimeout(() => social.refreshWb(), 50); if (MAPS[data.map] && MAPS[data.map].worldBoss) camYaw = Math.PI;   // ejder yuvasında kamera boss'a bakar
+  socket.on('mapChange', (data) => { closeAllWindows(); setTimeout(() => social.refreshWb(), 50); if (MAPS[data.map] && MAPS[data.map].worldBoss) camYaw = Math.PI;   // ejder yuvasında kamera boss'a bakar
   amDead = false; auto.target = null; auto.skip.clear(); if (auto.on && data && MAPS[data.map] && (MAPS[data.map].safe || MAPS[data.map].war)) setAuto(false); deadEl.classList.remove('open'); setFishState('idle'); enterMap(data); updateToolButtons(); renderSkillbar(); refreshFoes(); if (!(currentMap && currentMap.dungeon)) social.clearDungeon(); });
   socket.on('inv', (data) => { Object.assign(inv, data); renderInv(); if (depotWin.classList.contains('open')) renderDepot(); if (shopKind) renderShop(); renderSmith(); if (trade) renderTrade(); social.refreshGuild(); social.refreshStallWins(); });
   socket.on('upgraded', ({ ok, name, up, stone, evolved }) => smithResult(ok, evolved ? `EVRİM · ${name}` : ok ? (stone ? `BAŞARILI · ${name}` : `BAŞARILI · ${name} +${up}`) : (stone ? 'BAŞARISIZ · taş kırıldı' : `BAŞARISIZ · ${name} +${up}`)));
+  socket.on('pearlResult', ({ ok, text }) => { toast(text); if (ok) { sfx.enchant(); const me = players[myId]; if (me) fx.levelUp(me); } else sfx.hit('stone', false, null); });
   socket.on('socketed', ({ ok }) => { if (ok) sfx.enchant(); else sfx.hit('stone', false, null); });
   // ---------- sohbet, fısıltı, arkadaşlar, düello ----------
   socket.on('whisper', ({ from, to, text }) => {
@@ -3251,10 +3259,79 @@ const menuHandlers = {
   dungeon: () => social.openDungeon(),
   rank: () => social.openRank(),
   help: () => social.openHelp(),
+  guide: () => openGuide(0),
   settings: () => document.getElementById('setBtn').click(),
   depot: () => { if (!currentMap || !currentMap.village) { toast('Depo sadece köylerde açılır.'); return; } if (socket) socket.emit('depotOpen'); },
   mall: () => { if (socket) socket.emit('mallGet'); mallWin.classList.add('open'); renderMall(); },
 };
+// ---------- başlangıç rehberi: ilk girişte açılır, sonra Menü › Başlangıç Rehberi ----------
+const guideEl = document.getElementById('guidewin');
+const GUIDE_TABS = ['Sınıfın', 'Beceriler', 'Statü', 'Neredesin', 'Görevler', 'Geliştirme', 'Işınlanma'];
+let guideTab = 0;
+function openGuide(tab = 0) { guideTab = tab; renderGuide(); guideEl.classList.add('open'); }
+function closeGuide() { guideEl.classList.remove('open'); if (socket) socket.emit('guideSeen'); }
+function renderGuide() {
+  document.getElementById('guideTabs').innerHTML = GUIDE_TABS.map((t, i) => `<button role="tab" data-gt="${i}" class="${i === guideTab ? 'on' : ''}">${i + 1}. ${t}</button>`).join('');
+  const c = CLASSES[myClass] || {}, main = { savasci: 'str', sura: 'str', ninja: 'dex', okcu: 'dex', saman: 'int' }[myClass] || 'str';
+  const route = [0, 9, 12, 10, 13, 11].filter((id) => MAPS[id]);
+  let h = '';
+  if (guideTab === 0) {
+    h = `<h3><span style="width:14px;height:14px;border-radius:50%;background:${c.color}"></span>${esc(c.name || '')}</h3><p>${esc(c.desc || '')}</p>
+      <div class="gstats"><span>Temel can<b>${c.hp}</b></span><span>Temel mana<b>${c.mp}</b></span><span>Saldırı katsayısı<b>×${c.atk}</b></span><span>Savunma<b>${c.def}</b></span>
+      ${c.crit ? `<span>Kritik<b>%${Math.round(c.crit * 100)}</b></span>` : ''}${c.speed ? `<span>Hız<b>×${c.speed}</b></span>` : ''}<span>Ana özellik<b style="color:${STAT_INFO[main].color}">${STAT_INFO[main].name}</b></span></div>
+      <p>Sunucu <b>Sv. 70-99</b> arasıdır: 70. seviyede başlarsın, son seviye 99. Başlangıçta <b>+9 silah, zırh, kolye, küpe ve ayakkabı</b>, ayrıca at, Işınlanma Yüzüğü ve iksirler aldın.</p>`;
+  } else if (guideTab === 1) {
+    h = `<h3>⚡ Becerilerin</h3><p>Her seviyede 1 beceri puanı kazanırsın. <b>Menü › Beceriler</b> penceresinden puan ver; beceri 17'den sonra M1-M3 olur. Becerileri sağ alttaki kılıcın çevresindeki düğmelerden kullanırsın.</p>` +
+      mySkills().map((sk) => `<div class="gskill"><i style="background:${sk.color || '#e8b54a'}">${esc((sk.name || '?')[0])}</i><span><b>${esc(sk.name)}</b> <small>· Mana ${sk.mp} · ${Math.round((sk.cd || 0) / 1000)} sn</small><br><small>${esc(sk.desc || '')}</small></span></div>`).join('');
+  } else if (guideTab === 2) {
+    h = `<h3>🧍 Statü puanları</h3><p>Her seviyede <b>3 durum puanı</b> kazanırsın. Karakter penceresini (👤 ya da <b>K</b>) açıp + düğmelerine bas. Bir özellik en fazla 90 olur.</p><ul>` +
+      ['str', 'vit', 'int', 'dex'].map((k) => `<li><b style="color:${STAT_INFO[k].color}">${STAT_INFO[k].name}</b>: ${STAT_INFO[k].desc(main)}${k === main ? ' <b>← senin ana özelliğin</b>' : ''}</li>`).join('') +
+      `</ul><h4>Öneri</h4><p>Puanların çoğunu <b style="color:${STAT_INFO[main].color}">${STAT_INFO[main].name}</b>'e ver (saldırı), kalanını <b style="color:${STAT_INFO.vit.color}">CANLILIK</b>'a (can). ${main !== 'int' ? 'Zekâ sadece mana içindir, az yeter.' : 'Biraz Çeviklik kritik şansını artırır.'}</p>`;
+  } else if (guideTab === 3) {
+    const here = currentMap ? currentMap.id : 0;
+    h = `<h3>📍 Neredesin?</h3><p>Şu an <b>${esc(currentMap ? currentMap.name : '')}</b> haritasındasın${currentMap && currentMap.minLevel > 1 ? ` (Sv. ${currentMap.minLevel}+)` : ''}.</p>
+      <div class="gmap">${route.map((id) => `<span class="${id === here ? 'here' : ''}">${esc(MAPS[id].name)}${MAPS[id].minLevel > 1 ? ' · ' + MAPS[id].minLevel : ''}</span>`).join('<em>→</em>')}</div>
+      <ul><li><b>Atabis Köyü</b>: demirci, dükkân (kırmızı/mavi iksir), depo, kostümcü, ışınlayıcı.</li>
+      <li><b>Metin haritaları</b> (Volkan, Kale, Lanetli Harabe): sadece metin taşları. Taş kır → tecrübe, efsun nesnesi, yeşil iksir, yaprak, iksir.</li>
+      <li><b>Boss vadileri</b>: oyunun en güçlü boss'ları, çok sayıda; en hızlı level buradan gelir. Grupla gir!</li></ul>
+      <p>Haritanın kenarındaki mavi geçitlerden bir sonraki haritaya geçersin. Sağ üstteki küçük harita yönünü gösterir.</p>`;
+  } else if (guideTab === 4) {
+    h = `<h3>📜 Görevler</h3><p><b>Menü › Görevler</b> penceresinde iki tür görev var:</p><ul>
+      <li><b>Günlük görevler</b>: canavar kes, metin kır, boss yen… Bitince ödülü aynı pencereden al. Her gün yenilenir.</li>
+      <li><b>Ana görevler</b>: seviyen gelince kendiliğinden başlar (çanta sayfaları, Savaş Kaplanı). İlerleme canavar, metin ve boss ile artar; bitince <b>Ödülü al</b>.</li>
+      <li>Köydeki NPC'lere dokununca (adının üstünde ünlem) konuşur ve görev verir.</li></ul><p>Menü düğmesindeki kırmızı sayı, alınmayı bekleyen ödül olduğunu gösterir.</p>`;
+  } else if (guideTab === 5) {
+    h = `<h3>⚒️ Ekipman ve geliştirme</h3><h4>Demirci (köyde)</h4><ul>
+      <li>Eşyanı <b>+0'dan +9'a</b> yükselt. +4'ten sonra başarısız olursa artı düşer; <b>Kutsama Kağıdı</b> bunu önler.</li>
+      <li>+6'dan sonra her basamak <b>3'er Kırmızı, Yeşil ve Mor Yaprak</b> ister (metin taşlarından düşer).</li></ul>
+      <h4>+9 sonrası: Evrim</h4><ul><li>+9 olan silah, zırh, kolye, küpe, ayakkabı, miğfer, kalkan ve bilezik <b>Evrimleştir</b> ile bir üst eşyaya dönüşür: daha güçlü ve <b>tamamen farklı görünümlü</b>.</li>
+      <li>Zırh: Gök Paladin → Altın Pullu → Kızıl Pullu → Yıldızdökme → Altın Paladin → Ejder Plaka. Kılıç: Kanatlı → Ayaz → Ayaz Büyük → Magma → Magma Büyük → Ejderarması Çekici.</li>
+      <li>Gerekenler: 3'er yaprak, <b>5 inci</b> ve Yang. Şans %60; başarısız olursa +9 kalır, efsun ve taşlar korunur.</li></ul>
+      <h4>İnci dönüştürme</h4><p>Balıkları aç (her balıkta %25 inci). Envanterde inciye dokun → <b>Dönüştür</b>: 5 Beyaz → 1 Mavi, 5 Mavi → 1 Kırmızı, 5 Kırmızı → 3 Kutsama Kağıdı + 2 Efsun Değiştirme.</p>
+      <h4>Efsun ve ruh taşları</h4><p>Efsun Nesnesi eşyaya rastgele güç ekler (en fazla 5), Efsun Değiştirme yeniden belirler. Ruh taşları silaha ya da zırha takılır.</p>`;
+  } else {
+    h = `<h3>🌀 Işınlanma ve haritalar</h3><ul><li><b>Işınlanma Yüzüğü</b> (çantanda): dokun → Kullan. Her yerden ışınlanma penceresi açılır, istediğin haritaya git. Yüzük bitmez.</li>
+      <li>Köydeki <b>ışınlayıcı taşa</b> dokunarak da ışınlanırsın.</li><li>Işınlanınca açık pencereler kendiliğinden kapanır.</li>
+      <li>Her haritanın seviye sınırı var; seviyen yetmezse giremezsin.</li><li>Ölürsen köyde ya da 5 saniye sonra olduğun yerde yarım canla doğarsın.</li>
+      <li><b>At</b>: sol üstteki at düğmesi ya da At Mührü ile bin; %60 daha hızlısın.</li></ul>
+      <div class="gmap">${route.map((id) => `<span>${esc(MAPS[id].name)}${MAPS[id].minLevel > 1 ? ' · Sv. ' + MAPS[id].minLevel : ''}</span>`).join('')}</div>`;
+  }
+  document.getElementById('guideBody').innerHTML = h;
+  document.getElementById('guidePrev').disabled = guideTab === 0;
+  document.getElementById('guideNext').textContent = guideTab === GUIDE_TABS.length - 1 ? 'Oyuna başla' : 'İleri ›';
+}
+document.getElementById('guideTabs').addEventListener('click', (e) => { const b = e.target.closest('[data-gt]'); if (b) { guideTab = Number(b.dataset.gt); renderGuide(); } });
+document.getElementById('guidePrev').addEventListener('click', () => { if (guideTab > 0) { guideTab--; renderGuide(); } });
+document.getElementById('guideNext').addEventListener('click', () => { if (guideTab < GUIDE_TABS.length - 1) { guideTab++; renderGuide(); } else closeGuide(); });
+document.getElementById('guideX').addEventListener('click', closeGuide);
+// ışınlanınca / harita değişince açık pencereler kapanır (ölüm, giriş ödülü, krallık seçimi ve rehber hariç)
+const KEEP_OPEN = new Set(['dead', 'rewardwin', 'empirewin', 'guidewin', 'installHelp']);
+function closeAllWindows() {
+  document.querySelectorAll('.modal.open').forEach((el) => { if (!KEEP_OPEN.has(el.id)) el.classList.remove('open'); });
+  invEl.classList.remove('open'); selected = null; detailEl.classList.remove('open');
+  shopKind = null;
+  document.querySelectorAll('#pmenu.open').forEach((el) => el.classList.remove('open'));
+}
 // ---------- nesne market (Ejder Parası) ----------
 let mallData = null, mallCat = 'Güçlendirme';
 const mallWin = document.getElementById('mallwin');

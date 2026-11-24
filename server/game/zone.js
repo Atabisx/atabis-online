@@ -99,6 +99,20 @@ class Zone {
   makeStoneSpots(n) {
     const rnd = seeded((this.def.seed || 1) * 31 + 7);
     const b = this.bounds, spots = [];
+    // metin haritası: taşlar haritanın her yerine dengeli dağılır (karelere bölünmüş ızgara, her karede biraz kaydırılmış)
+    if (this.def.metin) {
+      const k = Math.ceil(Math.sqrt(n * 1.25)), cell = (b.max - b.min - 16) / k;
+      const cells = [];
+      for (let i = 0; i < k; i++) for (let j = 0; j < k; j++) cells.push([i, j]);
+      for (const [i, j] of cells) {
+        for (let t = 0; t < 12; t++) {
+          const x = b.min + 8 + (i + 0.2 + rnd() * 0.6) * cell, z = b.min + 8 + (j + 0.2 + rnd() * 0.6) * cell;
+          if (Math.abs(z - 25) < 5 || !this.safeFrom(x, z)) continue;
+          spots.push([+x.toFixed(1), +z.toFixed(1)]); break;
+        }
+      }
+      return spots;
+    }
     const gap = (b.max - b.min) * 0.2;
     for (let tries = 0; spots.length < n && tries < 2000; tries++) {
       const x = b.min + 8 + rnd() * (b.max - b.min - 16), z = b.min + 8 + rnd() * (b.max - b.min - 16);
@@ -274,7 +288,7 @@ class Zone {
     if (best.hp <= 0) {
       this.stones.delete(best.id);
       this.emit('stoneDown', { id: best.id, by: p.id, name: p.name, stoneName: best.name });
-      const exp = Math.round((20 + best.lv * 9 + best.lv * best.lv * 0.35) * 5);
+      const exp = Math.round((20 + best.lv * 9 + best.lv * best.lv * 0.35) * 7);   // metin taşı: 7 canavar tecrübesi
       this.hooks.giveExp(p, R.expGain(best.lv, p.level, exp));
       if (this.hooks.onStoneBroken) this.hooks.onStoneBroken(p);
       const own = this.def.stoneDrops;

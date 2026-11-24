@@ -184,6 +184,7 @@
         <button data-menu="char"><span class="mi">🧍</span>Karakter<i id="mbChar" style="display:none">0</i></button>
         <button data-menu="skills"><span class="mi">⚡</span>Beceriler<i id="mbSkill" style="display:none">0</i></button>
         <button data-menu="settings"><span class="mi">⚙️</span>Ayarlar</button>
+        <button data-menu="guide"><span class="mi">🧭</span>Başlangıç Rehberi</button>
         <button data-menu="help"><span class="mi">❔</span>Rehber</button>
       </div>
       <small class="menuhint">Sohbette <b>#</b> ile grup, <b>%</b> ile lonca kanalına yazarsın.</small>
@@ -268,9 +269,9 @@
         <h4>Temel kontroller</h4>
         <p>Sol alttaki çubukla yürü, sağ alttaki kılıçla saldır. Becerileri kılıcın çevresindeki düğmelerden kullan. Kırmızı ve mavi iksir düğmeleri can ve mana doldurur. Ganimetin üstüne yürüyünce toplanır.</p>
         <h4>Gelişim</h4>
-        <p>Seviye atladıkça karakter penceresinden (👤) durum puanı dağıt. 5. seviyede beceriler açılır. 25. seviyede Seyis'ten at görevi, 30. seviyede olta gelir.</p>
+        <p>Seviye atladıkça karakter penceresinden (👤) durum puanı dağıt. Karakterler 70. seviyede başlar, son seviye 99. Metin taşları ve Boss vadileri hızlı tecrübe verir.</p>
         <h4>Demirci, ruh taşları, yapraklar</h4>
-        <p>Demircide eşyalarını +9'a kadar yükseltirsin; başarısız olursa artı düşer, Kutsama Kağıdı bunu engeller. 30. seviye ve üstü eşyalar +6'dan sonra Mor, Mavi ve Kırmızı Yaprak ister (+6→7 için 7'şer). Ruh taşları ve yapraklar metin taşlarından düşer. Taşlar silaha (kritik, delici, güç, çeviklik, sınıf taşları) ya da zırha (can, savunma, hız, kaçınma, büyü) takılır.</p>
+        <p>Demircide eşyalarını +9'a kadar yükseltirsin; başarısız olursa artı düşer, Kutsama Kağıdı bunu engeller. +6'dan sonra her basamak 3'er Mor, Yeşil ve Kırmızı Yaprak ister. +9 olan eşya demircide <b>Evrimleştir</b> ile yeni görünümlü bir üst eşyaya dönüşür (3'er yaprak + 5 inci). Ruh taşları ve yapraklar metin taşlarından düşer. Taşlar silaha (kritik, delici, güç, çeviklik, sınıf taşları) ya da zırha (can, savunma, hız, kaçınma, büyü) takılır.</p>
         <h4>Grup ve lonca</h4>
         <p>Bir oyuncuya dokun: grup, ticaret, lonca daveti, düello, fısıltı. Grupta tecrübe paylaşılır ve kalabalık grup daha çok kazanır. Sohbette <b>#</b> grup, <b>%</b> lonca kanalıdır. Lonca 20. seviye ve 100.000 yang ile kurulur.</p>
         <h4>Krallık savaşı</h4>
@@ -283,6 +284,14 @@
         <p>Menü › Pazar tezgâhı ile köyde tezgâh aç; oyundan çıksan da satar. Köydeki Kostümcü'de kostüm, kanat ve evcil hayvan var; nadir Ejder Kanadı ve Ejder Yavrusu sadece boss'lardan düşer.</p>
       </div>
       <button id="tutRestart" class="btn alt">Öğreticiyi baştan oynat</button>
+    </div>
+  </div>
+  <div id="guidewin" class="modal" role="dialog" aria-label="Başlangıç rehberi">
+    <div class="modalbox guidebox">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">BAŞLANGIÇ REHBERİ</b><button id="guideX" class="xbtn" aria-label="Kapat">×</button></div>
+      <div id="guideTabs" role="tablist"></div>
+      <div id="guideBody"></div>
+      <div class="guidefoot"><button id="guidePrev" class="btn alt">‹ Geri</button><small>Menü › Başlangıç Rehberi ile her zaman açabilirsin.</small><button id="guideNext" class="btn">İleri ›</button></div>
     </div>
   </div>
   <div id="rankwin" class="modal" role="dialog" aria-label="Sıralama">

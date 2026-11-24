@@ -954,7 +954,7 @@ export function loadMap(scene, def) {
     return false;
   };
   // büyük haritalarda süs sayısı alanla birlikte artar (telefon için ölçülü)
-  const density = Math.max(1, Math.min(2.3, ((span + 20) / 100) ** 1.4)) * (HM && !def.model ? 1.25 : 1);
+  const density = Math.max(1, Math.min(2.3, ((span + 20) / 100) ** 1.4)) * (HM && !def.model ? 1.25 : 1) * (def.metin ? 0.25 : 1);   // metin haritası: taşlara yer kalsın, süs az
   const propStart = group.children.length;
   for (const [kind, base] of Object.entries(th.props)) {
     const build = PROP_BUILDERS[kind];

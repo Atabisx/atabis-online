@@ -22,8 +22,11 @@ const MOUNT_SPEED = 1.6;
 // ilk 25 seviye normal, sonrası giderek zorlaşır
 function expForLevel(lv) {
   const base = 100 + lv * 60 + lv * lv * 4;
-  return Math.round(lv > 25 ? base * (1 + (lv - 25) * 0.05) : base);
+  // Sv. 70-99 sunucusu: seviye atlamak için gereken tecrübe %45 daha az (daha akıcı gelişim)
+  return Math.round((lv > 25 ? base * (1 + (lv - 25) * 0.05) : base) * EXP_NEED_MUL);
 }
+const EXP_NEED_MUL = 0.55;
+const EXP_GAIN_MUL = 2;         // canavar, boss ve metin taşı tecrübesi 2 katı
 const classOf = (p) => CLASSES[p.class] || CLASSES.savasci;
 const skillsOf = (p) => SKILLS[p.class] || [];
 const skillPoints = (p) => Math.max(0, p.level - (SKILL_UNLOCK - 1)) - Object.values(p.skills || {}).reduce((a, b) => a + b, 0);
@@ -98,7 +101,8 @@ function stoneUpCost(g) { return 5000 * (g + 1) * (g + 1); }
 // metin taşlarından düşen ruh taşı türleri (items.json'daki tüm taşlar)
 const STONE_TYPES = [...new Set(Object.values(ITEMS).filter((d) => d.stone).map((d) => d.stone.type))];
 const LEAVES = ['yaprak_mor', 'yaprak_mavi', 'yaprak_kirmizi'];
-function leafNeed(def, up) { if (def.leaves) return def.leaves; return (def.lv || 1) >= 30 && up >= 6 ? up + 1 : 0; }   // özel zırhlar her basamakta 'leaves' kadar
+const LEAF_N = 3;              // yapraklar her renkten 3'er istenir
+function leafNeed(def, up) { if (def.leaves) return LEAF_N; return (def.lv || 1) >= 30 && up >= 6 ? LEAF_N : 0; }   // özel eşyalar her basamakta
 // metin taşından düşen özel eşyalar: [anahtar, en düşük taş sv, en yüksek taş sv]
 const STONE_SPECIALS = Object.entries(ITEMS).filter(([, d]) => d.stoneDrop).map(([k, d]) => [k, d.stoneDrop[0], d.stoneDrop[1]]);
 // yükseltmenin eşyaya kattığı değerler
@@ -205,19 +209,22 @@ function fixEquip(eq) {
 }
 // Metin2 gibi evrim: +9 eşya bir üst kademedeki eşyaya dönüşür (artı sıfırlanır, efsun ve taşlar kalır)
 const EVOLVE_CHANCE = 60;
-const EVOLVE_LEAVES = 10;      // her renk yapraktan
+const EVOLVE_LEAVES = 3;       // her renk yapraktan
+const EVOLVE_PEARLS = 5;       // herhangi renkten 5 inci (balıklardan çıkar)
+const PEARL_KEYS = ['inci_beyaz', 'inci_mavi', 'inci_kirmizi'];
 function evolveCost(def) { return Math.round((def.lv || 1) * 12000); }
 // başlangıç seti: Sv. 70 karakterin kuşandığı ve çantasındakiler
 function startKit(cls) {
   const w = cls === 'saman' ? 'staff9' : 'sword9';
   return {
-    equip: { weapon: w, armor: 'armor9', helmet: 'helmet9', shield: 'shield9', earring: 'earring9', necklace: 'necklace9' },
+    // +9 zırh, kolye, küpe, ayakkabı ve silah (görünüşleri uyumlu: Kristal takım); miğfer ve kalkan +0
+    equip: { weapon: [w, 9], armor: ['armor9', 9], necklace: ['necklace9', 9], earring: ['earring9', 9], shoes: ['shoes9', 9], helmet: ['helmet9', 0], shield: ['shield9', 0] },
     inv: [['at_muhru', 1], ['isin_yuzugu', 1], ['p_hp3', 100], ['p_mp3', 100], ['p_green', 5]],
   };
 }
 const skillLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 
-module.exports = { START_LEVEL, EVOLVE_CHANCE, EVOLVE_LEAVES, evolveCost, startKit, STONE_TYPES, STONE_SPECIALS, CLASS_KEYS, fixKey, fixItems, fixEquip,
+module.exports = { EXP_GAIN_MUL, LEAF_N, EVOLVE_PEARLS, PEARL_KEYS, START_LEVEL, EVOLVE_CHANCE, EVOLVE_LEAVES, evolveCost, startKit, STONE_TYPES, STONE_SPECIALS, CLASS_KEYS, fixKey, fixItems, fixEquip,
   ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, invSize, EQUIP_SLOTS, GEAR_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
   BONUS_TYPES, rollBonus, maxBonus, MAX_UP, LEAVES, leafNeed, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
   speedMul, attackCooldown, playerDamage, mobDamage, expGain, skillLabel,

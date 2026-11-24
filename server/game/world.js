@@ -164,22 +164,27 @@ function createWorld(io) {
   // at, ışınlanma yüzüğü, kılıç (Kam'a asa), zırh, miğfer, kalkan, küpe, kolye ve iksirler. Dolu yuvadakiler çantaya gider.
   function startKit(p) {
     p.quests = p.quests || {};
-    if (p.quests.kit70) return;
+    if (p.quests.kit70 >= 2) return;
     if (p.level < R.START_LEVEL) { p.level = R.START_LEVEL; p.exp = 0; }
     const kit = R.startKit(p.class);
     const room = () => p.inventory.length < R.invSize(p);
-    for (const [slot, key] of Object.entries(kit.equip)) {
+    const again = p.quests.kit70 === 1;    // ilk setini almış: aynı eşyalar +9'a çıkar, eksikler (ayakkabı) eklenir
+    for (const [slot, [key, up]] of Object.entries(kit.equip)) {
       if (!R.ITEMS[key]) continue;
-      const it = { uid: p.nextUid++, key };
-      if (!p.equip[slot]) p.equip[slot] = it; else if (room()) p.inventory.push(it);
+      const cur = p.equip[slot];
+      if (again && cur && cur.key === key) { cur.up = Math.max(cur.up || 0, up); continue; }
+      if (again && slot !== 'shoes') continue;
+      const it = { uid: p.nextUid++, key, ...(up ? { up } : {}) };
+      if (!cur) p.equip[slot] = it; else if (room()) p.inventory.push(it);
     }
+    if (again) { p.quests.kit70 = 2; return; }
     for (const [key, n] of kit.inv) {
       if (!R.ITEMS[key] || !room()) continue;
       if ((key === 'at_muhru' || key === 'isin_yuzugu') && p.inventory.some((i) => i.key === key)) continue;
       p.inventory.push({ uid: p.nextUid++, key, n });
     }
     p.quests.horse = 'done';      // at baştan verildi: Seyis görevi gerekmez
-    p.quests.kit70 = 1;
+    p.quests.kit70 = 2;
   }
   let gmTarget = null;
   function p_nextUid() { return gmTarget.nextUid++; }
@@ -334,7 +339,7 @@ function createWorld(io) {
   function expMul(p) { return (1 + guilds.expBonus(p) / 100 + (W.expBonus ? W.expBonus(p) : 0)) * rateNow(); }
   function expRaw(p, amount, kill, fromMob = true) {
     if (kill) p.kills++;
-    if (fromMob) { amount = Math.round(amount * expMul(p)); guilds.addExp(p, amount); }
+    if (fromMob) { amount = Math.round(amount * expMul(p) * R.EXP_GAIN_MUL); guilds.addExp(p, amount); }
     if (p.level >= R.MAX_LEVEL) return;
     p.exp += amount;
     let up = false;
@@ -623,7 +628,7 @@ function createWorld(io) {
     // modelli köyde (surlu şehir) kayıtlı yer bir binanın içine düşebilir: girişte doğuş noktası kullanılır
     const zd = zones[p.mapId] && zones[p.mapId].def;
     if (!prev && zd && zd.village && zd.model) startPos = null;
-    socket.emit('welcome', { gm: !!p.gm,
+    socket.emit('welcome', { gm: !!p.gm, guide: !(p.quests && p.quests.guideSeen),
       id: socket.id, cls: p.class, name: p.name, empire: p.empire || 0,
       stats: { level: p.level, exp: p.exp, need: R.expForLevel(p.level) },
       villages: VILLAGES,
@@ -1029,6 +1034,27 @@ function createWorld(io) {
       sendHp(p);
     });
 
+    // ---------- inci dönüştürme: 5 inci -> bir üst inci (kırmızı inciler -> Kutsama Kağıdı ve Efsun Değiştirme) ----------
+    socket.on('pearl', (uid) => {
+      const it = p.inventory.find((i) => i.uid === Number(uid));
+      if (!it || !R.PEARL_KEYS.includes(it.key) || p.dead) return;
+      const PEARL_CONVERT_N = 5, PEARL_CONVERT_CHANCE = 75;
+      if (countItem(p, it.key) < PEARL_CONVERT_N) { notice(p, `Dönüştürmek için ${PEARL_CONVERT_N} ${R.ITEMS[it.key].name} gerekir.`); return; }
+      const idx = R.PEARL_KEYS.indexOf(it.key);
+      const reward = idx < 2 ? [[R.PEARL_KEYS[idx + 1], 1]] : [['kutsama', 3], ['efsun_degis', 2]];
+      const sim = { inventory: p.inventory.map((x) => ({ ...x })), nextUid: p.nextUid, quests: p.quests };
+      takeItem(sim, it.key, PEARL_CONVERT_N);
+      if (!reward.every(([k, n]) => addItem(sim, k, n))) { notice(p, 'Envanterin dolu.'); return; }
+      const ok = Math.random() * 100 < PEARL_CONVERT_CHANCE;
+      takeItem(p, it.key, ok ? PEARL_CONVERT_N : 2);       // başarısızsa sadece 2 inci gider
+      if (ok) for (const [k, n] of reward) addItem(p, k, n);
+      const txt = ok ? `Dönüştürme başarılı! ${reward.map(([k, n]) => R.ITEMS[k].name + (n > 1 ? ' x' + n : '')).join(', ')} kazandın.` : `Dönüştürme başarısız… 2 ${R.ITEMS[it.key].name} kayboldu.`;
+      notice(p, txt);
+      socket.emit('pearlResult', { ok, text: txt });
+      sendInv(p);
+    });
+    socket.on('guideSeen', () => { p.quests.guideSeen = 1; });
+
     // ---------- demirci ----------
     // eşyayı +1 yükselt (ya da ruh taşının derecesini artır). { slot } | { uid }, scroll: Kutsama Kağıdı kullan
     socket.on('upgrade', (data) => {
@@ -1062,12 +1088,16 @@ function createWorld(io) {
         const nd = R.ITEMS[def.evolve], cost = R.evolveCost(nd);
         if (p.yang < cost) { notice(p, `Evrim için yeterli Yang yok (${cost.toLocaleString('tr-TR')} gerekli).`); return; }
         const miss = R.LEAVES.filter((k) => countItem(p, k) < R.EVOLVE_LEAVES);
-        if (miss.length) { notice(p, `Evrim için ${R.EVOLVE_LEAVES}'ar ${R.LEAVES.map((k) => R.ITEMS[k].name).join(', ')} gerekir. Eksik: ${miss.map((k) => R.ITEMS[k].name).join(', ')}.`); return; }
+        if (miss.length) { notice(p, `Evrim için ${R.EVOLVE_LEAVES}'er ${R.LEAVES.map((k) => R.ITEMS[k].name).join(', ')} gerekir. Eksik: ${miss.map((k) => R.ITEMS[k].name).join(', ')}.`); return; }
+        const pearls = R.PEARL_KEYS.reduce((a, k) => a + countItem(p, k), 0);
+        if (pearls < R.EVOLVE_PEARLS) { notice(p, `Evrim için ${R.EVOLVE_PEARLS} inci gerekir (sende ${pearls}). İnciler balıklardan çıkar.`); return; }
         for (const k of R.LEAVES) takeItem(p, k, R.EVOLVE_LEAVES);
+        let pn = R.EVOLVE_PEARLS;     // önce beyaz inciler harcanır
+        for (const k of R.PEARL_KEYS) { const t = Math.min(pn, countItem(p, k)); if (t) { takeItem(p, k, t); pn -= t; } }
         p.yang -= cost;
         const ok = Math.random() * 100 < R.EVOLVE_CHANCE;
         if (ok) { target.key = def.evolve; target.up = 0; }
-        const msg = ok ? `Evrim başarılı! ${def.name} +9 → ${nd.name} oldu.` : `Evrim başarısız… ${def.name} +9 olarak kaldı (yapraklar harcandı).`;
+        const msg = ok ? `Evrim başarılı! ${def.name} +9 → ${nd.name} oldu.` : `Evrim başarısız… ${def.name} +9 olarak kaldı (yapraklar ve inciler harcandı).`;
         notice(p, msg);
         socket.emit('upgraded', { ok, name: ok ? nd.name : def.name, up: target.up || 0, evolved: ok });
         social.progress(p, 'upgrade');

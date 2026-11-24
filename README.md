@@ -4,7 +4,18 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 8.1 (bu sürüm): Sv. 70-99 sunucusu
+### Aşama 8.2 (bu sürüm): hızlı gelişim, inci dönüştürme, başlangıç rehberi
+
+- **Tecrübe:** seviye için gereken tecrübe %45 az; canavar, boss ve metin tecrübesi 2 kat; metin taşı 7 canavar değerinde.
+- **Yapraklar 3'er:** +6 sonrası her basamak ve evrim 3'er Kırmızı, Yeşil, Mor Yaprak ister.
+- **İnci:** her açılan balıktan %25 inci. Envanterde inciye dokun → Dönüştür: 5 Beyaz → 1 Mavi, 5 Mavi → 1 Kırmızı, 5 Kırmızı → 3 Kutsama + 2 Efsun Değiştirme (%75; başarısızsa 2 inci gider). Evrim 5 inci ister.
+- **Işınlanınca** bütün açık pencereler kapanır.
+- **Metin haritaları:** sadece metin taşı (28 taş, haritaya ızgara gibi dengeli dağılır), yaratık yok, süs az.
+- **Başlangıç Rehberi:** ilk girişte açılır (sınıf, beceriler, statü, neredesin, görevler, geliştirme, ışınlanma); Menü › Başlangıç Rehberi ile tekrar açılır.
+- **Başlangıç seti:** +9 silah, zırh (Gök Paladin tam zırhı), kolye, küpe, ayakkabı; miğfer ve kalkan +0. Eski karakterlerde aynı eşyalar +9'a çıkar.
+- **Evrim görünüşleri:** zırh Gök Paladin → Altın Pullu → Kızıl Pullu → Yıldızdökme → Altın Paladin → Ejder Plaka; kılıç Kanatlı → Ayaz → Ayaz Büyük → Magma → Magma Büyük → Ejderarması Çekici; asa Kraliyet → Ayaz → Magma; kolye, ayakkabı ve küpe her basamakta yeni süs ve taşlarla.
+
+### Aşama 8.1: Sv. 70-99 sunucusu
 
 - **Seviye 70-99:** yeni karakterler 70. seviyede başlar, son seviye 99. Eski karakterler ilk girişte 70'e çıkar.
 - **Başlangıç seti** (her karaktere bir kez): At Mührü, Işınlanma Yüzüğü, kılıç (Kam'a asa), zırh, miğfer, kalkan, küpe, kolye, 100'er kırmızı/mavi iksir, 5 yeşil iksir. Dolu yuvadakiler çantaya gider; Seyis at görevi gerekmez.

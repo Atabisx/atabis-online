@@ -51,7 +51,7 @@ function createPremium(W) {
     sendInv(p); sendTimed(p); save(p);
   }
 
-  // balık aç: her içerik ayrı şansla (efsun %25, değiştirme %25, yaprak %30, pet sandığı %15, iksir çoğu zaman, az yang)
+  // balık aç: her içerik ayrı şansla (efsun %25, değiştirme %25, yaprak %30, inci %25, pet sandığı %15, iksir çoğu zaman, az yang)
   function openFish(p, it, def, count) {
     const n = Math.max(1, Math.min(count || 1, it.n || 1, 50));
     const got = new Map(); let yang = 0, opened = 0, full = false;
@@ -62,6 +62,8 @@ function createPremium(W) {
       if (Math.random() < 0.25) roll.push(['efsun_degis', 1]);
       if (Math.random() < 0.30) roll.push([R.LEAVES[Math.floor(Math.random() * R.LEAVES.length)], rnd(1, 2)]);
       if (Math.random() < 0.15) roll.push(['pet_sandik', 1]);
+      // inci: her balıkta %25 (beyaz çoğu zaman, mavi ara sıra, kırmızı nadir); demircide evrim ve inci dönüştürmede kullanılır
+      if (Math.random() < 0.25) { const r = Math.random(); roll.push([r < 0.72 ? 'inci_beyaz' : r < 0.95 ? 'inci_mavi' : 'inci_kirmizi', 1]); }
       if (Math.random() < 0.75) roll.push([potFor(p.level, Math.random() < 0.4), rnd(1, 3)]);
       const ap = autoPotionRoll(); if (ap) roll.push([ap, 1]);
       // eşyalar sığmıyorsa bu balık açılmaz

@@ -99,7 +99,13 @@ export function bootsMesh(def) {
     const shin = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.24, 0.03), metal); shin.position.set(0, 0.22, 0.085);
     const strap = new THREE.Mesh(new THREE.TorusGeometry(0.083, 0.008, 6, 18), trim); strap.rotation.x = Math.PI / 2; strap.position.y = 0.14;
     const sole = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.02, 0.3), std('#2a2018', 0, 0.9)); sole.position.set(0, 0.0, 0.07);
-    b.add(shaft, cuff, foot, toe, shin, strap, sole); g.add(b);
+    b.add(shaft, cuff, foot, toe, shin, strap, sole);
+    // üst kademeler (evrim zinciri): zırhlı dizlik, kanatçık ve parlayan taş — her basamak daha gösterişli
+    const t = def.tier || 0;
+    if (t >= 9) { const knee = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), metal); knee.rotation.x = Math.PI / 2; knee.position.set(0, 0.36, 0.07); b.add(knee); }
+    if (t >= 11) for (const k of [0, 1]) { const wing = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.18, 4), trim); wing.position.set(s * 0.09, 0.3 - k * 0.07, -0.02); wing.rotation.z = -s * 1.2; b.add(wing); }
+    if (t >= 12) { const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.035, 0), glow(t >= 14 ? '#ff4a2a' : t >= 13 ? '#b06bff' : '#7fd0ff', 0.9)); gem.position.set(0, 0.25, 0.105); b.add(gem); }
+    g.add(b);
   }
   return g;
 }
@@ -148,6 +154,17 @@ export function necklaceMesh(def) {
   const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.1, 1), glow(gemColor, 0.6)); gem.position.y = -0.24; gem.scale.set(1, 1.2, 0.6);
   const bail = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.012, 6, 14), gold); bail.position.y = -0.1;
   g.add(chain, frame, gem, bail);
+  // evrim zinciri: her basamakta yan sarkaçlar, kanatlar ve büyüyen taş
+  const t = def.tier || 0, tc = t >= 14 ? '#ff4a2a' : t >= 13 ? '#b06bff' : t >= 12 ? '#ff7a3a' : t >= 11 ? '#7fd0ff' : gemColor;
+  gem.material = glow(tc, 0.7);
+  if (t >= 10) for (const sx of [-1, 1]) {
+    const pd = new THREE.Mesh(new THREE.OctahedronGeometry(0.045, 0), glow(tc, 0.5)); pd.position.set(sx * 0.17, -0.12, 0); pd.scale.y = 1.6; g.add(pd);
+  }
+  if (t >= 12) for (const sx of [-1, 1]) {
+    const w = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.22, 4), gold); w.position.set(sx * 0.15, -0.26, -0.01); w.rotation.z = sx * 1.9; g.add(w);
+  }
+  if (t >= 13) { const halo = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.01, 6, 32), glow(tc, 0.8)); halo.position.y = -0.24; g.add(halo); }
+  if (t >= 14) gem.scale.multiplyScalar(1.35);
   return g;
 }
 export function potionMesh(def) {
