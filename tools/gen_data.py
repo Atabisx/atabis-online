@@ -244,6 +244,33 @@ def build_items():
                      
                       'def': round((3 + 6 * i + 0.4 * i * i) * 1.5), 'hp': lv * 10, 'leaves': 5, 'stoneDrop': [lv, lv + 14],
                       'desc': f'Bütün sınıflar giyer. Sadece Sv. {lv}-{lv + 14} metin taşlarından nadiren düşer. Her yükseltme 5\'er Mor, Mavi ve Kırmızı Yaprak ister.'}
+    # kullanıcının getirdiği silah takımları ve Ejderarması Çekici: metin taşlarından nadiren düşer (özel zırhlar gibi)
+    # Ayaz takımı Sv. 80, Magma takımı Sv. 90, Ejderarması Savaş Çekici Sv. 100; Ejder Derisi Zırh Sv. 70
+    SPECIAL_WEAPONS = []
+    for pre, setname, lv, color, atk in [('ayaz', 'Ayaz', 80, '#bfe6ff', 258), ('magma', 'Magma', 90, '#ff5a2a', 312)]:
+        SPECIAL_WEAPONS += [
+            (f'{pre}_kilic', f'{setname} Kılıcı', 'sword', ['savasci', 'sura', 'ninja', 'okcu'], lv, color, atk),
+            (f'{pre}_buyukkilic', f'{setname} Büyük Kılıcı', 'sword', ['savasci', 'sura'], lv, color, atk + 12),
+            (f'{pre}_balta', f'{setname} Baltası', 'sword', ['savasci'], lv, color, atk + 14),
+            (f'{pre}_gurz', f'{setname} Gürzü', 'sword', ['savasci', 'sura'], lv, color, atk + 8),
+            (f'{pre}_hancer', f'{setname} Hançeri', 'sword', ['ninja'], lv, color, atk + 10),
+            (f'{pre}_yay', f'{setname} Yayı', 'sword', ['okcu'], lv, color, atk + 10),
+            (f'{pre}_asa', f'{setname} Asası', 'staff', ['saman'], lv, color, atk + 10)]
+    SPECIAL_WEAPONS.append(('ejder_cekic', 'Ejderarması Savaş Çekici', 'sword', ['savasci', 'sura'], 100, '#b06bff', 385))
+    CLS_TR = {'savasci': 'Alp', 'sura': 'Yalaz', 'ninja': 'Akıncı', 'okcu': 'Avcı', 'saman': 'Kam'}
+    for key, name, wtype, classes, lv, color, atk in SPECIAL_WEAPONS:
+        items[key] = {'name': name, 'slot': 'weapon', 'type': wtype, 'classes': classes, 'lv': lv, 'rarity': 2, 'color': color,
+                      'atk': atk, 'glow': True, 'price': lv * 25000, 'model': key, 'leaves': 5, 'stoneDrop': [lv, lv + 14],
+                      'len': 1.55 if wtype == 'staff' else 0.95,
+                      'desc': f"{', '.join(CLS_TR[c] for c in classes)} kullanır. Sadece Sv. {lv}-{lv + 14} metin taşlarından nadiren düşer. Her yükseltme 5'er Mor, Mavi ve Kırmızı Yaprak ister."}
+    for pre, setname, lv, color, df, hp in [('ayaz', 'Ayaz', 80, '#bfe6ff', 104, 250), ('magma', 'Magma', 90, '#ff5a2a', 122, 290)]:
+        items[f'{pre}_kalkan'] = {'name': f'{setname} Kalkanı', 'slot': 'shield', 'lv': lv, 'rarity': 2, 'color': color, 'price': lv * 20000,
+                                  'model': f'{pre}_kalkan', 'def': df, 'hp': hp, 'leaves': 5, 'stoneDrop': [lv, lv + 14],
+                                  'desc': f"Sadece Sv. {lv}-{lv + 14} metin taşlarından nadiren düşer. Her yükseltme 5'er Mor, Mavi ve Kırmızı Yaprak ister."}
+    i70 = (70 - 1) / 7.0
+    items['zirh_ejderderi'] = {'name': 'Ejder Derisi Zırh', 'slot': 'armor', 'lv': 70, 'rarity': 2, 'color': '#2c3f8a', 'price': 70 * 20000,
+                               'model': 'zirh_ejderderi', 'def': round((3 + 6 * i70 + 0.4 * i70 * i70) * 1.5), 'hp': 700, 'leaves': 5, 'stoneDrop': [70, 84],
+                               'desc': "Bütün sınıflar giyer. Sadece Sv. 70-84 metin taşlarından nadiren düşer. Her yükseltme 5'er Mor, Mavi ve Kırmızı Yaprak ister."}
     # Uşak Ceketi: istatistik veren kostüm (efsunda çıkabilen en yüksek Maks. Can + saldırı 50)
     items['kostum_usak'] = {'name': 'Uşak Ceketi', 'slot': 'costume', 'lv': 1, 'price': 3000000, 'rarity': 2, 'color': '#2a2a30',
                             'tint': '#2a2a30', 'model': 'kostum_usak', 'atk': 50, 'hp': 600,
@@ -462,20 +489,6 @@ def build(items):
         if m.get('village'):
             entry['river'] = VILLAGE_RIVER
             entry['villageR'] = VILLAGE_RADIUS
-            # köy: kullanıcının getirdiği Ay Işığı Pagoda Şehri (surlu şehir, ortada havuz; doğu kapısı yol üstünde)
-            # hazırlık: tools/takiglb.py --cell 0.006 --tex 2048 --emissive 1 ve
-            #           --cut=0.69,1.0,-0.366,0.2,-0.095,0.1 (doğu kulesi kaldırıldı: şehrin kapısı) ve
-            #           tools/mapglb.py --scale 60 --water 20,155,165,85 --skirt 10 --skirtcap 1.2 --ramp=30,0.6,79,0.6,6
-            entry['theme'] = 'pagoda'
-            entry['model'] = {'file': 'pagoda_koy', 'scale': 60, 'x': 25, 'z': 25}
-            entry['spawn'] = [44.5, 56.8]
-            # dükkâncılar havuzun çevresindeki açık avlularda (engelsiz yerler ızgaradan seçildi)
-            entry['npcs'] = {'teleport': [29.0, 57.5], 'market': [13.7, 56.4], 'weapons': [4.3, 44.3], 'armor': [6.0, 30.0],
-                             'blacksmith': [11.2, 19.7], 'stable': [53.0, 30.0], 'cosmetic': [52.8, 16.3]}
-            entry['flag'] = [51.9, 43.3]
-            # köy hayvanları köprünün doğu yakasında
-            entry['spawnBox'] = [110, -40, 165, 90]
-            entry['villageR'] = 82          # surların köşeleri de köy sayılır (taş, yaratık doğmaz)
         if i == 1:
             # Kızılçam Ormanı: ortasında kullanıcının getirdiği Uyanış Adası modeli (tools/takiglb.py + tools/mapglb.py)
             entry['model'] = {'file': 'ada_koy', 'scale': 70, 'x': 25, 'z': 25}

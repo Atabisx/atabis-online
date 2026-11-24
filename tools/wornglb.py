@@ -24,6 +24,7 @@ ITEMS = {
     'zirh_kizil_pul': {'bottom': 'thigh', 'wide': 1.2, 'deep': 1.3},
     'zirh_agir_plaka': {'suit': True},
     'kostum_usak': {'bottom': 'knee', 'wide': 1.2, 'deep': 1.3, 'sleeves': True},
+    'zirh_ejderderi': {'bottom': 'hips', 'wide': 1.2, 'deep': 1.3},
 }
 # sınıfa özel ölçü düzeltmesi (gerekirse): {"sınıf": {"wide": .., "deep": ..}}
 CLASS_FIX = {}

@@ -175,7 +175,7 @@ function createWorld(io) {
       p.inventory.push({ uid: p.nextUid++, key: 'savas_muhru', n: 1 }); p.quests.gmKaplan = 1;
     }
     // özel zırhlar ve Uşak Ceketi sonradan eklendi: GM üstünde görsün diye bir kez çantaya
-    if (!p.quests.gmZirh) { giveSpecials(p); p.quests.gmZirh = 1; }
+    if ((p.quests.gmZirh || 0) < 2) { giveSpecials(p); p.quests.gmZirh = 2; }
     if (p.quests.gmKit === 1) return;
     gmTarget = p;
     const cls = R.CLASSES[p.class] || {};
@@ -202,12 +202,13 @@ function createWorld(io) {
     p.quests.gmKit = 1;
     gmTarget = null;
   }
-  const SPECIALS = ['zirh_kemik', 'zirh_paladin', 'zirh_altin_pul', 'zirh_kizil_pul', 'zirh_agir_plaka', 'kostum_usak'];
+  // özel zırhlar, kostüm ve özel silahlar (metin taşından düşenler)
+  const SPECIALS = Object.keys(R.ITEMS).filter((k) => R.ITEMS[k].stoneDrop || k === 'kostum_usak');
   function giveSpecials(p) {
     let n = 0;
     gmTarget = p;
     for (const k of SPECIALS) {
-      if (!R.ITEMS[k] || p.inventory.some((i) => i.key === k) || (p.equip.armor && p.equip.armor.key === k) || (p.equip.costume && p.equip.costume.key === k)) continue;
+      if (!R.ITEMS[k] || p.inventory.some((i) => i.key === k) || Object.values(p.equip || {}).some((e) => e && e.key === k)) continue;
       if (p.inventory.length >= R.invSize(p)) break;
       p.inventory.push(maxedItem(k)); n++;
     }
@@ -250,7 +251,7 @@ function createWorld(io) {
       return;
     }
     if (cmd === 'dunyaboss') { worldboss.gm(p, args); return; }
-    if (cmd === 'zirhlar') { const n = giveSpecials(p); sendInv(p); notice(p, n ? `${n} özel zırh/kostüm çantana kondu.` : 'Hepsi zaten sende (ya da çanta dolu).'); return; }
+    if (cmd === 'zirhlar') { const n = giveSpecials(p); sendInv(p); notice(p, n ? `${n} özel zırh/silah/kostüm çantana kondu.` : 'Hepsi zaten sende (ya da çanta dolu).'); return; }
     if (cmd === 'petler') { const n = giveAllPets(p); sendInv(p); notice(p, n ? `${n} evcil hayvan çantana kondu.` : 'Bütün petler zaten sende (ya da çanta dolu).'); return; }
     if (cmd === 'silahlar') {
       // /silahlar: kendi sınıfının bütün silahları; /silahlar kilic|asa|hepsi

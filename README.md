@@ -4,7 +4,16 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 7.7 (bu sürüm): Pagoda köyü, EXP kutuları, EXP oranı
+### Aşama 7.8 (bu sürüm): özel silahlar, Ejder Derisi Zırh; eski köy geri
+
+- **Ejderarması Savaş Çekici (Sv. 100):** Alp ve Yalaz; saldırı 385.
+- **Magma takımı (Sv. 90)** ve **Ayaz takımı (Sv. 80)**, kullanıcının iki silah takımından parça parça ayrıldı:
+  Kılıç (4 sınıf), Büyük Kılıç (Alp, Yalaz), Balta (Alp), Gürz (Alp, Yalaz), Hançer (Akıncı), Yay (Avcı), Asa (Kam), Kalkan.
+- **Ejder Derisi Zırh (Sv. 70):** bütün sınıflar; karakterin üstünde görünür (kolluklar zırhtan ayrıldı).
+- Hepsi özel zırhlar gibi: sadece kendi seviyesi ile +14 arasındaki metin taşlarından %1,5 düşer (duyurulur), yükseltme 5'er yaprak ister. GM'ye bir kez verilir, `/zirhlar` eksikleri verir.
+- **Köy eski haline döndü** (karlı Atabis Köyü); Pagoda Şehri kaldırıldı.
+
+### Aşama 7.7: Pagoda köyü, EXP kutuları, EXP oranı
 
 - **Atabis Köyü artık Ay Işığı Pagoda Şehri** (kullanıcının modeli): surlarla çevrili şehir, ortada balıklı havuz, kuzeyde büyük pagoda. Doğuş noktası, bütün dükkâncılar, bayrak ve pano havuzun çevresindeki avlularda; havuza ve binalara girilmez. Şehrin kapısı doğuda (yol üstü; köprüye ve Kızılçam Ormanı'na çıkar). Köy hayvanları yine köprünün ötesinde.
   - Hazırlık: `tools/takiglb.py` (yeni: `--emissive` fener ışıkları, `--cut` kapı açmak için kule kesme), `tools/mapglb.py` (yeni: `--water` havuzu engel yapar, `--skirtcap` surlu şehirde eteği alçak tutar).

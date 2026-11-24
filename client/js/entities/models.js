@@ -464,11 +464,22 @@ export const ITEM_MODELS = {
   // özel zırhlar ve Uşak Ceketi (kullanıcının modelleri; simge, yerde ve panelde görünür)
   zirh_kemik: { armor: true, fit: 0.6, y: 0 }, zirh_paladin: { armor: true, fit: 0.6, y: 0 }, zirh_altin_pul: { armor: true, fit: 0.6, y: 0 },
   zirh_kizil_pul: { armor: true, fit: 0.6, y: 0 }, zirh_agir_plaka: { armor: true, fit: 0.75, y: 0 }, kostum_usak: { armor: true, fit: 0.7, y: 0 },
+  zirh_ejderderi: { armor: true, fit: 0.6, y: 0 },
+  // kullanıcının silah takımları (Ayaz Sv. 80, Magma Sv. 90) ve Ejderarması Savaş Çekici (Sv. 100)
+  ayaz_kilic: { grip: 0.1, len: 1.15, center: true }, magma_kilic: { grip: 0.1, len: 1.15, center: true },
+  ayaz_buyukkilic: { grip: 0.1, len: 1.4, center: true }, magma_buyukkilic: { grip: 0.1, len: 1.4, center: true },
+  ayaz_balta: { grip: 0.18, len: 1.2, center: true }, magma_balta: { grip: 0.18, len: 1.2, center: true },
+  ayaz_gurz: { grip: 0.12, len: 1.05, center: true }, magma_gurz: { grip: 0.12, len: 1.05, center: true },
+  ayaz_hancer: { grip: 0.14, len: 0.6, center: true }, magma_hancer: { grip: 0.14, len: 0.6, center: true },
+  ayaz_yay: { grip: 0.5, len: 1.25, center: true }, magma_yay: { grip: 0.5, len: 1.25, center: true },
+  ayaz_asa: { grip: 0.3, len: 1.45, center: true }, magma_asa: { grip: 0.3, len: 1.45, center: true },
+  ejder_cekic: { grip: 0.16, len: 1.35, center: true },
+  ayaz_kalkan: { armor: true, height: 0.62, y: 0 }, magma_kalkan: { armor: true, height: 0.62, y: 0 },
 };
 // ---------- giyilebilir zırh/kostüm (tools/wornglb.py) ----------
 // Her sınıfın karakterine önceden oturtulmuş, deri ağırlıklı giysi; doku eşyanın kendi GLB'sinden gelir.
 // hide: giysinin altında kalan beden üçgenleri (içinden taşmasın diye gizlenir)
-export const WORN = new Set(['zirh_kemik', 'zirh_paladin', 'zirh_altin_pul', 'zirh_kizil_pul', 'zirh_agir_plaka', 'kostum_usak']);
+export const WORN = new Set(['zirh_kemik', 'zirh_paladin', 'zirh_altin_pul', 'zirh_kizil_pul', 'zirh_agir_plaka', 'kostum_usak', 'zirh_ejderderi']);
 const wornCache = {};
 async function fetchGz(url) {
   const r = await fetch(url);
