@@ -141,6 +141,7 @@ body.hurt canvas { filter: saturate(1.4) brightness(0.85) sepia(0.3) hue-rotate(
 #skillBtn i { background: #b23a24; }
 #mountBtn { position: fixed; left: 64px; top: 130px; width: 46px; height: 46px; border-radius: 12px; border: 2px solid #c9a35a; background: rgba(14,16,13,0.78); color: #c9a35a; display: flex; align-items: center; justify-content: center; }
 #mountBtn.on { background: #c9a35a; color: #2a1f08; }
+#mountBtn img { width: 42px; height: 42px; pointer-events: none; }
 #sndBtn { position: fixed; left: 12px; top: 182px; width: 46px; height: 46px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.3); background: rgba(14,16,13,0.78); color: #f4f1e8; display: flex; align-items: center; justify-content: center; }
 #musicBtn { position: fixed; left: 12px; top: 236px; width: 46px; height: 46px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.3); background: rgba(14,16,13,0.78); color: #f4f1e8; display: flex; align-items: center; justify-content: center; }
 #musicBtn .mute { display: none; } #musicBtn.off { color: #8b877c; } #musicBtn.off .mute { display: inline; }
@@ -648,3 +649,12 @@ body.ingame #autoBtn { display: flex; }
 .itip .acts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 10px; }
 .itip .acts button { font: inherit; font-weight: 700; min-height: 36px; padding: 0 12px; border-radius: 4px; border: 1px solid #c89a3a; background: linear-gradient(#e8b54a, #a87a24); color: #241805; }
 .itip .acts button.alt { background: #2a2418; color: #e8e2d0; border-color: #5a4a2a; }
+
+/* EXP: Metin2 gibi 4 kutu (her biri seviyenin %25'i) ve yüzde */
+#expRow { display: flex; align-items: center; gap: 3px; width: 150px; }
+#expRow .expLbl { font-size: 9px; color: #e8b54a; letter-spacing: .04em; margin-right: 1px; }
+#expRow .expBox { flex: 1; height: 9px; border-radius: 3px; background: rgba(0,0,0,0.55); border: 1px solid rgba(232,181,74,0.55); overflow: hidden; }
+#expRow .expBox i { display: block; height: 100%; width: 0; background: linear-gradient(180deg, #ffe9a0, #e8b54a 55%, #b07a1c); transition: width .35s; }
+#expRow .expBox.full { border-color: #ffe08a; box-shadow: 0 0 5px rgba(255,214,90,0.75); }
+#expRow #exptext { font-size: 10px; font-weight: 800; color: #ffe9a0; min-width: 36px; text-align: right; text-shadow: 0 1px 2px #000; }
+#expRow #expRate { font-size: 9px; font-weight: 900; color: #2a1a00; background: linear-gradient(180deg, #ffe14a, #e0a01c); border-radius: 4px; padding: 1px 4px; box-shadow: 0 0 6px rgba(255,210,60,.8); animation: gmGlow 1.8s ease-in-out infinite; }

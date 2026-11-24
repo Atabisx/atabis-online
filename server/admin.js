@@ -34,7 +34,7 @@ function routes(app, world) {
     const cls = (await db.query('SELECT class, count(*)::int AS n FROM characters GROUP BY class ORDER BY n DESC')).rows;
     const top = (await db.query('SELECT name, class, level FROM characters ORDER BY level DESC, exp DESC LIMIT 10')).rows;
     return { accounts: acc.n, characters: ch.n, topLevel: ch.top, totalYang: ch.yang, activeToday: today.n, newAccounts: newAcc.n, classes: cls, top,
-      online: A.online(), events: A.events(), eventTypes: A.eventTypes() };
+      online: A.online(), events: A.events(), eventTypes: A.eventTypes(), expRate: A.expRate() };
   }));
 
   app.get('/api/admin/players', ...guard, act(async (b, req) => {
@@ -61,6 +61,7 @@ function routes(app, world) {
   app.post('/api/admin/teleport', ...guard, act((b) => A.teleport(String(b.name || ''), Number(b.map))));
   app.post('/api/admin/kick', ...guard, act((b) => A.kick(String(b.name || ''))));
   app.post('/api/admin/announce', ...guard, act((b) => A.announce(b.text)));
+  app.post('/api/admin/exprate', ...guard, act((b) => A.setExpRate(b.mul, b.minutes)));
   app.post('/api/admin/event', ...guard, act((b) => A.event(String(b.type || ''), b.minutes, !!b.stop)));
   app.post('/api/admin/worldboss', ...guard, act((b) => A.worldBoss(b.action)));
 }

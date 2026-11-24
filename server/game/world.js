@@ -292,7 +292,23 @@ function createWorld(io) {
 
   // ---------- tecrübe, hasar, iyileşme ----------
   // tecrübe çarpanı: lonca seviyesi, etkinlikler, krallık savaşı ödülü
-  function expMul(p) { return 1 + guilds.expBonus(p) / 100 + (W.expBonus ? W.expBonus(p) : 0); }
+  // yönetim panelinden açılan tecrübe oranı (x1..x20); süreli ya da süresiz, sunucu yeniden başlasa da kalır
+  const expRate = { mul: 1, until: 0 };
+  const rateNow = () => (expRate.mul > 1 && (!expRate.until || expRate.until > Date.now()) ? expRate.mul : 1);
+  const rateInfo = () => ({ mul: rateNow(), until: rateNow() > 1 ? expRate.until : 0 });
+  db.query("SELECT value FROM settings WHERE key = 'exp_rate'").then((r) => {
+    if (r.rows[0]) Object.assign(expRate, r.rows[0].value);
+    if (rateNow() > 1) io.emit('expRate', rateInfo());
+  }).catch((e) => console.warn('Tecrübe oranı okunamadı:', e.message));
+  setInterval(() => {
+    // süresi dolan oran: herkese duyur, ekrandaki rozet kalksın
+    if (expRate.mul > 1 && expRate.until && expRate.until <= Date.now()) {
+      expRate.mul = 1; expRate.until = 0;
+      db.query("INSERT INTO settings (key, value) VALUES ('exp_rate', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [JSON.stringify(expRate)]).catch(() => {});
+      io.emit('expRate', rateInfo()); io.emit('announce', 'Tecrübe oranı normale döndü.');
+    }
+  }, 5000);
+  function expMul(p) { return (1 + guilds.expBonus(p) / 100 + (W.expBonus ? W.expBonus(p) : 0)) * rateNow(); }
   function expRaw(p, amount, kill, fromMob = true) {
     if (kill) p.kills++;
     if (fromMob) { amount = Math.round(amount * expMul(p)); guilds.addExp(p, amount); }
@@ -579,7 +595,10 @@ function createWorld(io) {
     players[socket.id] = p;
     levelRewards(p);
 
-    const startPos = prev ? [prev.x, prev.z] : (row.pos_x != null ? [row.pos_x, row.pos_z] : null);
+    let startPos = prev ? [prev.x, prev.z] : (row.pos_x != null ? [row.pos_x, row.pos_z] : null);
+    // modelli köyde (surlu şehir) kayıtlı yer bir binanın içine düşebilir: girişte doğuş noktası kullanılır
+    const zd = zones[p.mapId] && zones[p.mapId].def;
+    if (!prev && zd && zd.village && zd.model) startPos = null;
     socket.emit('welcome', { gm: !!p.gm,
       id: socket.id, cls: p.class, name: p.name, empire: p.empire || 0,
       stats: { level: p.level, exp: p.exp, need: R.expForLevel(p.level) },
@@ -599,6 +618,7 @@ function createWorld(io) {
     market.onConnect(p, socket);
     dungeons.onConnect(p, socket);
     events.onConnect(p, socket);
+    if (rateNow() > 1) socket.emit('expRate', rateInfo());
     ranking.onConnect(p, socket);
 
     socket.on('move', (m) => {
@@ -1330,6 +1350,18 @@ function createWorld(io) {
       if (!EVENT_TYPES[type]) throw new Error('Etkinlik türleri: ' + Object.keys(EVENT_TYPES).join(', '));
       if (stop) { events.stop(type); return `${EVENT_TYPES[type].name} bitirildi.`; }
       events.start(type, Number(minutes) || 0); return `${EVENT_TYPES[type].name} başlatıldı.`;
+    },
+    expRate: () => rateInfo(),
+    async setExpRate(mul, minutes) {
+      mul = Math.round(Number(mul) * 10) / 10;
+      if (!(mul >= 1 && mul <= 20)) throw new Error('Oran 1 ile 20 arasında olmalı.');
+      minutes = Math.max(0, Math.min(43200, Number(minutes) || 0));
+      expRate.mul = mul; expRate.until = mul > 1 && minutes ? Date.now() + minutes * 60e3 : 0;
+      await db.query("INSERT INTO settings (key, value) VALUES ('exp_rate', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [JSON.stringify(expRate)]);
+      io.emit('expRate', rateInfo());
+      if (mul > 1) io.emit('announce', `✨ Tecrübe oranı x${mul}${minutes ? ` (${minutes >= 60 ? Math.round(minutes / 60 * 10) / 10 + ' saat' : minutes + ' dakika'})` : ''}! Canavarlardan ${mul} kat tecrübe kazanılır.`);
+      else io.emit('announce', 'Tecrübe oranı normale döndü.');
+      return mul > 1 ? `Tecrübe oranı x${mul}${minutes ? `, ${minutes} dakika` : ', süresiz'}.` : 'Tecrübe oranı x1 (normal).';
     },
     eventTypes: () => Object.fromEntries(Object.entries(EVENT_TYPES).map(([k, t]) => [k, { name: t.name, icon: t.icon, min: t.min, desc: t.desc }])),
     events: () => events.list(),

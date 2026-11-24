@@ -1477,6 +1477,7 @@ function itemIcon(key, def, size = 26, slot) {
   return iconSvg(def, size, slot);
 }
 icons.onIconsReady(() => {
+  if (inv && inv.inventory && !mountBtn.querySelector('img')) updateToolButtons();
   if (invEl.classList.contains('open')) renderInv();
   if (document.getElementById('shop').classList.contains('open')) renderShop();
 });
@@ -2015,6 +2016,11 @@ function setFishState(st) {
 }
 function updateToolButtons() {
   mountBtn.style.display = inv.inventory.some((i) => i.key === 'at_muhru' || i.key === 'savas_muhru') ? 'flex' : 'none';
+  // düğmede bineğin kendi 3D simgesi (at ya da savaş kaplanı)
+  const mk = inv.inventory.some((i) => i.key === 'savas_muhru') ? 'savas_muhru' : 'at_muhru';
+  if (mountBtn.style.display !== 'none' && (mountBtn.dataset.k !== mk || !mountBtn.querySelector('img'))) {
+    mountBtn.dataset.k = mk; mountBtn.innerHTML = itemIcon(mk, ITEMS[mk], 34);
+  }
   mountBtn.classList.toggle('on', !!inv.mounted);
   fishBtn.style.display = currentMap && currentMap.fishing && inv.inventory.some((i) => i.key === 'olta') ? 'block' : 'none';
   // köydeyken pazar tezgâhı düğmesi; at düğmesi görünüyorsa onun yanına kayar
@@ -2600,6 +2606,14 @@ export function startGame(sock, opts = {}) {
     const me = players[myId]; if (me) { me.dead = false; me.group.position.set(x, 0, z); fx.levelUp && fx.hitSpark(me.group.position, true, 'mob'); }
   });
   socket.on('playerRevive', ({ id }) => { const p = players[id]; if (p) p.dead = false; });
+  // yönetimin açtığı tecrübe oranı: EXP kutularının yanında rozet
+  socket.on('expRate', ({ mul, until }) => {
+    let b = document.getElementById('expRate');
+    if (!b) { b = document.createElement('span'); b.id = 'expRate'; document.getElementById('expRow').appendChild(b); }
+    b.textContent = mul > 1 ? 'x' + mul : '';
+    b.style.display = mul > 1 ? '' : 'none';
+    b.title = mul > 1 ? `Tecrübe x${mul}` + (until ? ' · ' + new Date(until).toLocaleTimeString('tr-TR', { timeStyle: 'short' }) + "'e kadar" : '') : '';
+  });
   socket.on('disconnect', (reason) => { if (reason !== 'io client disconnect') log('<b>Sistem:</b> Sunucu bağlantısı koptu, yeniden bağlanılıyor…'); });
   socket.on('connect', () => { if (myId) location.reload(); });
   socket.on('kicked', (msg) => { alertBox(msg); });
@@ -2608,7 +2622,15 @@ export function startGame(sock, opts = {}) {
 function setStats(level, exp, need) {
   myLevel = level;
   document.getElementById('lv').textContent = level;
-  document.getElementById('expbar').style.width = Math.min(100, 100 * exp / need) + '%';
+  // Metin2 gibi 4 kutu: her kutu seviyenin %25'i; dolan kutu parlar
+  const k = need > 0 ? Math.max(0, Math.min(1, exp / need)) : 0;
+  document.querySelectorAll('#expRow .expBox').forEach((b, i) => {
+    const f = Math.max(0, Math.min(1, k * 4 - i));
+    b.firstChild.style.width = (f * 100).toFixed(1) + '%';
+    b.classList.toggle('full', f >= 1);
+  });
+  document.getElementById('exptext').textContent = (k * 100).toFixed(k < 0.1 ? 2 : 1) + '%';
+  document.getElementById('expRow').title = `Tecrübe: ${Math.floor(exp).toLocaleString('tr-TR')} / ${Math.floor(need).toLocaleString('tr-TR')}`;
 }
 
 // ---------- çarpışma ----------

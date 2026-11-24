@@ -4,7 +4,17 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 7.6 (bu sürüm): boss düzeni, boss saldırı efektleri, GM rozeti, hasar sayacı
+### Aşama 7.7 (bu sürüm): Pagoda köyü, EXP kutuları, EXP oranı
+
+- **Atabis Köyü artık Ay Işığı Pagoda Şehri** (kullanıcının modeli): surlarla çevrili şehir, ortada balıklı havuz, kuzeyde büyük pagoda. Doğuş noktası, bütün dükkâncılar, bayrak ve pano havuzun çevresindeki avlularda; havuza ve binalara girilmez. Şehrin kapısı doğuda (yol üstü; köprüye ve Kızılçam Ormanı'na çıkar). Köy hayvanları yine köprünün ötesinde.
+  - Hazırlık: `tools/takiglb.py` (yeni: `--emissive` fener ışıkları, `--cut` kapı açmak için kule kesme), `tools/mapglb.py` (yeni: `--water` havuzu engel yapar, `--skirtcap` surlu şehirde eteği alçak tutar).
+  - Köyde girişte herkes doğuş noktasında başlar (eski kayıtlı yer bir binanın içine düşebilir).
+- **EXP Metin2 gibi 4 kutu:** her kutu seviyenin %25'i, dolunca parlar; yanında yüzde yazar (üstüne basılı tutunca tecrübe sayısı).
+- **Yönetim paneline EXP oranı:** Duyuru, EXP ve Etkinlik sekmesinde x1, x1.5, x2, x3, x5, x10 düğmeleri ya da elle oran (1-20) ve süre (dakika; 0 = süresiz). Oyunculara duyurulur, EXP kutularının yanında "x3" rozeti çıkar; sunucu yeniden başlasa da kalır (`settings` tablosu).
+- **Ekrandaki at düğmesi** artık bineğin 3D simgesi (at ya da savaş kaplanı).
+- **Yeni karaktere para verilmez:** ilk günlük giriş ödülü yalnız eşya (yang yok).
+
+### Aşama 7.6: boss düzeni, boss saldırı efektleri, GM rozeti, hasar sayacı
 
 - **Her haritada tek tür boss** (2 tane, köyde 3): hepsi kullanıcının getirdiği modellerle, seviyeleri biraz düşürüldü.
   - Köydeki hayvan boss'ları (Dev Tavuk, Dev Horoz, Domuz Reisi, Deli Boğa, Kuduz Köpek) kaldırıldı; köprünün ötesinde artık Sv. 8 **Kaplan Adam** var.

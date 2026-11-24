@@ -112,7 +112,7 @@ function renderWbHud() {
 export function refreshWb() { renderWb(); renderWbHud(); }
 function showWbReward(r) {
   $('rewardTitle').textContent = r.killed ? 'KADİM LAV EJDERİ YENİLDİ!' : 'EJDER KAÇTI';
-  $('rewardItems').innerHTML = `<div class="rwi"><b>${r.yang.toLocaleString('tr-TR')}</b><small>Yang</small></div>` +
+  $('rewardItems').innerHTML = (r.yang ? `<div class="rwi"><b>${r.yang.toLocaleString('tr-TR')}</b><small>Yang</small></div>` : '') +
     (r.exp ? `<div class="rwi"><b>${r.exp.toLocaleString('tr-TR')}</b><small>Tecrübe</small></div>` : '') +
     (r.ep ? `<div class="rwi"><b>💎 ${r.ep}</b><small>Ejder Parası</small></div>` : '') +
     r.items.map(([k, n]) => { const d = C.ITEMS[k]; return `<div class="rwi">${C.itemIcon(k, d, 30)}<small>${C.esc(d ? d.name : k)}${n > 1 ? ' x' + n : ''}</small></div>`; }).join('');
@@ -405,7 +405,7 @@ function renderDaily() {
 }
 function showLoginReward(r) {
   $('rewardTitle').textContent = `${r.day}. GÜN GİRİŞ ÖDÜLÜ`;
-  $('rewardItems').innerHTML = `<div class="rwi"><b>${r.yang.toLocaleString('tr-TR')}</b><small>Yang</small></div>` +
+  $('rewardItems').innerHTML = (r.yang ? `<div class="rwi"><b>${r.yang.toLocaleString('tr-TR')}</b><small>Yang</small></div>` : '') +
     r.items.map((it) => { const d = C.ITEMS[it.key]; return `<div class="rwi">${C.itemIcon(it.key, d, 30)}<small>${C.esc(d ? d.name : it.key)}${it.n > 1 ? ' x' + it.n : ''}</small></div>`; }).join('');
   $('rewardSub').textContent = r.streak >= 7 ? `${r.streak} gündür aralıksız geliyorsun!` : `Her gün gir, 7. gün büyük ödül seni bekliyor (seri: ${r.streak}).`;
   $('rewardwin').classList.add('open');

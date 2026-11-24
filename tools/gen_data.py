@@ -462,6 +462,20 @@ def build(items):
         if m.get('village'):
             entry['river'] = VILLAGE_RIVER
             entry['villageR'] = VILLAGE_RADIUS
+            # köy: kullanıcının getirdiği Ay Işığı Pagoda Şehri (surlu şehir, ortada havuz; doğu kapısı yol üstünde)
+            # hazırlık: tools/takiglb.py --cell 0.006 --tex 2048 --emissive 1 ve
+            #           --cut=0.69,1.0,-0.366,0.2,-0.095,0.1 (doğu kulesi kaldırıldı: şehrin kapısı) ve
+            #           tools/mapglb.py --scale 60 --water 20,155,165,85 --skirt 10 --skirtcap 1.2 --ramp=30,0.6,79,0.6,6
+            entry['theme'] = 'pagoda'
+            entry['model'] = {'file': 'pagoda_koy', 'scale': 60, 'x': 25, 'z': 25}
+            entry['spawn'] = [44.5, 56.8]
+            # dükkâncılar havuzun çevresindeki açık avlularda (engelsiz yerler ızgaradan seçildi)
+            entry['npcs'] = {'teleport': [29.0, 57.5], 'market': [13.7, 56.4], 'weapons': [4.3, 44.3], 'armor': [6.0, 30.0],
+                             'blacksmith': [11.2, 19.7], 'stable': [53.0, 30.0], 'cosmetic': [52.8, 16.3]}
+            entry['flag'] = [51.9, 43.3]
+            # köy hayvanları köprünün doğu yakasında
+            entry['spawnBox'] = [110, -40, 165, 90]
+            entry['villageR'] = 82          # surların köşeleri de köy sayılır (taş, yaratık doğmaz)
         if i == 1:
             # Kızılçam Ormanı: ortasında kullanıcının getirdiği Uyanış Adası modeli (tools/takiglb.py + tools/mapglb.py)
             entry['model'] = {'file': 'ada_koy', 'scale': 70, 'x': 25, 'z': 25}

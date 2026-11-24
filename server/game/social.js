@@ -135,6 +135,8 @@ function createSocial(W) {
     if (lr.last === today()) return;
     const day = lr.last === yesterday() ? lr.streak + 1 : 1;
     const rw = loginReward(day, p.level);
+    // yeni başlayan karaktere para verilmez (ilk giriş ödülü yalnız eşya)
+    if (lr.last === null) rw.yang = 0;
     if (!canFit(p, rw.items)) { notice(p, 'Günlük giriş ödülün var ama çantan dolu. Yer açıp Görevler penceresinden al.'); lr.pending = true; return; }
     lr.last = today(); lr.streak = day; lr.pending = false;
     for (const [k, n] of rw.items) if (R.ITEMS[k]) addItem(p, k, n);

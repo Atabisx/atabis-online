@@ -193,6 +193,12 @@ const PAGES = {
       <div class="card"><h3 style="margin-top:0">Bütün oyunculara duyuru</h3>
         <textarea class="in" id="ann" rows="3" maxlength="200" placeholder="Ör. Bu akşam 21:00'de bakım yapılacak."></textarea>
         <div class="row" style="margin-top:8px"><button class="btn gold" id="annGo">Duyuruyu gönder</button><span class="muted">Ekranın ortasında yazı olarak çıkar.</span></div></div>
+      <div class="card" style="margin-top:10px"><h3 style="margin-top:0">✨ Tecrübe (EXP) oranı</h3>
+        <div style="margin-bottom:8px">Şu an: ${s.expRate && s.expRate.mul > 1 ? `<span class="pill r2">x${s.expRate.mul}${s.expRate.until ? ` · ${new Date(s.expRate.until).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}'e kadar` : ' · süresiz'}</span>` : '<span class="pill">x1 (normal)</span>'}</div>
+        <div class="row" style="flex-wrap:wrap;gap:6px">${[1, 1.5, 2, 3, 5, 10].map((m) => `<button class="btn sm ${m === 1 ? '' : 'gold'}" data-rate="${m}">x${m}</button>`).join('')}</div>
+        <div class="row" style="margin-top:8px;gap:6px;align-items:center">Oran <input class="in" id="rateMul" type="number" min="1" max="20" step="0.5" value="${s.expRate && s.expRate.mul > 1 ? s.expRate.mul : 2}" style="width:70px;padding:6px">
+          Süre <input class="in" id="rateMin" type="number" min="0" max="43200" value="60" style="width:80px;padding:6px"> dk <button class="btn sm gold" id="rateGo">Uygula</button></div>
+        <div class="muted" style="font-size:12px;margin-top:6px">Süre 0 ise oran sen kapatana kadar sürer. Canavar tecrübesine uygulanır; lonca, krallık ve Tecrübe Şöleni bonuslarıyla çarpılır. Oyunculara duyurulur, ekranda rozet çıkar.</div></div>
       <div class="card" style="margin-top:10px"><h3 style="margin-top:0">Etkinlikler</h3>
         <table>${s.events.map((e) => `<tr><td>${e.icon || ''} <b>${esc(e.name)}</b><div class="muted" style="font-size:12px">${esc(e.desc || '')}</div></td>
           <td>${e.active ? `<span class="pill r2">Sürüyor · ${new Date(e.ends).toLocaleTimeString('tr-TR', { timeStyle: 'short' })}'e kadar</span>` : '<span class="pill">kapalı</span>'}</td>
@@ -204,6 +210,9 @@ const PAGES = {
       const k = b.dataset.ev;
       run('/api/admin/event', { type: k, stop: !!b.dataset.stop, minutes: Number(($('evm_' + k) || {}).value) || 0 }, () => setTimeout(() => show('duyuru'), 300));
     }));
+    const setRate = (mul, minutes) => run('/api/admin/exprate', { mul, minutes }, () => setTimeout(() => show('duyuru'), 300));
+    $('main').querySelectorAll('[data-rate]').forEach((b) => (b.onclick = () => setRate(Number(b.dataset.rate), Number($('rateMin').value) || 0)));
+    $('rateGo').onclick = () => setRate(Number($('rateMul').value), Number($('rateMin').value) || 0);
     $('wbGo').onclick = () => run('/api/admin/worldboss', { action: 'baslat' });
     $('wbEnd').onclick = () => run('/api/admin/worldboss', { action: 'bitir' });
   },

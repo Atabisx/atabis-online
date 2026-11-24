@@ -23,6 +23,7 @@ const THEMES = {
   desert_canyon: { ground: '#b5562f', ground2: '#ae512c', path: '#8f4426', sky: '#e8a070', fog: [35, 100], props: { mesa: 20, canyonrock: 32, deadbush: 22, bones: 8, m_tezgah: 4, m_totem: 4, m_pano: 3, m_boynuz: 5, m_s_isik: 3, m_c_catlak: 3, m_c_kor: 2 } },
   castle: { ground: '#5a6a48', ground2: '#566645', path: '#8a877e', sky: '#9aa8b8', fog: [35, 100], props: { wallseg: 16, tower: 9, banner: 14, pine: 14, rock: 10, m_pano: 5, m_ejder_heykeli: 3, m_s_isik: 3, m_s_nobetci: 3, m_c_kizil: 2 } },
   ada: { ground: '#6f9a4c', ground2: '#678f46', path: '#b8996a', sky: '#a9cfe8', fog: [70, 170], props: { tree: 26, pine: 18, rock: 8 } },
+  pagoda: { ground: '#5d7d4e', ground2: '#587849', path: '#a39a86', sky: '#8eaed6', fog: [80, 190], props: { tree: 18, pine: 16, rock: 6 } },
   arena: { ground: '#5f7a48', ground2: '#5a7444', path: '#9a978e', sky: '#9fb4c8', fog: [60, 140], props: {} },
   village_green: { ground: '#6c9b4b', ground2: '#689748', path: '#b8996a', sky: '#9cc6e4', fog: [45, 95], village: { wall: '#e6d7b6', roofs: ['#3d5a80', '#a8452f'] }, props: { tree: 14, pine: 10, rock: 6 } },
   village_pine: { ground: '#5e8a45', ground2: '#5a8642', path: '#a8895a', sky: '#a8c8dc', fog: [40, 90], village: { wall: '#d9c39a', roofs: ['#7d2f20', '#5a3d24'] }, props: { pine: 30, tree: 6, rock: 8 } },

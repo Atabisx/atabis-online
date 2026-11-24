@@ -18,6 +18,8 @@ ap.add_argument('--rx', type=float, default=0); ap.add_argument('--ry', type=flo
 ap.add_argument('--part', default=''); ap.add_argument('--bend', action='store_true'); ap.add_argument('--list', action='store_true')
 ap.add_argument('--bright', type=float, default=1.0); ap.add_argument('--color', default='')
 ap.add_argument('--metal', type=float, default=None); ap.add_argument('--rough', type=float, default=None)
+ap.add_argument('--cut', action='append', default=[], help='x0,x1,y0,y1,z0,z1: bu kutudaki üçgenler silinir (ör. sura kapı açmak)')
+ap.add_argument('--emissive', type=float, default=0, help='modelin ışıma dokusunu bu güçle ekle (fener, pencere ışığı)')
 a = ap.parse_args()
 
 b = open(a.src, 'rb').read(); L = struct.unpack('<I', b[12:16])[0]; j = json.loads(b[20:20 + L]); BIN = b[20 + L + 8:]
@@ -114,6 +116,12 @@ if a.list or a.part:
             else: keep.append(order[int(spec)])
         T = T[np.isin(comp, keep)]
 
+for spec in a.cut:
+    x0, x1, y0, y1, z0, z1 = map(float, spec.split(','))
+    c = P[T].mean(1)
+    inside = (c[:, 0] > x0) & (c[:, 0] < x1) & (c[:, 1] > y0) & (c[:, 1] < y1) & (c[:, 2] > z0) & (c[:, 2] < z1)
+    print('kesilen üçgen', int(inside.sum()))
+    T = T[~inside]
 used = np.unique(T); remap = np.full(len(P), -1); remap[used] = np.arange(len(used))
 P, U, T = P[used], U[used], remap[T]
 
@@ -159,6 +167,17 @@ if tex:
     if a.bright != 1.0: img = Image.fromarray(np.clip(np.asarray(img, np.float32) * a.bright, 0, 255).astype(np.uint8))
     out = io.BytesIO(); img.save(out, 'JPEG', quality=86); img_bytes = out.getvalue()
 
+# ışıma dokusu (gece şehri: fenerler, pencereler)
+emi_bytes = None
+etex = mat.get('emissiveTexture')
+if a.emissive and etex:
+    t = j['textures'][etex['index']]
+    src = t.get('source', t.get('extensions', {}).get('EXT_texture_webp', {}).get('source'))
+    raw, _ = view_bytes(j['images'][src]['bufferView'])
+    eimg = Image.open(io.BytesIO(raw)).convert('RGB')
+    if a.tex and max(eimg.size) > a.tex: eimg.thumbnail((a.tex, a.tex), Image.LANCZOS)
+    out = io.BytesIO(); eimg.save(out, 'JPEG', quality=86); emi_bytes = out.getvalue()
+
 # GLB yaz
 blobs, views, accs = [], [], []
 def add(arr, target=None, comp=5126, typ='VEC3', minmax=False):
@@ -187,6 +206,10 @@ if img_bytes:
     g['images'] = [{'bufferView': iv, 'mimeType': 'image/jpeg'}]; g['textures'] = [{'source': 0, 'sampler': 0}]
     g['samplers'] = [{'magFilter': 9729, 'minFilter': 9987, 'wrapS': 10497, 'wrapT': 10497}]
     m['pbrMetallicRoughness']['baseColorTexture'] = {'index': 0}
+if img_bytes and emi_bytes:
+    ev = add(np.frombuffer(emi_bytes, np.uint8), comp=None)
+    g['images'].append({'bufferView': ev, 'mimeType': 'image/jpeg'}); g['textures'].append({'source': 1, 'sampler': 0})
+    m['emissiveTexture'] = {'index': 1}; m['emissiveFactor'] = [a.emissive] * 3
 g['accessors'] = accs; g['bufferViews'] = views
 binb = b''.join(blobs); g['buffers'] = [{'byteLength': len(binb)}]
 js = json.dumps(g, separators=(',', ':')).encode(); js += b' ' * (-len(js) % 4)

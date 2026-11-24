@@ -89,3 +89,9 @@ CREATE TABLE IF NOT EXISTS depots (
 );
 -- Ejder Parası (EP): Nesne Market'in parası, hesabın bütün karakterleri ortak kullanır
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS ep INTEGER NOT NULL DEFAULT 0;
+
+-- sunucu ayarları (ör. yönetim panelinden açılan tecrübe oranı)
+CREATE TABLE IF NOT EXISTS settings (
+  key   TEXT PRIMARY KEY,
+  value JSONB NOT NULL
+);
