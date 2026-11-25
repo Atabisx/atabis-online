@@ -10,7 +10,14 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 2. 5-30 dakika bekle, sonra sunucuda proje klasöründe: `sudo bash scripts/domain.sh alanadi.com`
 3. Betik nginx'i kurar, oyunu (3100) alan adına bağlar, ücretsiz HTTPS sertifikası alır. Oyun: `https://alanadi.com`
 
-### Aşama 8.8 (bu sürüm): telefonda da ayrıntılı karakterler, sıkıştırılmış dosyalar
+### Aşama 8.9 (bu sürüm): karakterler orijinal dokularıyla
+
+- `tools/charsimp.py`: orijinal modelin UV adalarını (doku parçalarını) koruyarak sadeleştirir; konumlar adalar arasında ortak olduğu için çatlak yok, her üçgen kendi doku parçasında kaldığı için orijinal doku, normal, metal/pürüz ve ışıma haritaları birebir kullanılır (pişirme yok, çizgi/kumlanma yok).
+- İskelet ağırlıkları eski iskeletli sürümden aktarılır; `_LQTRI` ile giyilen zırhlar doğru gövde parçalarını gizler.
+- Boyutlar: bilgisayar ~250 bin üçgen 6,6-9,7 MB, telefon ~135 bin üçgen 4,5-6,2 MB, Düşük ~58 bin üçgen ve 1024 doku 2-2,5 MB (sıkıştırmadan önce).
+- Kullanım: `python3 tools/charsimp.py iskeletli_eski.glb orijinal.glb cikti.glb --tris 140000 [--tex 1024]`. İskeletli eski sürümler git geçmişinde (9fd406e).
+
+### Aşama 8.8: telefonda da ayrıntılı karakterler, sıkıştırılmış dosyalar
 
 - Üç kalite: bilgisayar `models/chars_hq` (4096 doku), telefon `models/chars` (aynı ayrıntılı model, 2048 doku), Grafik: Düşük `models/chars_lq` (hafif).
 - `tools/charpack.py`: dokuyu küçültür, sıralı indeksi atar (oyun yüklerken kurar).
