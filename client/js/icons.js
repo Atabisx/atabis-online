@@ -194,15 +194,78 @@ export function crystalMesh(color, big = false) {
   g.add(base);
   return g;
 }
-export function fishMesh(color) {
+// balıklar: her türün kendi biçimi ve deseni (Metin2 gibi tanınır)
+const FISH_LOOK = {
+  hamsi: { L: 0.5, H: 0.14, W: 0.09, back: '#2f6f9a', belly: '#e8f0f4', fin: '#7fa8c0', fork: 0.9 },
+  sazan: { L: 0.5, H: 0.25, W: 0.15, back: '#7a5a1e', belly: '#f0d27a', fin: '#b0602a', scales: '#5a3e10', barbel: true },
+  alabalik: { L: 0.52, H: 0.2, W: 0.12, back: '#4a5e3a', belly: '#f4ece0', fin: '#9a8a6a', stripe: '#e8708a', spots: '#1a1a14' },
+  levrek: { L: 0.55, H: 0.22, W: 0.12, back: '#3c4a56', belly: '#e4e8ea', fin: '#6a7884', bars: '#26303a', spiny: true },
+  yayin: { L: 0.62, H: 0.17, W: 0.17, back: '#2e3228', belly: '#a8a490', fin: '#3a3e34', whiskers: true, flatHead: true },
+};
+const FISH_BY_KEY = { b_hamsi: 'hamsi', b_sazan: 'sazan', b_alabalik: 'alabalik', b_levrek: 'levrek', b_yayin: 'yayin' };
+export function fishMesh(def) {
+  const color = typeof def === 'string' ? def : def && def.color;
+  const kind = (def && typeof def === 'object' && (def.fish || FISH_BY_KEY[def.key])) || 'hamsi';
+  const F = FISH_LOOK[kind] || { ...FISH_LOOK.hamsi, back: color || '#5a7a8a' };
   const g = new THREE.Group();
-  const m = std(color || '#9fb3c8', 0.55, 0.3);
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.2, 18, 12), m); body.scale.set(2.2, 1, 0.55);
-  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.25, 4), m); tail.rotation.z = Math.PI / 2; tail.position.x = -0.5; tail.scale.z = 0.3;
-  const fin = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.18, 4), m); fin.position.set(0.05, 0.22, 0); fin.scale.z = 0.3;
-  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshBasicMaterial({ color: '#111' })); eye.position.set(0.32, 0.05, 0.1);
-  g.add(body, tail, fin, eye);
-  g.rotation.z = 0.25;
+  // gövde: uzatılmış küre, kuyruğa doğru incelir; renkler köşe başına (sırt koyu, karın açık, desenler)
+  const geo = new THREE.SphereGeometry(1, 32, 18);
+  const pos = geo.attributes.position, cols = [];
+  const cB = new THREE.Color(F.back), cY = new THREE.Color(F.belly), tmp = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    let x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    const t = (x + 1) / 2;                                    // 0 kuyruk, 1 baş
+    const taper = Math.pow(Math.sin(Math.PI * Math.min(1, 0.12 + t * 0.95)), 0.75);
+    let yy = y * F.H * taper, zz = z * F.W * taper;
+    if (F.flatHead && t > 0.7) { yy *= 1 - (t - 0.7) * 0.9; zz *= 1 + (t - 0.7) * 0.6; }
+    pos.setXYZ(i, x * F.L, yy + (kind === 'sazan' ? Math.max(0, y) * 0.06 * taper : 0), zz);
+    const k = THREE.MathUtils.smoothstep(y, -0.35, 0.45);
+    tmp.copy(cY).lerp(cB, k);
+    if (F.stripe && Math.abs(y + 0.02) < 0.16 && t > 0.15 && t < 0.85) tmp.lerp(new THREE.Color(F.stripe), 0.75);
+    if (F.spots && y > -0.1 && Math.sin(x * 37) * Math.sin(y * 29 + z * 11) > 0.72) tmp.set(F.spots);
+    if (F.bars && y > -0.15 && t > 0.2 && t < 0.8 && Math.sin(t * 40) > 0.55) tmp.lerp(new THREE.Color(F.bars), 0.7);
+    if (F.scales && (Math.sin(x * 46 + y * 18) * Math.sin(z * 30 + y * 26) > 0.6)) tmp.lerp(new THREE.Color(F.scales), 0.35);
+    if (t > 0.86 && y > -0.2) tmp.multiplyScalar(0.85);    // kafa biraz koyu
+    cols.push(tmp.r, tmp.g, tmp.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+  geo.computeVertexNormals();
+  const body = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.45, roughness: 0.32 }));
+  body.castShadow = true; g.add(body);
+  const finMat = new THREE.MeshStandardMaterial({ color: F.fin, metalness: 0.2, roughness: 0.5, side: THREE.DoubleSide, transparent: true, opacity: 0.92 });
+  // kuyruk: çatal
+  const tail = new THREE.Shape(); const fk = F.fork || 0.5;
+  tail.moveTo(0, 0); tail.lineTo(-F.L * 0.42, F.H * 1.25); tail.lineTo(-F.L * (0.42 - fk * 0.22), 0); tail.lineTo(-F.L * 0.42, -F.H * 1.25); tail.lineTo(0, 0);
+  const tm = new THREE.Mesh(new THREE.ShapeGeometry(tail), finMat); tm.position.x = -F.L * 0.86; g.add(tm);
+  // sırt yüzgeci (levrekte dikenli)
+  const dor = new THREE.Shape(); dor.moveTo(-F.L * 0.35, 0);
+  if (F.spiny) { for (let i = 0; i <= 6; i++) dor.lineTo(-F.L * 0.35 + i * F.L * 0.09, (i % 2 ? 0.45 : 1) * F.H * 0.9); dor.lineTo(F.L * 0.25, 0); }
+  else { dor.quadraticCurveTo(-F.L * 0.1, F.H * 1.1, F.L * 0.2, 0); }
+  const dm = new THREE.Mesh(new THREE.ShapeGeometry(dor), finMat); dm.position.y = F.H * 0.85; g.add(dm);
+  // göğüs ve karın yüzgeçleri
+  for (const sz of [-1, 1]) {
+    const pf = new THREE.Mesh(new THREE.ConeGeometry(F.H * 0.35, F.L * 0.3, 3), finMat);
+    pf.rotation.set(sz * 0.5, 0, 2.3); pf.scale.z = 0.25; pf.position.set(F.L * 0.42, -F.H * 0.35, sz * F.W * 0.8); g.add(pf);
+  }
+  // göz
+  for (const sz of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(F.H * 0.12, 10, 8), new THREE.MeshStandardMaterial({ color: '#e8d890', metalness: 0.3, roughness: 0.2 }));
+    eye.position.set(F.L * 0.74, F.H * 0.25, sz * F.W * 0.62);
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(F.H * 0.09, 8, 6), new THREE.MeshBasicMaterial({ color: '#0a0a0a' }));
+    pupil.position.set(F.H * 0.04, 0, sz * F.H * 0.08); eye.add(pupil); g.add(eye);
+  }
+  // bıyıklar: yayın balığında uzun, sazanda kısa
+  if (F.whiskers || F.barbel) {
+    const wm = new THREE.MeshStandardMaterial({ color: F.fin, roughness: 0.6 });
+    const n = F.whiskers ? 2 : 1, len = F.whiskers ? F.L * 0.55 : F.L * 0.12;
+    for (const sz of [-1, 1]) for (let i = 0; i < n; i++) {
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.012, len, 5), wm);
+      w.geometry.translate(0, -len / 2, 0);
+      w.position.set(F.L * 0.95, -F.H * 0.1 - i * F.H * 0.15, sz * F.W * 0.5);
+      w.rotation.set(sz * (0.5 + i * 0.4), 0, -0.9 - i * 0.3); g.add(w);
+    }
+  }
+  g.rotation.z = 0.2;
   return g;
 }
 export function pearlMesh(color) {

@@ -704,7 +704,8 @@ function applyLook(p, look) {
   p.equipMeshes = [];
   const w = ITEMS[p.look.weapon], a = ITEMS[p.look.armor], h = ITEMS[p.look.helmet];
   let wMesh = null;
-  if (w) { wMesh = weaponMesh(w); attach(p, calib.sword, wMesh); }
+  if (w) { wMesh = weaponMesh(w); attach(p, calib.sword, wMesh); wMesh.visible = !p.rod; }
+  p.wMesh = wMesh;
   const cos = ITEMS[p.look.costume];
   if (p.custom) {
     // giyilebilir kostüm/zırh karakterin üstünde görünür (kostüm zırhı örter); öbür kostümler kıyafeti boyar
@@ -1058,16 +1059,137 @@ function skillPoseUpdate(p, dt) {
   if (mv.t >= s.dur) p.move = null;
 }
 // balık tutarken elde olta
+// ---------- balık tutma (Metin2 gibi): olta elde, misina suya atılır, şamandıra yüzer, balık sudan fırlar ----------
+const rodMats = {};
+const rmat = (c, m = 0.1, r = 0.6) => rodMats[c + m + r] || (rodMats[c + m + r] = new THREE.MeshStandardMaterial({ color: c, metalness: m, roughness: r }));
+function buildRod() {
+  const g = new THREE.Group();
+  const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.032, 0.45, 10), rmat('#a5774a', 0, 0.9)); grip.position.y = 0.05;
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.024, 2.3, 8), rmat('#3a2a1a', 0.2, 0.4)); pole.position.y = 1.4;
+  const reel = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.05, 16), rmat('#c0c4c8', 0.9, 0.25)); reel.rotation.z = Math.PI / 2; reel.position.set(0.06, 0.25, 0);
+  const handle = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.07, 0.015), rmat('#222', 0.5, 0.4)); handle.position.set(0.09, 0.22, 0.04);
+  g.add(grip, pole, reel, handle);
+  for (let i = 0; i < 4; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(0.018 - i * 0.003, 0.004, 5, 10), rmat('#d8c070', 0.9, 0.3)); r.position.set(0.02, 0.6 + i * 0.5, 0); r.rotation.y = Math.PI / 2; g.add(r); }
+  const tip = new THREE.Object3D(); tip.position.y = 2.55; g.add(tip); g.userData.tip = tip;
+  return g;
+}
+function bobberMesh() {
+  const g = new THREE.Group();
+  const top = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#e8352a', emissive: '#5a0a05', roughness: 0.4 }));
+  const bot = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#f4f1e8', roughness: 0.4 }));
+  const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.12, 5), new THREE.MeshStandardMaterial({ color: '#e8352a' })); stick.position.y = 0.1;
+  g.add(top, bot, stick);
+  return g;
+}
+const ripples = [];
+function ripple(x, z, big = false) {
+  const m = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.82, 28), new THREE.MeshBasicMaterial({ color: '#e8f6ff', transparent: true, opacity: 0.7, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.position.set(x, 0.09, z); m.scale.setScalar(big ? 0.3 : 0.15);
+  scene.add(m); ripples.push({ m, t: 0, life: big ? 1.1 : 0.9, grow: big ? 2.6 : 1.4 });
+}
+// şamandıranın düşeceği yer: gölün kıyısından içeriye, karakterin baktığı yöne
+function castTarget(p) {
+  const L = currentMap && currentMap.lake, pos = p.group.position;
+  if (L) {
+    const dx = L.x - pos.x, dz = L.z - pos.z, d = Math.hypot(dx, dz) || 1;
+    const k = Math.min(4.5, Math.max(2.5, d - L.r + 3.5));
+    return new THREE.Vector3(pos.x + dx / d * k, 0.08, pos.z + dz / d * k);
+  }
+  const a = p.group.rotation.y - FACE_OFFSET;
+  return new THREE.Vector3(pos.x + Math.sin(a) * 3.5, 0.08, pos.z + Math.cos(a) * 3.5);
+}
 function setRod(p, on) {
   if (p.rod) { p.rod.parent && p.rod.parent.remove(p.rod); p.rod = null; }
+  if (p.fishing) { p.lastBobber = p.fishing.bobber.position.clone(); scene.remove(p.fishing.bobber, p.fishing.line); p.fishing = null; }
+  if (p.wMesh) p.wMesh.visible = !on;
   const calib = p.calib || calibBase();
   if (!on || !calib || !p.boneMap) return;
   const bone = p.boneMap[calib.sword.bone]; if (!bone) return;
-  const g = new THREE.Group();
-  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.022, 2.4, 5), mat('#8a6440'));
-  pole.position.y = 1.0; g.add(pole);
+  const g = buildRod();
   g.position.copy(calib.sword.p); g.quaternion.copy(calib.sword.q); g.scale.multiply(calib.sword.s);
   bone.add(g); p.rod = g;
+  // misina ve şamandıra
+  const target = castTarget(p);
+  if (p.id === myId) { const pos = p.group.position; p.ry = Math.atan2(target.x - pos.x, target.z - pos.z) + FACE_OFFSET; p.group.rotation.y = p.ry; }
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(Array.from({ length: 16 }, () => new THREE.Vector3())), new THREE.LineBasicMaterial({ color: '#e8e8e0', transparent: true, opacity: 0.75 }));
+  line.frustumCulled = false;
+  const bobber = bobberMesh(); bobber.position.copy(target);
+  scene.add(line, bobber);
+  p.fishing = { line, bobber, target, t: 0, cast: 0.6, bite: false, landed: false };
+  playOnce(p, 'Atk0');       // olta atma savuruşu
+  if (sfx.swing) sfx.swing(p.cls, p.group.position);
+}
+const _tip = new THREE.Vector3(), _bp = new THREE.Vector3();
+function updateFishing(dt, t) {
+  for (const p of Object.values(players)) {
+    const f = p.fishing; if (!f || !p.rod) continue;
+    f.t += dt;
+    p.rod.userData.tip.getWorldPosition(_tip);
+    if (f.t < f.cast) {
+      // atış: şamandıra uçtan suya yay çizerek gider
+      const k = f.t / f.cast;
+      f.bobber.position.lerpVectors(_tip, f.target, k); f.bobber.position.y += Math.sin(k * Math.PI) * 1.6;
+    } else {
+      if (!f.landed) { f.landed = true; ripple(f.target.x, f.target.z, true); }
+      const dip = f.bite ? -0.09 + Math.sin(t * 22) * 0.05 : Math.sin(t * 2.6 + p.group.position.x) * 0.018;
+      f.bobber.position.set(f.target.x + (f.bite ? Math.sin(t * 17) * 0.05 : 0), 0.08 + dip, f.target.z);
+      f.bobber.rotation.z = f.bite ? Math.sin(t * 19) * 0.4 : Math.sin(t * 1.7) * 0.08;
+      f.rip = (f.rip || 0) + dt;
+      if (f.rip > (f.bite ? 0.25 : 1.6)) { f.rip = 0; ripple(f.target.x, f.target.z, f.bite); }
+    }
+    // misina: uçtan şamandıraya hafif sarkan eğri
+    _bp.copy(f.bobber.position); _bp.y += 0.12;
+    const arr = f.line.geometry.attributes.position, sag = f.t < f.cast ? 0.05 : 0.35;
+    for (let i = 0; i < arr.count; i++) {
+      const k = i / (arr.count - 1);
+      arr.setXYZ(i, _tip.x + (_bp.x - _tip.x) * k, _tip.y + (_bp.y - _tip.y) * k - Math.sin(k * Math.PI) * sag, _tip.z + (_bp.z - _tip.z) * k);
+    }
+    arr.needsUpdate = true;
+  }
+  for (let i = ripples.length - 1; i >= 0; i--) {
+    const r = ripples[i]; r.t += dt;
+    const k = r.t / r.life; r.m.scale.setScalar(0.15 + k * r.grow); r.m.material.opacity = 0.7 * (1 - k);
+    if (k >= 1) { scene.remove(r.m); r.m.geometry.dispose(); r.m.material.dispose(); ripples.splice(i, 1); }
+  }
+  updateCatch(dt, t);
+}
+// yakalanan balık sudan fırlar, karakterin başının üstünde çırpınır (Metin2'deki gibi), sonra çantaya girer
+let caught = null;
+function showCatch(key) {
+  const me = players[myId], def = ITEMS[key]; if (!me || !def) return;
+  if (caught) { scene.remove(caught.obj); caught = null; }
+  const obj = new THREE.Group();
+  const inner = def.slot === 'fish' && key !== 'b_cizme' ? icons.fishMesh({ ...def, key }) : iconBuilder(key, def)();
+  inner.scale.setScalar(def.slot === 'fish' && key !== 'b_cizme' ? 1.05 : 0.7);
+  obj.add(inner);
+  const from = (me.lastBobber || castTarget(me)).clone();
+  obj.position.copy(from); scene.add(obj);
+  ripple(from.x, from.z, true); ripple(from.x, from.z, false);
+  for (let i = 0; i < 14; i++) fx.emit(from.x, 0.15, from.z, { vx: (Math.random() - 0.5) * 2.5, vy: 2 + Math.random() * 2.5, vz: (Math.random() - 0.5) * 2.5, color: '#cfefff', size: 0.12, life: 0.7, gravity: 9 });
+  caught = { obj, inner, from, t: 0 };
+  const card = document.getElementById('catchCard');
+  card.innerHTML = `${itemIcon(key, def, 54)}<div><small>${def.slot === 'fish' && key !== 'b_cizme' ? 'Balık tuttun!' : 'Oltana takıldı!'}</small><b style="color:${RARITY[def.rarity] || '#fff'}">${esc(def.name)}</b></div>`;
+  card.classList.remove('show'); void card.offsetWidth; card.classList.add('show');
+}
+function updateCatch(dt, t) {
+  if (!caught) return;
+  const me = players[myId]; if (!me) { scene.remove(caught.obj); caught = null; return; }
+  caught.t += dt;
+  const head = me.group.position.clone(); head.y += 2.7;
+  const c = caught;
+  if (c.t < 0.7) {
+    const k = c.t / 0.7;
+    c.obj.position.lerpVectors(c.from, head, k); c.obj.position.y += Math.sin(k * Math.PI) * 1.8;
+    c.obj.rotation.y += dt * 9;
+  } else if (c.t < 2.6) {
+    c.obj.position.copy(head); c.obj.position.y += Math.sin(t * 3) * 0.05;
+    c.obj.rotation.y += dt * 1.6;
+    c.inner.rotation.z = Math.sin(t * 16) * 0.35 * Math.max(0, 1 - (c.t - 0.7) / 2);   // çırpınma
+  } else {
+    const k = Math.min(1, (c.t - 2.6) / 0.35);
+    c.obj.scale.setScalar(1 - k); c.obj.position.copy(head);
+    if (k >= 1) { scene.remove(c.obj); caught = null; }
+  }
 }
 function removePlayer(id) {
   const p = players[id]; if (!p) return;
@@ -1503,7 +1625,7 @@ function iconBuilder(key, def) {
   if (s === 'necklace') return () => icons.necklaceMesh(def);
   if (s === 'potion') return () => icons.potionMesh(def);
   if (s === 'gem') return () => icons.pearlMesh(def.color);
-  if (s === 'fish') return () => (key === 'b_cizme' ? icons.bootsMesh({ color: '#5a4a3a' }) : icons.fishMesh(def.color));
+  if (s === 'fish') return () => (key === 'b_cizme' ? icons.bootsMesh({ color: '#5a4a3a' }) : icons.fishMesh({ ...def, key }));
   if (s === 'stone') return () => icons.spiritStoneMesh(def.color, def.stone.grade);
   if (s === 'material') return () => icons.leafMesh(def.color);
   if (key === 'kutsama') return () => icons.scrollMesh();
@@ -2551,9 +2673,9 @@ export function startGame(sock, opts = {}) {
   socket.on('stallRemove', ({ id }) => removeStall(id));
   socket.on('fishing', ({ id, on }) => { const p = players[id]; if (p) setRod(p, on); });
   socket.on('fishWait', () => setFishState('wait'));
-  socket.on('fishBite', () => { setFishState('bite'); sfx.fishBite(); if (navigator.vibrate) navigator.vibrate(150); });
+  socket.on('fishBite', () => { setFishState('bite'); const me = players[myId]; if (me && me.fishing) me.fishing.bite = true; sfx.fishBite(); if (navigator.vibrate) navigator.vibrate(150); });
   socket.on('enchanted', () => sfx.enchant());
-  socket.on('fishEnd', ({ ok, msg }) => { setFishState('idle'); toast(msg); });
+  socket.on('fishEnd', ({ ok, msg, key }) => { setFishState('idle'); if (ok && key) showCatch(key); else toast(msg); });
   socket.on('playerHp', ({ id, hp, max }) => { const p = players[id]; if (p && p.label.hp) p.label.hp.style.width = Math.max(0, 100 * hp / max) + '%'; });
   socket.on('skillFx', ({ id, key, targets, x, z, lv }) => {
     const sk = skillDef(key); if (!sk) return;
@@ -3214,6 +3336,7 @@ function loop() {
   updateMobs(dt);
   updateCorpses(dt);
   updateStones(dt, clock.elapsedTime);
+  updateFishing(dt, clock.elapsedTime);
   for (const s of Object.values(stones)) placeLabel(s.label, s.x, 4.6 + s.group.position.y, s.z);
   if (hasGround()) for (const s of Object.values(stallObjs)) s.group.position.y = groundH(s.x, s.z);
   for (const d of Object.values(drops)) {

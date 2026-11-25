@@ -331,7 +331,7 @@ function itemObject(d, key) {
   if (d.slot === 'earring') return { obj: earringMesh(d) };
   if (d.slot === 'necklace') return { obj: necklaceMesh(d) };
   if (d.slot === 'potion') return { obj: potionMesh(d) };
-  if (d.slot === 'fish') return { obj: fishMesh(d.color || '#8ab') };
+  if (d.slot === 'fish') return { obj: fishMesh(d) };
   if (d.slot === 'gem') return { obj: pearlMesh(d.color || '#fff') };
   return { obj: crystalMesh(d.color || '#8a7dff', true) };
 }

@@ -189,10 +189,12 @@ def build_items():
             ('b_yayin', 'Yayın Balığı', 600), ('b_cizme', 'Eski Çizme', 2)]
     for key, name, value in fish:
         items[key] = {'name': name, 'slot': 'fish', 'lv': 1, 'price': value * 4, 'rarity': 1 if value >= 600 else 0,
-                      'color': '#7fb3c4' if key != 'b_cizme' else '#6b4a2e', 'stack': 200}
+                      'color': {'b_hamsi': '#4f8fb8', 'b_sazan': '#c9a24a', 'b_alabalik': '#c98a9a', 'b_levrek': '#8a9aa6',
+                                'b_yayin': '#4a4e44'}.get(key, '#6b4a2e'), 'stack': 200}
         if key != 'b_cizme':
+            items[key]['fish'] = key[2:]       # 3D görünüş türü (her balık farklı)
             items[key]['open'] = {'b_hamsi': 1, 'b_sazan': 2, 'b_alabalik': 3, 'b_levrek': 4, 'b_yayin': 6}[key]
-            items[key]['desc'] = 'Aç: içinden efsun nesneleri, yaprak, iksir, biraz yang ve şanslıysan Pet Sandığı ya da otomatik iksir çıkar. İstersen balıkçıya sat.'
+            items[key]['desc'] = 'Aç: içinden efsun nesneleri, yaprak, iksir, %25 inci, biraz yang ve şanslıysan Pet Sandığı ya da otomatik iksir çıkar. İstersen balıkçıya sat.'
     # süreli eşyalar: kullanınca süre başlar (çevrimdışıyken de işler), üst üste kullanılırsa süre uzar
     for kind, nm, color in [('hp', 'Kırmızı', '#e0453a'), ('mp', 'Mavi', '#3d8fe0')]:
         for suf, label, sec in [('1s', '1 saat', 3600), ('1g', '1 gün', 86400), ('20g', '20 gün', 20 * 86400)]:
@@ -327,6 +329,7 @@ def build_items():
         nxt = base[:len(base) - len(str(t))] + str(t + 1) + ('_L' if k.endswith('_L') else '')
         if nxt in items and items[nxt]['slot'] == v['slot']:
             v['evolve'] = nxt
+            items[nxt]['evolved'] = True     # sadece evrimle elde edilir: boss, metin, canavar, dükkân vermez
 
     # eski sürümden kalan eşyalar (var olan karakterler bozulmasın)
     legacy = json.load(open(os.path.join(ROOT, 'items.json'), encoding='utf8')) if os.path.exists(
@@ -476,7 +479,7 @@ LEVEL_BOSS_RESPAWN = 40  # saniye
 # tek köy var: bütün alışveriş Atabis Köyü'nde (harita sırası -> (iksirler, satılan kademeler))
 SHOPS = {
     # kırmızı ve mavi iksirler satıcıda; yeşil iksir sadece metin taşlarından düşer. Eşyalar 9-10. kademe (gerisi evrimle)
-    0: (['p_hp2', 'p_hp3', 'p_hp4', 'p_mp2', 'p_mp3', 'p_mp4', 'p_speed', 'kutsama', 'isin_yuzugu'], [9, 10]),
+    0: (['p_hp2', 'p_hp3', 'p_hp4', 'p_mp2', 'p_mp3', 'p_mp4', 'p_speed', 'kutsama', 'isin_yuzugu'], [9]),
 }
 
 # harita sınırları: köy haritası orta boy, vahşi haritalar büyük
@@ -506,10 +509,13 @@ def build(items):
             m['mobCount'], m['levelMap'], m['stones'] = 0, True, 0
         tier = m.get('tier', tier_for_map(i))
         spawns, bosses = [], []
-        own = [k for k, v in items.items() if v.get('tier') == tier and not k.endswith('_L')]
-        nxt = [k for k, v in items.items() if v.get('tier') == min(tier + 1, len(TIERS) - 1) and not k.endswith('_L')]
-        leg = [k for k, v in items.items() if v.get('tier') == tier and k.endswith('_L')]
-        low = [k for k, v in items.items() if v.get('tier') == max(0, tier - 1) and not k.endswith('_L')]
+        # evrimle dönüşen eşyalar (10-14. kademe) hiçbir yerden düşmez; onların yerine 9. kademe temel eşyalar düşer
+        ok = lambda v: not v.get('evolved')
+        base_t = tier if any(v.get('tier') == tier and ok(v) for v in items.values()) else EVOLVE_FROM
+        own = [k for k, v in items.items() if v.get('tier') == base_t and ok(v) and not k.endswith('_L')]
+        nxt = [k for k, v in items.items() if v.get('tier') == min(tier + 1, len(TIERS) - 1) and ok(v) and not k.endswith('_L')]
+        leg = [k for k, v in items.items() if v.get('tier') == base_t and ok(v) and k.endswith('_L')]
+        low = [k for k, v in items.items() if v.get('tier') == max(0, tier - 1) and ok(v) and not k.endswith('_L')]
         for t in m['mobs']:
             key, name, lv, shape, color, scale, aggro, speed = t[:8]
             d = mob_stats(lv)

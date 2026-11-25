@@ -4,7 +4,13 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 8.2 (bu sürüm): hızlı gelişim, inci dönüştürme, başlangıç rehberi
+### Aşama 8.3 (bu sürüm): evrim eşyaları düşmez, Metin2 tarzı balık tutma
+
+- **Evrim eşyaları** (10-14. kademe silah, zırh, miğfer, ayakkabı, bilezik, küpe, kalkan, kolye; efsaneviler dahil) hiçbir boss, metin, canavar ya da dükkândan çıkmaz; sadece +9 evrimiyle elde edilir. Boss ve taşlar onların yerine 9. kademe temel eşyaları düşürür; dükkân sadece 9. kademe satar.
+- **Balık tutma:** elde makaralı olta (silah gizlenir), karakter göle döner ve savurur, misina yay çizerek suya iner, kırmızı-beyaz şamandıra yüzer ve halka halka dalga yapar; balık vurunca şamandıra batıp çırpınır. Tutulan balık sudan fırlar, başın üstünde çırpınır, altta "Balık tuttun!" kartı çıkar.
+- **Her balık farklı:** Hamsi (ince, mavi sırtlı), Sazan (altın pullu, iri), Alabalık (benekli, pembe şeritli), Levrek (gümüş, çizgili, dikenli yüzgeç), Yayın (koyu, yassı kafalı, uzun bıyıklı).
+
+### Aşama 8.2: hızlı gelişim, inci dönüştürme, başlangıç rehberi
 
 - **Tecrübe:** seviye için gereken tecrübe %45 az; canavar, boss ve metin tecrübesi 2 kat; metin taşı 7 canavar değerinde.
 - **Yapraklar 3'er:** +6 sonrası her basamak ve evrim 3'er Kırmızı, Yeşil, Mor Yaprak ister.

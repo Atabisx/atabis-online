@@ -684,3 +684,13 @@ body.ingame #autoBtn { display: flex; }
 .gmap em { color: #6b6150; font-style: normal; }
 .guidefoot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .guidefoot small { color: #8b877c; text-align: center; font-size: 11px; }
+
+/* balık yakalanınca ortada çıkan kart */
+#catchCard { position: fixed; left: 50%; bottom: 96px; transform: translate(-50%, -10px) scale(.9); display: flex; align-items: center; gap: 10px; padding: 8px 18px 8px 10px;
+  border-radius: 14px; border: 1px solid #9fd8ff; background: linear-gradient(rgba(16,32,44,.92), rgba(8,16,24,.92)); box-shadow: 0 0 24px rgba(127,200,255,.35);
+  opacity: 0; pointer-events: none; z-index: 40; }
+#catchCard.show { animation: catchIn 3s ease forwards; }
+#catchCard small { display: block; color: #9fd8ff; font-size: 12px; letter-spacing: .05em; }
+#catchCard b { font-size: 20px; }
+@keyframes catchIn { 0% { opacity: 0; transform: translate(-50%, -10px) scale(.8); } 10% { opacity: 1; transform: translate(-50%, 0) scale(1.06); }
+  18% { transform: translate(-50%, 0) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -14px) scale(1); } }
