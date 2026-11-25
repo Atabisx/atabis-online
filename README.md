@@ -10,7 +10,14 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 2. 5-30 dakika bekle, sonra sunucuda proje klasöründe: `sudo bash scripts/domain.sh alanadi.com`
 3. Betik nginx'i kurar, oyunu (3100) alan adına bağlar, ücretsiz HTTPS sertifikası alır. Oyun: `https://alanadi.com`
 
-### Aşama 8.5 (bu sürüm): daha canlı ve yakın karakterler
+### Aşama 8.6 (bu sürüm): karakter dokuları yeniden pişirildi
+
+- **Sorun:** karakterler yamalı/bozuk görünüyordu. Orijinal modellerin dokusu binlerce küçük parçadan oluşan bir atlas; model 1,8 milyon üçgenden ~60 bine indirilince üçgenler yanlış doku parçalarına düşüyordu.
+- **Çözüm:** `tools/charbake.py` her sade üçgene dokuda kendi hücresini verir ve rengi orijinal yüksek ayrıntılı modelden pişirir; normal haritası da pişirilir (orijinalin ince kabartıları ve varsa kendi normal haritası). Sura, Akıncı ve Avcı'ya metal/pürüz ve ışıma dokuları da gelir.
+- Üçgen sırası, iskelet ve ağırlıklar aynı: giyilen zırh dosyaları değişmeden çalışır. Kullanım: `python3 tools/charbake.py oyun.glb orijinal.glb cikti.glb`.
+- Karakter dosyaları 2-3 MB'tan 5-8,5 MB'a çıktı (ilk açılışta bir kez iner, sonra tarayıcı saklar).
+
+### Aşama 8.5: daha canlı ve yakın karakterler
 
 - Sinematik renk (ACES), ortam yansıması (metal zırh ve silahlar parlar), kameradan karaktere vuran yumuşak yüz ışığı.
 - Kamera varsayılan olarak %30 daha yakın; iki parmakla çok daha fazla yaklaşılabilir ve yaklaşınca kamera omuz hizasına iner.
