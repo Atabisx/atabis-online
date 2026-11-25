@@ -4,6 +4,12 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
+### Alan adı bağlama
+
+1. Alan adını aldığın sitede DNS ayarlarına iki A kaydı ekle: `@` ve `www` → sunucunun IP adresi.
+2. 5-30 dakika bekle, sonra sunucuda proje klasöründe: `sudo bash scripts/domain.sh alanadi.com`
+3. Betik nginx'i kurar, oyunu (3100) alan adına bağlar, ücretsiz HTTPS sertifikası alır. Oyun: `https://alanadi.com`
+
 ### Aşama 8.4 (bu sürüm): metin haritalarına dev boss'lar
 
 - Her metin haritasında 3'er farklı, çok büyük boss: Volkan Metin Ovası'nda **Dev Kadim Golem** (Sv. 76), Kale Metin Meydanı'nda **Dev Cehennem Şövalyesi** (Sv. 86), Lanetli Metin Harabesi'nde **Dev Buz Elementali** (Sv. 96).
