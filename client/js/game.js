@@ -22,19 +22,44 @@ const ATTACK_RANGE = 4.4;
 
 // ---------- sahne ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));   // telefonda daha keskin görüntü
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// sinematik renk: parlak yerler patlamaz, karakterlerin yüzleri ve zırhları daha canlı görünür
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
 document.body.prepend(renderer.domElement);
+const MAX_ANISO = renderer.capabilities.getMaxAnisotropy();
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 220);
 fx.initFx(scene, camera, renderer);
 fx.setGround(groundH);   // model haritalarında efektler zemine otursun
 
-const hemi = new THREE.HemisphereLight('#dfefff', '#4a6a35', 1.1);
+const hemi = new THREE.HemisphereLight('#dfefff', '#4a6a35', 0.9);
 scene.add(hemi);
+// ortam yansıması: metal zırhlar, silahlar ve deri gerçekçi parlar (dış bağımlılık yok: küçük bir ışık kubbesinden üretilir)
+(() => {
+  const es = new THREE.Scene();
+  const geo = new THREE.SphereGeometry(10, 32, 16), col = [], c = new THREE.Color();
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i) / 10;
+    if (y > 0) c.set('#cfe4ff').lerp(new THREE.Color('#fff4e0'), Math.max(0, 1 - y * 2.2)); else c.set('#6a5a44').lerp(new THREE.Color('#2a2620'), -y);
+    col.push(c.r, c.g, c.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  es.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true })));
+  const panel = (w, h, color, k, x, y, z) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(k), side: THREE.DoubleSide })); m.position.set(x, y, z); m.lookAt(0, 0, 0); es.add(m); };
+  panel(6, 4, '#fff6ea', 5, 3, 6, 5);     // önden-yukarıdan yumuşak ışık kutusu
+  panel(3, 6, '#9fc8ff', 3, -6, 3, -4);   // arkadan soğuk kenar ışığı
+  panel(8, 2, '#ffd9a0', 1.6, 0, 1, -8);  // ufukta sıcak yansıma
+  const pm = new THREE.PMREMGenerator(renderer);
+  scene.environment = pm.fromScene(es, 0.03).texture;
+  scene.environmentIntensity = 0.55;
+  pm.dispose();
+})();
 const sun = new THREE.DirectionalLight('#fff3dc', 2.0);
 sun.castShadow = true;
 sun.shadow.mapSize.set(1024, 1024);
@@ -42,6 +67,9 @@ sun.shadow.camera.left = -24; sun.shadow.camera.right = 24;
 sun.shadow.camera.top = 24; sun.shadow.camera.bottom = -24;
 sun.shadow.camera.near = 1; sun.shadow.camera.far = 90;
 scene.add(sun, sun.target);
+// yüz ışığı: kamera tarafından karaktere vurur, gölge yapmaz — yüzler ve zırh önleri karanlıkta kalmaz
+const faceLight = new THREE.DirectionalLight('#fff4e6', 0.85);
+scene.add(faceLight, faceLight.target);
 
 // harita verisi (sunucuyla aynı dosya)
 let MAPS = [];
@@ -332,7 +360,10 @@ function straightenIdle(sc, clips, s) {
   const d = p1.sub(p0);
   for (let i = 0; i < ht.values.length; i += 3) { ht.values[i] += d.x; ht.values[i + 1] += d.y; ht.values[i + 2] += d.z; }
 }
-function loadGlb(url) { return new Promise((res) => loader.load(url, res, undefined, (e) => { console.warn('Model yüklenemedi:', url, e); res(null); })); }
+function sharpen(root) {   // dokular eğik açıdan da net görünsün (yüz, zırh deseni)
+  root.traverse((o) => { if (!o.material) return; for (const m of [].concat(o.material)) for (const k of ['map', 'normalMap', 'emissiveMap']) if (m[k]) { m[k].anisotropy = MAX_ANISO; m[k].needsUpdate = true; } });
+}
+function loadGlb(url) { return new Promise((res) => loader.load(url, (g) => { sharpen(g.scene); res(g); }, undefined, (e) => { console.warn('Model yüklenemedi:', url, e); res(null); })); }
 const modelReady = (async () => {
   const g = await loadGlb('models/Soldier.glb');
   if (!g) { console.warn('Model yüklenemedi, basit karakter kullanılacak'); return; }
@@ -2374,7 +2405,8 @@ function autoStep(me, now, dt) {
 // ---------- kamera: tek parmakla döndür, iki parmakla yakınlaştır ----------
 let camYaw = Math.PI / 4, camZoom = 1;
 // daha yatık açı ve karakterin önüne bakış: ileride ne olduğu daha uzaktan görünür
-const CAM_H = 9.6, CAM_D = 14.2, CAM_AHEAD = 4.2;
+const CAM_H = 6.4, CAM_D = 10.2, CAM_AHEAD = 2.8;   // önceki: 9.6 / 14.2 — karakter daha yakın ve net
+const ZMIN = 0.38, ZMAX = 1.8;
 const camTouches = new Map();
 let pinchStart = null;
 renderer.domElement.addEventListener('pointerdown', (e) => {
@@ -2393,18 +2425,20 @@ renderer.domElement.addEventListener('pointermove', (e) => {
   else if (camTouches.size === 2 && pinchStart) {
     const [a, b] = [...camTouches.values()];
     const d = Math.hypot(a.x - b.x, a.y - b.y);
-    camZoom = Math.max(0.55, Math.min(1.7, pinchStart.zoom * pinchStart.d / Math.max(20, d)));
+    camZoom = Math.max(ZMIN, Math.min(ZMAX, pinchStart.zoom * pinchStart.d / Math.max(20, d)));
   }
 });
 const camEnd = (e) => { camTouches.delete(e.pointerId); if (camTouches.size < 2) pinchStart = null; };
 renderer.domElement.addEventListener('pointerup', camEnd);
 renderer.domElement.addEventListener('pointercancel', camEnd);
-renderer.domElement.addEventListener('wheel', (e) => { camZoom = Math.max(0.55, Math.min(1.7, camZoom * (e.deltaY > 0 ? 1.1 : 0.9))); }, { passive: true });
+renderer.domElement.addEventListener('wheel', (e) => { camZoom = Math.max(ZMIN, Math.min(ZMAX, camZoom * (e.deltaY > 0 ? 1.1 : 0.9))); }, { passive: true });
 const camRight = new THREE.Vector3(), camFwd = new THREE.Vector3(), camOffset = new THREE.Vector3();
 function updateCamVectors() {
   camFwd.set(-Math.sin(camYaw), 0, -Math.cos(camYaw));
   camRight.set(Math.cos(camYaw), 0, -Math.sin(camYaw));
-  camOffset.set(Math.sin(camYaw) * CAM_D * camZoom, CAM_H * camZoom, Math.cos(camYaw) * CAM_D * camZoom);
+  // yaklaştıkça kamera alçalır: yakında karakteri omuz hizasından, uzakta yukarıdan görürsün
+  const h = CAM_H * Math.pow(camZoom, 1.45);
+  camOffset.set(Math.sin(camYaw) * CAM_D * camZoom, h, Math.cos(camYaw) * CAM_D * camZoom);
 }
 
 
@@ -3284,10 +3318,12 @@ function loop() {
     }
     camPos.copy(me.group.position).add(camOffset);
     camera.position.lerp(camPos, 1 - Math.exp(-8 * dt));
-    camera.lookAt(camera.position.x - camOffset.x + camFwd.x * CAM_AHEAD * camZoom, 1.2, camera.position.z - camOffset.z + camFwd.z * CAM_AHEAD * camZoom);
+    camera.lookAt(camera.position.x - camOffset.x + camFwd.x * CAM_AHEAD * camZoom, me.group.position.y + 1.2 + Math.max(0, 1 - camZoom) * 0.9, camera.position.z - camOffset.z + camFwd.z * CAM_AHEAD * camZoom);
     if (shake.t > 0) { shake.t = Math.max(0, shake.t - dt); const a = shake.amp * (shake.t / shake.dur); camera.position.x += (Math.random() - 0.5) * a; camera.position.y += (Math.random() - 0.5) * a; }
     sun.position.set(me.group.position.x + 12, 25, me.group.position.z + 6);
     sun.target.position.copy(me.group.position);
+    faceLight.position.set(camera.position.x, me.group.position.y + 4, camera.position.z);
+    faceLight.target.position.set(me.group.position.x, me.group.position.y + 1.4, me.group.position.z);
     sfx.setListener(me.group.position.x, me.group.position.z);
   } else if (lobby.mode !== 'off') {
     lobbyUpdate(dt);
@@ -3509,9 +3545,9 @@ function partyLabels(pt) {
 }
 settings.setup({
   sfx, toast, askBox,
-  setCamZoom: (z) => { camZoom = Math.max(0.55, Math.min(1.7, z)); },
+  setCamZoom: (z) => { camZoom = Math.max(ZMIN, Math.min(ZMAX, z)); },
   // grafik: 0 düşük (telefonlar için hızlı), 1 normal, 2 yüksek
-  setQuality: (q) => { renderer.setPixelRatio(Math.min(window.devicePixelRatio, [0.75, 1.25, 2][q] || 1.25)); renderer.setSize(window.innerWidth, window.innerHeight); },
+  setQuality: (q) => { renderer.setPixelRatio(Math.min(window.devicePixelRatio, [0.85, 1.5, 2.25][q] || 1.5)); renderer.setSize(window.innerWidth, window.innerHeight); },
   leave: () => { try { if (socket) socket.disconnect(); } catch (e) { /* yok say */ } },
 });
 social.setup({

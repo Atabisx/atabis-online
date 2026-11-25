@@ -10,7 +10,13 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 2. 5-30 dakika bekle, sonra sunucuda proje klasöründe: `sudo bash scripts/domain.sh alanadi.com`
 3. Betik nginx'i kurar, oyunu (3100) alan adına bağlar, ücretsiz HTTPS sertifikası alır. Oyun: `https://alanadi.com`
 
-### Aşama 8.4 (bu sürüm): metin haritalarına dev boss'lar
+### Aşama 8.5 (bu sürüm): daha canlı ve yakın karakterler
+
+- Sinematik renk (ACES), ortam yansıması (metal zırh ve silahlar parlar), kameradan karaktere vuran yumuşak yüz ışığı.
+- Kamera varsayılan olarak %30 daha yakın; iki parmakla çok daha fazla yaklaşılabilir ve yaklaşınca kamera omuz hizasına iner.
+- Dokular eğik açıdan da keskin (anizotropik süzme); telefonda çözünürlük Normal'de 1,5, Yüksek'te 2,25.
+
+### Aşama 8.4: metin haritalarına dev boss'lar
 
 - Her metin haritasında 3'er farklı, çok büyük boss: Volkan Metin Ovası'nda **Dev Kadim Golem** (Sv. 76), Kale Metin Meydanı'nda **Dev Cehennem Şövalyesi** (Sv. 86), Lanetli Metin Harabesi'nde **Dev Buz Elementali** (Sv. 96).
 - Her ölümde kesin **1.000.000 Yang**; her yaprak rengi (kırmızı, yeşil, mor) %10; normal boss'un 1,5 katı tecrübe; 75 sn'de yeniden doğar.

@@ -60,7 +60,11 @@ export function loadGltf(url) {
 }
 export function loadModel(url) {
   if (!cache[url]) {
-    cache[url] = new Promise((resolve, reject) => loader.load(url, (g) => resolve(g.scene), undefined, reject));
+    cache[url] = new Promise((resolve, reject) => loader.load(url, (g) => {
+      // dokular eğik açıdan da net görünsün (three.js ekran kartının sınırına indirir)
+      g.scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) for (const k of ['map', 'normalMap']) if (m[k]) m[k].anisotropy = 8; });
+      resolve(g.scene);
+    }, undefined, reject));
   }
   return cache[url];
 }
