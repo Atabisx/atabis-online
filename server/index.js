@@ -17,6 +17,11 @@ async function main() {
   const app = express();
   app.set('trust proxy', true);
   app.use(express.json({ limit: '20kb' }));
+  // tanıtım sitesi ana sayfada, oyun /oyun adresinde
+  const page = (f) => (req, res) => { res.setHeader('Cache-Control', 'no-cache'); res.sendFile(path.join(__dirname, '..', 'client', f)); };
+  app.get('/', page('site.html'));
+  app.get('/oyun', page('index.html'));
+  app.get('/oyun/', (req, res) => res.redirect(301, '/oyun'));
   // modeller, kod ve veriler sıkıştırılmış gönderilir (yaklaşık yarı boyut)
   app.use(gzipStatic(path.join(__dirname, '..', 'client')));
   app.use('/shared', gzipStatic(path.join(__dirname, '..', 'shared')));

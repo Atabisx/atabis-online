@@ -3,7 +3,7 @@
   "short_name": "Atabis",
   "description": "Tarayıcıda oynanan 3D MMORPG",
   "lang": "tr",
-  "start_url": "/?app=1",
+  "start_url": "/oyun?app=1",
   "scope": "/",
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],

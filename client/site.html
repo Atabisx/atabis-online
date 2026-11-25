@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ATABİS ONLINE · Tarayıcıda 3D MMORPG</title>
+<meta name="description" content="ATABİS ONLINE: Metin2 ruhunu taşıyan, tarayıcıda ve telefonda oynanan ücretsiz 3D MMORPG. Metin taşları, dev boss'lar, +9 evrim, lonca savaşları.">
+<meta property="og:title" content="ATABİS ONLINE">
+<meta property="og:description" content="Tarayıcıda ve telefonda oynanan ücretsiz 3D MMORPG. Sv. 70-99 sunucusu açıldı!">
+<meta property="og:image" content="/site/karakterler.webp">
+<meta name="theme-color" content="#0b0907">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@600;800&family=Rubik:wght@400;500;700&display=swap">
+<script>
+  // uygulama (Android) ya da ana ekrana eklenmiş sürüm doğrudan oyunu açar
+  if (window.Capacitor || /[?&]app=1/.test(location.search) || matchMedia('(display-mode: fullscreen)').matches || matchMedia('(display-mode: standalone)').matches) location.replace('/oyun' + location.search);
+</script>
+<style>
+:root { --gold: #f2c24a; --gold2: #ffe9b0; --gold3: #a4651a; --ink: #0b0907; --ink2: #15110c; --line: rgba(242, 194, 74, .22); --text: #e9e1cf; --mute: #a39883; --red: #c0392b; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--ink); color: var(--text); font: 16px/1.6 Rubik, system-ui, sans-serif; overflow-x: hidden; }
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+.wrap { width: min(1180px, 92vw); margin: 0 auto; }
+
+/* üst menü */
+nav { position: fixed; inset: 0 0 auto 0; z-index: 50; transition: background .3s, box-shadow .3s; }
+nav.solid { background: rgba(11, 9, 7, .92); backdrop-filter: blur(8px); box-shadow: 0 1px 0 var(--line); }
+nav .wrap { display: flex; align-items: center; gap: 22px; height: 68px; }
+.logo { font: 900 22px 'Cinzel Decorative', serif; letter-spacing: 2px; background: linear-gradient(180deg, #fff6d0, var(--gold) 50%, var(--gold3)); -webkit-background-clip: text; background-clip: text; color: transparent; white-space: nowrap; }
+.logo small { font: 800 11px Cinzel, serif; letter-spacing: 5px; -webkit-text-fill-color: var(--gold2); margin-left: 6px; }
+nav ul { display: flex; gap: 22px; list-style: none; margin: 0 auto 0 12px; padding: 0; }
+nav ul a { font: 600 14px Cinzel, serif; letter-spacing: 1.5px; color: #d9cfb8; opacity: .85; transition: color .2s, opacity .2s; }
+nav ul a:hover { color: var(--gold); opacity: 1; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 28px; border-radius: 4px; cursor: pointer; border: 0;
+  font: 800 15px Cinzel, serif; letter-spacing: 2px; text-transform: uppercase; color: #1c1206; position: relative; isolation: isolate;
+  background: linear-gradient(180deg, #ffe08a, #f2b43a 45%, #b77418); box-shadow: 0 0 0 1px #ffda7a inset, 0 6px 24px rgba(242, 180, 58, .35), 0 2px 0 #6b3d0c; transition: transform .15s, box-shadow .2s, filter .2s; }
+.btn:hover { transform: translateY(-2px); filter: brightness(1.08); box-shadow: 0 0 0 1px #fff0b8 inset, 0 10px 34px rgba(242, 180, 58, .55), 0 2px 0 #6b3d0c; }
+.btn.ghost { background: rgba(20, 15, 10, .55); color: var(--gold2); box-shadow: 0 0 0 1px var(--gold) inset; backdrop-filter: blur(4px); }
+.btn.big { min-height: 64px; padding: 0 44px; font-size: 19px; }
+.btn.sm { min-height: 40px; padding: 0 18px; font-size: 13px; }
+.menu-btn { display: none; margin-left: auto; background: none; border: 0; color: var(--gold2); font-size: 28px; cursor: pointer; }
+
+/* açılış */
+.hero { position: relative; min-height: 100svh; display: grid; place-items: center; overflow: hidden; text-align: center; padding: 90px 0 0; }
+.sky { position: absolute; inset: 0; z-index: -3;
+  background: radial-gradient(ellipse 60% 45% at 50% 62%, rgba(255, 120, 40, .30), transparent 70%),
+              radial-gradient(ellipse 90% 60% at 50% 100%, rgba(160, 30, 20, .55), transparent 70%),
+              radial-gradient(ellipse 50% 40% at 80% 10%, rgba(120, 80, 200, .18), transparent 70%),
+              linear-gradient(180deg, #07060a 0%, #1a0f12 45%, #2a120c 75%, #0b0907 100%); }
+.moon { position: absolute; z-index: -3; top: 9%; right: 12%; width: clamp(90px, 13vw, 190px); aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 38% 35%, #fff3d6, #f2c78a 45%, #b9663a 100%); box-shadow: 0 0 80px 20px rgba(255, 170, 90, .25); opacity: .85; }
+.mountains { position: absolute; left: 0; right: 0; bottom: 0; z-index: -2; width: 100%; height: 62%; }
+#embers { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
+.heroes { position: absolute; left: 50%; bottom: -1%; transform: translateX(-50%); width: min(1250px, 118vw); max-width: none; z-index: 0; pointer-events: none;
+  filter: drop-shadow(0 0 40px rgba(255, 90, 40, .25)); animation: rise 1.6s cubic-bezier(.2, .8, .2, 1) both .2s; }
+.hero::after { content: ''; position: absolute; inset: auto 0 0 0; height: 16%; z-index: 1; background: linear-gradient(transparent, var(--ink)); pointer-events: none; }
+.hero-inner { position: relative; z-index: 2; margin-top: -32vh; }
+.kicker { display: inline-block; font: 800 12px Cinzel, serif; letter-spacing: 5px; color: var(--gold2); padding: 6px 16px; border: 1px solid var(--line); border-radius: 30px; background: rgba(0, 0, 0, .35); animation: fade 1s both; }
+h1 { margin: 14px 0 0; font: 900 clamp(52px, 11vw, 140px)/0.95 'Cinzel Decorative', serif; letter-spacing: .04em;
+  background: linear-gradient(180deg, #fff8dc 0%, #f2c24a 48%, #8a4c12 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 4px 0 #2a1404) drop-shadow(0 0 30px rgba(0, 0, 0, .9)); animation: fade 1.2s both .1s; }
+.sub { font: 800 clamp(16px, 3vw, 30px) Cinzel, serif; letter-spacing: .6em; padding-left: .6em; color: var(--gold2); text-shadow: 0 2px 10px #000; animation: fade 1.2s both .25s; }
+.tag { max-width: 620px; margin: 18px auto 0; color: #d9cfb8; font-size: clamp(15px, 2vw, 18px); text-shadow: 0 2px 8px #000; animation: fade 1.2s both .4s; }
+.cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 30px; animation: fade 1.2s both .55s; }
+.status { margin-top: 22px; text-shadow: 0 1px 6px #000, 0 0 2px #000; display: inline-flex; gap: 18px; align-items: center; flex-wrap: wrap; justify-content: center; font-size: 14px; color: var(--mute); animation: fade 1.2s both .7s; }
+.status b { color: var(--gold2); }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #3ddc84; box-shadow: 0 0 10px #3ddc84; display: inline-block; margin-right: 6px; animation: pulse 2s infinite; }
+.scroll { position: absolute; z-index: 3; bottom: 18px; left: 50%; transform: translateX(-50%); color: var(--gold2); opacity: .7; font-size: 12px; letter-spacing: 3px; font-family: Cinzel, serif; animation: bob 2s infinite; }
+
+/* bölümler */
+section { position: relative; padding: clamp(70px, 10vw, 120px) 0; }
+.sec-title { text-align: center; margin-bottom: 46px; }
+.sec-title span { font: 800 12px Cinzel, serif; letter-spacing: 6px; color: var(--gold); }
+.sec-title h2 { margin: 8px 0 0; font: 900 clamp(30px, 5vw, 52px)/1.1 'Cinzel Decorative', serif; color: var(--gold2); text-shadow: 0 0 30px rgba(242, 194, 74, .15); }
+.sec-title p { max-width: 640px; margin: 12px auto 0; color: var(--mute); }
+.orn { display: flex; align-items: center; gap: 14px; justify-content: center; margin-top: 16px; color: var(--gold); }
+.orn::before, .orn::after { content: ''; width: 90px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
+.orn::after { transform: scaleX(-1); }
+
+/* sınıflar */
+.classes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.cls { position: relative; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-height: 470px; display: flex; flex-direction: column; justify-content: flex-end; cursor: default;
+  background: radial-gradient(ellipse 80% 55% at 50% 38%, color-mix(in srgb, var(--c) 40%, transparent), transparent 70%), linear-gradient(180deg, #17120d, #0d0a07);
+  transition: transform .35s, border-color .35s, box-shadow .35s; }
+.cls:hover { transform: translateY(-6px); border-color: var(--gold); box-shadow: 0 20px 50px rgba(0, 0, 0, .6), 0 0 30px color-mix(in srgb, var(--c) 35%, transparent); }
+.cls img { position: absolute; left: 50%; top: 22px; height: 64%; width: auto; max-width: none; transform: translateX(-50%); filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .7)); transition: transform .5s; }
+.cls:hover img { transform: translateX(-50%) scale(1.05); }
+.cls .info { position: relative; padding: 18px 18px 20px; background: linear-gradient(transparent, rgba(0, 0, 0, .85) 30%); }
+.cls h3 { margin: 0; font: 900 26px 'Cinzel Decorative', serif; color: var(--gold2); }
+.cls .role { font: 700 11px Cinzel, serif; letter-spacing: 3px; color: var(--c2, var(--gold)); }
+.cls p { margin: 8px 0 10px; font-size: 14px; color: #cfc6b2; }
+.bars { display: grid; gap: 5px; font-size: 11px; color: var(--mute); }
+.bar { display: grid; grid-template-columns: 62px 1fr; align-items: center; gap: 8px; }
+.bar i { display: block; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+.bar i::after { content: ''; display: block; height: 100%; width: var(--v); background: linear-gradient(90deg, var(--gold3), var(--gold)); }
+
+/* özellikler */
+.feat { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; margin-bottom: 70px; }
+.feat:nth-child(even) .shot { order: 2; }
+.shot { position: relative; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 30px 60px rgba(0, 0, 0, .6); aspect-ratio: 16 / 9; }
+.shot img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s; }
+.shot:hover img { transform: scale(1.05); }
+.shot::after { content: ''; position: absolute; inset: 0; box-shadow: 0 0 0 1px rgba(255, 255, 255, .05) inset, 0 0 80px rgba(0, 0, 0, .55) inset; pointer-events: none; }
+.feat h3 { margin: 0 0 10px; font: 900 clamp(24px, 3.4vw, 34px)/1.15 'Cinzel Decorative', serif; color: var(--gold2); }
+.feat .num { font: 800 12px Cinzel, serif; letter-spacing: 4px; color: var(--gold); }
+.feat p { color: #cfc6b2; margin: 0 0 14px; }
+.feat ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.feat li { padding-left: 26px; position: relative; color: #d9cfb8; font-size: 15px; }
+.feat li::before { content: '◆'; position: absolute; left: 4px; color: var(--gold); font-size: 11px; top: 4px; }
+
+/* küçük özellik kartları */
+.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.card { padding: 24px 20px; border: 1px solid var(--line); border-radius: 6px; background: linear-gradient(180deg, rgba(242, 194, 74, .06), rgba(0, 0, 0, .2)); transition: border-color .3s, transform .3s; }
+.card:hover { border-color: var(--gold); transform: translateY(-4px); }
+.card .ic { font-size: 30px; }
+.card h4 { margin: 10px 0 6px; font: 800 17px Cinzel, serif; color: var(--gold2); letter-spacing: 1px; }
+.card p { margin: 0; font-size: 14px; color: var(--mute); }
+
+/* harita yolu */
+.road { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; position: relative; }
+.road::before { content: ''; position: absolute; top: 34px; left: 8%; right: 8%; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), var(--gold), transparent); opacity: .5; }
+.stop { text-align: center; padding: 0 8px; position: relative; }
+.stop .pin { width: 68px; height: 68px; margin: 0 auto 12px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; position: relative;
+  background: radial-gradient(circle at 40% 35%, #3a2a16, #120d08); border: 2px solid var(--gold); box-shadow: 0 0 24px rgba(242, 194, 74, .3); }
+.stop b { display: block; font: 800 14px Cinzel, serif; color: var(--gold2); }
+.stop small { color: var(--mute); font-size: 12px; }
+.stop .lv { display: inline-block; margin-top: 6px; font: 700 11px Rubik; padding: 2px 8px; border-radius: 10px; background: rgba(242, 194, 74, .12); color: var(--gold); }
+
+/* nasıl başlarım */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; counter-reset: s; }
+.step { padding: 30px 24px; border: 1px solid var(--line); border-radius: 6px; position: relative; background: #110d09; }
+.step::before { counter-increment: s; content: counter(s); position: absolute; top: -20px; left: 22px; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  font: 900 18px Cinzel, serif; color: #1c1206; background: linear-gradient(180deg, #ffe08a, #b77418); box-shadow: 0 4px 14px rgba(242, 180, 58, .4); }
+.step h4 { margin: 8px 0 8px; font: 800 19px Cinzel, serif; color: var(--gold2); }
+.step p { margin: 0; color: var(--mute); font-size: 15px; }
+
+/* haberler */
+.news { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.post { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #110d09; transition: transform .3s, border-color .3s; }
+.post:hover { transform: translateY(-4px); border-color: var(--gold); }
+.post img { aspect-ratio: 16 / 9; object-fit: cover; width: 100%; }
+.post div { padding: 18px 18px 20px; }
+.post time { font: 700 11px Cinzel, serif; letter-spacing: 3px; color: var(--gold); }
+.post h4 { margin: 6px 0 6px; font: 800 18px Cinzel, serif; color: var(--gold2); }
+.post p { margin: 0; color: var(--mute); font-size: 14px; }
+
+/* son çağrı */
+.final { text-align: center; overflow: hidden; background: radial-gradient(ellipse 60% 70% at 50% 100%, rgba(200, 60, 20, .35), transparent 70%), linear-gradient(180deg, var(--ink), #1a0d08); }
+.final h2 { margin: 0; font: 900 clamp(32px, 6vw, 64px)/1.1 'Cinzel Decorative', serif; background: linear-gradient(180deg, #fff8dc, #f2c24a 55%, #8a4c12); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.final p { color: #cfc6b2; margin: 14px auto 30px; max-width: 560px; }
+footer { border-top: 1px solid var(--line); padding: 30px 0 40px; color: var(--mute); font-size: 13px; }
+footer .wrap { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+footer nav, footer .links { position: static; display: flex; gap: 18px; }
+footer a:hover { color: var(--gold); }
+
+/* görünür olunca beliren */
+.rv { opacity: 0; transform: translateY(30px); transition: opacity .9s, transform .9s cubic-bezier(.2, .8, .2, 1); }
+.rv.on { opacity: 1; transform: none; }
+@keyframes fade { from { opacity: 0; transform: translateY(16px); } }
+@keyframes rise { from { opacity: 0; transform: translateX(-50%) translateY(60px); } }
+@keyframes pulse { 50% { opacity: .4; } }
+@keyframes bob { 50% { transform: translate(-50%, 6px); } }
+
+@media (max-width: 960px) {
+  nav ul { display: none; position: absolute; top: 68px; left: 0; right: 0; flex-direction: column; gap: 0; margin: 0; background: rgba(11, 9, 7, .97); border-bottom: 1px solid var(--line); }
+  nav ul.open { display: flex; }
+  nav ul a { display: block; padding: 14px 6vw; }
+  .menu-btn { display: block; }
+  nav .btn.sm { display: none; }
+  .classes { grid-template-columns: repeat(2, 1fr); }
+  .feat { grid-template-columns: 1fr; gap: 22px; margin-bottom: 56px; }
+  .feat:nth-child(even) .shot { order: 0; }
+  .cards { grid-template-columns: repeat(2, 1fr); }
+  .road { grid-template-columns: repeat(3, 1fr); row-gap: 28px; }
+  .road::before { display: none; }
+  .steps, .news { grid-template-columns: 1fr; gap: 30px; }
+  .hero-inner { margin-top: -30vh; }
+}
+@media (max-width: 560px) {
+  .classes { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cls { min-height: 360px; }
+  .cls p, .bars { display: none; }
+  .cls h3 { font-size: 20px; }
+  .cards { grid-template-columns: 1fr; }
+  .heroes { width: 200vw; bottom: 1%; }
+  .hero { padding-top: 80px; align-items: start; }
+  .hero-inner { margin-top: 4vh; }
+  .kicker { letter-spacing: 2px; font-size: 11px; }
+  .moon { top: 11%; right: 6%; width: 70px; opacity: .6; }
+  .status { font-size: 13px; gap: 10px; }
+  .btn.big { min-height: 58px; padding: 0 30px; font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } .rv { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="wrap">
+    <a href="#" class="logo">ATABİS<small>ONLINE</small></a>
+    <ul id="menu">
+      <li><a href="#siniflar">Sınıflar</a></li>
+      <li><a href="#ozellikler">Özellikler</a></li>
+      <li><a href="#dunya">Dünya</a></li>
+      <li><a href="#baslangic">Nasıl Başlarım</a></li>
+      <li><a href="#haberler">Haberler</a></li>
+    </ul>
+    <a class="btn sm" href="/oyun">Oyuna Başla</a>
+    <button class="menu-btn" id="menuBtn" aria-label="Menü">☰</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="sky"></div>
+  <div class="moon"></div>
+  <svg class="mountains" viewBox="0 0 1440 600" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 330 L90 250 L170 300 L260 190 L340 270 L430 170 L520 260 L600 210 L690 120 L770 230 L860 160 L940 250 L1030 150 L1120 240 L1200 180 L1290 260 L1370 200 L1440 240 V600 H0Z" fill="#1d0f0e" opacity=".85"/>
+    <path d="M0 400 L120 320 L210 370 L320 280 L420 360 L540 300 L640 380 L760 290 L880 370 L990 300 L1100 380 L1220 310 L1330 370 L1440 320 V600 H0Z" fill="#140a0a"/>
+    <path d="M0 470 L160 420 L300 460 L460 410 L620 470 L780 420 L940 470 L1100 430 L1260 470 L1440 430 V600 H0Z" fill="#0d0807"/>
+  </svg>
+  <canvas id="embers"></canvas>
+  <img class="heroes" src="site/heroes.webp" alt="Alp, Akıncı, Yalaz ve Kam">
+  <div class="hero-inner wrap">
+    <div class="kicker">Sv. 70 – 99 sunucusu açıldı</div>
+    <h1>ATABİS</h1>
+    <div class="sub">ONLINE</div>
+    <p class="tag">Metin2 ruhunu taşıyan yeni nesil 3D MMORPG. İndirmeden, tarayıcıda ve telefonda; tamamen ücretsiz.</p>
+    <div class="cta">
+      <a class="btn big" href="/oyun">⚔ Oyuna Başla</a>
+      <a class="btn ghost" href="https://github.com/Atabisx/atabis-online/releases/latest/download/AtabisOnline.apk" rel="noopener">📱 Android</a>
+    </div>
+    <div class="status">
+      <span><i class="dot"></i>Sunucu <b id="srv">açık</b></span>
+      <span>Şu an oyunda: <b id="online">–</b> savaşçı</span>
+    </div>
+  </div>
+  <a class="scroll" href="#siniflar">AŞAĞI KAYDIR ▾</a>
+</header>
+
+<section id="siniflar">
+  <div class="wrap">
+    <div class="sec-title rv"><span>KAHRAMANINI SEÇ</span><h2>Dört Sınıf, Tek Kader</h2><p>Bozkırın kılıç ustasından ataların ruhlarıyla konuşan büyücüye; her sınıfın kendi becerileri, dövüş tarzı ve evrimleşen zırhları var.</p><div class="orn">◆</div></div>
+    <div class="classes">
+      <div class="cls rv" style="--c:#c0392b"><img src="site/savasci.webp" alt="Alp" loading="lazy"><div class="info"><span class="role">SAVAŞÇI</span><h3>Alp</h3><p>Bozkırın kılıç ustası. Ön safta dövüşür; yüksek can ve savunma, ağır kılıç darbeleri.</p>
+        <div class="bars"><div class="bar">Saldırı<i style="--v:80%"></i></div><div class="bar">Savunma<i style="--v:95%"></i></div><div class="bar">Hız<i style="--v:45%"></i></div></div></div></div>
+      <div class="cls rv" style="--c:#b0283a"><img src="site/ninja.webp" alt="Akıncı" loading="lazy"><div class="info"><span class="role">NİNJA</span><h3>Akıncı</h3><p>Hızlı ve çevik baskıncı. Hafif kılıçla seri ve kritik vuruşlar.</p>
+        <div class="bars"><div class="bar">Saldırı<i style="--v:75%"></i></div><div class="bar">Savunma<i style="--v:50%"></i></div><div class="bar">Hız<i style="--v:98%"></i></div></div></div></div>
+      <div class="cls rv" style="--c:#8a5a12"><img src="site/sura.webp" alt="Yalaz" loading="lazy"><div class="info"><span class="role">SURA</span><h3>Yalaz</h3><p>Kara alevi kılıçla birleştirir. Yıkıcı ama kırılgan.</p>
+        <div class="bars"><div class="bar">Saldırı<i style="--v:96%"></i></div><div class="bar">Savunma<i style="--v:55%"></i></div><div class="bar">Hız<i style="--v:65%"></i></div></div></div></div>
+      <div class="cls rv" style="--c:#6a4ad4"><img src="site/saman.webp" alt="Kam" loading="lazy"><div class="info"><span class="role">ŞAMAN</span><h3>Kam</h3><p>Ataların ruhlarıyla konuşan büyücü. İyileştirir ve büyü yapar; grubun can damarı.</p>
+        <div class="bars"><div class="bar">Büyü<i style="--v:92%"></i></div><div class="bar">Savunma<i style="--v:45%"></i></div><div class="bar">Destek<i style="--v:100%"></i></div></div></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="ozellikler" style="background:linear-gradient(180deg,transparent,#0f0b08 20%,#0f0b08 80%,transparent)">
+  <div class="wrap">
+    <div class="sec-title rv"><span>OYUN SİSTEMLERİ</span><h2>Efsane Burada Başlar</h2><div class="orn">◆</div></div>
+
+    <div class="feat rv"><div class="shot"><img src="site/metin.webp" alt="Metin taşları" loading="lazy"></div>
+      <div><span class="num">01</span><h3>Metin Taşları</h3><p>Haritaya dağılmış dev rün taşlarını kır; her biri tecrübe ve ganimet yağdırır.</p>
+        <ul><li>Gölge, Sertlik, Şeytan, Ölüm, Pung-Ma… seviyeye göre 10 farklı taş</li><li>Efsun nesnesi, yeşil iksir, kırmızı-yeşil-mor yaprak</li><li>Sadece taşlarla dolu üç metin haritası</li></ul></div></div>
+
+    <div class="feat rv"><div class="shot"><img src="site/boss.webp" alt="Dev boss" loading="lazy"></div>
+      <div><span class="num">02</span><h3>Dev Boss'lar</h3><p>Grubunu topla, devlerin karşısına çık. Her ölümde 1.000.000 Yang ve bol tecrübe.</p>
+        <ul><li>Dev Kadim Golem, Dev Cehennem Şövalyesi, Dev Buz Elementali</li><li>İki boss vadisinde ejderler, iblis lordu ve kara şövalyeler</li><li>Hızlı seviye: Sv. 70'ten 99'a</li></ul></div></div>
+
+    <div class="feat rv"><div class="shot"><img src="site/evrim.webp" alt="Evrim zinciri" loading="lazy"></div>
+      <div><span class="num">03</span><h3>+9 ve Evrim</h3><p>Eşyanı demircide +9'a yükselt, sonra evrimleştir: daha güçlü ve tamamen yeni görünümlü bir eşyaya dönüşsün.</p>
+        <ul><li>Gök Paladin'den Ejder Plaka'ya altı basamaklı zırh zinciri</li><li>Kanatlı Kılıç → Ayaz → Magma → Ejderarması Çekici</li><li>Evrim eşyaları hiçbir yerden düşmez, sadece emekle kazanılır</li></ul></div></div>
+
+    <div class="feat rv"><div class="shot"><img src="site/balik.webp" alt="Balık tutma" loading="lazy"></div>
+      <div><span class="num">04</span><h3>Balık ve İnci</h3><p>Savaştan yorulunca Gümüş Göl'e olta at. Her balığın kendi görünüşü, içinden inci ve sürprizler çıkar.</p>
+        <ul><li>Hamsi, Sazan, Alabalık, Levrek, Yayın Balığı</li><li>%25 inci: dönüştür, evrimde kullan</li><li>Efsun, yaprak ve pet sandığı</li></ul></div></div>
+
+    <div class="cards">
+      <div class="card rv"><div class="ic">🛡</div><h4>Lonca ve Savaş</h4><p>Loncanı kur, krallık savaşlarında ve düellolarda adını duyur.</p></div>
+      <div class="card rv"><div class="ic">🐉</div><h4>Binek ve Pet</h4><p>At ve Savaş Kaplanı'na bin; yanında savaşan petlerini topla.</p></div>
+      <div class="card rv"><div class="ic">🪽</div><h4>Kanat ve Kostüm</h4><p>Işık ve yarasa kanatları, gösterişli kostümlerle öne çık.</p></div>
+      <div class="card rv"><div class="ic">💰</div><h4>Pazar ve Ticaret</h4><p>Oyuncu pazarında al, sat, takas et; servetini büyüt.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="dunya">
+  <div class="wrap">
+    <div class="sec-title rv"><span>MACERA YOLU</span><h2>Dünyayı Keşfet</h2><p>Atabis Köyü'nden Lanetli Harabeler'e uzanan yol; her durakta daha güçlü taşlar ve devler.</p><div class="orn">◆</div></div>
+    <div class="road rv">
+      <div class="stop"><div class="pin">🏘</div><b>Atabis Köyü</b><small>Demirci, pazar, ışınlayıcı</small><br><span class="lv">Başlangıç</span></div>
+      <div class="stop"><div class="pin">🌋</div><b>Volkan Metin Ovası</b><small>Metin taşları · Dev Golem</small><br><span class="lv">Sv. 70</span></div>
+      <div class="stop"><div class="pin">🔥</div><b>Boss Vadisi</b><small>Ejderha, kara şövalye</small><br><span class="lv">Sv. 70</span></div>
+      <div class="stop"><div class="pin">🏰</div><b>Kale Metin Meydanı</b><small>Metin taşları · Cehennem Şövalyesi</small><br><span class="lv">Sv. 80</span></div>
+      <div class="stop"><div class="pin">🐲</div><b>Ejder Boss Vadisi</b><small>İblis lordu, gök ejderi</small><br><span class="lv">Sv. 85</span></div>
+      <div class="stop"><div class="pin">💀</div><b>Lanetli Harabe</b><small>Metin taşları · Buz Elementali</small><br><span class="lv">Sv. 90</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="baslangic" style="background:#0f0b08">
+  <div class="wrap">
+    <div class="sec-title rv"><span>ÜÇ ADIMDA</span><h2>Nasıl Başlarım?</h2><div class="orn">◆</div></div>
+    <div class="steps">
+      <div class="step rv"><h4>Hesabını aç</h4><p>Oyuna Başla'ya bas, kullanıcı adı ve şifreyle saniyeler içinde kayıt ol. İndirme yok.</p></div>
+      <div class="step rv"><h4>Sınıfını seç</h4><p>Alp, Akıncı, Yalaz ya da Kam. Krallığını seç ve adını yaz.</p></div>
+      <div class="step rv"><h4>Sv. 70'te savaşa gir</h4><p>+9 silah, zırh, kolye, küpe, ayakkabı, at ve ışınlanma yüzüğüyle doğrudan maceraya başla.</p></div>
+    </div>
+    <div style="text-align:center;margin-top:44px" class="rv"><a class="btn big" href="/oyun">⚔ Hemen Oyna</a></div>
+  </div>
+</section>
+
+<section id="haberler">
+  <div class="wrap">
+    <div class="sec-title rv"><span>GÜNCELLEMELER</span><h2>Son Haberler</h2><div class="orn">◆</div></div>
+    <div class="news">
+      <article class="post rv"><img src="site/karakterler.webp" alt="" loading="lazy"><div><time>KASIM 2026</time><h4>Yeni Nesil Karakterler</h4><p>Bütün sınıflar yüksek ayrıntılı modeller, gerçekçi ışık ve keskin dokularla yenilendi.</p></div></article>
+      <article class="post rv"><img src="site/boss2.webp" alt="" loading="lazy"><div><time>KASIM 2026</time><h4>Dev Boss'lar Geldi</h4><p>Üç metin haritasında yeni devler: her ölümde 1M Yang, yaprak ve bol tecrübe.</p></div></article>
+      <article class="post rv"><img src="site/demirci.webp" alt="" loading="lazy"><div><time>KASIM 2026</time><h4>Sv. 70-99 Sunucusu</h4><p>Metin2 tarzı +9 evrim, inci dönüştürme, başlangıç rehberi ve hızlı gelişim.</p></div></article>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap rv">
+    <h2>Efsaneye Katıl</h2>
+    <p>Kılıcını kuşan, loncanı topla ve Atabis'in en güçlüsü ol. Ücretsiz, tarayıcıda, hemen şimdi.</p>
+    <a class="btn big" href="/oyun">⚔ Oyuna Başla</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div><span class="logo" style="font-size:16px">ATABİS<small>ONLINE</small></span><br>© 2026 ATABİS ONLINE · Tüm hakları saklıdır.</div>
+    <div class="links"><a href="/oyun">Oyna</a><a href="#siniflar">Sınıflar</a><a href="#ozellikler">Özellikler</a><a href="https://github.com/Atabisx/atabis-online/releases/latest/download/AtabisOnline.apk">Android</a></div>
+  </div>
+</footer>
+
+<script>
+// menü
+const nav = document.getElementById('nav'), menu = document.getElementById('menu');
+addEventListener('scroll', () => nav.classList.toggle('solid', scrollY > 40), { passive: true });
+document.getElementById('menuBtn').onclick = () => menu.classList.toggle('open');
+menu.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => menu.classList.remove('open')));
+// görünür olunca belir
+const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('on'); io.unobserve(e.target); } }), { threshold: 0.12 });
+document.querySelectorAll('.rv').forEach((el) => io.observe(el));
+// sunucu durumu
+fetch('/api/status').then((r) => r.json()).then((s) => { document.getElementById('online').textContent = s.online ?? 0; })
+  .catch(() => { document.getElementById('srv').textContent = 'bakımda'; document.querySelector('.dot').style.background = '#e74c3c'; });
+// kor parçacıkları
+(() => {
+  const cv = document.getElementById('embers'), ctx = cv.getContext('2d');
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  let W, H, P = [];
+  const size = () => { const d = Math.min(devicePixelRatio, 2); W = cv.width = cv.offsetWidth * d; H = cv.height = cv.offsetHeight * d; };
+  size(); addEventListener('resize', size);
+  const N = innerWidth < 700 ? 45 : 90;
+  const spawn = (p = {}) => Object.assign(p, { x: Math.random() * W, y: H + Math.random() * H * 0.3, r: (Math.random() * 1.8 + 0.6) * (W / cv.offsetWidth), vy: -(Math.random() * 0.6 + 0.25) * (H / 600), vx: (Math.random() - 0.5) * 0.4, a: Math.random() * 0.7 + 0.3, ph: Math.random() * 6.28, hue: Math.random() < 0.8 ? 28 : 45 });
+  for (let i = 0; i < N; i++) { const p = spawn(); p.y = Math.random() * H; P.push(p); }
+  let vis = true; new IntersectionObserver(([e]) => { vis = e.isIntersecting; }).observe(cv);
+  (function loop(t) {
+    requestAnimationFrame(loop); if (!vis) return;
+    ctx.clearRect(0, 0, W, H); ctx.globalCompositeOperation = 'lighter';
+    for (const p of P) {
+      p.y += p.vy; p.x += p.vx + Math.sin(t / 900 + p.ph) * 0.35; p.ph += 0.01;
+      if (p.y < -20) spawn(p);
+      const fl = p.a * (0.6 + 0.4 * Math.sin(t / 180 + p.ph * 3)) * Math.min(1, p.y / (H * 0.25));
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
+      g.addColorStop(0, `hsla(${p.hue},100%,70%,${fl})`); g.addColorStop(1, `hsla(${p.hue},100%,50%,0)`);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 4, 0, 6.29); ctx.fill();
+    }
+  })(0);
+})();
+</script>
+</body>
+</html>
