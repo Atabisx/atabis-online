@@ -270,7 +270,9 @@ NJ = gJ[gT].reshape(-1, 4)
 NW = gWt[gT].reshape(-1, 4).astype(np.float32)
 NI = np.arange(nv, dtype=np.uint32)
 
-keep_acc = set(range(len(gj['accessors']))) - {prim['attributes'][k] for k in ('POSITION', 'NORMAL', 'TEXCOORD_0', 'JOINTS_0', 'WEIGHTS_0')} - {prim['indices']}
+keep_acc = set(range(len(gj['accessors']))) - set(prim['attributes'].values()) - {prim['indices']}
+# yüksek ayrıntılı sürüm: her köşede telefon sürümündeki üçgenin numarası (giyilen zırh gövdeyi gizlerken kullanılır)
+LQTRI = accessor(gj, gbin, prim['attributes']['_LQTRI'])[gT].reshape(-1, 1).astype(np.float32) if '_LQTRI' in prim['attributes'] else None
 NB = bytearray(); views = []; accs = []; acc_map = {}
 
 
@@ -312,6 +314,7 @@ accs.append({'bufferView': vi, 'componentType': 5120, 'normalized': True, 'count
 attrs['TEXCOORD_0'] = add_norm(U16, 5123, 'VEC2', 34962)
 attrs['JOINTS_0'] = add_acc(NJ.astype(DT[jt]), jt, 'VEC4', 34962)
 attrs['WEIGHTS_0'] = add_norm(W8, 5121, 'VEC4', 34962)
+if LQTRI is not None: attrs['_LQTRI'] = add_acc(LQTRI, 5126, 'SCALAR', 34962)
 ind = add_acc(NI, 5125, 'SCALAR', 34963)
 # diğer meshler / skin'deki accessor referanslarını yeniden eşle
 for sk in gj.get('skins', []):

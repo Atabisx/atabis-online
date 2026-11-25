@@ -524,8 +524,16 @@ function parseWorn(buf) {
 }
 // beden geometrisinin, giysinin örttüğü üçgenleri çıkarılmış kopyası (noktalar ortak)
 function bodyWithout(base, hide) {
-  const src = base.index.array, keep = new Uint8Array(src.length / 3).fill(1);
-  for (let i = 0; i < hide.length; i += 2) keep.fill(0, hide[i], hide[i] + hide[i + 1]);
+  const src = base.index.array;
+  let keep = new Uint8Array(src.length / 3).fill(1);
+  const lq = base.attributes._lqtri;
+  if (lq) {
+    // yüksek ayrıntılı gövde: gizlenecek üçgen listesi telefon sürümüne göre; her üçgenin telefondaki karşılığına bak
+    let n = 0; for (let i = 0; i < hide.length; i += 2) n = Math.max(n, hide[i] + hide[i + 1]);
+    const hid = new Uint8Array(n + 1);
+    for (let i = 0; i < hide.length; i += 2) hid.fill(1, hide[i], hide[i] + hide[i + 1]);
+    for (let t = 0; t < keep.length; t++) if (hid[lq.getX(src[t * 3])]) keep[t] = 0;
+  } else for (let i = 0; i < hide.length; i += 2) keep.fill(0, hide[i], hide[i] + hide[i + 1]);
   let n = 0; for (const k of keep) n += k;
   const out = new src.constructor(n * 3);
   for (let t = 0, o = 0; t < keep.length; t++) if (keep[t]) { out[o++] = src[t * 3]; out[o++] = src[t * 3 + 1]; out[o++] = src[t * 3 + 2]; }

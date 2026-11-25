@@ -322,6 +322,16 @@ const CHAR_MODELS = {
   okcu: { url: 'models/chars/okcu.glb' },                      // Şafak Şövalyesi (kızıl saçlı, pelerinli kadın şövalye)
 };
 const charModels = {};   // cls -> { scene, calib, clips }
+// bilgisayarda (fare, büyük ekran) yüksek ayrıntılı karakterler: ~3 kat üçgen, 4096 piksel doku (models/chars_hq).
+// Telefon ve Grafik: Düşük seçimi hafif sürümü kullanır.
+const HQ_CHARS = (() => {
+  try {
+    const gfx = (JSON.parse(localStorage.getItem('atabis_settings') || '{}').gfx);
+    if (gfx === 0) return false;
+    if (gfx === 2 && Math.min(screen.width, screen.height) >= 700) return true;
+    return matchMedia('(pointer: fine)').matches && Math.min(screen.width, screen.height) >= 700;
+  } catch (e) { return false; }
+})();
 // bekleme duruşu yana dönük (savaş duruşu): kalçayı dikey eksende 'deg' derece öne çevirir, gövde de onunla döner
 function turnIdle(sc, clips, deg) {
   const idle = clips.find((c) => c.name === 'Idle'); if (!idle) return;
@@ -379,7 +389,7 @@ const modelReady = (async () => {
     try { g2.scene.rotation.y = calibrate(g2.scene).faceOffset - calib.faceOffset; kq[k] = g2; } catch (e) { console.warn('KinemIQ animasyonu hazırlanamadı', f, e); }
   }));
   await Promise.all(Object.entries(CHAR_MODELS).map(async ([cls, cfg]) => {
-    const c = await loadGlb(cfg.url); if (!c) return;
+    const c = (HQ_CHARS && await loadGlb(cfg.url.replace('/chars/', '/chars_hq/'))) || await loadGlb(cfg.url); if (!c) return;
     try {
       const sc = c.scene;
       // parça adı nesnede ya da üst gruplarında geçebilir (çok parçalı asa gibi)
@@ -3547,7 +3557,13 @@ settings.setup({
   sfx, toast, askBox,
   setCamZoom: (z) => { camZoom = Math.max(ZMIN, Math.min(ZMAX, z)); },
   // grafik: 0 düşük (telefonlar için hızlı), 1 normal, 2 yüksek
-  setQuality: (q) => { renderer.setPixelRatio(Math.min(window.devicePixelRatio, [0.85, 1.5, 2.25][q] || 1.5)); renderer.setSize(window.innerWidth, window.innerHeight); },
+  setQuality: (q) => {
+    // bilgisayarda ekran çözünürlüğünün üstünde çizilir (kenarlar ve dokular daha keskin), gölgeler daha net
+    const r = HQ_CHARS ? Math.max(window.devicePixelRatio, [1, 1.5, 2][q] || 1.5) : Math.min(window.devicePixelRatio, [0.85, 1.5, 2.25][q] || 1.5);
+    renderer.setPixelRatio(Math.min(r, 2.5)); renderer.setSize(window.innerWidth, window.innerHeight);
+    const sm = HQ_CHARS && q >= 1 ? 2048 : 1024;
+    if (sun.shadow.mapSize.x !== sm) { sun.shadow.mapSize.set(sm, sm); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
+  },
   leave: () => { try { if (socket) socket.disconnect(); } catch (e) { /* yok say */ } },
 });
 social.setup({

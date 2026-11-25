@@ -10,7 +10,14 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 2. 5-30 dakika bekle, sonra sunucuda proje klasöründe: `sudo bash scripts/domain.sh alanadi.com`
 3. Betik nginx'i kurar, oyunu (3100) alan adına bağlar, ücretsiz HTTPS sertifikası alır. Oyun: `https://alanadi.com`
 
-### Aşama 8.6 (bu sürüm): karakter dokuları yeniden pişirildi
+### Aşama 8.7 (bu sürüm): bilgisayarda yüksek ayrıntılı karakterler
+
+- Bilgisayarda (fare + büyük ekran; ya da Grafik: Yüksek) karakterler `models/chars_hq/` sürümünü kullanır: ~3 kat üçgen (110-180 bin), 4096 piksel pişirilmiş renk, normal, metal/pürüz ve ışıma dokuları. Telefon ve Grafik: Düşük hafif sürümle devam eder; yüksek sürüm inmezse hafif sürüme düşer.
+- Bilgisayarda ekran çözünürlüğünün üstünde çizilir (Normal 1,5x, Yüksek 2x) ve gölgeler 2048 piksel.
+- Araç: `tools/charhq.py telefon_eski.glb orijinal.glb ara.glb --tris 180000` (sadeleştirme, hizalama, iskelet ağırlıklarını telefon sürümünden aktarma, `_LQTRI` eşlemesi) ardından `tools/charbake.py ara.glb orijinal.glb cikti.glb --size 4096`.
+- Giyilen zırhlar yüksek sürümde de doğru oturur: gizlenecek gövde üçgenleri `_LQTRI` ile telefon sürümünden eşlenir.
+
+### Aşama 8.6: karakter dokuları yeniden pişirildi
 
 - **Sorun:** karakterler yamalı/bozuk görünüyordu. Orijinal modellerin dokusu binlerce küçük parçadan oluşan bir atlas; model 1,8 milyon üçgenden ~60 bine indirilince üçgenler yanlış doku parçalarına düşüyordu.
 - **Çözüm:** `tools/charbake.py` her sade üçgene dokuda kendi hücresini verir ve rengi orijinal yüksek ayrıntılı modelden pişirir; normal haritası da pişirilir (orijinalin ince kabartıları ve varsa kendi normal haritası). Sura, Akıncı ve Avcı'ya metal/pürüz ve ışıma dokuları da gelir.
