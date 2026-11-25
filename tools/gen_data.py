@@ -472,6 +472,14 @@ LEVEL_MAPS = {
         ('lb_gokejder', 'Gök Ejderi', 94, 'dragon', '#7fb3ff', 1.9, {'model': 'ejder', 'aura': '#7fb3ff', 'tint': '#1f6fff', 'breath': '#7fb3ff', 'hitR': 3.0, 'n': 3}),
         ('lb_hiclik', 'Hiçlik Ejderi', 98, 'dragon', '#3a1a4a', 2.3, {'model': 'ejder', 'aura': '#8a5aff', 'tint': '#3a1a5a', 'breath': '#b06bff', 'hitR': 3.4, 'n': 3})]),
 }
+# metin haritalarının dev boss'ları: para ve level kasılır (her harita farklı, 3'er tane, çok büyük)
+GIANT_BOSSES = {
+    9: ('dev_golem', 'Dev Kadim Golem', 76, 'golem', '#8d5a42', 4.2, {'model': 'golem', 'aura': '#ff6a3d', 'tint': '#a0522d', 'hitR': 4.2, 'n': 3, 'giant': True}),
+    10: ('dev_cehennem', 'Dev Cehennem Şövalyesi', 86, 'humanoid', '#2a2522', 3.6, {'model': 'cehennem_sovalyesi', 'aura': '#ff3b2f', 'hitR': 3.4, 'n': 3, 'giant': True}),
+    11: ('dev_buz', 'Dev Buz Elementali', 96, 'golem', '#6a4aff', 4.6, {'model': 'su_elementi', 'aura': '#b06bff', 'tint': '#7a5aff', 'hitR': 4.4, 'n': 3, 'giant': True}),
+}
+GIANT_YANG = 1_000_000   # her ölümde kesin 1M Yang
+GIANT_LEAF = 0.10        # her yaprak rengi %10
 LEVEL_BOSS_EXP = 2.2    # sıradan boss tecrübesinin katı
 LEVEL_BOSS_HP = 0.6     # sıradan boss canının katı (hızlı kesilsin)
 LEVEL_BOSS_RESPAWN = 40  # saniye
@@ -501,7 +509,7 @@ def build(items):
         if i in METIN_MAPS:
             m['name'], m['lv'], m['stoneLv'], m['tier'] = METIN_MAPS[i]
             m['mobCount'], m['stones'] = 0, 28      # sadece metin taşları, haritaya dengeli dağılmış
-            m['bosses'] = [b[:6] + ({**b[6], 'n': 0},) for b in m['bosses']]   # boss'lar sadece level atlama haritalarında
+            m['bosses'] = [GIANT_BOSSES[i]] + [b[:6] + ({**b[6], 'n': 0},) for b in m['bosses']]   # eski boss'lar doğmaz, yerine dev boss
         if i in LEVEL_MAPS:
             m['name'], m['lv'], m['theme'], m['tier'], new = LEVEL_MAPS[i]
             # eski boss'lar ve yaratıklar doğmaz ama verileri kalır
@@ -535,6 +543,7 @@ def build(items):
             d = mob_stats(lv, boss=True)
             style = dict(style); hit_r = style.pop('hitR', None)   # çok büyük boss'larda gövde yarıçapı
             copies = style.pop('n', 1)                              # haritada kaç tane
+            giant = style.pop('giant', False)
             d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': 0,
                       'speed': 5.2, 'range': min(6.0, 2.6 * scale), 'cd': 2000, 'boss': True, 'respawn': 120,
                       'drops': [[k, 0.28] for k in own] + [[k, 0.12] for k in nxt] + [[k, 0.035] for k in leg]
@@ -547,6 +556,14 @@ def build(items):
             if hit_r:
                 d['hitR'] = hit_r
                 d['range'] = hit_r + 3.0
+            if giant:
+                d['exp'] = int(d['exp'] * 1.5)                # level kasılır (normal boss'un 1,5 katı)
+                d['hp'] = int(d['hp'] * 1.6)
+                d['atk'] = int(d['atk'] * 1.15)
+                d['yang'] = [GIANT_YANG, GIANT_YANG]          # para her zaman 1M
+                d['potions'] = d['potions'] + [[k, GIANT_LEAF] for k in ('yaprak_kirmizi', 'yaprak_mavi', 'yaprak_mor')]
+                d['respawn'] = 75
+                d['giant'] = True
             if m.get('levelMap') and copies:
                 d['exp'] = int(d['exp'] * LEVEL_BOSS_EXP)
                 d['hp'] = int(d['hp'] * LEVEL_BOSS_HP)

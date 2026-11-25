@@ -4,7 +4,12 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 
 ## Durum
 
-### Aşama 8.3 (bu sürüm): evrim eşyaları düşmez, Metin2 tarzı balık tutma
+### Aşama 8.4 (bu sürüm): metin haritalarına dev boss'lar
+
+- Her metin haritasında 3'er farklı, çok büyük boss: Volkan Metin Ovası'nda **Dev Kadim Golem** (Sv. 76), Kale Metin Meydanı'nda **Dev Cehennem Şövalyesi** (Sv. 86), Lanetli Metin Harabesi'nde **Dev Buz Elementali** (Sv. 96).
+- Her ölümde kesin **1.000.000 Yang**; her yaprak rengi (kırmızı, yeşil, mor) %10; normal boss'un 1,5 katı tecrübe; 75 sn'de yeniden doğar.
+
+### Aşama 8.3: evrim eşyaları düşmez, Metin2 tarzı balık tutma
 
 - **Evrim eşyaları** (10-14. kademe silah, zırh, miğfer, ayakkabı, bilezik, küpe, kalkan, kolye; efsaneviler dahil) hiçbir boss, metin, canavar ya da dükkândan çıkmaz; sadece +9 evrimiyle elde edilir. Boss ve taşlar onların yerine 9. kademe temel eşyaları düşürür; dükkân sadece 9. kademe satar.
 - **Balık tutma:** elde makaralı olta (silah gizlenir), karakter göle döner ve savurur, misina yay çizerek suya iner, kırmızı-beyaz şamandıra yüzer ve halka halka dalga yapar; balık vurunca şamandıra batıp çırpınır. Tutulan balık sudan fırlar, başın üstünde çırpınır, altta "Balık tuttun!" kartı çıkar.
