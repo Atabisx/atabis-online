@@ -41,6 +41,44 @@ if [ -n "$WWWIP" ] && [ "$WWWIP" = "$DNSIP" ]; then NAMES="$DOMAIN www.$DOMAIN";
 
 echo "==> 80 numaralı kapı kontrol ediliyor"
 USER80=$(ss -ltnp 2>/dev/null | awk '$4 ~ /:80$/' | grep -o 'users:(("[^"]*' | head -1 | cut -d'"' -f2)
+# Sunucuda zaten Caddy çalışıyorsa (diğer siteler için) nginx kurmayız: Caddy'ye bu alan adını ekleriz.
+# Caddy HTTPS sertifikasını kendisi alır ve socket.io (websocket) bağlantısını kendiliğinden geçirir.
+if [ "$USER80" = "caddy" ]; then
+  CADDYFILE=$(systemctl cat caddy 2>/dev/null | grep -o -- '--config [^ ]*' | head -1 | awk '{print $2}')
+  CADDYFILE=${CADDYFILE:-/etc/caddy/Caddyfile}
+  echo "==> Caddy bulundu, ayar dosyası: $CADDYFILE"
+  if [ ! -f "$CADDYFILE" ]; then echo "HATA: $CADDYFILE bulunamadı. Bana 'systemctl cat caddy' çıktısını gönder."; exit 1; fi
+  if grep -qE "(^|[ ,])$DOMAIN([ ,{]|$)" "$CADDYFILE"; then
+    echo "    $DOMAIN zaten Caddyfile içinde, tekrar eklenmiyor."
+  else
+    BACKUP="$CADDYFILE.yedek-$(date +%Y%m%d%H%M%S)"
+    cp "$CADDYFILE" "$BACKUP"
+    SITES="$DOMAIN"; [ "$NAMES" != "$DOMAIN" ] && SITES="$DOMAIN, www.$DOMAIN"
+    {
+      echo ""
+      echo "# ATABİS ONLINE – scripts/domain.sh tarafından eklendi"
+      echo "$SITES {"
+      echo "	encode gzip"
+      echo "	reverse_proxy 127.0.0.1:$PORT"
+      echo "}"
+    } >> "$CADDYFILE"
+    if ! caddy validate --config "$CADDYFILE" --adapter caddyfile >/tmp/caddy-validate.log 2>&1; then
+      cp "$BACKUP" "$CADDYFILE"
+      echo "HATA: Caddy ayarı geçersiz çıktı, eski haline döndürüldü. Ayrıntı:"; tail -5 /tmp/caddy-validate.log; exit 1
+    fi
+  fi
+  if command -v ufw >/dev/null 2>&1 && ufw status | grep -q "Status: active"; then ufw allow 80/tcp >/dev/null; ufw allow 443/tcp >/dev/null; fi
+  systemctl reload caddy
+  echo "==> Caddy yeniden yüklendi; HTTPS sertifikası birkaç saniye içinde kendiliğinden alınır."
+  sleep 8
+  CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://$DOMAIN/" || true)
+  echo "    https://$DOMAIN cevabı: ${CODE:-yok} (200 ise her şey yolunda)"
+  echo ""
+  echo "==> Tamam! Oyun artık burada:  https://$DOMAIN"
+  echo "    Açılmazsa 1-2 dakika bekle; olmazsa şu komutun çıktısını gönder: journalctl -u caddy --no-pager -n 30"
+  exit 0
+fi
+
 if [ -n "$USER80" ] && [ "$USER80" != "nginx" ]; then
   echo "HATA: 80 numaralı kapıyı '$USER80' kullanıyor (nginx değil). Önce onu durdur ya da bana yaz."
   exit 1
