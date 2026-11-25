@@ -17,7 +17,7 @@ from PIL import Image
 from scipy.spatial import cKDTree
 
 ap = argparse.ArgumentParser(); ap.add_argument('game'); ap.add_argument('orig'); ap.add_argument('out')
-ap.add_argument('--size', type=int, default=2048); ap.add_argument('--k', type=int, default=8)
+ap.add_argument('--size', type=int, default=2048); ap.add_argument('--k', type=int, default=16); ap.add_argument('--ss', type=int, default=2)
 a = ap.parse_args()
 t0 = time.time()
 log = lambda *x: print(f'[{time.time() - t0:5.1f}s]', *x, flush=True)
@@ -196,6 +196,7 @@ def bary(Pq, a0, b0, c0):
 
 
 CH = 6000   # üçgen grubu
+SUB = [((i + 0.5) / a.ss - 0.5, (j + 0.5) / a.ss - 0.5) for i in range(a.ss) for j in range(a.ss)]
 for g0 in range(0, n, CH):
     tri = np.arange(g0, min(n, g0 + CH)); m = len(tri)
     # her üçgen için hücresindeki bütün pikseller; pikselin hangi yarıya düştüğüne göre bu üçgene ait olanlar
@@ -203,51 +204,59 @@ for g0 in range(0, n, CH):
     inside = np.where(hp == 0, (px + py)[None] < cs, (px + py)[None] >= cs)           # m, cs*cs
     ti, pi = np.nonzero(inside)
     T_ = tri[ti]
-    lp = np.stack([px[pi], py[pi]], 1)
-    lc = loc[T_]
-    w = bary(np.concatenate([lp, np.zeros((len(lp), 1))], 1), *(np.concatenate([lc[:, k], np.zeros((len(lc), 1))], 1) for k in range(3)))
-    w = np.clip(w, 0, 1); w /= w.sum(1, keepdims=True)                                   # kenar payı: en yakın kenarın rengi
-    Pq = w[:, 0:1] * gA[T_] + w[:, 1:2] * gB[T_] + w[:, 2:3] * gC[T_]
-    Nq = w[:, 0:1] * gN[gT[T_, 0]] + w[:, 1:2] * gN[gT[T_, 1]] + w[:, 2:3] * gN[gT[T_, 2]]
-    Nq /= np.linalg.norm(Nq, axis=1, keepdims=True) + 1e-12
-    # orijinalde en yakın yüzey: k aday üçgen, yönü uyuşanlar arasında en yakını
-    _, cand = ckd.query(Pq, k=a.k, workers=-1)
-    best_d = np.full(len(Pq), np.inf); best = np.zeros(len(Pq), np.int64); best_w = np.zeros((len(Pq), 3))
-    for kk in range(a.k):
-        c = cand[:, kk]
-        bw = bary(Pq, A[c], B[c], C[c]); bw = np.clip(bw, 0, 1); bw /= bw.sum(1, keepdims=True)
-        Qp = bw[:, 0:1] * A[c] + bw[:, 1:2] * B[c] + bw[:, 2:3] * C[c]
-        dd = np.linalg.norm(Qp - Pq, axis=1)
-        facing = (fnU[c] * Nq).sum(1)
-        dd = dd + np.where(facing < 0.0, 0.02, 0.0)                                     # ters yüzlü katmanı (pelerin arkası) cezalandır
-        better = dd < best_d
-        best_d[better] = dd[better]; best[better] = c[better]; best_w[better] = bw[better]
-    ot = oT[best]
-    uv = best_w[:, 0:1] * oU[ot[:, 0]] + best_w[:, 1:2] * oU[ot[:, 1]] + best_w[:, 2:3] * oU[ot[:, 2]]
-    X = (cx[T_] + px[pi] - 0.5).astype(np.int64); Y = (cy[T_] + py[pi] - 0.5).astype(np.int64)
-    out_base[Y, X] = bilinear(tex_base, uv)
-    if out_mr is not None: out_mr[Y, X] = bilinear(tex_mr, uv)
-    if out_emi is not None: out_emi[Y, X] = bilinear(tex_emi, uv)
-    # yüksek ayrıntılı normal (dünya), varsa orijinal normal haritasıyla
-    hn = best_w[:, 0:1] * oVN[ot[:, 0]] + best_w[:, 1:2] * oVN[ot[:, 1]] + best_w[:, 2:3] * oVN[ot[:, 2]]
-    hn /= np.linalg.norm(hn, axis=1, keepdims=True) + 1e-12
-    if tex_nrm is not None:
-        tn = bilinear(tex_nrm, uv) * 2 - 1
-        Tt = oTan[best] - hn * (oTan[best] * hn).sum(1, keepdims=True); Tt /= np.linalg.norm(Tt, axis=1, keepdims=True) + 1e-12
-        Bb = oBit[best] - hn * (oBit[best] * hn).sum(1, keepdims=True); Bb /= np.linalg.norm(Bb, axis=1, keepdims=True) + 1e-12
-        # glTF: yeşil kanal +Y = -v yönü (dokuda yukarı)
-        hn = Tt * tn[:, 0:1] - Bb * tn[:, 1:2] + hn * tn[:, 2:3]
+    # alt örnekleme: her pikselde SSxSS nokta, ortalaması (pürüzsüz, kumlanmasız)
+    for ox, oy in SUB:
+        lp = np.stack([px[pi] + ox, py[pi] + oy], 1)
+        lc = loc[T_]
+        w = bary(np.concatenate([lp, np.zeros((len(lp), 1))], 1), *(np.concatenate([lc[:, k], np.zeros((len(lc), 1))], 1) for k in range(3)))
+        w = np.clip(w, 0, 1); w /= w.sum(1, keepdims=True)                                   # kenar payı: en yakın kenarın rengi
+        Pq = w[:, 0:1] * gA[T_] + w[:, 1:2] * gB[T_] + w[:, 2:3] * gC[T_]
+        Nq = w[:, 0:1] * gN[gT[T_, 0]] + w[:, 1:2] * gN[gT[T_, 1]] + w[:, 2:3] * gN[gT[T_, 2]]
+        Nq /= np.linalg.norm(Nq, axis=1, keepdims=True) + 1e-12
+        # orijinalde en yakın yüzey: k aday üçgen, yönü uyuşanlar arasında en yakını
+        _, cand = ckd.query(Pq, k=a.k, workers=-1)
+        best_d = np.full(len(Pq), np.inf); best = np.zeros(len(Pq), np.int64); best_w = np.zeros((len(Pq), 3))
+        for kk in range(a.k):
+            c = cand[:, kk]
+            bw = bary(Pq, A[c], B[c], C[c]); bw = np.clip(bw, 0, 1); bw /= bw.sum(1, keepdims=True)
+            Qp = bw[:, 0:1] * A[c] + bw[:, 1:2] * B[c] + bw[:, 2:3] * C[c]
+            dd = np.linalg.norm(Qp - Pq, axis=1)
+            facing = (fnU[c] * Nq).sum(1)
+            dd = dd + np.where(facing < 0.0, 0.02, 0.0) + 0.003 * (1 - np.clip(facing, 0, 1))   # ters ya da yan yüzlü katmanı cezalandır
+            better = dd < best_d
+            best_d[better] = dd[better]; best[better] = c[better]; best_w[better] = bw[better]
+        ot = oT[best]
+        if g0 == 0 and ox == SUB[0][0] and oy == SUB[0][1]: log('uzaklık yüzdelikleri (mm):', np.round(np.percentile(best_d, [50, 75, 90, 95, 99]) * 1000, 2))
+        uv = best_w[:, 0:1] * oU[ot[:, 0]] + best_w[:, 1:2] * oU[ot[:, 1]] + best_w[:, 2:3] * oU[ot[:, 2]]
+        X = (cx[T_] + px[pi] - 0.5).astype(np.int64); Y = (cy[T_] + py[pi] - 0.5).astype(np.int64)
+        out_base[Y, X] += bilinear(tex_base, uv)
+        if out_mr is not None: out_mr[Y, X] += bilinear(tex_mr, uv)
+        if out_emi is not None: out_emi[Y, X] += bilinear(tex_emi, uv)
+        # yüksek ayrıntılı normal (dünya), varsa orijinal normal haritasıyla
+        hn = best_w[:, 0:1] * oVN[ot[:, 0]] + best_w[:, 1:2] * oVN[ot[:, 1]] + best_w[:, 2:3] * oVN[ot[:, 2]]
         hn /= np.linalg.norm(hn, axis=1, keepdims=True) + 1e-12
-    # sade üçgenin teğet uzayına çevir
-    Tl = gTan[T_] - Nq * (gTan[T_] * Nq).sum(1, keepdims=True); Tl /= np.linalg.norm(Tl, axis=1, keepdims=True) + 1e-12
-    Bl = gBit[T_] - Nq * (gBit[T_] * Nq).sum(1, keepdims=True); Bl /= np.linalg.norm(Bl, axis=1, keepdims=True) + 1e-12
-    enc = np.stack([(hn * Tl).sum(1), -(hn * Bl).sum(1), np.maximum((hn * Nq).sum(1), 0.05)], 1)
-    enc /= np.linalg.norm(enc, axis=1, keepdims=True)
-    out_nrm[Y, X] = enc * 0.5 + 0.5
+        if tex_nrm is not None:
+            tn = bilinear(tex_nrm, uv) * 2 - 1
+            Tt = oTan[best] - hn * (oTan[best] * hn).sum(1, keepdims=True); Tt /= np.linalg.norm(Tt, axis=1, keepdims=True) + 1e-12
+            Bb = oBit[best] - hn * (oBit[best] * hn).sum(1, keepdims=True); Bb /= np.linalg.norm(Bb, axis=1, keepdims=True) + 1e-12
+            # glTF: yeşil kanal +Y = -v yönü (dokuda yukarı)
+            hn = Tt * tn[:, 0:1] - Bb * tn[:, 1:2] + hn * tn[:, 2:3]
+            hn /= np.linalg.norm(hn, axis=1, keepdims=True) + 1e-12
+        # sade üçgenin teğet uzayına çevir
+        Tl = gTan[T_] - Nq * (gTan[T_] * Nq).sum(1, keepdims=True); Tl /= np.linalg.norm(Tl, axis=1, keepdims=True) + 1e-12
+        Bl = gBit[T_] - Nq * (gBit[T_] * Nq).sum(1, keepdims=True); Bl /= np.linalg.norm(Bl, axis=1, keepdims=True) + 1e-12
+        enc = np.stack([(hn * Tl).sum(1), -(hn * Bl).sum(1), np.maximum((hn * Nq).sum(1), 0.05)], 1)
+        enc /= np.linalg.norm(enc, axis=1, keepdims=True)
+        out_nrm[Y, X] += enc
     if (g0 // CH) % 3 == 0: log(f'pişiriliyor {min(n, g0 + CH)}/{n}')
 
 # kullanılmayan hücreler: komşu rengi (mipmap'te siyah sızmasın)
-mask = out_nrm.sum(2) > 0
+nss = len(SUB)
+out_base /= nss
+if out_mr is not None: out_mr /= nss
+if out_emi is not None: out_emi /= nss
+_l = np.linalg.norm(out_nrm, axis=2, keepdims=True); mask = _l[..., 0] > 0
+out_nrm = np.where(_l > 0, out_nrm / np.maximum(_l, 1e-9) * 0.5 + 0.5, 0).astype(np.float32)
 if (~mask).any():
     from scipy import ndimage
     idx_ = ndimage.distance_transform_edt(~mask, return_distances=False, return_indices=True)
