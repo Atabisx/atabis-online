@@ -1,7 +1,9 @@
 // ATABİS ONLINE servis çalışanı: uygulama gibi kurulabilmesi ve modellerin telefonda saklanması için.
 // Oyun kodu (html/js/css/json) her zaman önce sunucudan istenir, böylece güncellemeler hemen gelir;
-// ağ yoksa son kopya kullanılır. 3D modeller ve resimler bir kez indirilip saklanır.
-const VERSION = 'atabis-v1';
+// ağ yoksa son kopya kullanılır. 3D modeller ve resimler saklanır ama arka planda sunucuyla karşılaştırılır:
+// dosya güncellendiyse (yeni karakter dokusu, yeni zırh) bir sonraki açılışta yenisi gelir.
+// VERSION değişince eski önbellek tamamen silinir (büyük model güncellemelerinde artır).
+const VERSION = 'atabis-v2';
 const ASSETS = /\.(glb|gz|png|jpg|jpeg|webp|woff2?|wav)$/i;
 
 self.addEventListener('install', (e) => { self.skipWaiting(); });
@@ -18,14 +20,13 @@ self.addEventListener('fetch', (e) => {
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/socket.io/')) return;   // oyun bağlantısı önbelleğe girmez
   if (/\.mp3$/i.test(url.pathname)) return;   // müzik parça parça (Range) iner, tarayıcının kendi önbelleği yeter
   if (url.origin === location.origin && ASSETS.test(url.pathname)) {
-    // önce önbellek (modeller büyük, bir kez inmesi yeter)
+    // önce önbellek (hızlı açılış), arka planda sunucuya sor: değiştiyse önbelleği yenile
     e.respondWith((async () => {
       const c = await caches.open(VERSION);
       const hit = await c.match(req);
-      if (hit) return hit;
-      const res = await fetch(req);
-      if (res.ok) c.put(req, res.clone());
-      return res;
+      const refresh = fetch(req, { cache: 'no-cache' }).then((res) => { if (res.ok) c.put(req, res.clone()); return res; });
+      if (hit) { e.waitUntil(refresh.catch(() => {})); return hit; }
+      return refresh;
     })());
     return;
   }
