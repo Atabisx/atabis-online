@@ -10,7 +10,13 @@ Tarayıcıda, telefondan oynanan 3D MMORPG. Metin2'den ilham alır; içerik, kod
 2. 5-30 dakika bekle, sonra sunucuda proje klasöründe: `sudo bash scripts/domain.sh alanadi.com`
 3. Betik nginx'i kurar, oyunu (3100) alan adına bağlar, ücretsiz HTTPS sertifikası alır. Oyun: `https://alanadi.com`
 
-### Aşama 8.7 (bu sürüm): bilgisayarda yüksek ayrıntılı karakterler
+### Aşama 8.8 (bu sürüm): telefonda da ayrıntılı karakterler, sıkıştırılmış dosyalar
+
+- Üç kalite: bilgisayar `models/chars_hq` (4096 doku), telefon `models/chars` (aynı ayrıntılı model, 2048 doku), Grafik: Düşük `models/chars_lq` (hafif).
+- `tools/charpack.py`: dokuyu küçültür, sıralı indeksi atar (oyun yüklerken kurar).
+- `server/gzip.js`: modeller, kod ve veriler sıkıştırılarak gönderilir (ek paket yok). Örnek: Yalaz telefon dosyası 19,5 MB yerine 7,8 MB iner. Sıkıştırılmış kopyalar sunucunun geçici klasöründe saklanır; dosya değişince yenilenir.
+
+### Aşama 8.7: bilgisayarda yüksek ayrıntılı karakterler
 
 - Bilgisayarda (fare + büyük ekran; ya da Grafik: Yüksek) karakterler `models/chars_hq/` sürümünü kullanır: ~3 kat üçgen (110-180 bin), 4096 piksel pişirilmiş renk, normal, metal/pürüz ve ışıma dokuları. Telefon ve Grafik: Düşük hafif sürümle devam eder; yüksek sürüm inmezse hafif sürüme düşer.
 - Bilgisayarda ekran çözünürlüğünün üstünde çizilir (Normal 1,5x, Yüksek 2x) ve gölgeler 2048 piksel.

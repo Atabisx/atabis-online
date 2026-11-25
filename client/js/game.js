@@ -322,16 +322,17 @@ const CHAR_MODELS = {
   okcu: { url: 'models/chars/okcu.glb' },                      // Şafak Şövalyesi (kızıl saçlı, pelerinli kadın şövalye)
 };
 const charModels = {};   // cls -> { scene, calib, clips }
-// bilgisayarda (fare, büyük ekran) yüksek ayrıntılı karakterler: ~3 kat üçgen, 4096 piksel doku (models/chars_hq).
-// Telefon ve Grafik: Düşük seçimi hafif sürümü kullanır.
+// karakter kalitesi: bilgisayarda (fare, büyük ekran) 4096 piksel dokulu sürüm (models/chars_hq),
+// telefonda aynı ayrıntılı model 2048 piksel dokuyla (models/chars), Grafik: Düşük seçilirse hafif sürüm (models/chars_lq)
+const GFX = (() => { try { return JSON.parse(localStorage.getItem('atabis_settings') || '{}').gfx; } catch (e) { return undefined; } })();
 const HQ_CHARS = (() => {
   try {
-    const gfx = (JSON.parse(localStorage.getItem('atabis_settings') || '{}').gfx);
-    if (gfx === 0) return false;
-    if (gfx === 2 && Math.min(screen.width, screen.height) >= 700) return true;
+    if (GFX === 0) return false;
+    if (GFX === 2 && Math.min(screen.width, screen.height) >= 700) return true;
     return matchMedia('(pointer: fine)').matches && Math.min(screen.width, screen.height) >= 700;
   } catch (e) { return false; }
 })();
+const CHAR_DIR = HQ_CHARS ? '/chars_hq/' : GFX === 0 ? '/chars_lq/' : '/chars/';
 // bekleme duruşu yana dönük (savaş duruşu): kalçayı dikey eksende 'deg' derece öne çevirir, gövde de onunla döner
 function turnIdle(sc, clips, deg) {
   const idle = clips.find((c) => c.name === 'Idle'); if (!idle) return;
@@ -371,7 +372,13 @@ function straightenIdle(sc, clips, s) {
   for (let i = 0; i < ht.values.length; i += 3) { ht.values[i] += d.x; ht.values[i + 1] += d.y; ht.values[i + 2] += d.z; }
 }
 function sharpen(root) {   // dokular eğik açıdan da net görünsün (yüz, zırh deseni)
-  root.traverse((o) => { if (!o.material) return; for (const m of [].concat(o.material)) for (const k of ['map', 'normalMap', 'emissiveMap']) if (m[k]) { m[k].anisotropy = MAX_ANISO; m[k].needsUpdate = true; } });
+  root.traverse((o) => {
+    // küçültülmüş dosyalarda sıralı indeks yok (köşeler üçgen başına ayrı): burada kurulur
+    if (o.isMesh && o.geometry && !o.geometry.index) {
+      const n = o.geometry.attributes.position.count;
+      o.geometry.setIndex(new THREE.BufferAttribute(n > 65535 ? new Uint32Array(n).map((_, i) => i) : new Uint16Array(n).map((_, i) => i), 1));
+    }
+    if (!o.material) return; for (const m of [].concat(o.material)) for (const k of ['map', 'normalMap', 'emissiveMap']) if (m[k]) { m[k].anisotropy = MAX_ANISO; m[k].needsUpdate = true; } });
 }
 function loadGlb(url) { return new Promise((res) => loader.load(url, (g) => { sharpen(g.scene); res(g); }, undefined, (e) => { console.warn('Model yüklenemedi:', url, e); res(null); })); }
 const modelReady = (async () => {
@@ -389,7 +396,7 @@ const modelReady = (async () => {
     try { g2.scene.rotation.y = calibrate(g2.scene).faceOffset - calib.faceOffset; kq[k] = g2; } catch (e) { console.warn('KinemIQ animasyonu hazırlanamadı', f, e); }
   }));
   await Promise.all(Object.entries(CHAR_MODELS).map(async ([cls, cfg]) => {
-    const c = (HQ_CHARS && await loadGlb(cfg.url.replace('/chars/', '/chars_hq/'))) || await loadGlb(cfg.url); if (!c) return;
+    const c = (CHAR_DIR !== '/chars/' && await loadGlb(cfg.url.replace('/chars/', CHAR_DIR))) || await loadGlb(cfg.url); if (!c) return;
     try {
       const sc = c.scene;
       // parça adı nesnede ya da üst gruplarında geçebilir (çok parçalı asa gibi)

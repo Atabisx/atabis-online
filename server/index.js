@@ -9,6 +9,7 @@ const auth = require('./auth');
 const characters = require('./characters');
 const admin = require('./admin');
 const { createWorld } = require('./game/world');
+const gzipStatic = require('./gzip');
 
 async function main() {
   await db.migrate();
@@ -16,6 +17,9 @@ async function main() {
   const app = express();
   app.set('trust proxy', true);
   app.use(express.json({ limit: '20kb' }));
+  // modeller, kod ve veriler sıkıştırılmış gönderilir (yaklaşık yarı boyut)
+  app.use(gzipStatic(path.join(__dirname, '..', 'client')));
+  app.use('/shared', gzipStatic(path.join(__dirname, '..', 'shared')));
   app.use(express.static(path.join(__dirname, '..', 'client')));
   app.use('/shared', express.static(path.join(__dirname, '..', 'shared')));
   auth.routes(app);
