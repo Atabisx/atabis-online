@@ -167,6 +167,29 @@ Jf = lJ[lT[lt]].reshape(len(V), 12); Wf = (lW[lT[lt]] * lw[:, :, None]).reshape(
 acc = np.zeros((len(V), Jf.max() + 1))
 np.add.at(acc, (np.repeat(np.arange(len(V)), 12), Jf.ravel()), Wf.ravel())
 NJ = np.argsort(-acc, axis=1)[:, :4]; NW = np.take_along_axis(acc, NJ, 1); NW /= NW.sum(1, keepdims=True) + 1e-12
+# baş ve boyun: aktarılan ağırlıklar yüzde ve saçta karışıyordu (baş eğilince yüz çekiliyor, saç yüze düşüyordu).
+# Başın kendisi sert biçimde Head kemiğine, boyun bölgesi Neck→Head geçişli bağlanır.
+jn = [lj['nodes'][i].get('name', '') for i in lj['skins'][0]['joints']]
+def jidx(name):
+    for i, n_ in enumerate(jn):
+        if n_.lower().endswith(name): return i
+    return None
+hj, nj = jidx('head'), jidx('neck')
+if hj is not None and nj is not None:
+    ibm = accessor(lj, lbin, lj['skins'][0]['inverseBindMatrices']).reshape(-1, 4, 4).transpose(0, 2, 1)
+    jpos = np.array([np.linalg.inv(m)[:3, 3] for m in ibm])
+    hp, np_ = jpos[hj], jpos[nj]
+    hor = np.linalg.norm((V - hp)[:, [0, 2]], axis=1)
+    top = (V[:, 1] >= hp[1]) & (hor < 0.32)
+    t = np.clip((V[:, 1] - np_[1]) / max(1e-6, hp[1] - np_[1]), 0, 1)
+    neck = (~top) & (V[:, 1] >= np_[1]) & (hor < 0.14)
+    for m_, wh in ((top, None), (neck, t)):
+        idx_ = np.nonzero(m_)[0]
+        if not len(idx_): continue
+        NJ[idx_] = 0; NW[idx_] = 0
+        NJ[idx_, 0] = hj; NJ[idx_, 1] = nj
+        NW[idx_, 0] = 1.0 if wh is None else wh[idx_]; NW[idx_, 1] = 0.0 if wh is None else 1 - wh[idx_]
+    log(f'baş: {int(top.sum())} köşe Head, boyun: {int(neck.sum())} köşe geçişli')
 LQ = lt.astype(np.float32)
 log(f'{len(V)} köşe, {len(T)} üçgen; ağırlıklar aktarıldı')
 
