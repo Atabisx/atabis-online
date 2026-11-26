@@ -94,10 +94,10 @@ STONES = [
     ('guc', 'Güç Taşı', 'weapon', 'atk', [6, 12, 20, 30, 42], '#e67e22', 'Saldırı gücü +{v}.'),
     ('ceviklik', 'Çeviklik Taşı', 'weapon', 'atkspeed', [2, 4, 6, 8, 10], '#16a085', 'Saldırı hızı +%{v}.'),
     ('avci', 'Canavar Taşı', 'weapon', 'monster', [2, 4, 6, 8, 10], '#8d6e63', 'Canavarlara karşı güç +%{v}.'),
-    ('savasci', 'Alp Taşı', 'weapon', 'vs_savasci', [2, 4, 6, 8, 10], '#c0392b', 'Alplara karşı güç +%{v}.'),
-    ('ninja', 'Akıncı Taşı', 'weapon', 'vs_ninja', [2, 4, 6, 8, 10], '#5a5f73', 'Akıncılara karşı güç +%{v}.'),
-    ('sura', 'Yalaz Taşı', 'weapon', 'vs_sura', [2, 4, 6, 8, 10], '#8e44ad', 'Yalazlara karşı güç +%{v}.'),
-    ('saman', 'Kam Taşı', 'weapon', 'vs_saman', [2, 4, 6, 8, 10], '#27ae60', 'Kamlara karşı güç +%{v}.'),
+    ('savasci', 'Şövalye Taşı', 'weapon', 'vs_savasci', [2, 4, 6, 8, 10], '#c0392b', 'Şövalyelere karşı güç +%{v}.'),
+    ('ninja', 'Suikastçı Taşı', 'weapon', 'vs_ninja', [2, 4, 6, 8, 10], '#5a5f73', 'Suikastçılara karşı güç +%{v}.'),
+    ('sura', 'Lanetli Taşı', 'weapon', 'vs_sura', [2, 4, 6, 8, 10], '#8e44ad', 'Lanetlilere karşı güç +%{v}.'),
+    ('saman', 'Büyücü Taşı', 'weapon', 'vs_saman', [2, 4, 6, 8, 10], '#27ae60', 'Büyücülere karşı güç +%{v}.'),
     ('okcu', 'Avcı Taşı', 'weapon', 'vs_okcu', [2, 4, 6, 8, 10], '#b8860b', 'Avcılara karşı güç +%{v}.'),
     ('hayat', 'Hayat Taşı', 'armor', 'hp', [80, 150, 250, 350, 500], '#e74c3c', 'Maks. Can +{v}.'),
     ('savunma', 'Savunma Taşı', 'armor', 'def', [8, 15, 22, 30, 40], '#7f8c8d', 'Savunma +{v}.'),
@@ -278,7 +278,7 @@ def build_items():
             (f'{pre}_yay', f'{setname} Yayı', 'sword', ['okcu'], lv, color, atk + 10),
             (f'{pre}_asa', f'{setname} Asası', 'staff', ['saman'], lv, color, atk + 10)]
     SPECIAL_WEAPONS.append(('ejder_cekic', 'Ejderarması Savaş Çekici', 'sword', ['savasci', 'sura'], 100, '#b06bff', 385))
-    CLS_TR = {'savasci': 'Alp', 'sura': 'Yalaz', 'ninja': 'Akıncı', 'okcu': 'Avcı', 'saman': 'Kam'}
+    CLS_TR = {'savasci': 'Şövalye', 'sura': 'Lanetli', 'ninja': 'Suikastçı', 'okcu': 'Avcı', 'saman': 'Büyücü'}
     for key, name, wtype, classes, lv, color, atk in SPECIAL_WEAPONS:
         items[key] = {'name': name, 'slot': 'weapon', 'type': wtype, 'classes': classes, 'lv': lv, 'rarity': 2, 'color': color,
                       'atk': atk, 'glow': True, 'price': lv * 25000, 'model': key, 'leaves': 5, 'stoneDrop': [lv, lv + 14],

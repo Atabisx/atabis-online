@@ -10,7 +10,7 @@ import { bootsMesh, braceletMesh, earringMesh, necklaceMesh, potionMesh, crystal
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = (n) => Number(n || 0).toLocaleString('tr-TR');
-const CLS = { savasci: 'Alp', ninja: 'Akıncı', sura: 'Yalaz', saman: 'Kam', okcu: 'Avcı' };
+const CLS = { savasci: 'Şövalye', ninja: 'Suikastçı', sura: 'Lanetli', saman: 'Büyücü', okcu: 'Avcı' };
 const TOKEN_KEY = 'atabis_admin_token';
 let token = localStorage.getItem(TOKEN_KEY);
 let ITEMS = {}, MOBS = {}, MAPS = [];

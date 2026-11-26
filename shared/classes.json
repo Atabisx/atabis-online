@@ -1,6 +1,6 @@
 {
  "savasci": {
-  "name": "Alp",
+  "name": "Şövalye",
   "desc": "Bozkırın kılıç ustası. Ön safta dövüşür; yüksek can ve savunma, ağır kılıç darbeleri.",
   "hp": 220,
   "mp": 40,
@@ -10,7 +10,7 @@
   "startWeapon": "sword0"
  },
  "ninja": {
-  "name": "Akıncı",
+  "name": "Suikastçı",
   "desc": "Hızlı ve çevik baskıncı. Hafif kılıçla seri, kritik vuruşlar.",
   "hp": 160,
   "mp": 60,
@@ -22,7 +22,7 @@
   "startWeapon": "sword0"
  },
  "sura": {
-  "name": "Yalaz",
+  "name": "Lanetli",
   "desc": "Kara alevi kılıçla birleştirir. Güçlü ama kırılgan.",
   "hp": 180,
   "mp": 90,
@@ -32,7 +32,7 @@
   "startWeapon": "sword0"
  },
  "saman": {
-  "name": "Kam",
+  "name": "Büyücü",
   "desc": "Ataların ruhlarıyla konuşan büyücü. İyileştirir ve büyü yapar; grubun can damarı.",
   "hp": 150,
   "mp": 140,
