@@ -669,10 +669,10 @@ SKILLS = {
         sk('u_kalkan', 'Gölge Kalkanı', '60 saniye savunmanı artırır.', 'self', 25, 3, 60, '#5a5e6a', buff={'stat': 'def', 'base': 8, 'perLv': 3, 'dur': 60}),
     ],
     'saman': [
-        sk('m_sifa', 'Yaşam Suyu', 'Kendini ve 8 metre içindeki oyuncuları iyileştirir.', 'heal', 30, 3, 8, '#7be08f', heal={'base': 80, 'perLv': 14, 'perLevel': 8}, radius=8),
-        sk('m_simsek', 'Gök Gürültüsü', 'Hedeften hedefe sıçrayan yıldırım (3 hedef, 10. seviyede 4, M1\'de 5).', 'chain', 22, 3, 6, '#9fd8ff', range=11, mult=1.5, multLv=0.12),
-        sk('m_kutsama', 'Ata Duası', '90 saniye kendinin ve yakınındakilerin savunmasını artırır.', 'self', 35, 3, 60, '#ffd23f', buff={'stat': 'def', 'base': 6, 'perLv': 3, 'dur': 90}, radius=10),
-        sk('m_kukreme', 'Bozkurt Uluması', 'Çevresine ateşli bir kükreme salar.', 'aoe', 40, 5, 14, '#ff6a3d', radius=6, mult=1.6, multLv=0.13, combo=1),
+        sk('m_sifa', 'Ruh Pınarı', 'Ayağının dibinden pınar fışkırtır; kendini ve 8 metre içindeki oyuncuları iyileştirir.', 'heal', 30, 3, 8, '#5fe0c8', heal={'base': 80, 'perLv': 14, 'perLevel': 8}, radius=8),
+        sk('m_simsek', 'Ruh Zinciri', 'Hedeften hedefe süzülen ruh küreleri (3 hedef, 10. seviyede 4, M1\'de 5).', 'chain', 22, 3, 6, '#b36bff', range=11, mult=1.5, multLv=0.12),
+        sk('m_kutsama', 'Tengri Koruması', 'Etrafında dönen ruh küreleri; 90 saniye kendinin ve yakınındakilerin savunmasını artırır.', 'self', 35, 3, 60, '#ffd23f', buff={'stat': 'def', 'base': 6, 'perLv': 3, 'dur': 90}, radius=10),
+        sk('m_kukreme', 'Kam Davulu', 'Üç vuruşluk davul sesiyle çevresine ateşli şok dalgası yayar.', 'aoe', 40, 5, 14, '#ff6a3d', radius=6, mult=1.6, multLv=0.13, combo=1),
     ],
     'okcu': [
         sk('o_coklu', 'Üçlü Kılıç Dalgası', 'Kılıcını savurup aynı anda 3 hedefe kılıç dalgası fırlatır.', 'multi', 18, 3, 5, '#f4e2b8', range=12, mult=1.2, multLv=0.1, count=3),

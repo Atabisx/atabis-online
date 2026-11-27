@@ -705,3 +705,5 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 - **Sesler:** erkek sınıflar (Alp, Yalaz) sadece "ha" kayıtları, kadın sınıflar sadece "hya" kayıtları kullanır.
 - **Nesne Market:** 4 kanat ve efsun kâğıdı 100 Ejder Parası.
 - **Zorluk:** metin taşları ~2.4 kat can + %35 hasar emilimi; boss canı 2.5 kat, savunması 1.5 kat.
+
+- **Kam skilleri yenilendi (6.12):** Ruh Pınarı (şifa), Ruh Zinciri (zincir, mor ruh küreleri), Tengri Koruması (savunma, dönen altın küreler), Kam Davulu (3 vuruşluk alan).
