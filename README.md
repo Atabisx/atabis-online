@@ -716,3 +716,9 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 - Her becerinin kendine ait hareketi (zıplama, yükselen eller, ileri atılma, dönme) ve kodla üretilmiş sesi var.
 
 - **Kam sadeleştirildi (6.14):** diğer karakterler gibi 4 beceri (Ejderha Atışı, Ejderha Kükremesi, Şimşek Çağırma, Yıldırım Pençesi). Menzil 6 metreye indi; karakter hedefe yaklaşıp vuruyor. Kaldırılan becerilere harcanan puanlar otomatik iade edilir.
+
+### Aşama 9.1: Eşya +15 ve takım bonusları
+- **+10 ile +15:** evrimi olmayan, Sv. 70+ son kademe eşyalar +15'e kadar yükselir. Evrimleşen eşyalar eskisi gibi +9'da bir üst kademeye evrimleşir (hiçbir şey değişmedi). Şanslar +10'dan sonra %20, 15, 12, 9, 6, 4. Her yükseltme 5'er renk yaprak ister. Başarısız olunca −1 düşer, Kutsama Kağıdı korur. +10'dan sonra eşya değeri daha dik artar.
+- **Aura:** +5'ten +15'e her seviyenin kendi rengi ve gücü var; +15 gökkuşağı renklerinde parlar.
+- **Takım bonusu:** aynı kademeden 2, 4, 6, 8 parça giyince sırayla can, saldırı + kritik, savunma + ortalama hasar, beceri + tecrübe bonusu gelir. Karakter penceresinde görünür.
+- Dosyalar: `server/game/rules.js` (MAX_UP_PLUS, maxUpOf, setInfo), `world.js` (upgrade, attrs), `client/js/game.js` (demirci arayüzü, aura, takım paneli). Veritabanı değişmedi.

@@ -67,7 +67,7 @@ function createWorld(io) {
   function sendAttrs(p) {
     const t = R.totals(p);
     p.socket.emit('attrs', { values: R.statValues(p), base: R.BASE_STATS[p.class], free: R.statPointsFree(p), max: R.STAT_MAX,
-      main: R.MAIN_STAT[p.class], bonus: R.statBonus(p),
+      main: R.MAIN_STAT[p.class], bonus: R.statBonus(p), set: R.setInfo(p),
       atk: R.attackPower(p), def: R.defense(p), maxHp: p.maxHp, maxMp: p.maxMp,
       crit: Math.round(((R.classOf(p).crit || 0.12) * 100) + t.crit), skill: t.skill, atkspeed: t.atkspeed, movespeed: t.movespeed,
       pierce: t.pierce, dodge: t.dodge, monster: t.monster, hpsteal: t.hpsteal, vs: Object.fromEntries(R.CLASS_KEYS.map((c) => [c, t['vs_' + c] || 0])) });
@@ -1109,7 +1109,7 @@ function createWorld(io) {
         if (ok && p.zone) hooks.announce(`${p.name}, ${def.name} +9 eşyasını ${nd.name} olarak evrimleştirdi!`, p.zone);
         return;
       }
-      if (up >= R.MAX_UP) { notice(p, `${def.name} zaten +${R.MAX_UP}${def.evolve ? '' : ' ve son kademe'}.`); return; }
+      if (up >= R.maxUpOf(def)) { notice(p, `${def.name} zaten +${R.maxUpOf(def)}${def.evolve ? '' : ' ve son kademe'}.`); return; }
       const cost = R.upgradeCost(def, up);
       if (p.yang < cost) { notice(p, `Yeterli Yang yok (${cost.toLocaleString('tr-TR')} gerekli).`); return; }
       const scroll = data && data.scroll ? p.inventory.find((i) => i.key === 'kutsama') : null;

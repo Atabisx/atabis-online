@@ -697,3 +697,8 @@ body.ingame #autoBtn { display: flex; }
 #catchCard b { font-size: 20px; }
 @keyframes catchIn { 0% { opacity: 0; transform: translate(-50%, -10px) scale(.8); } 10% { opacity: 1; transform: translate(-50%, 0) scale(1.06); }
   18% { transform: translate(-50%, 0) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -14px) scale(1); } }
+
+.setbox { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 2px; margin-top: 6px; padding: 8px; border: 1px solid #c9a35a66; border-radius: 8px; background: rgba(201,163,90,0.08); }
+.setbox b { color: #ffe08a; font-size: 13px; }
+.setbox small { color: #8b877c; font-size: 12px; }
+.setbox small.on { color: #9be38f; }

@@ -662,11 +662,17 @@ function attach(p, info, mesh) {
 // ---------- silah ve zırh aurası (Metin2'deki +9 parıltısı gibi) ----------
 // Kademe yükseldikçe renk ve yoğunluk artar; efsanevi eşyalar altın parlar.
 // eşyanın parıltısı: kademeye göre; +9 olan her eşya (Metin2 gibi) ayrıca parlar
+// +5'ten +15'e her seviyenin kendi rengi ve gücü var; +9'dan sonra "plus9" (daha büyük halka ve kıvılcım), +15'te gökkuşağı
+const UP_AURA = { 5: ['#9fd0ff', 0.3], 6: ['#7fe0ff', 0.4], 7: ['#6fffd0', 0.5], 8: ['#b6ff6a', 0.65], 9: ['#8fd8ff', 0.95], 10: ['#ffe36a', 1.05], 11: ['#ffb23a', 1.15], 12: ['#ff7a3a', 1.25], 13: ['#ff4a6a', 1.35], 14: ['#d05aff', 1.45], 15: ['#ffffff', 1.6] };
+const RAINBOW = ['#ff5a5a', '#ffd23f', '#7dff6a', '#5ad8ff', '#b06bff', '#ff6adf'];
 function auraOf(def, up = 0) {
   if (!def || def.tier == null) return null;
   const base = auraOfTier(def);
-  if (up >= 9) return base ? { ...base, k: base.k + 0.45, plus9: true } : { color: '#8fd8ff', k: 0.95, plus9: true };
-  return base;
+  if (up < 5) return base;
+  const [color, k] = UP_AURA[Math.min(up, 15)];
+  const r = { color: up >= 9 || !base ? color : base.color, k: (base ? base.k * 0.6 : 0) + k, plus9: up >= 9 };
+  if (up >= 15) r.rainbow = true;
+  return r;
 }
 function auraOfTier(def) {
   const leg = def.rarity >= 2;
@@ -726,7 +732,7 @@ function updateAuras(p, dt, t) {
       wa.acc -= 1;
       _av.set((Math.random() - 0.5) * 0.04, 0.1 + Math.random() * wa.len, 0);
       wa.mesh.localToWorld(_av);
-      fx.emit(_av.x, _av.y, _av.z, { vx: (Math.random() - 0.5) * 0.4, vy: 0.3 + Math.random() * 0.5, vz: (Math.random() - 0.5) * 0.4, color: wa.color, size: 0.13 * wa.k + 0.05, life: 0.5, drag: 1.5 });
+      fx.emit(_av.x, _av.y, _av.z, { vx: (Math.random() - 0.5) * 0.4, vy: 0.3 + Math.random() * 0.5, vz: (Math.random() - 0.5) * 0.4, color: wa.rainbow ? RAINBOW[Math.floor(t * 8) % 6] : wa.color, size: 0.13 * wa.k + 0.05, life: 0.5, drag: 1.5 });
     }
   }
   const aa = p.armorAura;
@@ -737,7 +743,7 @@ function updateAuras(p, dt, t) {
     while (aa.acc > 1) {
       aa.acc -= 1;
       const ang = t * 3 + Math.random() * Math.PI * 2, r = 0.45 + Math.random() * 0.15;
-      fx.emit(g.x + Math.cos(ang) * r, 0.15 + Math.random() * 0.4, g.z + Math.sin(ang) * r, { vx: -Math.sin(ang) * 0.6, vy: 1.1 + Math.random() * 0.8, vz: Math.cos(ang) * 0.6, color: aa.color, size: 0.16 * aa.k, life: 1.1, drag: 0.6 });
+      fx.emit(g.x + Math.cos(ang) * r, 0.15 + Math.random() * 0.4, g.z + Math.sin(ang) * r, { vx: -Math.sin(ang) * 0.6, vy: 1.1 + Math.random() * 0.8, vz: Math.cos(ang) * 0.6, color: aa.rainbow ? RAINBOW[Math.floor(t * 6 + ang) % 6] : aa.color, size: 0.16 * aa.k, life: 1.1, drag: 0.6 });
     }
     if (aa.ring) aa.ring.rotation.z += dt * 0.8;
   }
@@ -1757,17 +1763,19 @@ function reqText(def) {
   return `<span style="color:${ok ? '#8b877c' : '#ff6a5a'}">Sv. ${def.lv}</span>`;
 }
 // ---------- demirci artısı ve ruh taşları (sunucudaki rules.js ile aynı formüller) ----------
-const UP_CHANCE = [95, 90, 85, 75, 65, 55, 45, 35, 25], STONE_UP_CHANCE = [70, 60, 50, 40], STONE_ADD_CHANCE = [95, 85, 75, 65, 55];
+const UP_CHANCE = [95, 90, 85, 75, 65, 55, 45, 35, 25, 20, 15, 12, 9, 6, 4], STONE_UP_CHANCE = [70, 60, 50, 40], STONE_ADD_CHANCE = [95, 85, 75, 65, 55];
 const SOCKETS = { weapon: 3, armor: 3 };
 const upgradeCost = (def, up) => Math.round((2000 + (def.lv || 1) * 300) * (up + 1) * (1 + up * 0.35));
 const stoneUpCost = (g) => 5000 * (g + 1) * (g + 1);
 const LEAVES = ['yaprak_mor', 'yaprak_mavi', 'yaprak_kirmizi'];
-const leafNeed = (def, up) => (def.leaves ? 3 : (def.lv || 1) >= 30 && up >= 6 ? 3 : 0);   // yapraklar her renkten 3'er
+const maxUpOf = (def) => (!def.evolve && (def.lv || 1) >= 70 ? 15 : 9);     // sunucudaki rules.js ile aynı
+const leafNeed = (def, up) => (up >= 9 && (def.lv || 1) >= 30 ? 5 : def.leaves ? 3 : (def.lv || 1) >= 30 && up >= 6 ? 3 : 0);   // yapraklar her renkten 3'er
 const PEARL_KEYS = ['inci_beyaz', 'inci_mavi', 'inci_kirmizi'];
 const countItem = (key) => inv.inventory.reduce((a, i) => a + (i.key === key ? (i.n || 1) : 0), 0);
 function upBonus(def, up) {
   if (!up) return { atk: 0, def: 0, hp: 0 };
-  return { atk: def.atk ? Math.round(def.atk * 0.08 * up + up * 2) : 0, def: def.def ? Math.round(def.def * 0.1 * up + up) : 0, hp: def.hp ? Math.round(def.hp * 0.08 * up) : 0 };
+  const e = up <= 9 ? up : 9 + (up - 9) * 1.5;
+  return { atk: def.atk ? Math.round(def.atk * 0.08 * e + e * 2) : 0, def: def.def ? Math.round(def.def * 0.1 * e + e) : 0, hp: def.hp ? Math.round(def.hp * 0.08 * e) : 0 };
 }
 const itemName = (it, def) => (def ? def.name : '?') + (it && it.up ? ' +' + it.up : '');
 function statTextIt(it, def) {
@@ -1959,7 +1967,8 @@ function renderSmith() {
       info = can ? `+${g} → +${g + 1} · Şans %${STONE_UP_CHANCE[g]} · ${stoneUpCost(g).toLocaleString('tr-TR')} Yang<br><small class="warn">Başarısız olursa taş kırılır.</small>` : 'En yüksek derece (+4)';
     } else {
       const up = it.up || 0;
-      can = up < 9;
+      const mx = maxUpOf(def);
+      can = up < mx;
       const risk = smithScroll ? 'Kağıt korur' : up >= 4 ? 'Başarısızsa −1' : 'Başarısızsa değişmez';
       // Sv. 30+ eşyalarda +6'dan sonra üç renk yaprak istenir
       const need = can ? leafNeed(def, up) : 0;
@@ -1969,7 +1978,7 @@ function renderSmith() {
           if (!ok) can = false;
           return `<span class="leaf${ok ? '' : ' miss'}" style="--c:${ITEMS[k].color}">${itemIcon(k, ITEMS[k], 18)}${have}/${need}</span>`; }).join('') + '</span>';
       }
-      info = up < 9 ? `+${up} → +${up + 1} · Şans %${UP_CHANCE[up]} · ${upgradeCost(def, up).toLocaleString('tr-TR')} Yang<br><small class="${up >= 4 && !smithScroll ? 'warn' : ''}">${risk}</small>${leafHtml}` : 'En yüksek seviye (+9) · son kademe';
+      info = up < mx ? `+${up} → +${up + 1} · Şans %${UP_CHANCE[up]} · ${upgradeCost(def, up).toLocaleString('tr-TR')} Yang<br><small class="${up >= 4 && !smithScroll ? 'warn' : ''}">${risk}</small>${leafHtml}` : `En yüksek seviye (+${mx}) · son kademe`;
       // +9 eşya Metin2 gibi bir üst kademedeki eşyaya evrimleşir (sunucudaki rules.js ile aynı sayılar)
       const nd = up >= 9 && def.evolve && ITEMS[def.evolve];
       if (nd) {
@@ -2166,7 +2175,8 @@ function renderChar() {
   document.getElementById('charDerived').innerHTML = row('Saldırı', attrs.atk) + row('Savunma', attrs.def) + row('Azami can', attrs.maxHp) + row('Azami mana', attrs.maxMp) +
     row('Kritik', attrs.crit + '%') + row('Beceri hasarı', '+' + (attrs.skill || 0) + '%') + row('Saldırı hızı', '+' + (attrs.atkspeed || 0) + '%') + row('Hareket hızı', '+' + (attrs.movespeed || 0) + '%') +
     row('Delici vuruş', (attrs.pierce || 0) + '%') + row('Kaçınma', (attrs.dodge || 0) + '%') + row('Canavarlara karşı', '+' + (attrs.monster || 0) + '%') + row('Can çalma', (attrs.hpsteal || 0) + '%') +
-    Object.entries(attrs.vs || {}).filter(([, v]) => v > 0).map(([c, v]) => row(((CLASSES[c] || {}).name || c) + 'lara karşı', '+' + v + '%')).join('');
+    Object.entries(attrs.vs || {}).filter(([, v]) => v > 0).map(([c, v]) => row(((CLASSES[c] || {}).name || c) + 'lara karşı', '+' + v + '%')).join('') +
+    (attrs.set ? `<div class="setbox"><b>${esc(attrs.set.name)} Takımı (${attrs.set.n}/8)</b>` + attrs.set.steps.map((x) => `<small class="${x.on ? 'on' : ''}">${x.need} parça: ${esc(x.text)}</small>`).join('') + '</div>' : '<div class="setbox"><small>Aynı kademeden 2+ parça giyersen takım bonusu gelir.</small></div>');
 }
 document.getElementById('charBtn').addEventListener('click', () => { charwinEl.classList.add('open'); renderChar(); });
 document.getElementById('charClose').addEventListener('click', () => charwinEl.classList.remove('open'));
@@ -3521,6 +3531,7 @@ function renderGuide() {
     h = `<h3>⚒️ Ekipman ve geliştirme</h3><h4>Demirci (köyde)</h4><ul>
       <li>Eşyanı <b>+0'dan +9'a</b> yükselt. +4'ten sonra başarısız olursa artı düşer; <b>Kutsama Kağıdı</b> bunu önler.</li>
       <li>+6'dan sonra her basamak <b>3'er Kırmızı, Yeşil ve Mor Yaprak</b> ister (metin taşlarından düşer).</li></ul>
+      <h4>+10 ile +15</h4><ul><li>Evrimi olmayan <b>Sv. 70+ son kademe</b> eşyalar +15'e kadar çıkar. +10'dan sonra şans düşer, her yükseltmede 5'er renk yaprak gerekir. +5'ten itibaren her seviyenin kendi aurası vardır; +15 gökkuşağı gibi parlar.</li><li><b>Takım bonusu:</b> aynı kademeden 2, 4, 6, 8 parça giyince ek can, saldırı, savunma ve beceri hasarı gelir (Karakter penceresi).</li></ul>
       <h4>+9 sonrası: Evrim</h4><ul><li>+9 olan silah, zırh, kolye, küpe, ayakkabı, miğfer, kalkan ve bilezik <b>Evrimleştir</b> ile bir üst eşyaya dönüşür: daha güçlü ve <b>tamamen farklı görünümlü</b>.</li>
       <li>Zırh: Gök Paladin → Altın Pullu → Kızıl Pullu → Yıldızdökme → Altın Paladin → Ejder Plaka. Kılıç: Kanatlı → Ayaz → Ayaz Büyük → Magma → Magma Büyük → Ejderarması Çekici.</li>
       <li>Gerekenler: 3'er yaprak, <b>5 inci</b> ve Yang. Şans %60; başarısız olursa +9 kalır, efsun ve taşlar korunur.</li></ul>

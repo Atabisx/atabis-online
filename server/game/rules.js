@@ -105,8 +105,10 @@ function statBonus(p) {
 function skillMul(p) { return 1 + (totals(p).skill || 0) / 100; }
 
 // ---------- demirci: +0..+9 yükseltme ve ruh taşları ----------
-const MAX_UP = 9;
-const UP_CHANCE = [95, 90, 85, 75, 65, 55, 45, 35, 25];          // +1 ... +9 başarı yüzdesi
+const MAX_UP = 9;                // evrimleşen eşyaların sınırı (+9'da bir üst kademeye evrimleşir)
+const MAX_UP_PLUS = 15;          // son kademe (evrimi olmayan, Sv. 70+) eşyalar +15'e kadar çıkar
+const UP_CHANCE = [95, 90, 85, 75, 65, 55, 45, 35, 25, 20, 15, 12, 9, 6, 4];   // +1 ... +15 başarı yüzdesi
+const maxUpOf = (def) => (!def.evolve && (def.lv || 1) >= 70 ? MAX_UP_PLUS : MAX_UP);
 const STONE_UP_CHANCE = [70, 60, 50, 40];                         // taş +1 ... +4
 const STONE_ADD_CHANCE = [95, 85, 75, 65, 55];                    // taş takma (+0 ... +4); başarısızsa taş kırılır
 const SOCKETS = { weapon: 3, armor: 3 };
@@ -117,17 +119,47 @@ function stoneUpCost(g) { return 5000 * (g + 1) * (g + 1); }
 const STONE_TYPES = [...new Set(Object.values(ITEMS).filter((d) => d.stone).map((d) => d.stone.type))];
 const LEAVES = ['yaprak_mor', 'yaprak_mavi', 'yaprak_kirmizi'];
 const LEAF_N = 3;              // yapraklar her renkten 3'er istenir
-function leafNeed(def, up) { if (def.leaves) return LEAF_N; return (def.lv || 1) >= 30 && up >= 6 ? LEAF_N : 0; }   // özel eşyalar her basamakta
+function leafNeed(def, up) { if (up >= 9 && (def.lv || 1) >= 30) return 5; if (def.leaves) return LEAF_N; return (def.lv || 1) >= 30 && up >= 6 ? LEAF_N : 0; }   // +10 ve üstü her renkten 5   // özel eşyalar her basamakta
 // metin taşından düşen özel eşyalar: [anahtar, en düşük taş sv, en yüksek taş sv]
 const STONE_SPECIALS = Object.entries(ITEMS).filter(([, d]) => d.stoneDrop).map(([k, d]) => [k, d.stoneDrop[0], d.stoneDrop[1]]);
 // yükseltmenin eşyaya kattığı değerler
 function upBonus(def, up) {
   if (!up) return { atk: 0, def: 0, hp: 0 };
+  const e = up <= 9 ? up : 9 + (up - 9) * 1.5;      // +10 ve sonrası daha dik artar
   return {
-    atk: def.atk ? Math.round(def.atk * 0.08 * up + up * 2) : 0,
-    def: def.def ? Math.round(def.def * 0.1 * up + up) : 0,
-    hp: def.hp ? Math.round(def.hp * 0.08 * up) : 0,
+    atk: def.atk ? Math.round(def.atk * 0.08 * e + e * 2) : 0,
+    def: def.def ? Math.round(def.def * 0.1 * e + e) : 0,
+    hp: def.hp ? Math.round(def.hp * 0.08 * e) : 0,
   };
+}
+// ---------- takım (set) bonusları: aynı kademeden (tier) kuşanılan parça sayısına göre ----------
+const SET_STEPS = [2, 4, 6, 8];
+function setBonusAt(tier, n) {
+  const out = {};
+  const add = (k, v) => { out[k] = (out[k] || 0) + v; };
+  if (n >= 2) add('hp', tier * 40 + 60);
+  if (n >= 4) { add('atk', tier * 5 + 10); add('crit', 3); }
+  if (n >= 6) { add('def', tier * 8 + 20); add('avgdmg', Math.round(tier * 0.3 + 2)); }
+  if (n >= 8) { add('skill', 8); add('avgdef', 5); add('exp', 5); }
+  return out;
+}
+const SET_TEXT = { hp: 'Can', atk: 'Saldırı', crit: 'Kritik %', def: 'Savunma', avgdmg: 'Ort. hasar %', skill: 'Beceri hasarı %', avgdef: 'Ort. savunma %', exp: 'Tecrübe %' };
+const SET_SLOTS = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring', 'necklace', 'shield'];
+// en çok parçası olan kademe seçilir; {tier, n, name, steps:[{need, text, on}]} ya da null
+function setInfo(p) {
+  const cnt = {};
+  for (const sl of SET_SLOTS) { const d = p.equip[sl] && ITEMS[p.equip[sl].key]; if (d && d.tier != null && d.tier >= 1) cnt[d.tier] = (cnt[d.tier] || 0) + 1; }
+  let best = null;
+  for (const [t, n] of Object.entries(cnt)) if (!best || n > best.n || (n === best.n && +t > best.tier)) best = { tier: +t, n };
+  if (!best || best.n < 2) return null;
+  const arm = Object.values(ITEMS).find((d) => d.slot === 'armor' && d.tier === best.tier && (d.rarity || 0) < 2);
+  best.name = arm ? arm.name.replace(/ Zırh$/, '') : 'Kademe ' + best.tier;
+  best.steps = SET_STEPS.map((need) => {
+    const cur = setBonusAt(best.tier, need), prev = need > 2 ? setBonusAt(best.tier, need - 2) : {};
+    const parts = Object.entries(cur).filter(([k, v]) => v !== (prev[k] || 0)).map(([k, v]) => `${SET_TEXT[k]} +${v - (prev[k] || 0)}`);
+    return { need, text: parts.join(', '), on: best.n >= need };
+  });
+  return best;
 }
 const CLASS_KEYS = ['savasci', 'ninja', 'sura', 'saman', 'okcu'];
 
@@ -153,6 +185,8 @@ function totals(p) {
       if (type === 'maxhp') s.hp += v; else if (type === 'maxmp') s.mp += v; else s[type] = (s[type] || 0) + v;
     }
   }
+  const si = setInfo(p);
+  if (si) for (const [k, v] of Object.entries(setBonusAt(si.tier, si.n))) s[k] = (s[k] || 0) + v;
   const now = Date.now();
   for (const [stat, b] of Object.entries(p.buffs || {})) if (b.until > now) s[stat] = (s[stat] || 0) + b.value;
   return s;
@@ -241,6 +275,6 @@ const skillLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 
 module.exports = { EXP_GAIN_MUL, LEAF_N, EVOLVE_PEARLS, PEARL_KEYS, START_LEVEL, EVOLVE_CHANCE, EVOLVE_LEAVES, evolveCost, startKit, STONE_TYPES, STONE_SPECIALS, CLASS_KEYS, fixKey, fixItems, fixEquip,
   ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, invSize, EQUIP_SLOTS, GEAR_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
-  BONUS_TYPES, bonusPool, rollBonus, maxBonus, MAX_UP, LEAVES, leafNeed, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
+  BONUS_TYPES, bonusPool, MAX_UP_PLUS, maxUpOf, setInfo, setBonusAt, rollBonus, maxBonus, MAX_UP, LEAVES, leafNeed, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
   speedMul, attackCooldown, playerDamage, mobDamage, expGain, skillLabel,
 };
