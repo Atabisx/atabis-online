@@ -209,11 +209,11 @@ export function hit(kind, crit, pos) {
 // 'light' sıradan vuruşta ara sıra kısa bağırış, 'strong' 3. kombo ve becerilerde, 'magic' büyülerde.
 // Kadın karakterler (Akıncı, Kam, Avcı) sadece ince (kadın) kayıtları kullanır, perdeleri kalınlaştırılmaz.
 // Alp (Kızıl Gölge Kılıcı) ve Yalaz (Altın Fırtına İmparatoru) erkek: kalın "ha" kayıtları onlarda.
-// Kesin ayrım: erkek sadece "ha" kayıtları, kadın sadece "hya" kayıtları (sharp/myst karışık duyulduğu için kullanılmıyor).
-const FEMALE_LIGHT = ['hya4', 'hya0', 'hya5'];
-const FEMALE_STRONG = ['hya0', 'hya2', 'hya3', 'hya4', 'hya5', 'hya7'];
-const MALE_LIGHT = ['ha1', 'ha2', 'ha6'];
-const MALE_STRONG = ['ha0', 'ha3', 'ha4', 'ha7', 'ha8'];
+// Kesin ayrım: erkek sadece "hya" kayıtları, kadın sadece "ha" kayıtları (kullanıcı dinleyip doğruladı) (sharp/myst karışık duyulduğu için kullanılmıyor).
+const FEMALE_LIGHT = ['ha1', 'ha2', 'ha6'];
+const FEMALE_STRONG = ['ha0', 'ha1', 'ha2', 'ha3', 'ha4', 'ha6', 'ha7', 'ha8'];
+const MALE_LIGHT = ['hya4', 'hya0', 'hya5'];
+const MALE_STRONG = ['hya0', 'hya2', 'hya3', 'hya4', 'hya5', 'hya7'];
 const MALE = { light: MALE_LIGHT, strong: MALE_STRONG, magic: MALE_STRONG };
 const FEMALE = { light: FEMALE_LIGHT, strong: FEMALE_STRONG, magic: FEMALE_STRONG };
 const VOICES = {
