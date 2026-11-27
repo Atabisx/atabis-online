@@ -196,6 +196,17 @@ footer a:hover { color: var(--gold); }
   .btn.big { min-height: 58px; padding: 0 30px; font-size: 17px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } .rv { opacity: 1; transform: none; } }
+
+.evo { margin: 10px 0 70px; } .evo h3 { text-align: center; margin: 0 0 6px; font: 900 clamp(22px,3vw,30px)/1.2 'Cinzel Decorative', serif; color: var(--gold2); } .evo > p { text-align: center; color: var(--mute); margin: 0 auto 26px; max-width: 640px; }
+.chain { display: flex; align-items: center; justify-content: center; gap: 4px; overflow-x: auto; padding: 8px 4px 14px; scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: #6b4a1a transparent; }
+.chain .w { flex: 1 1 120px; min-width: 112px; max-width: 150px; text-align: center; scroll-snap-align: center; border: 1px solid var(--line); border-radius: 6px; background: radial-gradient(circle at 50% 35%, rgba(242,194,74,.10), rgba(0,0,0,.35)); padding: 8px 6px 10px; transition: border-color .3s, transform .3s; }
+.chain .w:hover { border-color: var(--gold); transform: translateY(-4px); } .chain .w img { width: 100%; height: auto; display: block; border-radius: 4px; }
+.chain .w b { display: block; font: 700 13px Cinzel, serif; color: var(--gold2); margin-top: 4px; } .chain .w small { color: var(--mute); font-size: 11px; }
+.chain .ar { flex: 0 0 auto; color: var(--gold); font-size: 22px; }
+.chain-t { font: 800 12px Cinzel, serif; letter-spacing: 4px; color: var(--gold); margin: 22px 0 4px; text-align: center; }
+.cards.six { grid-template-columns: repeat(4, 1fr); margin-top: 16px; }
+@media (max-width: 960px) { .cards.six { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 1000px) { .chain { justify-content: flex-start; } .chain .w { flex: 0 0 132px; } }
 </style>
 </head>
 <body>
@@ -278,11 +289,25 @@ footer a:hover { color: var(--gold); }
       <div><span class="num">04</span><h3>Balık ve İnci</h3><p>Savaştan yorulunca Gümüş Göl'e olta at. Her balığın kendi görünüşü, içinden inci ve sürprizler çıkar.</p>
         <ul><li>Hamsi, Sazan, Alabalık, Levrek, Yayın Balığı</li><li>%25 inci: dönüştür, evrimde kullan</li><li>Efsun, yaprak ve pet sandığı</li></ul></div></div>
 
+    <div class="evo rv" id="evo"><h3>Silah Dönüşümleri</h3><p>+9'a ulaşan silah demircide tamamen yeni bir silaha dönüşür: yeni model, yeni ışıltı, daha yüksek güç. Kılıçtan Ejder Savaş Çekici'ne uzanan zincir:</p>
+      <div class="chain-t">KILIÇ ZİNCİRİ</div><div class="chain"><div class="w"><img src="site/evo_sword9.webp" alt="Kristal Kılıç" loading="lazy"><b>Kristal Kılıç</b><small>Kademe 1</small></div><span class="ar">➜</span><div class="w"><img src="site/evo_sword10.webp" alt="Ayaz Kılıç" loading="lazy"><b>Ayaz Kılıç</b><small>Kademe 2</small></div><span class="ar">➜</span><div class="w"><img src="site/evo_sword11.webp" alt="Kara Büyük Kılıç" loading="lazy"><b>Kara Büyük Kılıç</b><small>Kademe 3</small></div><span class="ar">➜</span><div class="w"><img src="site/evo_sword12.webp" alt="Magma Kılıç" loading="lazy"><b>Magma Kılıç</b><small>Kademe 4</small></div><span class="ar">➜</span><div class="w"><img src="site/evo_sword13.webp" alt="İblis Büyük Kılıç" loading="lazy"><b>İblis Büyük Kılıç</b><small>Kademe 5</small></div><span class="ar">➜</span><div class="w"><img src="site/evo_sword14.webp" alt="Ejder Savaş Çekici" loading="lazy"><b>Ejder Savaş Çekici</b><small>Kademe 6</small></div></div>
+      <div class="chain-t">ASA ZİNCİRİ</div><div class="chain"><div class="w"><img src="site/evo_staff9.webp" alt="Kristal Asa" loading="lazy"><b>Kristal Asa</b><small>Kademe 1</small></div><span class="ar">➜</span><div class="w"><img src="site/evo_staff11.webp" alt="Kara Asa" loading="lazy"><b>Kara Asa</b><small>Kademe 2</small></div><span class="ar">➜</span><div class="w"><img src="site/evo_staff13.webp" alt="İblis Asa" loading="lazy"><b>İblis Asa</b><small>Kademe 3</small></div><span class="ar">➜</span><div class="w"><img src="site/evo_staff14.webp" alt="Ejder Asa" loading="lazy"><b>Ejder Asa</b><small>Kademe 4</small></div></div></div>
+
     <div class="cards">
       <div class="card rv"><div class="ic">🛡</div><h4>Lonca ve Savaş</h4><p>Loncanı kur, krallık savaşlarında ve düellolarda adını duyur.</p></div>
       <div class="card rv"><div class="ic">🐉</div><h4>Binek ve Pet</h4><p>At ve Savaş Kaplanı'na bin; yanında savaşan petlerini topla.</p></div>
       <div class="card rv"><div class="ic">🪽</div><h4>Kanat ve Kostüm</h4><p>Işık ve yarasa kanatları, gösterişli kostümlerle öne çık.</p></div>
       <div class="card rv"><div class="ic">💰</div><h4>Pazar ve Ticaret</h4><p>Oyuncu pazarında al, sat, takas et; servetini büyüt.</p></div>
+    </div>
+    <div class="cards six">
+      <div class="card rv"><div class="ic">✨</div><h4>+15 ve Set Bonusu</h4><p>Sv. 70+ eşyalar +15'e kadar yükselir; +10'dan sonra renkli auralar, +15'te gökkuşağı. Aynı kademeden 2-4-6-8 parça giy, set bonusunu aç.</p></div>
+      <div class="card rv"><div class="ic">🐾</div><h4>Pet Evrimi</h4><p>Petin seviye atlar ve dört kademede evrimleşir: Yavru, Genç, Olgun, Efsanevi. Her pet kendi becerisini taşır; nitelik Sıradan, Güçlü ya da Mükemmel.</p></div>
+      <div class="card rv"><div class="ic">🪽</div><h4>Kanat Evrimi ve Dönüşüm</h4><p>Kanatlarını Ölümsüz kademeye çıkar. Öfken dolunca devleşerek alevli forma dönüş: saldırı, savunma ve can %35 artar.</p></div>
+      <div class="card rv"><div class="ic">⛏</div><h4>Meslekler</h4><p>Dağlarda maden kaz, otlardan iksir yap, cevherden Kutsama, Efsun ve Pet Yumurtası üret. Üç meslek, her biri 10 seviye.</p></div>
+      <div class="card rv"><div class="ic">🏆</div><h4>Başarım ve Unvan</h4><p>12 başarım, kademeli ödüller ve adının yanında görünen unvanlar. Koleksiyonunu tamamla.</p></div>
+      <div class="card rv"><div class="ic">📅</div><h4>Günlük ve Haftalık Görev</h4><p>Her gün giriş ödülü ve görevler, her hafta büyük görevler: tecrübe, yang, efsun ve pet yumurtası.</p></div>
+      <div class="card rv"><div class="ic">🔮</div><h4>Şaman Becerileri</h4><p>Ejderha atışı, şimşek ve ruh çağırma; yakın dövüşe giren büyücü, her becerisi görsel şölen.</p></div>
+      <div class="card rv"><div class="ic">🎣</div><h4>Pet Yumurtası Avı</h4><p>Boss, metin taşı ve balık tutarken pet yumurtası düşer; içinden hangi dostun çıkacağı sürpriz.</p></div>
     </div>
   </div>
 </section>
@@ -317,6 +342,7 @@ footer a:hover { color: var(--gold); }
   <div class="wrap">
     <div class="sec-title rv"><span>GÜNCELLEMELER</span><h2>Son Haberler</h2><div class="orn">◆</div></div>
     <div class="news">
+      <article class="post rv"><img src="site/evo_sword14.webp" alt="" loading="lazy"><div><time>KASIM 2026</time><h4>Pet, Kanat, Meslek ve Başarımlar</h4><p>Evrimleşen petler, +15 eşyalar, set bonusları, dönüşüm, üç meslek, başarımlar ve haftalık görevler oyunda.</p></div></article>
       <article class="post rv"><img src="site/karakterler.webp" alt="" loading="lazy"><div><time>KASIM 2026</time><h4>Yeni Nesil Karakterler</h4><p>Bütün sınıflar yüksek ayrıntılı modeller, gerçekçi ışık ve keskin dokularla yenilendi.</p></div></article>
       <article class="post rv"><img src="site/boss2.webp" alt="" loading="lazy"><div><time>KASIM 2026</time><h4>Dev Boss'lar Geldi</h4><p>Üç metin haritasında yeni devler: her ölümde 1M Yang, yaprak ve bol tecrübe.</p></div></article>
       <article class="post rv"><img src="site/demirci.webp" alt="" loading="lazy"><div><time>KASIM 2026</time><h4>Sv. 70-99 Sunucusu</h4><p>Metin2 tarzı +9 evrim, inci dönüştürme, başlangıç rehberi ve hızlı gelişim.</p></div></article>
