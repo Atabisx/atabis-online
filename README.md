@@ -748,3 +748,6 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 - Madencilik: Sv. 10'da Kazma verilir. `mining` bayraklı haritalarda (Taş Vadisi, Kızıl Kanyon, Karlı Dağlar, Buz Mağarası, Volkan Ovası, Karanlık Mağara) Kaz düğmesi; bakır/demir/gümüş/altın/mithril cevheri. Meslek seviyesi ve harita seviyesi cevher türünü sınırlar; her seviye %5 çifte cevher şansı.
 - Simya: Sv. 10+ yaratıklardan Şifa Otu/Güç Otu/Ruh Çiçeği (%3, boss %50). Tarifler: büyük can iksiri, güç, taş deri, can, rüzgar iksiri (30 dk).
 - Zanaat: cevherden Yükseltme Yaprağı, Kutsama, Efsun Değiştirme, Pet Yumurtası, Kanat Tüyü.
+
+### 9.6 Yeni eşya modelleri
+- Efsun Nesnesi (`efsun_nesnesi.glb`), Efsun Değiştirme Nesnesi (`efsun_degistirme.glb`), Kırma/Kritik Taşı (`tas_kritik.glb`), Delme Taşı (`tas_deli.glb`), Hız Taşı (`tas_hiz.glb`): simge, yerdeki eşya ve balık yakalama görünümünde kullanılır. Taş modeli +0..+4 tüm dereceler için ortaktır.

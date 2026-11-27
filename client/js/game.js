@@ -1638,7 +1638,7 @@ function dropMesh(d) {
   } else if (def.slot === 'armor' && !(def.model && ITEM_MODELS[def.model] && ITEM_MODELS[def.model].fit)) {
     shape = def.plate ? chestMesh(def) : new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.34, 0.2), mat('#d9cfb8'));
     shape.position.y = 0.3;
-  } else if (def.model && ITEM_MODELS[def.model] && ['bracelet', 'earring', 'helmet', 'armor', 'costume'].includes(def.slot) && ITEM_MODELS[def.model].fit) {
+  } else if (def.model && ITEM_MODELS[def.model] && ['bracelet', 'earring', 'helmet', 'armor', 'costume', 'stone', 'use'].includes(def.slot) && ITEM_MODELS[def.model].fit) {
     // takı ve taç: yerde kendi modeliyle görünür
     shape = itemModel(def.model, null); shape.position.y = 0.35;
   } else if (def.slot === 'helmet') {
@@ -1726,11 +1726,11 @@ function iconBuilder(key, def) {
   if (s === 'potion') return () => icons.potionMesh(def);
   if (s === 'gem') return () => icons.pearlMesh(def.color);
   if (s === 'fish') return () => (key === 'b_cizme' ? icons.bootsMesh({ color: '#5a4a3a' }) : icons.fishMesh({ ...def, key }));
-  if (s === 'stone') return () => icons.spiritStoneMesh(def.color, def.stone.grade);
+  if (s === 'stone') return () => (def.model && ITEM_MODELS[def.model] ? itemModel(def.model, icons.spiritStoneMesh(def.color, def.stone.grade)) : icons.spiritStoneMesh(def.color, def.stone.grade));
   if (s === 'material') return () => icons.leafMesh(def.color);
   if (key === 'kutsama') return () => icons.scrollMesh();
-  if (key === 'efsun') return () => icons.crystalMesh('#c86bff');
-  if (key === 'efsun_degis') return () => icons.crystalMesh('#4fd1c5', true);
+  if (key === 'efsun') return () => itemModel('efsun_nesnesi', icons.crystalMesh('#c86bff'));
+  if (key === 'efsun_degis') return () => itemModel('efsun_degistirme', icons.crystalMesh('#4fd1c5', true));
   if (key === 'olta') return () => icons.rodMesh();
   if (key === 'yem') return () => icons.wormMesh();
   if (key === 'istiridye') return () => icons.shellMesh();

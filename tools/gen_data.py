@@ -177,11 +177,11 @@ def build_items():
 
     # efsun nesnesi: sadece metin taşlarından düşer
     items['efsun'] = {'name': 'Efsun Nesnesi', 'slot': 'use', 'desc': 'Bir ekipmana rastgele bir efsun ekler (en fazla 5).',
-                      'lv': 1, 'price': 0, 'rarity': 2, 'color': '#c86bff', 'stack': 200}
+                      'lv': 1, 'price': 0, 'rarity': 2, 'color': '#c86bff', 'stack': 200, 'model': 'efsun_nesnesi'}
     # efsun değiştirme: sadece boss'lardan düşer
     items['efsun_degis'] = {'name': 'Efsun Değiştirme Nesnesi', 'slot': 'use',
                             'desc': 'Efsunlu bir ekipmanın tüm efsunlarını yeniden belirler (efsun sayısı aynı kalır).',
-                            'lv': 1, 'price': 0, 'rarity': 2, 'color': '#4fd1c5', 'stack': 200}
+                            'lv': 1, 'price': 0, 'rarity': 2, 'color': '#4fd1c5', 'stack': 200, 'model': 'efsun_degistirme'}
     # balıkçılık
     items['olta'] = {'name': 'Olta', 'slot': 'use', 'desc': 'Gümüş Göl kıyısında balık tutmak için.', 'lv': 30, 'price': 0, 'rarity': 1, 'color': '#8a6440'}
     items['yem'] = {'name': 'Solucan Yem', 'slot': 'use', 'desc': 'Her atışta bir yem harcanır.', 'lv': 1, 'price': 8, 'rarity': 0, 'color': '#b0726a', 'stack': 200}
@@ -237,7 +237,8 @@ def build_items():
         for g in range(5):
             items[f'tas_{key}_{g}'] = {'name': f'{name} +{g}', 'slot': 'stone', 'stone': {'type': key, 'for': target, 'stat': stat, 'value': vals[g], 'grade': g},
                                        'desc': desc.format(v=vals[g]) + (' Silaha takılır.' if target == 'weapon' else ' Zırha takılır.'),
-                                       'lv': 1, 'price': 2000 * (g + 1) ** 2, 'rarity': 1 if g < 2 else 2, 'color': color, 'stack': 200}
+                                       'lv': 1, 'price': 2000 * (g + 1) ** 2, 'rarity': 1 if g < 2 else 2, 'color': color, 'stack': 200,
+                                       **({'model': {'kirma': 'tas_kritik', 'delme': 'tas_deli', 'hiz': 'tas_hiz'}[key]} if key in ('kirma', 'delme', 'hiz') else {})}
     # demirci yaprakları: 30. seviye ve üstü eşyaları +6'dan sonra yükseltmek için (metin taşlarından düşer)
     # görünüş eşyaları: kanat (az stat), kostüm (sadece görünüş, rengi boyar), evcil hayvan (tecrübe bonusu, peşinden gelir)
     # kanatlar: yalnız kullanıcının getirdiği modeller (client/models/wings/*.glb)
