@@ -2342,11 +2342,15 @@ function updateToolButtons() {
     mountBtn.dataset.k = mk; mountBtn.innerHTML = itemIcon(mk, ITEMS[mk], 34);
   }
   mountBtn.classList.toggle('on', !!inv.mounted);
+  mineBtn.style.display = currentMap && currentMap.mining && inv.inventory.some((i) => i.key === 'kazma') ? 'block' : 'none';
   fishBtn.style.display = currentMap && currentMap.fishing && inv.inventory.some((i) => i.key === 'olta') ? 'block' : 'none';
   // köydeyken pazar tezgâhı düğmesi; at düğmesi görünüyorsa onun yanına kayar
   stallBtn.style.display = currentMap && currentMap.village ? 'flex' : 'none';
   stallBtn.style.left = mountBtn.style.display === 'none' ? '174px' : '226px';
 }
+const mineBtn = document.getElementById('mineBtn');
+let mineBusy = false;
+mineBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); if (socket && !mineBusy) socket.emit('mineStart'); });
 const stallBtn = document.getElementById('stallBtn');
 stallBtn.addEventListener('click', () => { sfx.click(); social.openMyStall(); });
 const talkBtn = document.getElementById('talkBtn');
@@ -2788,6 +2792,9 @@ export function startGame(sock, opts = {}) {
     if (first && q.tutorial !== 'done' && myLevel < 15 && !myGm) setTimeout(() => social.startTutorial(Math.max(0, (Number(q.tutorial) || 1) - 1)), 2500);
   });
   socket.on('mount', ({ id, on }) => { const p = players[id]; if (p) setMount(p, on); });
+  socket.on('mineWait', (ms) => { mineBusy = true; mineBtn.textContent = 'Kazılıyor…'; mineBtn.classList.add('bite'); setTimeout(() => { if (mineBusy && socket) socket.emit('mineEnd'); }, ms + 150); });
+  socket.on('mineEnd', (r) => { mineBusy = false; mineBtn.textContent = 'Kaz'; mineBtn.classList.remove('bite'); toast(r.msg); if (r.ok) sfx.click(); });
+  socket.on('prof', (d) => { profInfo = d; if (profWin.classList.contains('open')) renderProf(); });
   socket.on('rage', (r) => { rageInfo = r; renderRage(); });
   setTimeout(() => socket.emit('rageGet'), 1500);
   socket.on('wing', (w) => { wingInfo = w; if (wingWin.classList.contains('open')) renderWing(); });
@@ -3555,6 +3562,32 @@ wingWin.addEventListener('click', (e) => {
   if (e.target.id === 'wingwin' || e.target.closest('#wingX')) { wingWin.classList.remove('open'); return; }
   if (e.target.closest('#wingEvoBtn') && socket) { sfx.click(); socket.emit('wingEvolve'); }
 });
+// ---------- meslekler paneli ----------
+let profInfo = null, profTab = 'mine';
+const profWin = document.getElementById('profwin');
+function renderProf() {
+  const box = document.getElementById('profBody'), d = profInfo;
+  profWin.querySelectorAll('.achtabs button').forEach((b) => b.classList.toggle('on', b.dataset.pt === profTab));
+  if (!d) { box.innerHTML = '<p class="petnone">Yükleniyor…</p>'; return; }
+  const pr = d.profs.find((x) => x.key === profTab);
+  const pct = pr.need ? Math.round(pr.xp / pr.need * 100) : 100;
+  let h = `<div class="petbar"><i style="width:${pct}%"></i><span>${esc(pr.name)} Sv. ${pr.lv}/${pr.max}${pr.need ? ` · ${pr.xp}/${pr.need}` : ' · SON'}</span></div>`;
+  if (profTab === 'mine') {
+    h += `<p class="pethint">${d.pick ? 'Kazman var.' : 'Kazma 10. seviyede verilir.'} Taş Vadisi, Kızıl Kanyon, Karlı Dağlar, Buz Mağarası, Volkan Ovası ve Karanlık Mağara'da Kaz düğmesini kullan. Seviye ve harita yükseldikçe daha değerli cevher çıkar; her seviye %5 çifte cevher şansı verir.</p>`;
+  } else {
+    h += `<p class="pethint">${profTab === 'alch' ? 'Yaratıklardan düşen otlarla iksir yap. (Sv. 10+ yaratıklar)' : 'Madencilikle çıkan cevherlerden değerli eşya üret.'}</p>`;
+    h += d.recipes.filter((r) => r.prof === profTab).map((r) => {
+      const ok = pr.lv >= r.lv && r.in.every((i) => i.have >= i.n);
+      return `<div class="ach${ok ? ' ready' : ''}"><div class="achrow"><b>${esc(r.name)}</b><small>Sv. ${r.lv}</small></div><small>${r.in.map((i) => `${esc(i.name)} ${i.have}/${i.n}`).join(' · ')} · ${r.cost.toLocaleString('tr-TR')} Yang</small><button data-cm="${r.key}" ${ok ? '' : 'disabled'}>Üret</button></div>`;
+    }).join('');
+  }
+  box.innerHTML = h;
+}
+profWin.addEventListener('click', (e) => {
+  if (e.target.id === 'profwin' || e.target.closest('#profX')) { profWin.classList.remove('open'); return; }
+  const tb = e.target.closest('[data-pt]'); if (tb) { profTab = tb.dataset.pt; renderProf(); return; }
+  const c = e.target.closest('[data-cm]'); if (c && socket) { sfx.click(); socket.emit('craftMake', c.dataset.cm); }
+});
 // ---------- başarım paneli ----------
 let achInfo = null, achTab = 'list';
 const achWin = document.getElementById('achwin');
@@ -3597,6 +3630,7 @@ petWin.addEventListener('click', (e) => {
   if (e.target.closest('#petEvoBtn') && socket) { sfx.click(); socket.emit('petEvolve'); }
 });
 const menuHandlers = {
+  prof: () => { profWin.classList.add('open'); renderProf(); if (socket) socket.emit('profGet'); },
   wing: () => { wingWin.classList.add('open'); renderWing(); if (socket) socket.emit('wingGet'); },
   ach: () => { achWin.classList.add('open'); renderAch(); if (socket) socket.emit('achGet'); },
   pet: () => { petWin.classList.add('open'); renderPet(); if (socket) socket.emit('petGet'); },

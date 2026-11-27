@@ -726,3 +726,7 @@ body.ingame #autoBtn { display: flex; }
 
 #tfBtn { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); min-width: 150px; min-height: 40px; border-radius: 20px; border: 2px solid #8b877c; background: rgba(14,16,13,0.85); color: #cfc9b8; font: inherit; font-weight: 800; font-size: 14px; z-index: 5; }
 #tfBtn.ready { border-color: #ffe08a; color: #fff; background: #b02a1c; animation: pulse .5s infinite alternate; } #tfBtn.on { border-color: #b9a5ff; color: #e6dcff; background: rgba(90,40,160,0.85); }
+
+#mineBtn { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); min-width: 140px; min-height: 52px; border-radius: 26px; border: 2px solid #c9a35a; background: rgba(14,16,13,0.85); color: #ffe08a; font: inherit; font-weight: 800; font-size: 16px; z-index: 5; }
+#mineBtn.bite { background: #6b4a2e; color: #fff; }
+.ach button:disabled { opacity: 0.4; }

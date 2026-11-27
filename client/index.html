@@ -91,6 +91,7 @@
   </button>
   <button id="fishBtn" style="display:none">Olta at</button>
   <button id="tfBtn" style="display:none"></button>
+  <button id="mineBtn" style="display:none">Kaz</button>
   <div id="catchCard" aria-live="polite"></div>
   <button id="talkBtn" style="display:none">Konuş</button>
   <div id="labels"></div>
@@ -176,6 +177,7 @@
       <div class="menugrid">
         <button data-menu="daily"><span class="mi">📜</span>Görevler<i style="display:none">0</i></button>
         <button data-menu="pet"><span class="mi">🐾</span>Evcil hayvan</button>
+        <button data-menu="prof"><span class="mi">⛏️</span>Meslekler</button>
         <button data-menu="wing"><span class="mi">🪽</span>Kanat evrimi</button>
         <button data-menu="ach"><span class="mi">🏆</span>Başarımlar</button>
         <button data-menu="guild"><span class="mi">🛡️</span>Lonca</button>
@@ -343,6 +345,13 @@
     <div class="modalbox">
       <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">KANAT EVRİMİ</b><button id="wingX" class="xbtn" aria-label="Kapat">×</button></div>
       <div id="wingBody" class="petbody"></div>
+    </div>
+  </div>
+  <div id="profwin" class="modal" role="dialog" aria-label="Meslekler">
+    <div class="modalbox">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">MESLEKLER</b><button id="profX" class="xbtn" aria-label="Kapat">×</button></div>
+      <div class="achtabs"><button data-pt="mine" class="on">Madencilik</button><button data-pt="alch">Simya</button><button data-pt="craft">Zanaat</button></div>
+      <div id="profBody" class="achbody"></div>
     </div>
   </div>
   <div id="achwin" class="modal" role="dialog" aria-label="Başarımlar">

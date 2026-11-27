@@ -208,6 +208,16 @@ def build_items():
     items['pet_sandik'] = {'name': 'Pet Sandığı', 'slot': 'use', 'desc': 'Aç: içinden rastgele bir evcil hayvan çıkar (Ejder Yavrusu çok nadir). Balık tutarken nadiren takılır.', 'lv': 1, 'price': 0, 'rarity': 2, 'color': '#b48ad9', 'stack': 50}
     items['pet_yumurta'] = {'name': 'Pet Yumurtası', 'slot': 'use', 'desc': 'Aç: yumurtadan rastgele bir evcil hayvan çıkar; niteliği Sıradan, Güçlü ya da Mükemmel olabilir. Boss, metin taşı ve balık tutarken düşer.', 'lv': 1, 'price': 0, 'rarity': 1, 'color': '#f2e7c9', 'stack': 50}
     items['kanat_tuyu'] = {'name': 'Kanat Tüyü', 'slot': 'material', 'desc': 'Kanatları evrimleştirmek için gerekir. Boss ve metin taşlarından düşer.', 'lv': 1, 'price': 0, 'rarity': 2, 'color': '#ffe9a8', 'stack': 200}
+    # ---------- meslekler: madencilik, simya, zanaat ----------
+    items['kazma'] = {'name': 'Kazma', 'slot': 'use', 'desc': 'Madenci kazması. Taş, kanyon, dağ ve mağara haritalarında Kaz düğmesiyle cevher çıkarırsın.', 'lv': 10, 'price': 0, 'rarity': 1, 'color': '#b0b6bd'}
+    for key, name, color in [('cevher_bakir', 'Bakır Cevheri', '#c97b4a'), ('cevher_demir', 'Demir Cevheri', '#9aa3ab'), ('cevher_gumus', 'Gümüş Cevheri', '#e3e8ee'),
+                             ('cevher_altin', 'Altın Cevheri', '#ffd23f'), ('cevher_mithril', 'Mithril Cevheri', '#7fe3ff')]:
+        items[key] = {'name': name, 'slot': 'material', 'desc': 'Madencilikle çıkar. Zanaat pencerelerinde kullanılır.', 'lv': 1, 'price': 0, 'rarity': 1, 'color': color, 'stack': 200}
+    for key, name, color in [('ot_sifa', 'Şifa Otu', '#6fe06f'), ('ot_guc', 'Güç Otu', '#ff7a5a'), ('ot_ruh', 'Ruh Çiçeği', '#b98aff')]:
+        items[key] = {'name': name, 'slot': 'material', 'desc': 'Yaratıklardan düşer. Simya için kullanılır.', 'lv': 1, 'price': 0, 'rarity': 1, 'color': color, 'stack': 200}
+    for key, name, stat, val, color in [('el_guc', 'Güç İksiri', 'atk', 250, '#ff6a4a'), ('el_savun', 'Taş Deri İksiri', 'def', 180, '#9aa3ab'),
+                                       ('el_can', 'Can İksiri', 'hp', 1800, '#6fe06f'), ('el_hiz', 'Rüzgar İksiri', 'movespeed', 35, '#9fd8ff')]:
+        items[key] = {'name': name, 'slot': 'potion', 'buff': {'stat': stat, 'value': val, 'dur': 1800}, 'desc': 'Simyacı iksiri: 30 dakika boyunca etki eder.', 'lv': 1, 'price': 0, 'rarity': 2, 'color': color, 'stack': 50}
     items['istiridye'] = {'name': 'İstiridye', 'slot': 'use', 'desc': 'Aç: içinden nadiren inci çıkar.', 'lv': 1, 'price': 40, 'rarity': 1, 'color': '#c8c0b0', 'stack': 200}
     for key, name, value, color in [('inci_beyaz', 'Beyaz İnci', 3000, '#f4f1e8'), ('inci_mavi', 'Mavi İnci', 9000, '#7fb3ff'), ('inci_kirmizi', 'Kırmızı İnci', 30000, '#ff6a5a')]:
         items[key] = {'name': name, 'slot': 'gem', 'lv': 1, 'price': value * 4, 'rarity': 2, 'color': color, 'stack': 200,
@@ -687,6 +697,8 @@ SKILLS = {
 if __name__ == '__main__':
     items = build_items()
     mobs, maps = build(items)
+    for m_ in maps:
+        if m_['name'] in ('Taş Vadisi', 'Kızıl Kanyon', 'Karlı Dağlar', 'Buz Mağarası', 'Volkan Metin Ovası', 'Karanlık Mağara'): m_['mining'] = True
     for name, data in (('items.json', items), ('mobs.json', mobs), ('maps.json', maps), ('skills.json', SKILLS)):
         with open(os.path.join(ROOT, name), 'w', encoding='utf8') as f:
             json.dump(data, f, ensure_ascii=False, separators=(',', ':'))

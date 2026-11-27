@@ -6,6 +6,7 @@ const config = require('../config');
 const { Zone, boundsOf } = require('./zone');
 const { createSocial } = require('./social');
 const { createAchieve } = require('./achieve');
+const { createProfession } = require('./profession');
 const { createGuilds } = require('./guild');
 const { createRealm } = require('./realm');
 const { createMarket } = require('./market');
@@ -365,6 +366,7 @@ function createWorld(io) {
       levelRewards(p);
       guilds.onLevel(p);
       ach.check(p);
+      prof.onLevel(p);
     }
     sendStats(p, up);
     p.socket.emit('expGain', amount);
@@ -408,6 +410,7 @@ function createWorld(io) {
         p.socket.emit('pet', R.petInfo(pi));
       }
       if (m.d.boss && Math.random() < 0.25) addItem(p, 'pet_yumurta', 1);
+      prof.onKill(p, m);
       if (m.d.boss && Math.random() < 0.5) addItem(p, 'kanat_tuyu', 1 + Math.floor(Math.random() * 3));
       if (p.level >= R.TF_LEVEL && !R.tfOn(p) && (p.rage || 0) < R.TF_RAGE) {      // dönüşüm öfkesi dolar
         p.rage = Math.min(R.TF_RAGE, (p.rage || 0) + (m.d.boss ? 15 : 1));
@@ -463,6 +466,7 @@ function createWorld(io) {
   };
   const W = {};      // sonraki aşamaların (krallık, etkinlik) bağlandığı yer
   const social = createSocial({ players, notice, sendInv, addItem, freeSlotsFor, save, sendQuests, giveExpDirect: (p, n) => expRaw(p, n, false, false), achEvent: (p, t, n) => ach.event(p, t, n) });
+  const prof = createProfession({ notice, addItem, sendInv, save, countItem, takeItem });
   const ach = createAchieve({ players, notice, sendInv, addItem, save, giveExpDirect: (p, n) => expRaw(p, n, false, false) });
   const guilds = createGuilds({ db, players, notice, sendInv, addItem, save, announce: (t) => io.emit('announce', t) });
   const realm = createRealm({ db, io, players, notice, moveToZone, sendInv, addItem, save, villageFor });
@@ -670,6 +674,7 @@ function createWorld(io) {
     sendHp(p); sendMp(p); sendSkills(p); sendQuests(p); sendBuffs(p);
     social.onConnect(p, socket);
     ach.onConnect(p, socket);
+    prof.onConnect(p, socket);
     mainq.onConnect(p, socket);
     depot.onConnect(p, socket);
     worldboss.onConnect(p, socket);
@@ -700,6 +705,7 @@ function createWorld(io) {
       if (isFinite(Number(m.f))) p.facing = Number(m.f);
       p.moving = !!m.moving;
       p.lastMove = now;
+      if (p.mine && p.moving) prof.cancelMine(p);
       if (p.fish && p.moving) { p.fish = null; socket.emit('fishEnd', { ok: false, msg: 'Hareket ettin, olta toplandı.' }); }
     });
 
@@ -840,6 +846,7 @@ function createWorld(io) {
         return;
       }
       if (it.key === 'olta' || it.key === 'yem') { notice(p, 'Balık tutmak için Gümüş Göl kıyısına git.'); return; }
+      if (it.key === 'kazma') { notice(p, 'Dağ, kanyon ve mağara haritalarında Kaz düğmesini kullan.'); return; }
       if (it.key === 'efsun') { notice(p, 'Efsunlamak istediğin ekipmana dokun ve "Efsunla"ya bas.'); return; }
       if (it.key === 'isin_yuzugu') { socket.emit('openTeleport'); return; }
       if (it.key === 'efsun_degis') { notice(p, 'Efsunlu bir ekipmana dokun ve "Efsun Değiştir"e bas.'); return; }
