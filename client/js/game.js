@@ -960,12 +960,16 @@ function pickStallAt(cx, cy) {
 }
 // ---------- görünüş: kanat ve evcil hayvan ----------
 const PET_SCALE = [1, 1.2, 1.45, 1.75], PET_COLORS = ['#ffffff', '#6fa8ff', '#b06bff', '#ffd23f'];
+const WING_SCALE = [1, 1.1, 1.22, 1.38], WING_GLOW = ['#ffffff', '#ffd6f0', '#9fd8ff', '#ffd23f'];
+const TF_COLORS = { savasci: '#ff3b2f', ninja: '#7a5cff', sura: '#b01cff', saman: '#3fd0ff', okcu: '#7dff6b' };
 function applyCosmetics(p) {
-  const wk = p.look.wings, pk0 = p.look.pet, pevo = p.look.petEvo || 0, pk = pk0 ? pk0 + ':' + pevo : null;
+  const tf = !!p.look.tf;
+  if (!!p.tfOn !== tf) { p.tfOn = tf; p.group.scale.setScalar(tf ? 1.3 : 1); }
+  const wk = p.look.wings ? p.look.wings + ':' + (p.look.wingEvo || 0) : null, wk0 = p.look.wings, wevo = p.look.wingEvo || 0, pk0 = p.look.pet, pevo = p.look.petEvo || 0, pk = pk0 ? pk0 + ':' + pevo : null;
   if (p.wingKey !== wk) {
     if (p.wings) p.group.remove(p.wings);
     p.wings = null; p.wingKey = wk;
-    const d = ITEMS[wk];
+    const d = ITEMS[wk0];
     if (d && d.wing) {
       const w = buildWings(d.wing);
       // kanat sırtta: karakterin baktığı yönün tersine, omuz hizasında
@@ -973,8 +977,9 @@ function applyCosmetics(p) {
       holder.rotation.y = -FACE_OFFSET;
       w.position.set(0, (p.labelY || 2.2) * 0.58, -0.22);
       holder.add(w);
+      holder.scale.setScalar(WING_SCALE[wevo] || 1);
       p.group.add(holder);
-      p.wings = holder; p.wingMesh = w;
+      p.wings = holder; p.wingMesh = w; p.wingEvo = wevo;
     }
   }
   if (p.petKey !== pk) {
@@ -992,7 +997,14 @@ function applyCosmetics(p) {
   }
 }
 function updateCosmetics(p, dt, t) {
-  if (p.wingMesh) { p.wings.visible = !p.dead; p.wingMesh.userData.flap(t + (p.id.length || 0), p.moving); }
+  if (p.wingMesh) {
+    p.wings.visible = !p.dead; p.wingMesh.userData.flap(t + (p.id.length || 0), p.moving);
+    if (p.wingEvo >= 2 && !p.dead && Math.random() < dt * 6) { const gp = p.group.position; fx.emit(gp.x + (Math.random() - 0.5) * 1.6, gp.y + 1 + Math.random(), gp.z + (Math.random() - 0.5) * 1.6, { vy: 0.4, color: WING_GLOW[p.wingEvo], size: 0.1, life: 0.8, drag: 1 }); }
+  }
+  if (p.tfOn && !p.dead) {                       // dönüşüm aurası
+    p.tfAcc = (p.tfAcc || 0) + dt * 22;
+    while (p.tfAcc > 1) { p.tfAcc -= 1; const gp = p.group.position; fx.emit(gp.x + (Math.random() - 0.5) * 1.4, gp.y + 0.1, gp.z + (Math.random() - 0.5) * 1.4, { vy: 1.6 + Math.random(), color: TF_COLORS[p.cls] || '#ff3b2f', size: 0.22, life: 0.7, drag: 1 }); }
+  }
   const pet = p.pet; if (!pet) return;
   pet.root.visible = !p.dead && p.group.visible;
   // sahibinin sol arkasında dur
@@ -2749,6 +2761,7 @@ export function startGame(sock, opts = {}) {
   });
   socket.on('hp', ({ hp, max }) => setHp(hp, max));
   socket.on('stats', ({ level, exp, need, up }) => {
+    if (players[myId]) { players[myId].level = level; renderRage(); }
     setStats(level, exp, need);
     const me = players[myId];
     if (up && me) { me.level = level; updateLabelText(me); log(`<b>Sistem:</b> Seviye atladın! Artık Sv. ${level}.`); showLevelBanner(level); sfx.levelUp(); }
@@ -2775,6 +2788,9 @@ export function startGame(sock, opts = {}) {
     if (first && q.tutorial !== 'done' && myLevel < 15 && !myGm) setTimeout(() => social.startTutorial(Math.max(0, (Number(q.tutorial) || 1) - 1)), 2500);
   });
   socket.on('mount', ({ id, on }) => { const p = players[id]; if (p) setMount(p, on); });
+  socket.on('rage', (r) => { rageInfo = r; renderRage(); });
+  setTimeout(() => socket.emit('rageGet'), 1500);
+  socket.on('wing', (w) => { wingInfo = w; if (wingWin.classList.contains('open')) renderWing(); });
   socket.on('playerTitle', ({ id, title }) => { const p = players[id]; if (p) setTitleTag(p, title); });
   socket.on('ach', (d) => { achInfo = d; if (achWin.classList.contains('open')) renderAch(); });
   socket.on('achDone', () => { sfx.click(); });
@@ -3514,6 +3530,31 @@ function renderPet() {
     <div class="petbar"><i style="width:${pct}%"></i><span>Sv. ${i.lv}/${i.max}${i.need ? ` · ${i.exp}/${i.need}` : ' · SON'}</span></div>
     <div class="petbon">${bon}</div>${sk}${evo}<p class="pethint">Evcil hayvan kuşanılıyken yaratık ve boss keserek tecrübe kazanır; boss çok verir.</p>`;
 }
+// ---------- dönüşüm düğmesi ve kanat evrimi ----------
+let rageInfo = null, wingInfo = null;
+const tfBtn = document.getElementById('tfBtn'), wingWin = document.getElementById('wingwin');
+function renderRage() {
+  const r = rageInfo; if (!r || myLevelNow() < r.lv) { tfBtn.style.display = 'none'; return; }
+  tfBtn.style.display = 'block';
+  tfBtn.classList.toggle('ready', !r.on && r.v >= r.max); tfBtn.classList.toggle('on', r.on);
+  tfBtn.textContent = r.on ? `${r.form} · ${r.left}sn` : r.v >= r.max ? `DÖNÜŞ: ${r.form}` : `Öfke ${r.v}/${r.max}`;
+}
+const myLevelNow = () => { const m = players[myId]; return (m && m.level) || 0; };
+tfBtn.addEventListener('click', () => { if (socket && rageInfo && !rageInfo.on) { sfx.click(); socket.emit('transform'); } });
+setInterval(() => { if (rageInfo && rageInfo.on && rageInfo.left > 0) { rageInfo.left--; renderRage(); } }, 1000);
+function renderWing() {
+  const box = document.getElementById('wingBody'), w = wingInfo;
+  if (!w) { box.innerHTML = '<p class="petnone">Kuşanılı kanadın yok.<br><small>Kanat Tüyü boss ve metin taşlarından düşer. Evrim kanadın gücünü ve dönüşüm süresini artırır.</small></p>'; return; }
+  const def = ITEMS[w.key];
+  let evo;
+  if (w.next) { const ok = w.have >= w.next.feather && myYangNow() >= w.next.cost; evo = `<div class="petevo"><b>Evrim: ${esc(w.next.stage)} (x${w.next.mul})</b><small>${w.next.feather} Kanat Tüyü (${w.have}) · ${w.next.cost.toLocaleString('tr-TR')} Yang</small><button id="wingEvoBtn" ${ok ? '' : 'disabled'}>Evrimleştir</button></div>`; }
+  else evo = '<div class="petevo"><b>Son kademe: Ölümsüz</b></div>';
+  box.innerHTML = `<div class="pethead">${itemIcon(w.key, def, 44)}<div><b style="color:${RARITY[def.rarity]}">${esc(def.name)}</b><small>${esc(w.stage)} · Çarpan x${w.mul}</small></div></div>${evo}<p class="pethint">Öfken dolunca (Sv. 30+) Dönüşüm düğmesi çıkar: kısa süre güçlü forma girersin. Her kanat kademesi +5 sn ekler.</p>`;
+}
+wingWin.addEventListener('click', (e) => {
+  if (e.target.id === 'wingwin' || e.target.closest('#wingX')) { wingWin.classList.remove('open'); return; }
+  if (e.target.closest('#wingEvoBtn') && socket) { sfx.click(); socket.emit('wingEvolve'); }
+});
 // ---------- başarım paneli ----------
 let achInfo = null, achTab = 'list';
 const achWin = document.getElementById('achwin');
@@ -3556,6 +3597,7 @@ petWin.addEventListener('click', (e) => {
   if (e.target.closest('#petEvoBtn') && socket) { sfx.click(); socket.emit('petEvolve'); }
 });
 const menuHandlers = {
+  wing: () => { wingWin.classList.add('open'); renderWing(); if (socket) socket.emit('wingGet'); },
   ach: () => { achWin.classList.add('open'); renderAch(); if (socket) socket.emit('achGet'); },
   pet: () => { petWin.classList.add('open'); renderPet(); if (socket) socket.emit('petGet'); },
   friends: () => document.getElementById('friendBtn').click(),

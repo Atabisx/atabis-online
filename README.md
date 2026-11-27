@@ -737,3 +737,8 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 - Koleksiyon: sahip olunan evcil hayvan türleri ve tutulan balık türleri.
 - Unvan seçilince isim etiketinin yanında «unvan» görünür (`playerTitle` olayı).
 - Veri `p.quests.ach` içinde saklanır; veritabanı değişikliği yok. Menü: Başarımlar.
+
+### 9.4 Kanat evrimi ve dönüşüm (Aşama 4)
+- Kanat evrimi: Normal → Parlak (x1.3) → Kadim (x1.7) → Ölümsüz (x2.2). Gereken: Kanat Tüyü (5/15/40) + yang (2M/10M/40M). Tüy boss (%50) ve metin taşından (%8) düşer. Alan `wev`, eşyada saklanır; menü: Kanat evrimi.
+- Dönüşüm: Sv. 30+, canavar keserek Öfke dolar (boss +15). Dolunca düğme çıkar; 20 sn (+5 sn her kanat kademesi) atk/def/can x1.35, hız +15, saldırı hızı +15. Karakter büyür, sınıf renginde aura. Öfke kayda geçmez (geçici).
+- Formlar: Kızıl Dev, Gölge Hayalet, Karanlık Lord, Ejder Ruhu, Orman Avcısı.

@@ -723,3 +723,6 @@ body.ingame #autoBtn { display: flex; }
 .collgrid { display: flex; flex-wrap: wrap; gap: 6px; } .collgrid span { padding: 5px 9px; border-radius: 14px; border: 1px solid #55555588; color: #6d6a60; font-size: 12px; } .collgrid span.on { border-color: #9be38f; color: #9be38f; }
 .collgrid.titles span { color: #cfc9b8; cursor: pointer; } .collgrid.titles span.on { border-color: #c9a35a; color: #ffe08a; }
 .ttag { color: #b9a5ff; font-size: 0.85em; margin-right: 3px; }
+
+#tfBtn { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); min-width: 150px; min-height: 40px; border-radius: 20px; border: 2px solid #8b877c; background: rgba(14,16,13,0.85); color: #cfc9b8; font: inherit; font-weight: 800; font-size: 14px; z-index: 5; }
+#tfBtn.ready { border-color: #ffe08a; color: #fff; background: #b02a1c; animation: pulse .5s infinite alternate; } #tfBtn.on { border-color: #b9a5ff; color: #e6dcff; background: rgba(90,40,160,0.85); }

@@ -90,6 +90,7 @@
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path class="mute" d="M3 3l18 18"/></svg>
   </button>
   <button id="fishBtn" style="display:none">Olta at</button>
+  <button id="tfBtn" style="display:none"></button>
   <div id="catchCard" aria-live="polite"></div>
   <button id="talkBtn" style="display:none">Konuş</button>
   <div id="labels"></div>
@@ -175,6 +176,7 @@
       <div class="menugrid">
         <button data-menu="daily"><span class="mi">📜</span>Görevler<i style="display:none">0</i></button>
         <button data-menu="pet"><span class="mi">🐾</span>Evcil hayvan</button>
+        <button data-menu="wing"><span class="mi">🪽</span>Kanat evrimi</button>
         <button data-menu="ach"><span class="mi">🏆</span>Başarımlar</button>
         <button data-menu="guild"><span class="mi">🛡️</span>Lonca</button>
         <button data-menu="rank"><span class="mi">🏆</span>Sıralama</button>
@@ -335,6 +337,12 @@
     <div class="modalbox">
       <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">EVCİL HAYVAN</b><button id="petX" class="xbtn" aria-label="Kapat">×</button></div>
       <div id="petBody" class="petbody"></div>
+    </div>
+  </div>
+  <div id="wingwin" class="modal" role="dialog" aria-label="Kanat evrimi">
+    <div class="modalbox">
+      <div class="mhead"><b style="color:#e8b54a;letter-spacing:.06em">KANAT EVRİMİ</b><button id="wingX" class="xbtn" aria-label="Kapat">×</button></div>
+      <div id="wingBody" class="petbody"></div>
     </div>
   </div>
   <div id="achwin" class="modal" role="dialog" aria-label="Başarımlar">

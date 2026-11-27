@@ -201,6 +201,15 @@ function setInfo(p) {
 }
 const CLASS_KEYS = ['savasci', 'ninja', 'sura', 'saman', 'okcu'];
 
+// ---------- kanat evrimi ve dönüşüm ----------
+const WING_STAGES = [
+  { name: 'Normal', mul: 1, feather: 0, cost: 0 }, { name: 'Parlak', mul: 1.3, feather: 5, cost: 2e6 },
+  { name: 'Kadim', mul: 1.7, feather: 15, cost: 10e6 }, { name: 'Ölümsüz', mul: 2.2, feather: 40, cost: 40e6 }];
+const wingEvo = (it) => Math.min(WING_STAGES.length - 1, (it && it.wev) || 0);
+const wingMul = (it) => WING_STAGES[wingEvo(it)].mul;
+const TF_LEVEL = 30, TF_RAGE = 100, TF_BASE_SEC = 20;
+const TF_FORMS = { savasci: 'Kızıl Dev', ninja: 'Gölge Hayalet', sura: 'Karanlık Lord', saman: 'Ejder Ruhu', okcu: 'Orman Avcısı' };
+const tfOn = (p, now = Date.now()) => !!(p.tf && p.tf.until > now);
 function totals(p) {
   const s = { atk: 0, def: 0, hp: 0, mp: 0, crit: 0, atkspeed: 0, movespeed: 0, monster: 0, hpsteal: 0, skill: 0, pierce: 0, dodge: 0, avgdmg: 0, avgdef: 0, hpregen: 0, exp: 0, yang: 0, drop: 0 };
   for (const c of CLASS_KEYS) s['vs_' + c] = 0;
@@ -210,9 +219,10 @@ function totals(p) {
     const it = p.equip[slot];
     const def = it && ITEMS[it.key];
     if (!def) continue;
-    s.atk += def.atk || 0; s.def += def.def || 0; s.hp += def.hp || 0; s.mp += def.mp || 0;
+    const wm = slot === 'wings' ? wingMul(it) : 1;                 // kanat evrimi temel değerleri çarpar
+    s.atk += Math.round((def.atk || 0) * wm); s.def += Math.round((def.def || 0) * wm); s.hp += Math.round((def.hp || 0) * wm); s.mp += Math.round((def.mp || 0) * wm);
     // evcil hayvan ve kanat gibi eşyaların özel bonusları (kritik, delici, mana, hız…)
-    if (def.bonus) for (const [k, v] of Object.entries(slot === 'pet' ? petBonus(it, def) : def.bonus)) s[k] = (s[k] || 0) + v;
+    if (def.bonus) for (const [k, v] of Object.entries(slot === 'pet' ? petBonus(it, def) : def.bonus)) s[k] = (s[k] || 0) + (wm > 1 ? Math.round(v * wm) : v);
     else if (slot === 'pet') for (const [k, v] of Object.entries(petBonus(it, def))) s[k] = (s[k] || 0) + v;
     const ub = upBonus(def, it.up || 0);
     s.atk += ub.atk; s.def += ub.def; s.hp += ub.hp;
@@ -228,6 +238,7 @@ function totals(p) {
   if (si) for (const [k, v] of Object.entries(setBonusAt(si.tier, si.n))) s[k] = (s[k] || 0) + v;
   const now = Date.now();
   for (const [stat, b] of Object.entries(p.buffs || {})) if (b.until > now) s[stat] = (s[stat] || 0) + b.value;
+  if (tfOn(p, now)) { for (const k of ['atk', 'def', 'hp']) s[k] = Math.round(s[k] * 1.35); s.movespeed += 15; s.atkspeed += 15; }   // dönüşüm
   return s;
 }
 function maxHp(p) {
@@ -312,7 +323,7 @@ function startKit(cls) {
 }
 const skillLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 
-module.exports = { EXP_GAIN_MUL, LEAF_N, EVOLVE_PEARLS, PEARL_KEYS, START_LEVEL, EVOLVE_CHANCE, EVOLVE_LEAVES, evolveCost, startKit, STONE_TYPES, STONE_SPECIALS, CLASS_KEYS, fixKey, fixItems, fixEquip,
+module.exports = { WING_STAGES, wingEvo, wingMul, TF_LEVEL, TF_RAGE, TF_BASE_SEC, TF_FORMS, tfOn, EXP_GAIN_MUL, LEAF_N, EVOLVE_PEARLS, PEARL_KEYS, START_LEVEL, EVOLVE_CHANCE, EVOLVE_LEAVES, evolveCost, startKit, STONE_TYPES, STONE_SPECIALS, CLASS_KEYS, fixKey, fixItems, fixEquip,
   ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, invSize, EQUIP_SLOTS, GEAR_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
   BONUS_TYPES, bonusPool, PET_MAX, PET_STAGES, PET_QUALITY, PET_SKILLS, petExpFor, petLv, petEvo, petInfo, rollPetQuality, MAX_UP_PLUS, maxUpOf, setInfo, setBonusAt, rollBonus, maxBonus, MAX_UP, LEAVES, leafNeed, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
   speedMul, attackCooldown, playerDamage, mobDamage, expGain, skillLabel,

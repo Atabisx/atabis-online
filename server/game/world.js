@@ -41,6 +41,8 @@ function createWorld(io) {
   function looks(p) {
     const l = {};
     for (const s of ['weapon', 'armor', 'helmet', 'shield', 'costume', 'wings', 'pet']) l[s] = p.equip[s] ? p.equip[s].key : null;
+    l.wingEvo = p.equip.wings ? R.wingEvo(p.equip.wings) : 0;
+    l.tf = R.tfOn(p) ? 1 : 0;
     // +9 parlaması için silah ve zırhın artısı
     l.petEvo = p.equip.pet ? R.petEvo(p.equip.pet) : 0;
     l.up = { weapon: (p.equip.weapon && p.equip.weapon.up) || 0, armor: (p.equip.armor && p.equip.armor.up) || 0 };
@@ -108,6 +110,11 @@ function createWorld(io) {
     if (up && p.zone) p.zone.emit('playerLevel', { id: p.id, level: p.level });
   }
   const notice = (p, text) => p.socket.emit('notice', text);
+  const sendRage = (p) => p.socket.emit('rage', { v: p.rage || 0, max: R.TF_RAGE, on: R.tfOn(p), left: R.tfOn(p) ? Math.ceil((p.tf.until - Date.now()) / 1000) : 0, form: R.TF_FORMS[p.class], lv: R.TF_LEVEL });
+  function endTransform(p) {
+    p.tf = null; recalc(p); sendInv(p); sendHp(p); sendMp(p); sendRage(p);
+    if (p.zone) p.zone.emit('look', { id: p.id, look: looks(p) });
+  }
 
   function addItem(p, key, n = 1) {
     const def = R.ITEMS[key];
@@ -401,6 +408,12 @@ function createWorld(io) {
         p.socket.emit('pet', R.petInfo(pi));
       }
       if (m.d.boss && Math.random() < 0.25) addItem(p, 'pet_yumurta', 1);
+      if (m.d.boss && Math.random() < 0.5) addItem(p, 'kanat_tuyu', 1 + Math.floor(Math.random() * 3));
+      if (p.level >= R.TF_LEVEL && !R.tfOn(p) && (p.rage || 0) < R.TF_RAGE) {      // dönüşüm öfkesi dolar
+        p.rage = Math.min(R.TF_RAGE, (p.rage || 0) + (m.d.boss ? 15 : 1));
+        sendRage(p);
+        if (p.rage >= R.TF_RAGE) notice(p, 'Öfken doldu! Dönüşüm düğmesine bas.');
+      }
       const q = p.quests;
       if (q.horse === 'active' && m.key === HORSE_QUEST.mob) {
         q.horseKills = (q.horseKills || 0) + 1;
@@ -1089,6 +1102,35 @@ function createWorld(io) {
     // ---------- demirci ----------
     // eşyayı +1 yükselt (ya da ruh taşının derecesini artır). { slot } | { uid }, scroll: Kutsama Kağıdı kullan
     // ---------- evcil hayvan: bilgi ve evrim ----------
+    socket.on('rageGet', () => sendRage(p));
+    socket.on('transform', () => {
+      if (p.dead) return;
+      if (p.level < R.TF_LEVEL) { notice(p, `Dönüşüm ${R.TF_LEVEL}. seviyede açılır.`); return; }
+      if (R.tfOn(p)) return;
+      if ((p.rage || 0) < R.TF_RAGE) { notice(p, 'Öfken henüz dolmadı. Canavar kes, boss çok verir.'); return; }
+      const sec = R.TF_BASE_SEC + 5 * (p.equip.wings ? R.wingEvo(p.equip.wings) : 0);
+      const oldMax = p.maxHp;
+      p.rage = 0; p.tf = { until: Date.now() + sec * 1000 };
+      recalc(p); p.hp = Math.min(p.maxHp, p.hp + (p.maxHp - oldMax)); sendHp(p); sendMp(p); sendInv(p); sendRage(p);
+      if (p.zone) { p.zone.emit('look', { id: p.id, look: looks(p) }); p.zone.emit('announce', `${p.name} dönüştü: ${R.TF_FORMS[p.class]}!`); }
+    });
+    socket.on('wingGet', () => {
+      const it = p.equip.wings; if (!it) { socket.emit('wing', null); return; }
+      const e = R.wingEvo(it), nx = R.WING_STAGES[e + 1];
+      socket.emit('wing', { key: it.key, evo: e, stage: R.WING_STAGES[e].name, mul: R.wingMul(it), next: nx ? { stage: nx.name, mul: nx.mul, feather: nx.feather, cost: nx.cost } : null, have: countItem(p, 'kanat_tuyu') });
+    });
+    socket.on('wingEvolve', () => {
+      const it = p.equip.wings; if (!it) { notice(p, 'Önce bir kanat kuşan.'); return; }
+      const nx = R.WING_STAGES[R.wingEvo(it) + 1]; if (!nx) { notice(p, 'Kanadın zaten son kademede.'); return; }
+      if (countItem(p, 'kanat_tuyu') < nx.feather) { notice(p, `Evrim için ${nx.feather} Kanat Tüyü gerekir.`); return; }
+      if (p.yang < nx.cost) { notice(p, `Evrim için ${nx.cost.toLocaleString('tr-TR')} Yang gerekir.`); return; }
+      takeItem(p, 'kanat_tuyu', nx.feather); p.yang -= nx.cost; it.wev = R.wingEvo(it) + 1;
+      notice(p, `${R.ITEMS[it.key].name} evrimleşti: ${nx.name}!`);
+      if (p.zone) p.zone.emit('announce', `${p.name} kanadını evrimleştirdi: ${nx.name} ${R.ITEMS[it.key].name}!`);
+      recalc(p); sendInv(p); sendHp(p); sendMp(p);
+      if (p.zone) p.zone.emit('look', { id: p.id, look: looks(p) });
+      socket.emit('wing', { key: it.key, evo: it.wev, stage: nx.name, mul: nx.mul, next: R.WING_STAGES[it.wev + 1] ? { stage: R.WING_STAGES[it.wev + 1].name, mul: R.WING_STAGES[it.wev + 1].mul, feather: R.WING_STAGES[it.wev + 1].feather, cost: R.WING_STAGES[it.wev + 1].cost } : null, have: countItem(p, 'kanat_tuyu') });
+    });
     socket.on('petGet', () => { const it = p.equip.pet; socket.emit('pet', R.petInfo(it)); });
     socket.on('petEvolve', () => {
       const it = p.equip.pet, info = R.petInfo(it);
@@ -1357,6 +1399,7 @@ function createWorld(io) {
         p.mp = Math.min(p.maxMp, p.mp + Math.max(1, Math.round(p.maxMp * rate)));
         sendMp(p);
       }
+      if (p.tf && p.tf.until <= now) { endTransform(p); notice(p, 'Dönüşüm sona erdi.'); }
       let expired = false;
       for (const [stat, b] of Object.entries(p.buffs)) if (b.until <= now) { delete p.buffs[stat]; expired = true; }
       if (expired) { recalc(p); sendInv(p); sendBuffs(p); sendHp(p); sendMp(p); }

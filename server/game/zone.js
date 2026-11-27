@@ -319,6 +319,7 @@ class Zone {
       }
       // demirci yaprakları (kırmızı, yeşil, mor): %50 şansla 1-3 adet (rengi rastgele)
       if (Math.random() < 0.5) this.makeDrop(best.x, best.z, p.id, { key: R.LEAVES[Math.floor(Math.random() * 3)], n: 1 + Math.floor(Math.random() * 3) });
+      if (Math.random() < 0.08) this.makeDrop(best.x + 0.6, best.z, p.id, { key: 'kanat_tuyu', n: 1 });
       if (Math.random() < 0.04) { this.makeDrop(best.x, best.z, p.id, { key: 'pet_yumurta' }); this.hooks.announce(`${p.name}, ${best.name} kırarak Pet Yumurtası buldu!`, this); }
       // evcil hayvan: %1,5 şans (Ejder Yavrusu bunların içinde çok nadir)
       if (Math.random() < 0.015) {
