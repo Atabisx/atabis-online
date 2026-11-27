@@ -5,6 +5,7 @@ const R = require('./rules');
 const config = require('../config');
 const { Zone, boundsOf } = require('./zone');
 const { createSocial } = require('./social');
+const { createAchieve } = require('./achieve');
 const { createGuilds } = require('./guild');
 const { createRealm } = require('./realm');
 const { createMarket } = require('./market');
@@ -47,7 +48,8 @@ function createWorld(io) {
   }
   const publicPlayer = (p) => ({ id: p.id, name: p.name, cls: p.class, x: p.x, z: p.z, ry: p.ry, level: p.level,
     look: looks(p), hp: p.hp, maxHp: p.maxHp, dead: !!p.dead, mounted: p.mounted || false, gm: !!p.gm,
-    guild: p.guild ? p.guild.name : null, empire: p.empire || 0 });
+    guild: p.guild ? p.guild.name : null, empire: p.empire || 0,
+    title: (p.quests && p.quests.ach && p.quests.ach.title) || null });
   function recalc(p) {
     p.maxHp = R.maxHp(p);
     p.maxMp = R.maxMp(p);
@@ -355,6 +357,7 @@ function createWorld(io) {
       notice(p, `+${R.STAT_PER_LEVEL || 3} durum puanı kazandın. Karakter penceresinden (K) dağıt.`);
       levelRewards(p);
       guilds.onLevel(p);
+      ach.check(p);
     }
     sendStats(p, up);
     p.socket.emit('expGain', amount);
@@ -394,7 +397,7 @@ function createWorld(io) {
         let lvUp = false;
         while (R.petLv(pi) < R.PET_MAX && pi.pexp >= R.petExpFor(R.petLv(pi))) { pi.pexp -= R.petExpFor(R.petLv(pi)); pi.plv = R.petLv(pi) + 1; lvUp = true; }
         if (R.petLv(pi) >= R.PET_MAX) pi.pexp = 0;
-        if (lvUp) { notice(p, `${R.ITEMS[pi.key].name} ${R.petLv(pi)}. seviye oldu!`); recalc(p); sendInv(p); }
+        if (lvUp) { notice(p, `${R.ITEMS[pi.key].name} ${R.petLv(pi)}. seviye oldu!`); recalc(p); sendInv(p); ach.check(p); }
         p.socket.emit('pet', R.petInfo(pi));
       }
       if (m.d.boss && Math.random() < 0.25) addItem(p, 'pet_yumurta', 1);
@@ -446,7 +449,8 @@ function createWorld(io) {
     },
   };
   const W = {};      // sonraki aşamaların (krallık, etkinlik) bağlandığı yer
-  const social = createSocial({ players, notice, sendInv, addItem, freeSlotsFor, save, sendQuests, giveExpDirect: (p, n) => expRaw(p, n, false, false) });
+  const social = createSocial({ players, notice, sendInv, addItem, freeSlotsFor, save, sendQuests, giveExpDirect: (p, n) => expRaw(p, n, false, false), achEvent: (p, t, n) => ach.event(p, t, n) });
+  const ach = createAchieve({ players, notice, sendInv, addItem, save, giveExpDirect: (p, n) => expRaw(p, n, false, false) });
   const guilds = createGuilds({ db, players, notice, sendInv, addItem, save, announce: (t) => io.emit('announce', t) });
   const realm = createRealm({ db, io, players, notice, moveToZone, sendInv, addItem, save, villageFor });
   const market = createMarket({ db, players, notice, sendInv, addItem, save, zones });
@@ -652,6 +656,7 @@ function createWorld(io) {
     sendFriends(p); tellFriends(p, true);
     sendHp(p); sendMp(p); sendSkills(p); sendQuests(p); sendBuffs(p);
     social.onConnect(p, socket);
+    ach.onConnect(p, socket);
     mainq.onConnect(p, socket);
     depot.onConnect(p, socket);
     worldboss.onConnect(p, socket);
@@ -964,6 +969,7 @@ function createWorld(io) {
       sendInv(p);
       socket.emit('fishEnd', { ok: true, msg: R.ITEMS[key].slot === 'fish' ? `${R.ITEMS[key].name} tuttun!` : `Oltana ${R.ITEMS[key].name} takıldı!`, key });
       if (key === 'pet_sandik') z0announce(p, `${p.name} oltasıyla bir Pet Sandığı çıkardı!`);
+      ach.fishCaught(p, key);
       if (!key.startsWith('b_cizme')) social.progress(p, 'fish');
     });
 

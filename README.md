@@ -730,3 +730,10 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 - **Pet becerisi:** her evcil hayvanın kendine ait pasif becerisi var (Genç'te açılır, Olgun ve Efsanevi'de güçlenir): Kurt monster gücü, Tilki eşya düşme, Ejder Yavrusu yang bonusu vb.
 - **Arayüz:** Menü › Evcil hayvan paneli (seviye çubuğu, bonuslar, beceri, evrim düğmesi).
 - Dosyalar: `rules.js` (petInfo, petBonus, PET_*), `world.js` (petGet, petEvolve, yumurta, tecrübe), `zone.js` (taştan yumurta), `client/js/game.js` (panel, görünüm). Veritabanı değişmedi: seviye ve evrim eşyanın içinde saklanır.
+
+### 9.3 Başarımlar, unvanlar, haftalık görevler, koleksiyon (Aşama 3)
+- `server/game/achieve.js`: 12 kademeli başarım (av, boss, metin, balık, düello, demirci, +seviye, seviye, pet seviyesi, pet/balık koleksiyonu, haftalık görev). Kademe ödülü yang + eşya + unvan.
+- Haftalık görevler pazartesi (İstanbul saati) yenilenir; 4 görev, ödül tecrübe/yang/efsun değiştirme/pet yumurtası/kutsama.
+- Koleksiyon: sahip olunan evcil hayvan türleri ve tutulan balık türleri.
+- Unvan seçilince isim etiketinin yanında «unvan» görünür (`playerTitle` olayı).
+- Veri `p.quests.ach` içinde saklanır; veritabanı değişikliği yok. Menü: Başarımlar.

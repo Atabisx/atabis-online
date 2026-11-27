@@ -101,6 +101,7 @@ function createSocial(W) {
   }
   function progress(p, type, n = 1) {
     if (!p || !p.quests) return;
+    if (W.achEvent) W.achEvent(p, type, n);          // başarım / haftalık görev sayaçları
     if (ensureDaily(p)) { sendDaily(p); }
     let changed = false;
     for (const q of p.quests.daily.list) {

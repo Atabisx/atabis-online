@@ -892,6 +892,7 @@ function createPlayer(p) {
   }
   if (!p.npc && social.inParty(p.id)) obj.label.el.classList.add('party');
   setGuildTag(obj, p.guild);
+  setTitleTag(obj, p.title);
   setEmpireTag(obj, p.empire);
   if (isWarFoe(obj)) setTimeout(() => markFoe(obj.id, true), 0);
   if (obj.label.hp) { obj.label.hp.parentNode.classList.add('player'); obj.label.hp.style.width = (p.maxHp ? 100 * p.hp / p.maxHp : 100) + '%'; }
@@ -1016,6 +1017,13 @@ function setGuildTag(obj, name) {
   if (!name) { if (t) t.remove(); return; }
   if (!t) { t = document.createElement('span'); t.className = 'gtag'; obj.label.el.insertBefore(t, obj.label.el.firstChild); }
   t.textContent = `[${name}]`;
+}
+// unvan isim etiketinin yanında
+function setTitleTag(obj, title) {
+  let t = obj.label.el.querySelector('.ttag');
+  if (!title) { if (t) t.remove(); return; }
+  if (!t) { t = document.createElement('span'); t.className = 'ttag'; obj.label.el.insertBefore(t, obj.label.tn); }
+  t.textContent = `«${title}»`;
 }
 // at: binince karakterin altına at modeli gelir
 // on: false ya da binek türü ('at', 'kaplan'); eski sunucudan true gelirse at
@@ -2767,6 +2775,9 @@ export function startGame(sock, opts = {}) {
     if (first && q.tutorial !== 'done' && myLevel < 15 && !myGm) setTimeout(() => social.startTutorial(Math.max(0, (Number(q.tutorial) || 1) - 1)), 2500);
   });
   socket.on('mount', ({ id, on }) => { const p = players[id]; if (p) setMount(p, on); });
+  socket.on('playerTitle', ({ id, title }) => { const p = players[id]; if (p) setTitleTag(p, title); });
+  socket.on('ach', (d) => { achInfo = d; if (achWin.classList.contains('open')) renderAch(); });
+  socket.on('achDone', () => { sfx.click(); });
   socket.on('playerGuild', ({ id, guild }) => { const p = players[id]; if (p) setGuildTag(p, guild); });
   socket.on('playerEmpire', ({ id, empire }) => { const p = players[id]; if (p) setEmpireTag(p, empire); });
   socket.on('stalls', (list) => { for (const id of Object.keys(stallObjs)) removeStall(id); for (const s of list) addStall(s); });
@@ -3503,12 +3514,49 @@ function renderPet() {
     <div class="petbar"><i style="width:${pct}%"></i><span>Sv. ${i.lv}/${i.max}${i.need ? ` · ${i.exp}/${i.need}` : ' · SON'}</span></div>
     <div class="petbon">${bon}</div>${sk}${evo}<p class="pethint">Evcil hayvan kuşanılıyken yaratık ve boss keserek tecrübe kazanır; boss çok verir.</p>`;
 }
+// ---------- başarım paneli ----------
+let achInfo = null, achTab = 'list';
+const achWin = document.getElementById('achwin');
+function renderAch() {
+  const box = document.getElementById('achBody'), d = achInfo;
+  achWin.querySelectorAll('.achtabs button').forEach((b) => b.classList.toggle('on', b.dataset.at === achTab));
+  if (!d) { box.innerHTML = '<p class="petnone">Yükleniyor…</p>'; return; }
+  let h = '';
+  if (achTab === 'list') {
+    h = d.list.map((a) => {
+      const next = a.goals[Math.min(a.done, a.goals.length - 1)], full = a.done >= a.goals.length, pct = Math.min(100, Math.round(a.have / next * 100));
+      const can = a.got < a.done;
+      return `<div class="ach${can ? ' ready' : ''}"><div class="achrow"><b>${esc(a.name)}</b><small>${a.got}/${a.goals.length}</small></div><small>${esc(a.text)}${full ? ' ✓' : ''}</small><div class="petbar"><i style="width:${full ? 100 : pct}%"></i><span>${Math.min(a.have, next).toLocaleString('tr-TR')}/${next.toLocaleString('tr-TR')}</span></div>${can ? `<button data-ac="${a.key}">Ödülü al · «${esc(a.titles[a.got])}»</button>` : ''}</div>`;
+    }).join('');
+  } else if (d.weekly) {
+    h = `<p class="pethint">Haftalık görevler pazartesi yenilenir.</p>` + d.weekly.list.map((q, i) => {
+      const pct = Math.round(q.have / q.need * 100), ok = q.have >= q.need && !q.claimed;
+      return `<div class="ach${ok ? ' ready' : ''}"><div class="achrow"><b>${esc(q.name)}</b><small>${q.claimed ? 'Alındı ✓' : ''}</small></div><small>${esc(q.text)}</small><div class="petbar"><i style="width:${pct}%"></i><span>${q.have}/${q.need}</span></div><small>Ödül: ${q.exp.toLocaleString('tr-TR')} tecrübe, ${q.yang.toLocaleString('tr-TR')} yang, Efsun Değiştirme, Pet Yumurtası, Kutsama</small>${ok ? `<button data-wc="${i}">Ödülü al</button>` : ''}</div>`;
+    }).join('');
+  }
+  if (achTab === 'coll') {
+    const row = (t, arr) => `<div class="ach"><b>${t} ${arr.filter((x) => x.have).length}/${arr.length}</b><div class="collgrid">${arr.map((x) => `<span class="${x.have ? 'on' : ''}">${esc(x.name)}</span>`).join('')}</div></div>`;
+    h = row('Evcil hayvanlar', d.coll.pets) + row('Balıklar', d.coll.fish);
+  } else if (achTab === 'titles') {
+    h = `<p class="pethint">Seçtiğin unvan adının yanında görünür.</p><div class="collgrid titles"><span class="${d.title ? '' : 'on'}" data-tt="">Unvansız</span>${d.titles.map((t) => `<span class="${d.title === t ? 'on' : ''}" data-tt="${esc(t)}">«${esc(t)}»</span>`).join('')}</div>` + (d.titles.length ? '' : '<p class="petnone">Başarım ödülü alarak unvan kazan.</p>');
+  }
+  box.innerHTML = h;
+}
+achWin.addEventListener('click', (e) => {
+  if (e.target.id === 'achwin' || e.target.closest('#achX')) { achWin.classList.remove('open'); return; }
+  const tb = e.target.closest('[data-at]'); if (tb) { achTab = tb.dataset.at; renderAch(); return; }
+  if (!socket) return;
+  const c = e.target.closest('[data-ac]'); if (c) { sfx.click(); socket.emit('achClaim', c.dataset.ac); return; }
+  const w = e.target.closest('[data-wc]'); if (w) { sfx.click(); socket.emit('weeklyClaim', Number(w.dataset.wc)); return; }
+  const t = e.target.closest('[data-tt]'); if (t) { sfx.click(); socket.emit('titleSet', t.dataset.tt || null); }
+});
 const myYangNow = () => (inv && inv.yang) || 0;
 petWin.addEventListener('click', (e) => {
   if (e.target.id === 'petwin' || e.target.closest('#petX')) { petWin.classList.remove('open'); return; }
   if (e.target.closest('#petEvoBtn') && socket) { sfx.click(); socket.emit('petEvolve'); }
 });
 const menuHandlers = {
+  ach: () => { achWin.classList.add('open'); renderAch(); if (socket) socket.emit('achGet'); },
   pet: () => { petWin.classList.add('open'); renderPet(); if (socket) socket.emit('petGet'); },
   friends: () => document.getElementById('friendBtn').click(),
   char: () => document.getElementById('charBtn').click(),
