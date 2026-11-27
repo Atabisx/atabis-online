@@ -206,6 +206,7 @@ def build_items():
             'desc': f'Kullanınca {label} boyunca canavarlardan %25 fazla tecrübe kazanırsın. Nesne Market\'te satılır.',
             'lv': 1, 'price': 0, 'rarity': 2, 'color': '#ffd23f', 'stack': 20}
     items['pet_sandik'] = {'name': 'Pet Sandığı', 'slot': 'use', 'desc': 'Aç: içinden rastgele bir evcil hayvan çıkar (Ejder Yavrusu çok nadir). Balık tutarken nadiren takılır.', 'lv': 1, 'price': 0, 'rarity': 2, 'color': '#b48ad9', 'stack': 50}
+    items['pet_yumurta'] = {'name': 'Pet Yumurtası', 'slot': 'use', 'desc': 'Aç: yumurtadan rastgele bir evcil hayvan çıkar; niteliği Sıradan, Güçlü ya da Mükemmel olabilir. Boss, metin taşı ve balık tutarken düşer.', 'lv': 1, 'price': 0, 'rarity': 1, 'color': '#f2e7c9', 'stack': 50}
     items['istiridye'] = {'name': 'İstiridye', 'slot': 'use', 'desc': 'Aç: içinden nadiren inci çıkar.', 'lv': 1, 'price': 40, 'rarity': 1, 'color': '#c8c0b0', 'stack': 200}
     for key, name, value, color in [('inci_beyaz', 'Beyaz İnci', 3000, '#f4f1e8'), ('inci_mavi', 'Mavi İnci', 9000, '#7fb3ff'), ('inci_kirmizi', 'Kırmızı İnci', 30000, '#ff6a5a')]:
         items[key] = {'name': name, 'slot': 'gem', 'lv': 1, 'price': value * 4, 'rarity': 2, 'color': color, 'stack': 200,

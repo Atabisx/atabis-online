@@ -702,3 +702,14 @@ body.ingame #autoBtn { display: flex; }
 .setbox b { color: #ffe08a; font-size: 13px; }
 .setbox small { color: #8b877c; font-size: 12px; }
 .setbox small.on { color: #9be38f; }
+
+.petbody { padding: 10px 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.pethead { display: flex; align-items: center; gap: 10px; } .pethead div { display: flex; flex-direction: column; } .pethead small { color: #8b877c; font-size: 12px; }
+.petbar { position: relative; height: 20px; border-radius: 10px; background: rgba(255,255,255,0.1); overflow: hidden; }
+.petbar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #4a9a45, #9be38f); }
+.petbar span { position: relative; display: block; text-align: center; font-size: 12px; line-height: 20px; color: #fff; }
+.petbon { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 13px; } .petbon span { display: flex; justify-content: space-between; } .petbon b { color: #9be38f; }
+.petskill { padding: 8px; border: 1px solid #55555588; border-radius: 8px; font-size: 13px; color: #8b877c; } .petskill.on { border-color: #c9a35a; color: #ffe08a; background: rgba(201,163,90,0.08); } .petskill small { color: #8b877c; }
+.petevo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .petevo b { flex: 1; color: #b9a5ff; } .petevo small { color: #8b877c; }
+.petevo button { padding: 8px 14px; border-radius: 8px; border: 2px solid #b9a5ff; background: rgba(14,16,13,0.85); color: #fff; font-weight: 700; } .petevo button:disabled { opacity: 0.4; }
+.pethint, .petnone { font-size: 12px; color: #8b877c; margin: 0; text-align: center; }

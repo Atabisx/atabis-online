@@ -132,6 +132,44 @@ function upBonus(def, up) {
     hp: def.hp ? Math.round(def.hp * 0.08 * e) : 0,
   };
 }
+
+// ---------- evcil hayvan: seviye, evrim, nitelik, beceri ----------
+const PET_MAX = 30;
+const PET_STAGES = [
+  { name: 'Yavru', lv: 1, mul: 1, scale: 1, cost: 0 },
+  { name: 'Genç', lv: 10, mul: 1.35, scale: 1.2, cost: 2000000 },
+  { name: 'Olgun', lv: 20, mul: 1.8, scale: 1.45, cost: 10000000 },
+  { name: 'Efsanevi', lv: 30, mul: 2.5, scale: 1.75, cost: 50000000 },
+];
+const PET_QUALITY = [{ name: 'Sıradan', mul: 1, w: 70 }, { name: 'Güçlü', mul: 1.15, w: 25 }, { name: 'Mükemmel', mul: 1.35, w: 5 }];
+// her evcil hayvanın kendi becerisi: evrim kademesi 1, 2, 3'te açılır ve güçlenir ([stat, ad, kademe1, kademe2, kademe3])
+const PET_SKILLS = {
+  pet_kurt: ['monster', 'Av Çığlığı', 3, 6, 10], pet_tilki: ['drop', 'Koku Alma', 3, 6, 10], pet_yilan: ['dodge', 'Sürüngen Çeviklik', 3, 6, 9],
+  pet_ayi: ['avgdef', 'Kalın Tüy', 2, 4, 7], pet_baykus: ['skill', 'Kara Büyü', 3, 6, 10], pet_uzayli: ['avgdmg', 'Öte Güç', 2, 4, 7],
+  pet_horoz: ['atkspeed', 'Şafak Ötüşü', 3, 6, 10], pet_tavuk: ['hpregen', 'Sıcak Yuva', 3, 6, 10], pet_fantazi_tilki: ['exp', 'Masal Bereketi', 3, 6, 10],
+  pet_ejder: ['yang', 'Ejder Hazinesi', 5, 10, 18],
+};
+const PET_SKILL_TEXT = { monster: 'Canavarlara karşı güç %', drop: 'Eşya düşme şansı %', dodge: 'Kaçınma %', avgdef: 'Ort. savunma %', skill: 'Beceri hasarı %', avgdmg: 'Ort. hasar %', atkspeed: 'Saldırı hızı %', hpregen: 'Can yenileme %', exp: 'Tecrübe %', yang: 'Yang bonusu %' };
+const petExpFor = (lv) => 100 + lv * lv * 40;
+const petLv = (it) => Math.max(1, Math.min(PET_MAX, (it && it.plv) || 1));
+const petEvo = (it) => Math.max(0, Math.min(3, (it && it.evo) || 0));
+function petMul(it) { return PET_STAGES[petEvo(it)].mul * (1 + 0.04 * (petLv(it) - 1)) * PET_QUALITY[Math.min(2, (it && it.pq) || 0)].mul; }
+function petBonus(it, def) {
+  const m = petMul(it), out = {};
+  for (const [k, v] of Object.entries(def.bonus || {})) out[k] = Math.round(v * m);
+  const sk = PET_SKILLS[it.key], evo = petEvo(it);
+  if (sk && evo >= 1) out[sk[0]] = (out[sk[0]] || 0) + sk[1 + evo];
+  return out;
+}
+function petInfo(it) {
+  const def = it && ITEMS[it.key]; if (!def || def.slot !== 'pet') return null;
+  const lv = petLv(it), evo = petEvo(it), sk = PET_SKILLS[it.key], nx = PET_STAGES[evo + 1];
+  return { key: it.key, lv, max: PET_MAX, exp: it.pexp || 0, need: lv >= PET_MAX ? 0 : petExpFor(lv), evo, stage: PET_STAGES[evo].name, quality: PET_QUALITY[Math.min(2, it.pq || 0)].name, pq: it.pq || 0,
+    mul: +petMul(it).toFixed(2), bonus: petBonus(it, def),
+    skill: sk ? { name: sk[1], stat: sk[0], text: PET_SKILL_TEXT[sk[0]], vals: sk.slice(2), on: evo >= 1 } : null,
+    next: nx ? { stage: nx.name, lv: nx.lv, cost: nx.cost } : null };
+}
+function rollPetQuality() { let r = Math.random() * 100; for (let i = 0; i < PET_QUALITY.length; i++) { r -= PET_QUALITY[i].w; if (r < 0) return i; } return 0; }
 // ---------- takım (set) bonusları: aynı kademeden (tier) kuşanılan parça sayısına göre ----------
 const SET_STEPS = [2, 4, 6, 8];
 function setBonusAt(tier, n) {
@@ -174,7 +212,8 @@ function totals(p) {
     if (!def) continue;
     s.atk += def.atk || 0; s.def += def.def || 0; s.hp += def.hp || 0; s.mp += def.mp || 0;
     // evcil hayvan ve kanat gibi eşyaların özel bonusları (kritik, delici, mana, hız…)
-    if (def.bonus) for (const [k, v] of Object.entries(def.bonus)) s[k] = (s[k] || 0) + v;
+    if (def.bonus) for (const [k, v] of Object.entries(slot === 'pet' ? petBonus(it, def) : def.bonus)) s[k] = (s[k] || 0) + v;
+    else if (slot === 'pet') for (const [k, v] of Object.entries(petBonus(it, def))) s[k] = (s[k] || 0) + v;
     const ub = upBonus(def, it.up || 0);
     s.atk += ub.atk; s.def += ub.def; s.hp += ub.hp;
     for (const sk of it.sock || []) {
@@ -275,6 +314,6 @@ const skillLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 
 module.exports = { EXP_GAIN_MUL, LEAF_N, EVOLVE_PEARLS, PEARL_KEYS, START_LEVEL, EVOLVE_CHANCE, EVOLVE_LEAVES, evolveCost, startKit, STONE_TYPES, STONE_SPECIALS, CLASS_KEYS, fixKey, fixItems, fixEquip,
   ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, invSize, EQUIP_SLOTS, GEAR_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
-  BONUS_TYPES, bonusPool, MAX_UP_PLUS, maxUpOf, setInfo, setBonusAt, rollBonus, maxBonus, MAX_UP, LEAVES, leafNeed, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
+  BONUS_TYPES, bonusPool, PET_MAX, PET_STAGES, PET_QUALITY, PET_SKILLS, petExpFor, petLv, petEvo, petInfo, rollPetQuality, MAX_UP_PLUS, maxUpOf, setInfo, setBonusAt, rollBonus, maxBonus, MAX_UP, LEAVES, leafNeed, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
   speedMul, attackCooldown, playerDamage, mobDamage, expGain, skillLabel,
 };

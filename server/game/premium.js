@@ -11,7 +11,7 @@ const MALL = [
   ['exp_yuzuk_1g', 20, 'Güçlendirme'], ['exp_yuzuk_7g', 100, 'Güçlendirme'], ['exp_yuzuk_30g', 300, 'Güçlendirme'],
   ['oto_hp_1s', 5, 'Güçlendirme'], ['oto_hp_1g', 30, 'Güçlendirme'], ['oto_hp_20g', 250, 'Güçlendirme'],
   ['oto_mp_1s', 5, 'Güçlendirme'], ['oto_mp_1g', 30, 'Güçlendirme'], ['oto_mp_20g', 250, 'Güçlendirme'],
-  ['pet_kurt', 100, 'Evcil hayvan'], ['pet_tilki', 100, 'Evcil hayvan'], ['pet_ayi', 100, 'Evcil hayvan'], ['pet_baykus', 100, 'Evcil hayvan'],
+  ['pet_yumurta', 40, 'Evcil hayvan'], ['pet_kurt', 100, 'Evcil hayvan'], ['pet_tilki', 100, 'Evcil hayvan'], ['pet_ayi', 100, 'Evcil hayvan'], ['pet_baykus', 100, 'Evcil hayvan'],
   ['pet_yilan', 100, 'Evcil hayvan'], ['pet_uzayli', 150, 'Evcil hayvan'], ['pet_horoz', 100, 'Evcil hayvan'], ['pet_tavuk', 100, 'Evcil hayvan'], ['pet_fantazi_tilki', 180, 'Evcil hayvan'], ['pet_ejder', 400, 'Evcil hayvan'], ['pet_sandik', 40, 'Evcil hayvan'],
   ['kostum_altin', 50, 'Kostüm'], ['kostum_gece', 50, 'Kostüm'], ['kostum_kar', 50, 'Kostüm'], ['kostum_kizil', 50, 'Kostüm'],
   ['kostum_orman', 50, 'Kostüm'], ['kostum_gok', 50, 'Kostüm'],

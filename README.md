@@ -722,3 +722,11 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 - **Aura:** +5'ten +15'e her seviyenin kendi rengi ve gücü var; +15 gökkuşağı renklerinde parlar.
 - **Takım bonusu:** aynı kademeden 2, 4, 6, 8 parça giyince sırayla can, saldırı + kritik, savunma + ortalama hasar, beceri + tecrübe bonusu gelir. Karakter penceresinde görünür.
 - Dosyalar: `server/game/rules.js` (MAX_UP_PLUS, maxUpOf, setInfo), `world.js` (upgrade, attrs), `client/js/game.js` (demirci arayüzü, aura, takım paneli). Veritabanı değişmedi.
+
+### Aşama 9.2: Evcil hayvan sistemi
+- **Pet Yumurtası:** boss'lardan (%25), metin taşından (%4), balık tutarken ve Nesne Market'ten (40 Ejder Parası) gelir. Aç: rastgele bir evcil hayvan çıkar; niteliği Sıradan (%70), Güçlü (%25, x1,15) ya da Mükemmel (%5, x1,35) olur. Eski evcil hayvanlar aynen çalışır.
+- **Seviye:** kuşanılı evcil hayvan, sahibi yaratık ve boss kesince tecrübe kazanır (boss 30 kat). En çok Sv. 30. Her seviye bonusu %4 artırır.
+- **Evrim:** Genç (Sv. 10, 2 milyon Yang), Olgun (Sv. 20, 10 milyon), Efsanevi (Sv. 30, 50 milyon). Bonus çarpanı 1,35 / 1,8 / 2,5; model büyür, kademe renginde kıvılcım çıkar (mavi, mor, altın).
+- **Pet becerisi:** her evcil hayvanın kendine ait pasif becerisi var (Genç'te açılır, Olgun ve Efsanevi'de güçlenir): Kurt monster gücü, Tilki eşya düşme, Ejder Yavrusu yang bonusu vb.
+- **Arayüz:** Menü › Evcil hayvan paneli (seviye çubuğu, bonuslar, beceri, evrim düğmesi).
+- Dosyalar: `rules.js` (petInfo, petBonus, PET_*), `world.js` (petGet, petEvolve, yumurta, tecrübe), `zone.js` (taştan yumurta), `client/js/game.js` (panel, görünüm). Veritabanı değişmedi: seviye ve evrim eşyanın içinde saklanır.

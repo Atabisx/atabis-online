@@ -21,7 +21,7 @@ const VILLAGES = R.MAPS.filter((m) => m.village).map((m) => m.id);
 const HORSE_QUEST = { level: 25, mob: 'vkurt', count: 20 };
 // balık tutarken takılanlar: balıklar, istiridye, yapraklar, efsun nesneleri ve nadiren pet sandığı
 const FISH_TABLE = [['b_hamsi', 34], ['b_sazan', 22], ['b_alabalik', 13], ['b_levrek', 8], ['b_yayin', 3], ['istiridye', 4], ['b_cizme', 5],
-  ['yaprak_mor', 4], ['yaprak_mavi', 3], ['yaprak_kirmizi', 2], ['efsun', 2.5], ['efsun_degis', 2], ['pet_sandik', 1]];
+  ['yaprak_mor', 4], ['yaprak_mavi', 3], ['yaprak_kirmizi', 2], ['efsun', 2.5], ['efsun_degis', 2], ['pet_sandik', 1], ['pet_yumurta', 1.5]];
 const PET_BOX = [['pet_kurt', 20], ['pet_tilki', 20], ['pet_ayi', 17], ['pet_baykus', 17], ['pet_yilan', 14], ['pet_uzayli', 9], ['pet_horoz', 12], ['pet_tavuk', 12], ['pet_fantazi_tilki', 8], ['pet_ejder', 3]];
 const PEARLS = [['inci_beyaz', 70], ['inci_mavi', 25], ['inci_kirmizi', 5]];
 function z0announce(p, msg) { if (p.zone) p.zone.emit('announce', msg); }
@@ -41,6 +41,7 @@ function createWorld(io) {
     const l = {};
     for (const s of ['weapon', 'armor', 'helmet', 'shield', 'costume', 'wings', 'pet']) l[s] = p.equip[s] ? p.equip[s].key : null;
     // +9 parlaması için silah ve zırhın artısı
+    l.petEvo = p.equip.pet ? R.petEvo(p.equip.pet) : 0;
     l.up = { weapon: (p.equip.weapon && p.equip.weapon.up) || 0, armor: (p.equip.armor && p.equip.armor.up) || 0 };
     return l;
   }
@@ -387,6 +388,16 @@ function createWorld(io) {
       sendHp(p);
     },
     onMobKilled(p, m) {
+      const pi = p.equip.pet;
+      if (pi && R.petLv(pi) < R.PET_MAX) {      // evcil hayvan da kazanır: boss çok, normal yaratık az
+        pi.pexp = (pi.pexp || 0) + Math.round((6 + (m.d.lv || 1) * 0.6) * (m.d.boss ? 30 : 1));
+        let lvUp = false;
+        while (R.petLv(pi) < R.PET_MAX && pi.pexp >= R.petExpFor(R.petLv(pi))) { pi.pexp -= R.petExpFor(R.petLv(pi)); pi.plv = R.petLv(pi) + 1; lvUp = true; }
+        if (R.petLv(pi) >= R.PET_MAX) pi.pexp = 0;
+        if (lvUp) { notice(p, `${R.ITEMS[pi.key].name} ${R.petLv(pi)}. seviye oldu!`); recalc(p); sendInv(p); }
+        p.socket.emit('pet', R.petInfo(pi));
+      }
+      if (m.d.boss && Math.random() < 0.25) addItem(p, 'pet_yumurta', 1);
       const q = p.quests;
       if (q.horse === 'active' && m.key === HORSE_QUEST.mob) {
         q.horseKills = (q.horseKills || 0) + 1;
@@ -772,6 +783,17 @@ function createWorld(io) {
         sendInv(p);
         return;
       }
+      if (it.key === 'pet_yumurta') {
+        if (p.inventory.length >= R.invSize(p)) { notice(p, 'Envanterin dolu!'); return; }
+        const key = roll(PET_BOX), pq = R.rollPetQuality();
+        consume(it);
+        p.inventory.push({ uid: p.nextUid++, key, plv: 1, pexp: 0, evo: 0, pq });
+        const q = R.PET_QUALITY[pq].name;
+        notice(p, `Yumurta çatladı: ${q} ${R.ITEMS[key].name}!`);
+        if (pq >= 1 && p.zone) p.zone.emit('announce', `${p.name} yumurtadan ${q} ${R.ITEMS[key].name} çıkardı!`);
+        sendInv(p);
+        return;
+      }
       if (it.key === 'pet_sandik') {
         const pet = roll(PET_BOX);
         consume(it);
@@ -1060,6 +1082,21 @@ function createWorld(io) {
 
     // ---------- demirci ----------
     // eşyayı +1 yükselt (ya da ruh taşının derecesini artır). { slot } | { uid }, scroll: Kutsama Kağıdı kullan
+    // ---------- evcil hayvan: bilgi ve evrim ----------
+    socket.on('petGet', () => { const it = p.equip.pet; socket.emit('pet', R.petInfo(it)); });
+    socket.on('petEvolve', () => {
+      const it = p.equip.pet, info = R.petInfo(it);
+      if (!info) { notice(p, 'Önce bir evcil hayvan kuşan.'); return; }
+      if (!info.next) { notice(p, 'Evcil hayvanın zaten son kademede.'); return; }
+      if (info.lv < info.next.lv) { notice(p, `Evrim için evcil hayvanın ${info.next.lv}. seviyeye ulaşmalı.`); return; }
+      if (p.yang < info.next.cost) { notice(p, `Evrim için ${info.next.cost.toLocaleString('tr-TR')} Yang gerekir.`); return; }
+      p.yang -= info.next.cost; it.evo = R.petEvo(it) + 1;
+      const nm = R.ITEMS[it.key].name;
+      notice(p, `${nm} evrimleşti: ${R.PET_STAGES[it.evo].name}!`);
+      if (p.zone) p.zone.emit('announce', `${p.name} evcil hayvanını evrimleştirdi: ${R.PET_STAGES[it.evo].name} ${nm}!`);
+      recalc(p); sendInv(p); sendHp(p); sendMp(p); socket.emit('pet', R.petInfo(it));
+      if (p.zone) p.zone.emit('look', { id: p.id, look: looks(p) });
+    });
     socket.on('upgrade', (data) => {
       const z = p.zone; if (!z || !z.def.shop) { notice(p, 'Demirci sadece köyde.'); return; }
       let target = null;

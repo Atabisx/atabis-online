@@ -958,8 +958,9 @@ function pickStallAt(cx, cy) {
   return best;
 }
 // ---------- görünüş: kanat ve evcil hayvan ----------
+const PET_SCALE = [1, 1.2, 1.45, 1.75], PET_COLORS = ['#ffffff', '#6fa8ff', '#b06bff', '#ffd23f'];
 function applyCosmetics(p) {
-  const wk = p.look.wings, pk = p.look.pet;
+  const wk = p.look.wings, pk0 = p.look.pet, pevo = p.look.petEvo || 0, pk = pk0 ? pk0 + ':' + pevo : null;
   if (p.wingKey !== wk) {
     if (p.wings) p.group.remove(p.wings);
     p.wings = null; p.wingKey = wk;
@@ -978,13 +979,14 @@ function applyCosmetics(p) {
   if (p.petKey !== pk) {
     if (p.pet) scene.remove(p.pet.root);
     p.pet = null; p.petKey = pk;
-    const d = ITEMS[pk];
+    const d = ITEMS[pk0];
     if (d && d.pet) {
       const v = buildPet(d);
+      v.root.scale.multiplyScalar(PET_SCALE[pevo] || 1);
       const gp = p.group.position;
       v.root.position.set(gp.x + 1, 0, gp.z + 1);
       scene.add(v.root);
-      p.pet = { root: v.root, v, t: Math.random() * 10, fly: d.pet.shape === 'flyer' || d.pet.shape === 'dragon' };
+      p.pet = { root: v.root, v, evo: pevo, acc: 0, t: Math.random() * 10, fly: d.pet.shape === 'flyer' || d.pet.shape === 'dragon' };
     }
   }
 }
@@ -1002,6 +1004,11 @@ function updateCosmetics(p, dt, t) {
   pet.t += dt;
   pet.root.position.y = (pet.fly ? 1.1 + Math.sin(pet.t * 3) * 0.15 : 0) + groundH(pet.root.position.x, pet.root.position.z);
   if (pet.v.update) pet.v.update(pet.t, moving, 0, dt);
+  // evrimleşen evcil hayvanın etrafında kademesinin renginde kıvılcımlar (Genç mavi, Olgun mor, Efsanevi altın)
+  if (pet.evo > 0 && pet.root.visible) {
+    pet.acc += dt * (4 + pet.evo * 4);
+    while (pet.acc > 1) { pet.acc -= 1; const r = 0.5 * PET_SCALE[pet.evo]; fx.emit(pet.root.position.x + (Math.random() - 0.5) * r * 2, pet.root.position.y + 0.2 + Math.random() * r * 1.6, pet.root.position.z + (Math.random() - 0.5) * r * 2, { vy: 0.5 + Math.random() * 0.6, color: PET_COLORS[pet.evo], size: 0.1 + pet.evo * 0.03, life: 0.7, drag: 1 }); }
+  }
 }
 // lonca adı etiketin üstünde
 function setGuildTag(obj, name) {
@@ -1777,7 +1784,7 @@ function upBonus(def, up) {
   const e = up <= 9 ? up : 9 + (up - 9) * 1.5;
   return { atk: def.atk ? Math.round(def.atk * 0.08 * e + e * 2) : 0, def: def.def ? Math.round(def.def * 0.1 * e + e) : 0, hp: def.hp ? Math.round(def.hp * 0.08 * e) : 0 };
 }
-const itemName = (it, def) => (def ? def.name : '?') + (it && it.up ? ' +' + it.up : '');
+const itemName = (it, def) => (def ? def.name : '?') + (it && it.up ? ' +' + it.up : '') + (it && it.plv && def && def.slot === 'pet' ? ' Sv.' + it.plv : '');
 function statTextIt(it, def) {
   const b = upBonus(def, (it && it.up) || 0), parts = [];
   if (def.atk) parts.push(`Saldırı ${def.atk + b.atk}${b.atk ? ` <span class="upv">(+${b.atk})</span>` : ''}`);
@@ -2745,6 +2752,7 @@ export function startGame(sock, opts = {}) {
   socket.on('mp', ({ mp, max }) => setMp(mp, max));
   socket.on('skills', (data) => { skillState = data; renderSkillbar(); if (skillwinEl.classList.contains('open')) renderSkillWin(); });
   socket.on('attrs', (a) => { attrs = a; renderChar(); });
+  socket.on('pet', (i) => { petInfo = i; if (petWin.classList.contains('open')) renderPet(); });
   socket.on('skillCd', ({ key, until }) => { skillCdUntil[key] = { until: performance.now() + until * 1000, total: until * 1000 }; });
   socket.on('buffs', (list) => { buffList = list; buffAt = performance.now(); renderBuffs(); });
   socket.on('timed', (list) => { timedList = list || {}; timedAt = performance.now(); renderBuffs(); });
@@ -3476,7 +3484,32 @@ const MENU_SOON = {};
 // öğretici için küçük sayaçlar
 const tutStats = { moved: 0, invOpened: false, kills: 0 };
 let tutLast = null;
+// ---------- evcil hayvan paneli ----------
+let petInfo = null;
+const petWin = document.getElementById('petwin');
+function renderPet() {
+  const box = document.getElementById('petBody'), i = petInfo;
+  if (!i) { box.innerHTML = '<p class="petnone">Kuşanılı evcil hayvanın yok.<br><small>Çantandan bir evcil hayvanı kuşan. Pet Yumurtası boss, metin taşı ve balık tutarken düşer; Nesne Market\'te de satılır.</small></p>'; return; }
+  const def = ITEMS[i.key], pct = i.need ? Math.min(100, Math.round(i.exp / i.need * 100)) : 100;
+  const BN = { crit: 'Kritik', pierce: 'Delici vuruş', dodge: 'Kaçınma', atkspeed: 'Saldırı hızı', movespeed: 'Hareket hızı', mp: 'Mana', hp: 'Can', atk: 'Saldırı', def: 'Savunma', monster: 'Canavarlara karşı', drop: 'Eşya düşme', exp: 'Tecrübe', yang: 'Yang', skill: 'Beceri hasarı', avgdmg: 'Ort. hasar', avgdef: 'Ort. savunma', hpregen: 'Can yenileme' };
+  const bon = Object.entries(i.bonus).map(([k, v]) => `<span>${BN[k] || k}<b>+${v}</b></span>`).join('');
+  const sk = i.skill ? `<div class="petskill${i.skill.on ? ' on' : ''}"><b>${esc(i.skill.name)}</b> · ${esc(i.skill.text)} <b>+${i.skill.on ? i.skill.vals[Math.min(2, i.evo - 1)] : '?'}</b><br><small>${i.skill.on ? '' : 'Genç kademede açılır · '}Genç +${i.skill.vals[0]}, Olgun +${i.skill.vals[1]}, Efsanevi +${i.skill.vals[2]}</small></div>` : '';
+  let evo = '';
+  if (i.next) {
+    const ok = i.lv >= i.next.lv && myYangNow() >= i.next.cost;
+    evo = `<div class="petevo"><b>Evrim: ${esc(i.next.stage)}</b><small>Sv. ${i.next.lv} · ${i.next.cost.toLocaleString('tr-TR')} Yang</small><button id="petEvoBtn" ${ok ? '' : 'disabled'}>Evrimleştir</button></div>`;
+  } else evo = '<div class="petevo"><b>Son kademe: Efsanevi</b></div>';
+  box.innerHTML = `<div class="pethead">${itemIcon(i.key, def, 44)}<div><b style="color:${RARITY[def.rarity]}">${esc(def.name)}</b><small>${esc(i.stage)} · ${esc(i.quality)} · Çarpan x${i.mul}</small></div></div>
+    <div class="petbar"><i style="width:${pct}%"></i><span>Sv. ${i.lv}/${i.max}${i.need ? ` · ${i.exp}/${i.need}` : ' · SON'}</span></div>
+    <div class="petbon">${bon}</div>${sk}${evo}<p class="pethint">Evcil hayvan kuşanılıyken yaratık ve boss keserek tecrübe kazanır; boss çok verir.</p>`;
+}
+const myYangNow = () => (inv && inv.yang) || 0;
+petWin.addEventListener('click', (e) => {
+  if (e.target.id === 'petwin' || e.target.closest('#petX')) { petWin.classList.remove('open'); return; }
+  if (e.target.closest('#petEvoBtn') && socket) { sfx.click(); socket.emit('petEvolve'); }
+});
 const menuHandlers = {
+  pet: () => { petWin.classList.add('open'); renderPet(); if (socket) socket.emit('petGet'); },
   friends: () => document.getElementById('friendBtn').click(),
   char: () => document.getElementById('charBtn').click(),
   skills: () => document.getElementById('skillBtn').click(),
