@@ -356,8 +356,8 @@ def mob_stats(lv, boss=False):
     hp = 100 + lv * lv * 2.5 + lv * 20
     atk = 8 + lv * 6 + lv * lv * 0.12
     d = {
-        'lv': lv, 'hp': int(hp * (8 if boss else 1)), 'atk': int(atk * (1.4 if boss else 1)),
-        'def': int(lv * 1.5 * (1.5 if boss else 1)),
+        'lv': lv, 'hp': int(hp * (20 if boss else 1)), 'atk': int(atk * (1.4 if boss else 1)),
+        'def': int(lv * 1.5 * (2.2 if boss else 1)),
         'exp': int((20 + lv * 9 + lv * lv * 0.35) * (15 if boss else 1)),
         'yang': [int((5 + lv * 4) * (10 if boss else 1)), int((15 + lv * 9) * (12 if boss else 1))],
     }

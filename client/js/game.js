@@ -1182,6 +1182,18 @@ function updateFishing(dt, t) {
       const dip = f.bite ? -0.09 + Math.sin(t * 22) * 0.05 : Math.sin(t * 2.6 + p.group.position.x) * 0.018;
       f.bobber.position.set(f.target.x + (f.bite ? Math.sin(t * 17) * 0.05 : 0), 0.08 + dip, f.target.z);
       f.bobber.rotation.z = f.bite ? Math.sin(t * 19) * 0.4 : Math.sin(t * 1.7) * 0.08;
+      if (f.bite) {
+        // balık takıldı: şamandıranın yanında suyun üstünde çırpınır, ara sıra sudan fırlar (Metin2 gibi)
+        if (!f.fish) {
+          const keys = ['b_hamsi', 'b_sazan', 'b_alabalik', 'b_levrek', 'b_yayin'], k = keys[Math.floor(Math.random() * keys.length)];
+          f.fish = icons.fishMesh({ ...ITEMS[k], key: k }); f.fish.scale.setScalar(0.62); f.bobber.add(f.fish); f.fishT = 0;
+        }
+        f.fishT += dt; const a = f.fishT * 5.5, leap = Math.max(0, Math.sin(f.fishT * 3.1));
+        f.fish.position.set(Math.cos(a) * 0.55, 0.02 + leap * leap * 0.75, Math.sin(a) * 0.55);
+        f.fish.rotation.set(Math.sin(f.fishT * 14) * 0.5, -a + Math.PI / 2, leap * 0.9 + Math.sin(f.fishT * 20) * 0.25);
+        if (leap > 0.97 && !f.splashed) { f.splashed = true; ripple(f.target.x, f.target.z, true); }
+        else if (leap < 0.3) f.splashed = false;
+      }
       f.rip = (f.rip || 0) + dt;
       if (f.rip > (f.bite ? 0.25 : 1.6)) { f.rip = 0; ripple(f.target.x, f.target.z, f.bite); }
     }

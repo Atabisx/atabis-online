@@ -1031,6 +1031,12 @@ function skillBody(sk0, ctx, tier) {
       }
       magicCircle(f.x, f.z, sk.radius * 0.5, c, 1.4, { follow });
       shockwave(f.x, f.z, sk.radius, c, 0.8);
+      // ek: çift sarmal yükselen ışık, yağan yaprak, ikinci nilüfer halkası
+      for (const t of T) {
+        const tp = t.obj ? t.obj.group.position : t;
+        repeat(30, 0.035, (i) => { const a = i * 0.5; for (const o of [0, Math.PI]) emit(tp.x + Math.cos(a + o) * 1.1, 0.1 + i * 0.1, tp.z + Math.sin(a + o) * 1.1, { vy: 0.8, color: i % 3 ? '#b6ff9a' : '#ffffff', size: 0.2, life: 0.9, drag: 0.4 }); });
+        later(() => { magicCircle(t.x, t.z, 1.1, '#b6ff9a', 1.2, { follow: tp, spin: -3, y: 2.6, alpha: 0.9 }); burst(tp.x, 3, tp.z, [c, '#ffffff'], 26, 3, { up: -1.5, size: 0.22, life: 1.2, drag: 0.4 }); }, 450);
+      }
       break;
     case 'm_simsek': { // şimşek: elinde toplanan ışık, hedeften hedefe dallanan yıldırım, gökten inen ikinci yıldırım
       // imza: hedeflerin üstünde kara bulut, içinden çakan şimşekler
@@ -1042,6 +1048,11 @@ function skillBody(sk0, ctx, tier) {
         later(() => { lightning(fromP, to, c, 0.45); impact(t, c, 0.8); }, 150 + i * 80);
         later(() => skyBolt(t.x, t.z, '#ffffff'), 190 + i * 80);
         prev = to;
+      });
+      // ek: hedefin çevresinde altı gök çakması, yer halkası
+      T.forEach((t, i) => {
+        for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; later(() => skyBolt(t.x + Math.cos(a) * 1.8, t.z + Math.sin(a) * 1.8, c), 320 + i * 80 + k * 60); }
+        later(() => { shockwave(t.x, t.z, 2.6, c, 0.6); burst(t.x, 0.4, t.z, [c, '#ffffff'], 30, 6, { flat: true, size: 0.3, life: 0.6, drag: 2 }); }, 420 + i * 80);
       });
       break;
     }
@@ -1057,6 +1068,8 @@ function skillBody(sk0, ctx, tier) {
         magicCircle(t.x, t.z, 0.7, c, 1.6, { follow: tp, spin: -4, y: 2.3, alpha: 0.9 });
         repeat(18, 0.05, () => emit(tp.x + rnd(-0.8, 0.8), 3.4, tp.z + rnd(-0.8, 0.8), { vy: -2.5, color: c, size: 0.24, life: 1.1, drag: 0.3 }));
       }
+      // ek: altın tüy yağmuru ve yıldız patlaması
+      if (follow) { repeat(26, 0.05, () => emit(f.x + rnd(-1.6, 1.6), 4 + rnd(0, 1), f.z + rnd(-1.6, 1.6), { vy: -1.8, vx: rnd(-0.5, 0.5), color: Math.random() < 0.5 ? c : '#fff6c8', size: 0.28, life: 1.6, drag: 0.5 })); later(() => burst(f.x, 2.2, f.z, [c, '#ffffff'], 40, 5, { size: 0.3, life: 0.9, drag: 1.2 }), 350); shockwave(f.x, f.z, 3.2, c, 0.9); }
       break;
     case 'm_kukreme':  // ejder kükremesi: ateş patlaması, alev halkası
       // imza: önüne doğru püsküren ejder ateşi
@@ -1069,6 +1082,8 @@ function skillBody(sk0, ctx, tier) {
       burst(f.x, 1, f.z, [c, '#ffd23f', '#b0362b'], 80, 11, { flat: true, size: 0.55, life: 0.7, grow: 1.2, drag: 2.5 });
       repeat(10, 0.05, () => flames(f.x, f.z, [c, '#ffd23f'], 10, { r: sk.radius * 0.5, power: 1.4 }));
       later(() => { for (const t of T) impact(t, c); }, 200);
+      // ek: yerden fışkıran alev sütunları ve kor yağmuru
+      for (let k = 0; k < 7; k++) { const a = face + (k - 3) * 0.28, r = 2 + k % 3 * 1.4; later(() => { flames(f.x + Math.sin(a) * r, f.z + Math.cos(a) * r, [c, '#ffd23f'], 8, { r: 0.7, power: 1.8 }); burst(f.x + Math.sin(a) * r, 0.5, f.z + Math.cos(a) * r, ['#ffd23f', '#ff6a3d'], 10, 4, { up: 3, size: 0.25, life: 0.7 }); }, 120 + k * 70); }
       break;
     // ----- okçu -----
     case 'o_coklu':    // çoklu ok: yayda toplanan ışık, her hedefe parlayan ok

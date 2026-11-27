@@ -179,7 +179,7 @@ class Zone {
     const lv = r ? r[0] + Math.floor(Math.random() * (r[1] - r[0] + 1)) : this.def.minLevel + 4;
     const big = Math.random() < 0.2;    // büyük taş: daha dayanıklı, iki kat ganimet
     const t = stoneType(lv);
-    const hp = Math.round((100 + lv * lv * 2.5 + lv * 20) * (big ? 7 : 5));
+    const hp = Math.round((100 + lv * lv * 2.5 + lv * 20) * (big ? 16 : 12));
     return { id: this.nextId++, spot: -1, x, z, lv, hp, max: hp, name: (big ? 'Büyük ' : '') + t.name, color: big ? 'purple' : 'red',
              rune: t.rune, rock: t.rock, shape: t.shape, big };
   }
@@ -283,6 +283,7 @@ class Zone {
 
   damageStone(best, p, dmg, crit) {
     if (!this.stones.has(best.id)) return;
+    dmg = Math.max(1, Math.round(dmg * 0.65));     // metin taşı sert: hasarın %35'i emilir
     best.hp = Math.max(0, best.hp - dmg);
     this.emit('hit', { id: best.id, kind: 'stone', dmg, crit, hp: best.hp, by: p.id });
     if (best.hp <= 0) {

@@ -698,3 +698,10 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 - **Atabis Köyü:** canavar, boss ve metin taşı yok (`gen_data.py` → mobs/bosses boş, stones 0); Kızılçam Ormanı artık 1. seviyeden girilir.
 - **Şimşek:** `fx.js` `lightning()` kıvrımlı ana hat, dallar, üç katman ve titreme; `stormShow()` şaman fırtınası. Her beceriye `styleLayer` (zemin rün halkaları, kıvılcım sarmalı, hedef parıltısı).
 - **Seçim ekranı:** `lobbyFlourish` sınıfa özel beceri sırasıyla (LOBBY_SKILLS) sürekli tekrarlanır.
+
+### Aşama 6.11: Kam skilleri, balık, sesler, market, zorluk
+- **Kam skilleri:** şifa (çift sarmal + yağan yaprak), şimşek (hedef çevresinde 6 gök çakması), kutsama (altın tüy yağmuru), kükreme (alev sütunları) daha gösterişli.
+- **Balık:** olta takılınca balık şamandıranın yanında çırpınır, sudan fırlar.
+- **Sesler:** erkek sınıflar (Alp, Yalaz) sadece "ha" kayıtları, kadın sınıflar sadece "hya" kayıtları kullanır.
+- **Nesne Market:** 4 kanat ve efsun kâğıdı 100 Ejder Parası.
+- **Zorluk:** metin taşları ~2.4 kat can + %35 hasar emilimi; boss canı 2.5 kat, savunması 1.5 kat.

@@ -209,14 +209,19 @@ export function hit(kind, crit, pos) {
 // 'light' sıradan vuruşta ara sıra kısa bağırış, 'strong' 3. kombo ve becerilerde, 'magic' büyülerde.
 // Kadın karakterler (Akıncı, Kam, Avcı) sadece ince (kadın) kayıtları kullanır, perdeleri kalınlaştırılmaz.
 // Alp (Kızıl Gölge Kılıcı) ve Yalaz (Altın Fırtına İmparatoru) erkek: kalın "ha" kayıtları onlarda.
+// Kesin ayrım: erkek sadece "ha" kayıtları, kadın sadece "hya" kayıtları (sharp/myst karışık duyulduğu için kullanılmıyor).
 const FEMALE_LIGHT = ['hya4', 'hya0', 'hya5'];
 const FEMALE_STRONG = ['hya0', 'hya2', 'hya3', 'hya4', 'hya5', 'hya7'];
+const MALE_LIGHT = ['ha1', 'ha2', 'ha6'];
+const MALE_STRONG = ['ha0', 'ha3', 'ha4', 'ha7', 'ha8'];
+const MALE = { light: MALE_LIGHT, strong: MALE_STRONG, magic: MALE_STRONG };
+const FEMALE = { light: FEMALE_LIGHT, strong: FEMALE_STRONG, magic: FEMALE_STRONG };
 const VOICES = {
-  savasci: { light: ['ha1', 'ha2', 'ha6'], strong: ['ha0', 'ha3', 'ha4', 'ha7', 'ha8', 'hya6'], magic: ['sharp0', 'myst1'], rate: 0.97 },
-  ninja: { light: FEMALE_LIGHT, strong: ['hya0', 'hya4', 'hya5', 'hya7', 'sharp1'], magic: ['sharp1', 'hya4'], rate: 1.04 },
-  sura: { light: ['ha1', 'ha2', 'ha6'], strong: ['ha0', 'ha3', 'ha4', 'ha7', 'ha8', 'hya1', 'hya6'], magic: ['sharp0', 'myst1'], rate: 0.95 },
-  saman: { light: FEMALE_LIGHT, strong: FEMALE_STRONG, magic: ['myst0', 'sharp1'], rate: 1.05 },
-  okcu: { light: FEMALE_LIGHT, strong: ['hya2', 'hya3', 'hya7', 'sharp1'], magic: ['sharp1', 'hya7'], rate: 1.0 },
+  savasci: { ...MALE, rate: 0.97 },
+  sura: { ...MALE, rate: 0.95 },
+  ninja: { ...FEMALE, rate: 1.04 },
+  saman: { ...FEMALE, rate: 1.05 },
+  okcu: { ...FEMALE, rate: 1.0 },
 };
 let lastShout = 0;
 export function shout(cls, kind = 'light', pos = null) {
