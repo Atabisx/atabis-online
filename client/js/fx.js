@@ -237,6 +237,7 @@ function pillar(x, z, color, h, dur, o = {}) {
 // ---------- yere çakılma: çatlaklar, toz halkası, uçuşan taşlar, ekran sarsıntısı ----------
 let shakeFn = null;
 export function onShake(fn) { shakeFn = fn; }
+const shakeCam = (a, d, x, z) => { if (shakeFn) shakeFn(a, d, x, z); };
 export function groundSlam(x, z, color, r = 3, power = 1) {
   color = tc(color);
   // yarıklar: merkezden dışa koyu çizgiler
@@ -848,6 +849,25 @@ function styleLayer(sk, c, f, follow, T, K) {
     }, 170);
   }
 }
+// ejderha gibi dalgalanarak giden ateş şeridi (başta parlak "çene", gövde renkli parçacık)
+function serpent(from, to, cols, o = {}) {
+  const n = o.n || 18, amp = o.amp || 0.6, size = (o.size || 0.5), ph = o.phase || 0;
+  const dx = to.x - from.x, dz = to.z - from.z, len = Math.hypot(dx, dz) || 1, px = -dz / len, pz = dx / len;
+  for (let k = 0; k <= n; k++) later(() => {
+    const u = k / n, off = Math.sin(u * Math.PI * 3 + ph) * amp * (1 - u * 0.25);
+    const x = from.x + dx * u + px * off, z = from.z + dz * u + pz * off, y = from.y + (to.y - from.y) * u + Math.sin(u * Math.PI) * 0.7;
+    for (let j = 0; j < 4; j++) emit(x + rnd(-0.14, 0.14), y + rnd(-0.14, 0.14), z + rnd(-0.14, 0.14), { color: cols[j % cols.length], size: size * (0.55 + 0.9 * u), life: 0.5, drag: 2 });
+    emit(x, y + 0.2, z, { color: '#ffffff', size: size * 0.8, life: 0.2, drag: 3 });                  // çene/göz parıltısı
+    emit(x + px * 0.28, y + 0.35, z + pz * 0.28, { color: cols[1] || '#ffd23f', size: size * 0.35, life: 0.3, drag: 2 });   // boynuz
+    emit(x - px * 0.28, y + 0.35, z - pz * 0.28, { color: cols[1] || '#ffd23f', size: size * 0.35, life: 0.3, drag: 2 });
+  }, k * (o.delay || 22));
+  later(() => o.onHit && o.onHit(), n * (o.delay || 22));
+}
+// iki elini göğe kaldırma ışığı (yıldırım çağırırken)
+function raiseHands(follow, color) {
+  if (!follow) return;
+  repeat(14, 0.03, (i) => emit(follow.x + Math.cos(i) * 0.5, 1.6 + i * 0.12, follow.z + Math.sin(i) * 0.5, { vy: 2.5, color: i % 2 ? color : '#ffffff', size: 0.22, life: 0.5, drag: 1 }));
+}
 function skillBody(sk0, ctx, tier) {
   const K = tier ? MASTERY[tier].k : 1;
   const sk = { ...sk0, radius: (sk0.radius || 3) * K };
@@ -856,6 +876,7 @@ function skillBody(sk0, ctx, tier) {
   const follow = ctx.caster ? ctx.caster.group.position : null;
   const fwd = (d) => ({ x: f.x + Math.sin(face) * d, z: f.z + Math.cos(face) * d });
   const hand = { x: f.x + Math.sin(face) * 0.6, y: 1.3, z: f.z + Math.cos(face) * 0.6 };
+  const Q = 1 + Math.min(20, ctx.lv || 1) / 20;      // seviye arttıkça efekt büyür
   masteryFx(tier, f, follow, c, sk.radius);
   try { styleLayer(sk, c, f, follow, T, K); } catch (e) { /* süs katmanı hata verirse beceri yine de çalışır */ }
   switch (sk.key) {
@@ -1019,67 +1040,181 @@ function skillBody(sk0, ctx, tier) {
       break;
     }
     // ----- şaman -----
-    case 'm_sifa': {   // Ruh Pınarı: yerden fışkıran su, suda dönen ruh ışıkları, yağan damlalar
-      for (const t of T) {
-        const tp = t.obj ? t.obj.group.position : t;
-        magicCircle(t.x, t.z, 1.6, c, 1.6, { follow: tp, spin: 1.2 });
-        magicCircle(t.x, t.z, 0.8, '#ffffff', 1.4, { follow: tp, spin: -2.5, alpha: 0.9 });
-        // fışkıran pınar: merkezden yukarı yay çizen damlalar
-        repeat(36, 0.03, (i) => { const a = i * 2.4; emit(tp.x, 0.2, tp.z, { vx: Math.cos(a) * 0.9, vy: 4.2 + (i % 4) * 0.4, vz: Math.sin(a) * 0.9, color: i % 3 ? c : '#e8fffb', size: 0.17, life: 1.1, g: 7, drag: 0.1 }); });
-        // ruh ışıkları: üç küre vücut etrafında yükselerek döner
-        for (let k = 0; k < 3; k++) repeat(28, 0.04, (i) => { const a = i * 0.45 + k * 2.09; emit(tp.x + Math.cos(a) * 0.9, 0.2 + i * 0.09, tp.z + Math.sin(a) * 0.9, { vy: 0.5, color: '#ffffff', size: 0.26, life: 0.55, drag: 0.5 }); });
-        later(() => { shockwave(t.x, t.z, 2.2, c, 0.7); burst(tp.x, 1.2, tp.z, [c, '#ffffff'], 30, 3.5, { up: 2, size: 0.22, life: 0.9, drag: 0.6 }); }, 500);
-      }
-      flash(f.x, 1.5, f.z, c, 35, 0.7);
-      shockwave(f.x, f.z, sk.radius, c, 0.9);
+    // ===== ŞAMAN: saldırı =====
+    case 'm_ejdatis': { // Ejderha Atışı: ateş ejderhası dalgalanarak uçar, çarptığı yerde patlar (seviye arttıkça ikinci ejderha, M'de üçüncü)
+      const t = T[0] || { x: f.x + Math.sin(face) * 8, z: f.z + Math.cos(face) * 8 };
+      const cols = [c, '#ffd23f', '#ff3b2a', '#ffffff'], n = 1 + (Q > 1.5 ? 1 : 0) + (tier >= 2 ? 1 : 0);
+      charge(follow, { x: hand.x, y: 1.4, z: hand.z }, c, 0.3, 22);
+      magicCircle(f.x, f.z, 1.6 * K, c, 0.9, { follow, spin: 3 });
+      later(() => flash(hand.x, 1.4, hand.z, c, 55, 0.5), 200);
+      for (let i = 0; i < n; i++) later(() => serpent({ x: hand.x, y: 1.4, z: hand.z }, { x: t.x, y: 1.1, z: t.z }, cols, { amp: 0.55 + i * 0.25, size: 0.55 * Math.min(1.5, Q), phase: i * 2,
+        onHit: () => {
+          flash(t.x, 1.2, t.z, c, 70, 0.6); burst(t.x, 1, t.z, cols, 60, 8 * K, { size: 0.5, life: 0.8, grow: 1.1, drag: 2 }); shockwave(t.x, t.z, 3.4 * K, c, 0.7);
+          flames(t.x, t.z, [c, '#ffd23f'], 14, { r: 1.4 * K, power: 1.6 }); magicCircle(t.x, t.z, 1.8 * K, c, 1.2, { spin: 3 }); impact(t, c, 1.2);
+        } }), 320 + i * 140);
       break;
     }
-    case 'm_simsek': { // Ruh Zinciri: elinden çıkan mor ruh küreleri hedeften hedefe süzülerek sıçrar
-      const sc = '#b36bff';
-      charge(follow, { x: hand.x, y: 1.6, z: hand.z }, sc, 0.3, 20);
-      let prev = { x: hand.x, y: 1.6, z: hand.z };
+    case 'm_kukreme': { // Ejderha Kükremesi: kükreyen ejderha başı belirir, çevreye geniş ateş patlaması (üç dalga)
+      const R = sk.radius;
+      charge(follow, null, c, 0.3, 30);
+      magicCircle(f.x, f.z, R * 0.95, c, 1.3, { follow, spin: 1.2 });
+      magicCircle(f.x, f.z, R * 0.55, '#ffd23f', 1.1, { follow, spin: -2.4, alpha: 0.9 });
+      // ejderha başı: yukarıda büyüyen alev kümesi, ağızdan ateş
+      later(() => {
+        for (let k = 0; k < 24; k++) later(() => { const u = k / 24, a = face + Math.sin(u * 6) * 0.3; emit(f.x + Math.sin(a) * (0.6 + u * 1.6), 2.4 + u * 1.2, f.z + Math.cos(a) * (0.6 + u * 1.6), { color: k % 3 ? c : '#ffd23f', size: 0.5 + u * 0.5, life: 0.35, drag: 2 }); }, k * 12);
+        flash(f.x, 2.6, f.z, c, 80, 0.7);
+      }, 150);
+      [0, 200, 400].forEach((ms, k) => later(() => {
+        shockwave(f.x, f.z, R * (0.5 + 0.28 * k), k === 2 ? '#ffd23f' : c, 0.6);
+        burst(f.x, 0.5, f.z, [c, '#ffd23f', '#b0362b'], 40 + k * 25, 9 + k * 2, { flat: true, size: 0.55, life: 0.6, grow: 1.2, drag: 2.5 });
+        const nn = Math.round((8 + k * 4) * Math.min(1.4, Q));
+        for (let j = 0; j < nn; j++) { const a = (j / nn) * Math.PI * 2, rr = R * (0.45 + 0.17 * k); flames(f.x + Math.cos(a) * rr, f.z + Math.sin(a) * rr, [c, '#ffd23f'], 4, { r: 0.55, power: 1.5 }); }
+        shakeCam(0.25 + k * 0.1, 0.3, f.x, f.z);
+      }, 250 + ms));
+      later(() => { for (const t of T) impact(t, c, 1.1); }, 350);
+      break;
+    }
+    case 'm_simsek': { // Şimşek Atma: elde toplanan kıvılcım, ince hızlı yıldırım; seviyede çift dal
+      const t = T[0] || { x: f.x + Math.sin(face) * 7, z: f.z + Math.cos(face) * 7 };
+      const from = { x: hand.x, y: 1.45, z: hand.z }, to = { x: t.x, y: 1.1, z: t.z };
+      charge(follow, from, c, 0.16, 12);
+      flash(from.x, 1.45, from.z, c, 40, 0.3);
+      later(() => {
+        lightning(from, to, '#ffffff', 0.22);
+        for (let i = 0; i < 1 + Math.round(Q * 1.5) + tier; i++) lightning(from, { x: to.x + rnd(-0.5, 0.5), y: 1.1 + rnd(-0.3, 0.3), z: to.z + rnd(-0.5, 0.5) }, c, 0.3);
+        burst(t.x, 1.1, t.z, [c, '#ffffff'], 24, 7, { size: 0.2, life: 0.4, drag: 2 }); shockwave(t.x, t.z, 1.8 * K, c, 0.4); impact(t, c, 0.8);
+      }, 110);
+      break;
+    }
+    case 'm_cagir': { // Şimşek Çağırma: yerde uyarı rünü, gökte kara bulut, ardından devasa yıldırım düşer
+      const t = T[0] || { x: f.x + Math.sin(face) * 7, z: f.z + Math.cos(face) * 7 };
+      const rr = 2.6 * K, strikes = T.length ? T : [t];
+      charge(follow, null, c, 0.3);
+      raiseHands(follow, c);
+      for (const q of strikes) { magicCircle(q.x, q.z, rr, c, 0.9, { spin: 3, alpha: 0.8 }); magicCircle(q.x, q.z, rr * 0.55, '#ffffff', 0.9, { spin: -4, alpha: 0.7 }); }
+      thunderCloud(t.x, t.z, c, 1.3 + Q * 0.3, strikes);
+      later(() => {
+        for (const q of strikes) {
+          skyBolt(q.x, q.z, '#ffffff'); for (let i = 0; i < 2 + tier; i++) skyBolt(q.x + rnd(-1.2, 1.2), q.z + rnd(-1.2, 1.2), c);
+          flash(q.x, 2, q.z, c, 90, 0.6); shockwave(q.x, q.z, rr * 1.25, c, 0.7); shockwave(q.x, q.z, rr * 0.7, '#ffffff', 0.5);
+          burst(q.x, 0.6, q.z, [c, '#ffffff'], 70, 10 * K, { flat: true, size: 0.35, life: 0.6, drag: 2.5 }); impact(q, c, 1.3);
+        }
+        shakeCam(0.5, 0.4, t.x, t.z);
+      }, 650);
+      break;
+    }
+    case 'm_pence': { // Yıldırım Pençesi: elektrik pençesi hedefler arasında zincirler, her hedefte üç çizik
+      const sc = c;
+      charge(follow, { x: hand.x, y: 1.5, z: hand.z }, sc, 0.22, 16);
+      let prev = { x: hand.x, y: 1.5, z: hand.z };
       T.forEach((t, i) => {
-        const from = prev, to = { x: t.x, y: 1.2, z: t.z }, d0 = 180 + i * 200;
+        const to = { x: t.x, y: 1.1, z: t.z }, fp = prev, d0 = 150 + i * 120;
+        later(() => { lightning(fp, to, '#ffffff', 0.25); lightning(fp, to, sc, 0.4); lightning(fp, { x: to.x + rnd(-0.6, 0.6), y: 1.2, z: to.z + rnd(-0.6, 0.6) }, sc, 0.3); }, d0);
         later(() => {
-          const n = 14;
-          for (let k = 0; k <= n; k++) later(() => {
-            const u = k / n, x = from.x + (to.x - from.x) * u, z = from.z + (to.z - from.z) * u, y = from.y + (to.y - from.y) * u + Math.sin(u * Math.PI) * 1.1;
-            emit(x, y, z, { color: k % 2 ? sc : '#ffffff', size: 0.34 - u * 0.06, life: 0.5, drag: 1.5 });
-            emit(x + rnd(-0.15, 0.15), y + rnd(-0.15, 0.15), z + rnd(-0.15, 0.15), { color: '#e6ccff', size: 0.14, life: 0.4, drag: 2 });
-          }, k * 11);
-        }, d0);
-        later(() => { impact(t, sc, 0.9); shockwave(t.x, t.z, 2, sc, 0.5); burst(t.x, 1.3, t.z, [sc, '#ffffff', '#e6ccff'], 28, 5, { size: 0.26, life: 0.7, drag: 1.2 }); magicCircle(t.x, t.z, 1.1, sc, 0.9, { spin: 4 }); }, d0 + 170);
+          for (let s2 = 0; s2 < 3; s2++) for (let k = 0; k < 9; k++) later(() => {
+            const u = k / 8, ox = (s2 - 1) * 0.42;
+            emit(t.x + ox + (u - 0.5) * 1.1, 1.9 - u * 1.5, t.z + (u - 0.5) * 0.3, { color: k % 2 ? sc : '#ffffff', size: 0.3, life: 0.35, drag: 2.5 });
+          }, k * 14 + s2 * 30);
+          flash(t.x, 1.2, t.z, sc, 50, 0.4); shockwave(t.x, t.z, 2.1 * K, sc, 0.5); impact(t, sc, 1);
+          if (tier) skyBolt(t.x, t.z, sc);
+        }, d0 + 90);
         prev = to;
       });
       break;
     }
-    case 'm_kutsama': { // Tengri Koruması: etrafında dönen altın ruh küreleri ve altın kubbe
-      flash(f.x, 2, f.z, c, 45, 1.0);
-      charge(follow, null, c, 0.3);
-      if (follow) {
-        magicCircle(f.x, f.z, 2.6, c, 1.6, { follow, spin: 2 });
-        magicCircle(f.x, f.z, 1.4, '#fff6c8', 1.6, { follow, spin: -3, alpha: 0.9 });
-        for (let k = 0; k < 6; k++) repeat(40, 0.04, (i) => { const a = i * 0.32 + k * 1.047, y = 1.1 + Math.sin(i * 0.2 + k) * 0.5; emit(follow.x + Math.cos(a) * 1.5, y, follow.z + Math.sin(a) * 1.5, { color: k % 2 ? c : '#fff6c8', size: 0.3, life: 0.35, drag: 2 }); });
-        repeat(30, 0.05, (i) => { const a = i * 0.7; emit(follow.x + Math.cos(a) * 1.5, 0.1, follow.z + Math.sin(a) * 1.5, { vy: 3.2, color: c, size: 0.18, life: 0.9, drag: 0.3 }); });
-        rays(follow, c, 1.2, 6);
-      }
-      shockwave(f.x, f.z, sk.radius * 0.6, c, 0.9);
-      later(() => shockwave(f.x, f.z, sk.radius, '#fff6c8', 0.8), 200);
-      for (const t of T) { const tp = t.obj ? t.obj.group.position : t; magicCircle(t.x, t.z, 1.4, c, 1.4, { follow: tp, spin: 2 }); repeat(14, 0.05, () => emit(tp.x + rnd(-0.6, 0.6), 3, tp.z + rnd(-0.6, 0.6), { vy: -2.5, color: c, size: 0.22, life: 1, drag: 0.3 })); }
+    case 'm_enerji': { // Enerji Topu: büyüyen yoğun küre, yayla gider; çarpınca küre içe çöküp patlar
+      const t = T[0] || { x: f.x + Math.sin(face) * 8, z: f.z + Math.cos(face) * 8 };
+      const big = 0.32 + Q * 0.12, from = { x: hand.x, y: 1.6, z: hand.z };
+      magicCircle(f.x, f.z, 1.5 * K, c, 0.9, { follow, spin: 2.5 });
+      repeat(18, 0.022, (i) => { const a = i * 1.1; emit(from.x + Math.cos(a) * (1 - i / 18) * 1.2, 1.6 + Math.sin(a) * (1 - i / 18) * 1.2, from.z + Math.sin(a * 0.7) * 0.5, { color: i % 2 ? c : '#ffffff', size: 0.2 + i * 0.012, life: 0.3, drag: 2 }); });
+      later(() => {
+        flash(from.x, 1.6, from.z, c, 60, 0.4);
+        projectile(from, { x: t.x, y: 1.1, z: t.z }, c, { speed: 22, r: big, trail: 7, arc: 0.7, trailLife: 0.5, onHit: () => {
+          flash(t.x, 1.2, t.z, c, 90, 0.7); shockwave(t.x, t.z, 3.6 * K, c, 0.7); shockwave(t.x, t.z, 1.8 * K, '#ffffff', 0.4);
+          burst(t.x, 1.1, t.z, [c, '#ffffff', '#d6c8ff'], 70, 9 * K, { size: 0.35, life: 0.8, drag: 1.6 });
+          magicCircle(t.x, t.z, 2.4 * K, c, 1.1, { spin: 3 }); impact(t, c, 1.3);
+          for (let i = 0; i < 8; i++) { const a = i * 0.785; later(() => lightning({ x: t.x, y: 1.1, z: t.z }, { x: t.x + Math.cos(a) * 2.6, y: 0.4, z: t.z + Math.sin(a) * 2.6 }, c, 0.3), i * 20); }
+        } });
+      }, 380);
       break;
     }
-    case 'm_kukreme': { // Kam Davulu: üç vuruşluk davul, her vuruşta genişleyen halka ve yerden alev
-      charge(follow, null, c, 0.22);
-      magicCircle(f.x, f.z, sk.radius * 0.9, c, 1.2, { follow, spin: 1.5 });
-      magicCircle(f.x, f.z, sk.radius * 0.5, '#ffd23f', 1.0, { follow, spin: -2.5, alpha: 0.9 });
-      [0, 220, 440].forEach((ms, k) => later(() => {
-        const r = sk.radius * (0.55 + k * 0.25);
-        shockwave(f.x, f.z, r, k === 2 ? '#ffd23f' : c, 0.55);
-        burst(f.x, 0.5, f.z, [c, '#ffd23f', '#b0362b'], 40 + k * 20, 9 + k * 2, { flat: true, size: 0.5, life: 0.6, grow: 1.2, drag: 2.5 });
-        flash(f.x, 1.2, f.z, c, 40 + k * 15, 0.4);
-        for (let j = 0; j < 8 + k * 4; j++) { const a = (j / (8 + k * 4)) * Math.PI * 2, rr = r * 0.8; flames(f.x + Math.cos(a) * rr, f.z + Math.sin(a) * rr, [c, '#ffd23f'], 4, { r: 0.5, power: 1.4 }); }
-      }, ms));
-      later(() => { for (const t of T) impact(t, c); }, 250);
+    // ===== ŞAMAN: destek =====
+    case 'm_kutsama': { // Kutsama: altın ışık kanatları, başın üstünde halka, yağan altın ışık
+      if (follow) wings(follow, c, 1.7);
+      flash(f.x, 2.5, f.z, c, 45, 1.0);
+      charge(follow, null, c, 0.3);
+      if (follow) {
+        rays(follow, c, 1.4, 8 + Math.round(Q * 4));
+        magicCircle(f.x, f.z, 2.6 * K, c, 1.5, { follow, spin: 2.5 });
+        magicCircle(f.x, f.z, 1.2 * K, '#fff6c8', 1.5, { follow, spin: -3.5, y: 2.5, alpha: 0.9 });
+        repeat(26, 0.05, () => emit(follow.x + rnd(-1.6, 1.6), 4 + rnd(0, 1), follow.z + rnd(-1.6, 1.6), { vy: -2, color: Math.random() < 0.5 ? c : '#fff6c8', size: 0.28, life: 1.5, drag: 0.5 }));
+      }
+      shockwave(f.x, f.z, sk.radius * 0.6, c, 0.9); later(() => shockwave(f.x, f.z, sk.radius, '#fff6c8', 0.8), 200);
+      for (const t of T) { const tp = t.obj ? t.obj.group.position : t; magicCircle(t.x, t.z, 1.5, c, 1.4, { follow: tp, spin: 2 }); repeat(12, 0.05, () => emit(tp.x + rnd(-0.6, 0.6), 3, tp.z + rnd(-0.6, 0.6), { vy: -2.5, color: c, size: 0.22, life: 1, drag: 0.3 })); }
+      break;
+    }
+    case 'm_ejdyar': { // Ejderha Yardımı: ruh ejderhası karakterin etrafında spiral çizip yukarı kükrer, kırmızı aura
+      const cols = [c, '#ffd23f', '#ffffff'];
+      charge(follow, null, c, 0.3, 24);
+      flash(f.x, 1.5, f.z, c, 50, 0.9);
+      if (follow) {
+        magicCircle(f.x, f.z, 2.2 * K, c, 1.6, { follow, spin: 2 });
+        repeat(Math.round(50 * Math.min(1.5, Q)), 0.025, (i) => { const a = i * 0.34, y = 0.1 + i * 0.07; const r = 1.5 - i * 0.012;
+          emit(follow.x + Math.cos(a) * r, y, follow.z + Math.sin(a) * r, { color: cols[i % 3], size: 0.5 - i * 0.004, life: 0.5, drag: 2 });
+          if (i % 2) emit(follow.x + Math.cos(a + Math.PI) * r, y, follow.z + Math.sin(a + Math.PI) * r, { color: c, size: 0.3, life: 0.4, drag: 2 }); });
+        later(() => { flash(follow.x, 3.8, follow.z, c, 90, 0.8); burst(follow.x, 3.6, follow.z, cols, 50, 6, { size: 0.45, life: 0.8, drag: 1.4 }); shockwave(follow.x, follow.z, sk.radius * 0.8, c, 0.8); }, 1000);
+        repeat(20, 0.06, () => flames(follow.x, follow.z, [c, '#ffd23f'], 5, { r: 1.1, power: 1.2 }));
+      }
+      for (const t of T) { const tp = t.obj ? t.obj.group.position : t; later(() => { magicCircle(t.x, t.z, 1.3, c, 1.2, { follow: tp, spin: 3 }); burst(tp.x, 1, tp.z, cols, 20, 3, { up: 3, size: 0.25, life: 0.8, drag: 0.8 }); }, 300); }
+      break;
+    }
+    case 'm_yansit': { // Yansıtma: dönen aynalı kalkan paneller, çevreye yansıyan ışın çizgileri
+      charge(follow, null, c, 0.22, 16);
+      if (follow) {
+        orbit(follow, c, 1.6 + Q * 0.4, 6 + (tier ? 2 : 0), 1.5, 1.1);
+        magicCircle(f.x, f.z, 1.9 * K, c, 1.4, { follow, spin: 3 });
+        magicCircle(f.x, f.z, 1.2 * K, '#ffffff', 1.4, { follow, spin: -5, alpha: 0.9 });
+      }
+      for (let k = 0; k < 12; k++) { const a = (k / 12) * Math.PI * 2; later(() => { for (let j = 0; j < 7; j++) emit(f.x + Math.cos(a) * (1.2 + j * 0.28), 1.1, f.z + Math.sin(a) * (1.2 + j * 0.28), { color: j % 2 ? c : '#ffffff', size: 0.2, life: 0.3, drag: 2 }); }, k * 25); }
+      shockwave(f.x, f.z, 3 * K, c, 0.7); flash(f.x, 1.2, f.z, c, 45, 0.6);
+      break;
+    }
+    case 'm_hiz': { // Hız: rüzgâr çizgileri, ayaklarda yıldırım halkaları, art arda artçı görüntüler
+      charge(follow, null, c, 0.2, 14);
+      flash(f.x, 1, f.z, c, 40, 0.5);
+      if (follow) {
+        magicCircle(f.x, f.z, 1.6 * K, c, 1.0, { follow, spin: 6 });
+        repeat(Math.round(36 * Math.min(1.4, Q)), 0.03, (i) => { const a = i * 0.9, h = (i * 0.17) % 2.2;
+          emit(follow.x + Math.cos(a) * 1.1, h, follow.z + Math.sin(a) * 1.1, { vx: -Math.sin(a) * 5, vz: Math.cos(a) * 5, vy: 0.6, color: i % 2 ? c : '#ffffff', size: 0.16, life: 0.4, drag: 1.2 }); });
+        for (let k = 0; k < 4; k++) later(() => { shockwave(follow.x, follow.z, 1.4 + k * 0.35, k % 2 ? '#ffffff' : c, 0.45); lightning({ x: follow.x, y: 0.15, z: follow.z }, { x: follow.x + rnd(-1.4, 1.4), y: 0.2, z: follow.z + rnd(-1.4, 1.4) }, c, 0.25); }, k * 110);
+      }
+      for (const t of T) { const tp = t.obj ? t.obj.group.position : t; if (tp !== follow) later(() => { magicCircle(t.x, t.z, 1.1, c, 0.8, { follow: tp, spin: 6 }); burst(tp.x, 0.4, tp.z, [c, '#ffffff'], 16, 4, { size: 0.18, life: 0.5, drag: 1.5 }); }, 250); }
+      break;
+    }
+    case 'm_sifa': { // İyileştirme: yerden fışkıran şifa pınarı, yükselen ruh ışıkları, yağan damlalar
+      for (const t of T) {
+        const tp = t.obj ? t.obj.group.position : t;
+        magicCircle(t.x, t.z, 1.6, c, 1.6, { follow: tp, spin: 1.2 });
+        magicCircle(t.x, t.z, 0.8, '#ffffff', 1.4, { follow: tp, spin: -2.5, alpha: 0.9 });
+        repeat(36, 0.03, (i) => { const a = i * 2.4; emit(tp.x, 0.2, tp.z, { vx: Math.cos(a) * 0.9, vy: 4.2 + (i % 4) * 0.4, vz: Math.sin(a) * 0.9, color: i % 3 ? '#7be8d0' : '#ffffff', size: 0.17, life: 1.1, g: 7, drag: 0.1 }); });
+        for (let k = 0; k < 3; k++) repeat(28, 0.04, (i) => { const a = i * 0.45 + k * 2.09; emit(tp.x + Math.cos(a) * 0.9, 0.2 + i * 0.09, tp.z + Math.sin(a) * 0.9, { vy: 0.5, color: '#ffffff', size: 0.26, life: 0.55, drag: 0.5 }); });
+        later(() => { shockwave(t.x, t.z, 2.2, c, 0.7); burst(tp.x, 1.2, tp.z, [c, '#7be8d0', '#ffffff'], 30, 3.5, { up: 2, size: 0.22, life: 0.9, drag: 0.6 }); }, 500);
+      }
+      flash(f.x, 1.5, f.z, c, 35, 0.7); shockwave(f.x, f.z, sk.radius, c, 0.9);
+      break;
+    }
+    case 'm_guc': { // Saldırı Gücü: ayaktan kızıl alev sütunu, silaha akan güç, kızıl şok dalgası
+      charge(follow, { x: hand.x, y: 1.4, z: hand.z }, c, 0.35, 30);
+      flash(f.x, 1.5, f.z, c, 55, 0.9);
+      if (follow) {
+        magicCircle(f.x, f.z, 2 * K, c, 1.5, { follow, spin: 2.2 });
+        magicCircle(f.x, f.z, 1.1 * K, '#ffd23f', 1.5, { follow, spin: -3, alpha: 0.9 });
+        repeat(Math.round(26 * Math.min(1.5, Q)), 0.04, () => flames(follow.x, follow.z, [c, '#ffd23f', '#ffffff'], 5, { r: 0.9, power: 1.8 }));
+        rays(follow, c, 1.3, 8);
+        later(() => { for (let k = 0; k < 14; k++) { const a = k * 0.45; emit(follow.x + Math.cos(a) * 0.7, 0.2 + k * 0.2, follow.z + Math.sin(a) * 0.7, { color: '#fff1a8', size: 0.34, life: 0.5, drag: 1.5, vy: 1 }); } }, 150);
+      }
+      later(() => { shockwave(f.x, f.z, sk.radius * 0.7, c, 0.8); shockwave(f.x, f.z, sk.radius, '#ffd23f', 0.7); shakeCam(0.2, 0.25, f.x, f.z); }, 250);
+      for (const t of T) { const tp = t.obj ? t.obj.group.position : t; if (tp !== follow) later(() => { magicCircle(t.x, t.z, 1.2, c, 1.0, { follow: tp, spin: 3 }); burst(tp.x, 1, tp.z, [c, '#ffd23f'], 18, 3, { up: 3, size: 0.25, life: 0.8, drag: 1 }); }, 300); }
       break;
     }
     // ----- okçu -----

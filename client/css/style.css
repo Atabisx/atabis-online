@@ -126,6 +126,9 @@ body.hurt canvas { filter: saturate(1.4) brightness(0.85) sepia(0.3) hue-rotate(
 .skb:nth-child(2) { right: 92px; bottom: 132px; }
 .skb:nth-child(3) { right: 132px; bottom: 90px; }
 .skb:nth-child(4) { right: 150px; bottom: 32px; }
+.skb:nth-child(5) { right: 34px; bottom: 216px; }
+.skb:nth-child(6) { right: 100px; bottom: 200px; }
+.skpage { position: fixed; right: 20px; bottom: 290px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid #c9a35a; background: rgba(14,16,13,0.85); color: #ffe08a; font: 800 12px inherit; padding: 0; z-index: 5; }
 .skb svg { position: relative; z-index: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8)); }
 .skb.press { transform: scale(0.88); }
 .skb.press::after { content: ''; position: absolute; inset: -8px; border-radius: 50%; border: 3px solid var(--c2); animation: skPing .35s ease-out forwards; }

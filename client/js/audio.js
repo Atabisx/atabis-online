@@ -293,9 +293,44 @@ export function potion() {
   for (let i = 0; i < 4; i++) tone({ type: 'sine', f0: 300 + i * 120, f1: 600 + i * 150, t: i * 0.06, dur: 0.07, vol: 0.12 });
 }
 // beceri sesi: türüne göre
+// Şaman becerilerinin kendine özgü sesleri (hepsi kodla üretilir)
+function shamanSound(key, v) {
+  switch (key) {
+    case 'm_ejdatis':   // ateş ejderhası: yükselen hışırtı + alçak kükreme + çıtırtı
+      noise({ dur: 0.5, vol: 0.3 * v, f0: 500, f1: 3500, q: 1.5 }); tone({ type: 'sawtooth', f0: 110, f1: 55, dur: 0.6, vol: 0.28 * v, filter: 900 });
+      noise({ t: 0.35, dur: 0.3, vol: 0.3 * v, type: 'lowpass', f0: 1600, f1: 200 }); return true;
+    case 'm_kukreme':   // geniş kükreme: derin gümbürtü, üç patlama
+      tone({ type: 'sawtooth', f0: 80, f1: 40, dur: 0.9, vol: 0.4 * v, filter: 700 });
+      [0, 0.2, 0.4].forEach((t) => { noise({ t, dur: 0.3, vol: 0.35 * v, type: 'lowpass', f0: 1400, f1: 120 }); tone({ type: 'sine', f0: 100, f1: 36, t, dur: 0.3, vol: 0.4 * v }); }); return true;
+    case 'm_simsek':    // keskin yıldırım: çıtırtı + hızlı düşen ton
+      noise({ dur: 0.18, vol: 0.4 * v, type: 'highpass', f0: 3000 }); tone({ type: 'sawtooth', f0: 2200, f1: 180, dur: 0.18, vol: 0.18 * v }); return true;
+    case 'm_cagir':     // gök gürültüsü yaklaşır, büyük çakma
+      noise({ dur: 0.6, vol: 0.2 * v, type: 'lowpass', f0: 200, f1: 500 }); tone({ type: 'sine', f0: 60, f1: 90, dur: 0.6, vol: 0.2 * v });
+      noise({ t: 0.6, dur: 0.35, vol: 0.5 * v, type: 'highpass', f0: 2000 }); tone({ type: 'sine', f0: 120, f1: 35, t: 0.6, dur: 0.6, vol: 0.5 * v }); return true;
+    case 'm_pence':     // art arda elektrik çıtırtıları
+      for (let i = 0; i < 5; i++) { noise({ t: i * 0.07, dur: 0.1, vol: 0.32 * v, type: 'highpass', f0: 2600 }); tone({ type: 'square', f0: 1400 - i * 180, f1: 200, t: i * 0.07, dur: 0.1, vol: 0.08 * v }); } return true;
+    case 'm_enerji':    // enerji toplanır, sonra patlar
+      tone({ type: 'sine', f0: 200, f1: 1200, dur: 0.38, vol: 0.2 * v }); tone({ type: 'triangle', f0: 400, f1: 2400, dur: 0.38, vol: 0.08 * v });
+      noise({ t: 0.4, dur: 0.35, vol: 0.4 * v, f0: 2000, f1: 300, q: 1 }); tone({ type: 'sine', f0: 140, f1: 45, t: 0.4, dur: 0.4, vol: 0.4 * v }); return true;
+    case 'm_kutsama':   // çan gibi altın akor
+      [0, 7, 12, 16].forEach((n, i) => tone({ type: 'sine', f0: NOTE(67 + n), t: i * 0.08, dur: 0.9, vol: 0.12 * v, a: 0.01 })); noise({ dur: 0.6, vol: 0.05 * v, type: 'highpass', f0: 6000 }); return true;
+    case 'm_ejdyar':    // kükreme + parıltı
+      tone({ type: 'sawtooth', f0: 140, f1: 70, dur: 0.7, vol: 0.25 * v, filter: 1100 }); noise({ dur: 0.7, vol: 0.12 * v, f0: 800, f1: 4500, q: 3 });
+      [0, 4, 7].forEach((n, i) => tone({ type: 'sine', f0: NOTE(79 + n), t: 0.4 + i * 0.06, dur: 0.5, vol: 0.08 * v })); return true;
+    case 'm_yansit':    // metalik ayna çınlaması
+      [0, 0.12].forEach((t) => { tone({ type: 'square', f0: 1760, f1: 1500, t, dur: 0.3, vol: 0.07 * v, filter: 5000 }); tone({ type: 'sine', f0: 2637, t, dur: 0.4, vol: 0.08 * v }); }); noise({ dur: 0.2, vol: 0.12 * v, type: 'highpass', f0: 5000 }); return true;
+    case 'm_hiz':       // rüzgâr çizgisi + yükselen arpej
+      noise({ dur: 0.5, vol: 0.28 * v, f0: 500, f1: 6000, q: 2 }); [0, 4, 7, 12, 16].forEach((n, i) => tone({ type: 'triangle', f0: NOTE(72 + n), t: i * 0.05, dur: 0.2, vol: 0.1 * v })); return true;
+    case 'm_guc':       // güç yükselişi: alçak ton yükselir + parlama
+      tone({ type: 'sawtooth', f0: 90, f1: 360, dur: 0.6, vol: 0.2 * v, filter: 1500 }); noise({ dur: 0.6, vol: 0.18 * v, f0: 600, f1: 3500, q: 2 });
+      tone({ type: 'sine', f0: NOTE(79), t: 0.45, dur: 0.4, vol: 0.1 * v }); return true;
+    default: return false;
+  }
+}
 export function skill(sk, pos) {
   if (!ready() || !sk) return;
   const v = near(pos); if (v <= 0) return;
+  if (shamanSound(sk.key, v)) return;
   if (sk.target === 'heal') { [0, 4, 7, 12].forEach((n, i) => tone({ type: 'sine', f0: NOTE(72 + n), t: i * 0.07, dur: 0.35, vol: 0.12 * v })); return; }
   if (sk.target === 'self') { tone({ type: 'triangle', f0: 220, f1: 660, dur: 0.45, vol: 0.14 * v }); noise({ dur: 0.45, vol: 0.12 * v, f0: 800, f1: 4000, q: 4 }); return; }
   if (sk.target === 'chain') { for (let i = 0; i < 3; i++) noise({ t: i * 0.06, dur: 0.1, vol: 0.3 * v, type: 'highpass', f0: 2500 }); tone({ type: 'sawtooth', f0: 900, f1: 120, dur: 0.3, vol: 0.1 * v, filter: 3000 }); return; }

@@ -470,6 +470,8 @@ class Zone {
               const dmg = R.mobDamage(d, t);
               this.emit('mobAttack', { id: m.id, target: t.id, dmg });
               this.hooks.damagePlayer(t, dmg, m);
+              const refl = Math.min(60, R.totals(t).reflect || 0);          // Yansıtma: hasarın bir kısmı saldırana döner
+              if (refl > 0 && this.mobs.has(m.id)) this.damageMob(m, t, Math.max(1, Math.round(dmg * refl / 100)), false);
             }
           }
         }

@@ -707,3 +707,10 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 - **Zorluk:** metin taşları ~2.4 kat can + %35 hasar emilimi; boss canı 2.5 kat, savunması 1.5 kat.
 
 - **Kam skilleri yenilendi (6.12):** Ruh Pınarı (şifa), Ruh Zinciri (zincir, mor ruh küreleri), Tengri Koruması (savunma, dönen altın küreler), Kam Davulu (3 vuruşluk alan).
+
+### Aşama 6.13: Kam (şaman) 12 becerilik yeni sistem
+- **Saldırı (1. sayfa):** Ejderha Atışı (dalgalanan ateş ejderhası, yakar), Ejderha Kükremesi (3 dalga alan + sersemletme), Şimşek Atma (hızlı, ucuz), Şimşek Çağırma (uyarı rünü, bulut, gök yıldırımı, sersemletme), Yıldırım Pençesi (zincir + üç çizik), Enerji Topu (yayla giden küre, patlayınca alan hasarı).
+- **Destek (2. sayfa):** Kutsama (savunma), Ejderha Yardımı (kritik), Yansıtma (hasarın %15-60'ı saldırana döner), Hız (hareket + saldırı hızı), İyileştirme, Saldırı Gücü.
+- Skill çubuğunda 6'dan fazla beceri varsa sağdaki sayfa düğmesiyle 1/2 ve 2/2 arasında geçilir.
+- Seviye arttıkça efektler büyür (ikinci/üçüncü ejderha, daha çok yıldırım); M1 mavi, M2 mor, M3 kırmızı ustalık rengi ve ek katman.
+- Her becerinin kendine ait hareketi (zıplama, yükselen eller, ileri atılma, dönme) ve kodla üretilmiş sesi var.

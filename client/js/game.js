@@ -1054,10 +1054,18 @@ const MOVES = {
   u_emme: { dur: 0.8, lean: -0.25, cast: 'push' },
   u_alev: { dur: 0.8, jump: 1.5, jumpAt: [0, 0.62], spin: 1, lunge: 0.5, combos: [[0.25, 1], [0.58, 2]] },
   u_kalkan: { dur: 0.8, cast: 'raise', spin: 1 },
-  m_sifa: { dur: 0.8, cast: 'raise' },
-  m_simsek: { dur: 0.7, jump: 0.4, jumpAt: [0, 0.5], cast: 'push' },
+  m_ejdatis: { dur: 0.8, lean: 0.25, cast: 'push', jump: 0.3, jumpAt: [0, 0.4] },
+  m_kukreme: { dur: 0.95, jump: 0.8, jumpAt: [0, 0.55], lean: 0.35, lunge: 0.4, cast: 'push' },
+  m_simsek: { dur: 0.5, cast: 'push', lean: 0.15 },
+  m_cagir: { dur: 1.1, jump: 0.5, jumpAt: [0.1, 0.8], cast: 'raise' },
+  m_pence: { dur: 0.8, lean: 0.3, lunge: 0.6, cast: 'push', spin: 0.5 },
+  m_enerji: { dur: 0.95, cast: 'raise', jump: 0.4, jumpAt: [0.1, 0.5] },
   m_kutsama: { dur: 1.0, jump: 0.6, jumpAt: [0.1, 0.9], cast: 'raise' },
-  m_kukreme: { dur: 0.85, jump: 0.7, jumpAt: [0, 0.55], lean: 0.35, lunge: 0.5, cast: 'push' },
+  m_ejdyar: { dur: 1.0, cast: 'raise', jump: 0.5, jumpAt: [0.1, 0.8] },
+  m_yansit: { dur: 0.75, cast: 'raise', spin: 1 },
+  m_hiz: { dur: 0.6, lean: 0.2, cast: 'push', spin: 1, jump: 0.4, jumpAt: [0, 0.6] },
+  m_sifa: { dur: 0.8, cast: 'raise' },
+  m_guc: { dur: 0.85, jump: 0.5, jumpAt: [0.05, 0.5], cast: 'raise', lean: -0.1 },
   o_coklu: { dur: 0.6, jump: 0.5, jumpAt: [0, 0.5], lunge: -0.9, bow: true },
   o_zehirli: { dur: 0.6, jump: 0.6, jumpAt: [0, 0.7], lunge: -0.6, lean: -0.15, bow: true },
   o_ates: { dur: 0.7, jump: 0.9, jumpAt: [0, 0.75], spin: 1, lunge: -0.4, bow: true },
@@ -2114,7 +2122,7 @@ let quests = {};
 // güçlendirme göstergesi
 const buffsEl = document.getElementById('buffs');
 let buffList = {}, buffAt = 0;
-const BUFF_NAMES = { atk: 'Saldırı', def: 'Savunma', atkspeed: 'Saldırı hızı', movespeed: 'Hareket hızı', crit: 'Kritik' };
+const BUFF_NAMES = { atk: 'Saldırı', def: 'Savunma', atkspeed: 'Saldırı hızı', movespeed: 'Hareket hızı', crit: 'Kritik', reflect: 'Yansıtma' };
 let timedList = {}, timedAt = 0;
 const TIMED_SHORT = { autohp: '❤ Oto iksir', automp: '💧 Oto iksir', expring: '✦ Tecrübe +%25' };
 const fmtLong = (s) => (s >= 86400 ? `${Math.floor(s / 86400)}g ${Math.floor((s % 86400) / 3600)}s` : s >= 3600 ? `${Math.floor(s / 3600)}s ${Math.floor((s % 3600) / 60)}dk` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`);
@@ -2188,6 +2196,14 @@ const SKILL_ICONS = {
   u_emme: '<path d="M12 12m-2 0a2 2 0 1 0 4 0 4 4 0 1 0-8 0 6 6 0 1 0 12 0 8 8 0 1 0-16 0"/>',
   u_alev: '<path d="M12 22c4 0 7-3 7-7 0-3-2-5-3-7 0 2-1 3-2 3 0-3-1-6-4-8 0 3-2 5-3 7-1 1-2 3-2 5 0 4 3 7 7 7z"/><path d="M12 22c-2 0-3-1.5-3-3.5 0-2 2-3 3-5 1 2 3 3 3 5S14 22 12 22z"/>',
   u_kalkan: '<path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z"/><path d="M15 9a4 4 0 1 0 0 6 3 3 0 1 1 0-6z"/>',
+  m_ejdatis: '<path d="M4 18c3-1 3-5 7-5s3-5 9-7c-1 4-2 6-5 8 3 0 4-1 6-2-2 5-6 8-11 8-3 0-5 0-6-2z"/><circle cx="17" cy="8" r="1"/>',
+  m_cagir: '<path d="M6 13a4 4 0 0 1 1-8 5 5 0 0 1 10 1 3.5 3.5 0 0 1 0 7z"/><path d="m12 11-3 5h4l-2 5"/>',
+  m_pence: '<path d="M5 3l3 9"/><path d="M10 3l3 9"/><path d="M15 3l3 9"/><path d="m14 13-4 4h5l-3 5"/>',
+  m_enerji: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+  m_ejdyar: '<path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-6 1-9z"/><path d="M9 21h6"/>',
+  m_yansit: '<path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z"/><path d="M9 13l3-4 3 4"/>',
+  m_hiz: '<path d="m5 6 6 6-6 6"/><path d="m12 6 6 6-6 6"/><path d="M3 12h2"/>',
+  m_guc: '<path d="M7 20V9l5-6 5 6v11z"/><path d="M12 9v7"/><path d="M9 12h6"/>',
   m_sifa: '<path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-3 4.5 4.5 0 0 1 8 3c0 6-8 11-8 11z"/><path d="M12 9v6"/><path d="M9 12h6"/>',
   m_simsek: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
   m_kutsama: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/><path d="m5 5 2 2"/><path d="m17 17 2 2"/><path d="m5 19 2-2"/><path d="m17 7 2-2"/>',
@@ -2204,8 +2220,12 @@ function lighten(hex, k) {
 }
 // M1/M2/M3'te beceri düğmesi de ustalık rengini alır
 const skColor = (sk, lv) => { const m = fx.MASTERY[fx.masteryOf(lv)]; return m ? m.color : sk.color; };
+let skPage = 0;
 function renderSkillbar() {
-  skillbarEl.innerHTML = mySkills().map((sk) => {
+  const all = mySkills(), pages = Math.ceil(all.length / 6);
+  if (skPage >= pages) skPage = 0;
+  const list = all.length > 6 ? all.slice(skPage * 6, skPage * 6 + 6) : all;
+  skillbarEl.innerHTML = list.map((sk) => {
     const lv = skillState.levels[sk.key] || 0;
     const mp = sk.mp + sk.mpLv * Math.max(0, lv - 1);
     const icon = SKILL_ICONS[sk.key] || '<circle cx="12" cy="12" r="6"/>';
@@ -2214,7 +2234,7 @@ function renderSkillbar() {
       `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>` +
       `<span class="cd" id="cd_${sk.key}"></span><span class="cdt" id="cdt_${sk.key}"></span>` +
       (lv ? `<span class="lv">${skLabel(lv)}</span><span class="mp">${mp}</span>` : '') + '</button>';
-  }).join('');
+  }).join('') + (pages > 1 ? `<button class="skpage" id="skPage" aria-label="Beceri sayfası">${skPage + 1}/${pages}</button>` : '');
   const pts = document.getElementById('skillPts');
   pts.textContent = skillState.points; pts.style.display = skillState.points > 0 && myLevel >= skillState.unlock ? '' : 'none';
 }
@@ -2228,6 +2248,7 @@ function renderSkillWin() {
   }).join('');
 }
 skillbarEl.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('#skPage')) { e.preventDefault(); skPage++; renderSkillbar(); return; }
   const b = e.target.closest('[data-sk]'); if (!b) return;
   e.preventDefault();
   b.classList.remove('press'); void b.offsetWidth; b.classList.add('press');
