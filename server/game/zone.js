@@ -207,10 +207,10 @@ class Zone {
     this.drops.set(id, d);
     this.emit('drop', this.publicDrop(d));
   }
-  rollLoot(x, z, owner, drops, potions, yangRange) {
-    if (yangRange) this.makeDrop(x, z, owner, null, Math.round(rand(yangRange[0], yangRange[1])));
+  rollLoot(x, z, owner, drops, potions, yangRange, dropM = 1, yangM = 1) {
+    if (yangRange) this.makeDrop(x, z, owner, null, Math.round(rand(yangRange[0], yangRange[1]) * yangM));
     for (const [key, chance] of drops || []) {
-      if (R.ITEMS[key] && Math.random() < chance * (this.hooks.dropMul ? this.hooks.dropMul() : 1)) this.makeDrop(x, z, owner, { key });
+      if (R.ITEMS[key] && Math.random() < chance * dropM * (this.hooks.dropMul ? this.hooks.dropMul() : 1)) this.makeDrop(x, z, owner, { key });
     }
     for (const [key, chance] of potions || []) {
       if (R.ITEMS[key] && Math.random() < chance) this.makeDrop(x, z, owner, { key, n: 1 + Math.floor(Math.random() * 3) });
@@ -338,7 +338,8 @@ class Zone {
     const owner = ownerId ? this.players.get(ownerId) : null;
     this.emit('mobDie', { id: m.id, by: ownerId, name: owner ? owner.name : '', mobName: m.d.name, boss: m.d.boss });
     if (owner) { this.hooks.giveExp(owner, R.expGain(m.d.lv, owner.level, m.d.exp)); this.hooks.onMobKilled(owner, m); }
-    this.rollLoot(m.x, m.z, ownerId, m.d.drops, m.d.potions, m.d.yang);
+    const lt = owner ? R.totals(owner) : null;
+    this.rollLoot(m.x, m.z, ownerId, m.d.drops, m.d.potions, m.d.yang, lt ? 1 + lt.drop / 100 : 1, lt ? 1 + lt.yang / 100 : 1);
     const delay = (m.d.respawn || 12) * 1000;
     if (!this.noRespawn && !m.event) setTimeout(() => { if (this.alive) this.spawnMob(m.key, m.spot); }, delay);
     if (this.onKill) this.onKill(m, owner);
@@ -503,7 +504,7 @@ class Zone {
     // can yenilenmesi (5 saniye hasar almayınca)
     for (const p of alivePlayers) {
       if (now - (p.lastHurt || 0) > 5000 && p.hp < p.maxHp) {
-        p.regenAcc = (p.regenAcc || 0) + p.maxHp * 0.02 * dt;
+        p.regenAcc = (p.regenAcc || 0) + p.maxHp * (0.02 + (R.totals(p).hpregen || 0) / 1000) * dt;
         if (p.regenAcc >= 1) { const g = Math.floor(p.regenAcc); p.regenAcc -= g; this.hooks.heal(p, g); }
       }
     }

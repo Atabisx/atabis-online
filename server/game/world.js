@@ -155,7 +155,7 @@ function createWorld(io) {
     const def = R.ITEMS[key];
     const it = { uid: p_nextUid(), key };
     if (def && R.EQUIP_SLOTS.includes(def.slot)) {
-      const types = Object.keys(R.BONUS_TYPES).filter((t) => t !== 'movespeed').slice(0, 5);
+      const types = R.bonusPool(def.slot).filter((t) => t !== 'movespeed').slice(0, 5);
       it.bon = types.map((t) => [t, R.maxBonus(t, def.tier)]);
     }
     return it;
@@ -336,7 +336,7 @@ function createWorld(io) {
       io.emit('expRate', rateInfo()); io.emit('announce', 'Tecrübe oranı normale döndü.');
     }
   }, 5000);
-  function expMul(p) { return (1 + guilds.expBonus(p) / 100 + (W.expBonus ? W.expBonus(p) : 0)) * rateNow(); }
+  function expMul(p) { return (1 + guilds.expBonus(p) / 100 + (W.expBonus ? W.expBonus(p) : 0) + (R.totals(p).exp || 0) / 100) * rateNow(); }
   function expRaw(p, amount, kill, fromMob = true) {
     if (kill) p.kills++;
     if (fromMob) { amount = Math.round(amount * expMul(p) * R.EXP_GAIN_MUL); guilds.addExp(p, amount); }
@@ -819,7 +819,7 @@ function createWorld(io) {
       if (!g) { notice(p, 'Sadece ekipmanlar efsunlanabilir.'); return; }
       const { target, def } = g;
       if (target.bon.length >= 5) { notice(p, 'Bu eşyada 5 efsun var. Değiştirmek için Efsun Değiştirme Nesnesi gerekir (boss\'lardan düşer).'); return; }
-      const types = Object.keys(R.BONUS_TYPES);
+      const types = R.bonusPool(def.slot);
       const free = types.filter((t) => !target.bon.some((b) => b[0] === t));
       const t = free[Math.floor(Math.random() * free.length)];
       const v = R.rollBonus(t, def.tier);
@@ -839,7 +839,7 @@ function createWorld(io) {
       const { target, def } = g;
       if (!target.bon.length) { notice(p, 'Bu eşyada değiştirilecek efsun yok. Önce Efsun Nesnesi ile efsunla.'); return; }
       const n = target.bon.length;
-      const pick = Object.keys(R.BONUS_TYPES).sort(() => Math.random() - 0.5).slice(0, n);
+      const pick = R.bonusPool(def.slot).sort(() => Math.random() - 0.5).slice(0, n);
       target.bon = pick.map((t) => [t, R.rollBonus(t, def.tier)]);
       notice(p, `${def.name}: ${n} efsun yeniden belirlendi.`);
       consume(ef);
@@ -1366,7 +1366,7 @@ function createWorld(io) {
       const it = { uid: uid++, key };
       if (def.stack) it.n = n;
       if (maxed && R.EQUIP_SLOTS.includes(def.slot)) {
-        const types = Object.keys(R.BONUS_TYPES).filter((t) => t !== 'movespeed').slice(0, 5);
+        const types = R.bonusPool(def.slot).filter((t) => t !== 'movespeed').slice(0, 5);
         it.bon = types.map((t) => [t, R.maxBonus(t, def.tier)]);
       }
       inv.push(it);

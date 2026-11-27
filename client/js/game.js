@@ -1631,8 +1631,7 @@ let myName = '';
 let myGm = false;
 let selected = null;   // {uid} veya {slot}
 const EQUIP = ['weapon', 'armor', 'helmet', 'shoes', 'bracelet', 'earring', 'shield', 'necklace'];
-const BONUS_NAMES = { maxhp: ['Maks. Can', ''], maxmp: ['Maks. Mana', ''], atk: ['Saldırı', ''], def: ['Savunma', ''], crit: ['Kritik', '%'],
-  atkspeed: ['Saldırı Hızı', '%'], movespeed: ['Hareket Hızı', '%'], monster: ['Canavarlara Güç', '%'], hpsteal: ['Can Çalma', '%'] };
+const BONUS_NAMES = {"maxhp": ["Maks. Can", ""], "maxmp": ["Maks. Mana", ""], "atk": ["Saldırı Değeri", ""], "def": ["Savunma", ""], "avgdmg": ["Ortalama Hasar", "%"], "skill": ["Beceri Hasarı", "%"], "pierce": ["Delici Vuruş", "%"], "crit": ["Kritik Vuruş Şansı", "%"], "atkspeed": ["Saldırı Hızı", "%"], "monster": ["Canavarlara Karşı Güç", "%"], "hpsteal": ["Can Çalma", "%"], "avgdef": ["Ortalama Hasara Dayanıklılık", "%"], "dodge": ["Kaçınma", "%"], "hpregen": ["Can Yenileme", "%"], "movespeed": ["Hareket Hızı", "%"], "exp": ["Tecrübe Bonusu", "%"], "yang": ["Yang Bonusu", "%"], "drop": ["Eşya Düşme Şansı", "%"], "vs_savasci": ["Savaşçılara Karşı Güç", "%"], "vs_ninja": ["Ninjalara Karşı Güç", "%"], "vs_sura": ["Suralara Karşı Güç", "%"], "vs_saman": ["Şamanlara Karşı Güç", "%"], "vs_okcu": ["Okçulara Karşı Güç", "%"]};
 const SLOT_NAMES = { costume: 'Kostüm', wings: 'Kanat', pet: 'Evcil hayvan', stone: 'Ruh taşı', material: 'Malzeme', weapon: 'Silah', armor: 'Zırh', helmet: 'Miğfer', shoes: 'Ayakkabı', bracelet: 'Bilezik', earring: 'Küpe', shield: 'Kalkan', necklace: 'Kolye', potion: 'İksir', use: 'Kullanılır', fish: 'Balık', gem: 'Değerli taş' };
 const ICONS = {
   weapon: '<path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/>',
@@ -3237,22 +3236,31 @@ export async function lobbyShowChar(c) {
   lobby.char = o; lobby.yaw = 0;
   lobbyFlourish(true);
 }
-// seçince karakter gösteri yapar: ışık sütunu içinde belirir, üç vuruş, sonra sınıf becerisi
+// seçilen karakter gösteri yapar (Metin2 gibi): ışık sütununda belirir, selam, vuruşlar, sınıfına özel beceriler; durunca kendi kendine devam eder
+const LOBBY_SKILLS = { savasci: [1, 0, 3], ninja: [2, 0, 1], sura: [2, 0, 3], saman: [1, 3, 2], okcu: [2, 0, 3] };
 function lobbyFlourish(appear) {
   const o = lobby.char; if (!o) return;
-  const sk = (SKILLS[o.cls] || [])[1] || (SKILLS[o.cls] || [])[0];
+  const list = SKILLS[o.cls] || [], order = LOBBY_SKILLS[o.cls] || [1, 0];
+  const sk = list[order[(lobby.skIdx = ((lobby.skIdx || 0) + (appear ? 0 : 1))) % order.length]] || list[1] || list[0];
   const now = lobby.t;
   lobby.show = [];
-  if (appear) lobby.show.push([now, () => { fx.levelUp(o); sfx.levelUp(); }]);
-  [0, 1, 2].forEach((k, i) => lobby.show.push([now + 0.7 + i * 0.42, () => {
+  lobby.nextShow = now + 99;
+  const at = (dt, f) => lobby.show.push([now + dt, f]);
+  if (appear) at(0, () => { fx.levelUp(o); sfx.levelUp(); });
+  const hits = o.cls === 'saman' || o.cls === 'okcu' ? 1 : 3;     // şaman ve okçu önce tek hamle yapar
+  for (let k = 0; k < hits; k++) at((appear ? 0.8 : 0.3) + k * 0.42, () => {
     o.swingT = SWING_T; o.combo = k; o.slashT = 0.3;
-    sfx.swing(o.cls, o.group.position, k); if (k === 2) sfx.shout(o.cls, true);
-  }]));
-  if (sk) lobby.show.push([now + 2.2, () => {
-    try { fx.playSkill(sk, { caster: o, from: { x: 0, z: 0 }, facing: o.ry - FACE_OFFSET, targets: sk.target === 'self' || sk.target === 'heal' ? [{ x: 0, y: 0.9, z: 0, obj: o }] : [{ x: Math.sin(o.ry - FACE_OFFSET) * 3, y: 0.9, z: Math.cos(o.ry - FACE_OFFSET) * 3 }], lv: 18 }); } catch (e) { console.warn(e); }
+    sfx.swing(o.cls, o.group.position, k); if (k === hits - 1) sfx.shout(o.cls, true);
+  });
+  const tSkill = (appear ? 0.8 : 0.3) + hits * 0.42 + 0.35;
+  if (sk) at(tSkill, () => {
+    const fa = o.ry - FACE_OFFSET, self = sk.target === 'self' || sk.target === 'heal';
+    const tg = self ? [{ x: 0, y: 0.9, z: 0, obj: o }] : [{ x: Math.sin(fa) * 3, y: 0.9, z: Math.cos(fa) * 3 }];
+    try { fx.playSkill(sk, { caster: o, from: { x: 0, z: 0 }, facing: fa, targets: tg, lv: 18 + (lobby.skIdx % 3) * 0.01 }); } catch (e) { console.warn(e); }
     startMove(o, sk);
     sfx.skill(sk, o.group.position);
-  }]);
+    lobby.nextShow = lobby.t + 5.5;       // gösteri bitince birkaç saniye bekleyip sıradaki beceriyle tekrar
+  });
 }
 export function lobbyRotate(dx) { lobby.yaw += dx * 0.01; }
 export function lobbyReplay() { lobbyFlourish(false); }
@@ -3260,7 +3268,7 @@ function lobbyUpdate(dt) {
   lobby.t += dt;
   updateStage(lobby.st, dt);
   for (let i = lobby.show.length - 1; i >= 0; i--) if (lobby.t >= lobby.show[i][0]) { const f = lobby.show[i][1]; lobby.show.splice(i, 1); f(); }
-  if (lobby.char) { lobby.char.ry = FACE_OFFSET + lobby.yaw; }
+  if (lobby.char) { lobby.char.ry = FACE_OFFSET + lobby.yaw; if (lobby.mode === 'select' && !lobby.show.length && lobby.t > (lobby.nextShow || 1e9)) lobbyFlourish(false); }
   if (lobby.mode === 'login') {
     const a = lobby.t * 0.08;
     camera.position.set(Math.sin(a) * 13, 4.6 + Math.sin(lobby.t * 0.3) * 0.5, Math.cos(a) * 13);

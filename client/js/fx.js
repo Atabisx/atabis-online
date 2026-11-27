@@ -329,51 +329,76 @@ function slashArc(x, y, z, facing, r, color, dur, o = {}) {
     mat.opacity = 1 - k; core.material.opacity = (1 - k) * 0.9;
   }, { follow: o.follow });
 }
-// dallanan şimşek
-function boltPath(a, b, segs, jitter) {
-  const pts = [a.clone()];
-  for (let i = 1; i < segs; i++) {
-    const t = i / segs, p = a.clone().lerp(b, t);
-    p.x += rnd(-jitter, jitter); p.y += rnd(-jitter, jitter) * 0.7; p.z += rnd(-jitter, jitter);
-    pts.push(p);
+// dallanan şimşek: orta nokta bölmesiyle kıvrımlı ana hat, ince dallar, üç katman (geniş parıltı, renk, beyaz çekirdek), titreyen yeniden çizim
+function fractalPath(a, b, jitter, depth) {
+  let pts = [a.clone(), b.clone()];
+  for (let d = 0; d < depth; d++) {
+    const out = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i], p1 = pts[i + 1], m = p0.clone().lerp(p1, 0.5);
+      const dir = p1.clone().sub(p0), l = dir.length() || 1;
+      const n1 = new THREE.Vector3(-dir.z, 0, dir.x).normalize(), n2 = new THREE.Vector3().crossVectors(dir, n1).normalize();
+      const k = jitter * l * 0.55 * (Math.random() - 0.5) * 2, k2 = jitter * l * 0.45 * (Math.random() - 0.5) * 2;
+      m.addScaledVector(n1, k).addScaledVector(n2, k2);
+      out.push(p0, m);
+    }
+    out.push(pts[pts.length - 1]); pts = out; jitter *= 0.78;
   }
-  pts.push(b.clone());
   return pts;
 }
 function lightning(from, to, color, dur = 0.4) {
   color = tc(color);
   const g = new THREE.Group();
-  const mat = new THREE.MeshBasicMaterial({ color, ...add() }), matW = new THREE.MeshBasicMaterial({ color: '#ffffff', ...add() });
+  const mats = [new THREE.MeshBasicMaterial({ color, ...add() }), new THREE.MeshBasicMaterial({ color, ...add() }), new THREE.MeshBasicMaterial({ color: '#ffffff', ...add() })];
+  const base = [0.13, 0.055, 0.022], alpha = [0.22, 0.7, 0.95];
+  const A = new THREE.Vector3(from.x, from.y, from.z), B = new THREE.Vector3(to.x, to.y, to.z), len = A.distanceTo(B);
   function build() {
     while (g.children.length) { const c = g.children.pop(); c.geometry.dispose(); }
-    const a = new THREE.Vector3(from.x, from.y, from.z), b = new THREE.Vector3(to.x, to.y, to.z);
-    const len = a.distanceTo(b);
-    const main = boltPath(a, b, Math.max(6, Math.round(len * 1.5)), Math.min(0.6, len * 0.08));
-    const branches = [main];
-    for (let i = 0; i < 2; i++) {
-      const s = main[1 + Math.floor(Math.random() * (main.length - 2))];
-      const dir = b.clone().sub(a).normalize().multiplyScalar(len * 0.3);
-      const end = s.clone().add(dir).add(new THREE.Vector3(rnd(-1, 1), rnd(-0.8, 0.4), rnd(-1, 1)));
-      branches.push(boltPath(s, end, 4, 0.3));
+    const main = fractalPath(A, B, 0.28, len > 5 ? 5 : 4);
+    const paths = [[main, 1]];
+    const nb = 3 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < nb; i++) {
+      const si = 2 + Math.floor(Math.random() * Math.max(1, main.length - 4)), s0 = main[si];
+      const dir = B.clone().sub(A).normalize();
+      const end = s0.clone().addScaledVector(dir, len * rnd(0.12, 0.28)).add(new THREE.Vector3(rnd(-1.4, 1.4), rnd(-1.1, 0.2), rnd(-1.4, 1.4)));
+      const br = fractalPath(s0, end, 0.3, 3);
+      paths.push([br, 0.5]);
+      if (Math.random() < 0.6) { const s1 = br[Math.floor(br.length / 2)]; paths.push([fractalPath(s1, s1.clone().add(new THREE.Vector3(rnd(-0.9, 0.9), rnd(-0.8, 0.1), rnd(-0.9, 0.9))), 0.3, 2), 0.28]); }
     }
-    branches.forEach((pts, bi) => {
+    for (const [pts, w] of paths) {
       for (let i = 0; i < pts.length - 1; i++) {
-        const p0 = pts[i], p1 = pts[i + 1], l = p0.distanceTo(p1);
-        for (const [w, m] of [[bi ? 0.07 : 0.14, mat], [bi ? 0.03 : 0.05, matW]]) {
-          const seg = new THREE.Mesh(new THREE.BoxGeometry(w, w, l), m);
-          seg.position.copy(p0).lerp(p1, 0.5); seg.lookAt(p1);
-          g.add(seg);
+        const p0 = pts[i], p1 = pts[i + 1], l = p0.distanceTo(p1) + 0.02;
+        const taper = w === 1 ? 1 - 0.55 * (i / pts.length) : 1;   // ana hat uca doğru incelir
+        for (let L = 0; L < 3; L++) {
+          const th = base[L] * w * taper;
+          const seg = new THREE.Mesh(new THREE.BoxGeometry(th, th, l), mats[L]);
+          seg.position.copy(p0).lerp(p1, 0.5); seg.lookAt(p1); g.add(seg);
         }
       }
-    });
+    }
   }
   build();
-  let rebuilt = false;
+  let flick = 0;
   addFx(g, dur, (k) => {
-    if (!rebuilt && k > 0.45) { rebuilt = true; build(); }
-    mat.opacity = 1 - k * 0.8; matW.opacity = 1 - k;
-  }, { onEnd: () => { mat.dispose(); matW.dispose(); } });
-  burst(to.x, to.y, to.z, [color, '#ffffff'], 14, 5, { size: 0.25, life: 0.35 });
+    // titreme: süre boyunca iki kez yeni kıvrım çiz
+    if (flick < 2 && k > 0.28 + flick * 0.26) { flick++; build(); }
+    const f = k < 0.5 ? 1 : 1 - (k - 0.5) * 2;
+    const blink = Math.random() < 0.18 ? 0.45 : 1;
+    for (let L = 0; L < 3; L++) mats[L].opacity = alpha[L] * f * blink;
+  }, { onEnd: () => { mats.forEach((m) => m.dispose()); } });
+  // çarpma: parlak yer lekesi, kıvılcımlar, ince halka
+  burst(to.x, to.y, to.z, [color, '#ffffff'], 18, 6, { size: 0.25, life: 0.4 });
+  if (to.y < 1.5) { flash(to.x, to.y + 0.3, to.z, color, 28, Math.min(0.35, dur)); shockwave(to.x, to.z, 1.2 + Math.min(1.4, len * 0.08), color, 0.3); }
+}
+// şaman fırtına gösterisi: tepede kara bulut, çevrede art arda inen yıldırımlar, merkezde çatırdayan halka (seçim ekranı ve şimşek becerisi)
+export function stormShow(x, z, color, r = 2.8, n = 7) {
+  thunderCloud(x, z, color, 1.9, []);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + rnd(-0.25, 0.25), rr = r * rnd(0.8, 1.15);
+    later(() => skyBolt(x + Math.cos(a) * rr, z + Math.sin(a) * rr, i % 2 ? '#ffffff' : color), 200 + i * 120);
+  }
+  for (let i = 0; i < 5; i++) later(() => { const a = Math.random() * 6.28, b = a + rnd(1.4, 2.8); lightning({ x: x + Math.cos(a) * 1.6, y: rnd(0.4, 2.2), z: z + Math.sin(a) * 1.6 }, { x: x + Math.cos(b) * 1.6, y: rnd(0.4, 2.2), z: z + Math.sin(b) * 1.6 }, color, 0.2); }, 300 + i * 180);
+  later(() => skyBolt(x, z, '#ffffff'), 1000);
 }
 // mermi: parlak baş + iz; varınca onHit
 function projectile(from, to, color, o = {}) {
@@ -805,6 +830,24 @@ export function playSkill(sk, ctx) {
   setTint(tier ? MASTERY[tier].color : null);
   try { skillBody(sk, ctx, tier); } finally { TINT = null; }
 }
+// her beceriye eklenen ortak "şekil" katmanı: zeminde dönen rün halkaları, yükselen kıvılcım sarmalı, hedeflerde parıltı, yükselen kıvılcımlar ve gecikmeli halka
+function styleLayer(sk, c, f, follow, T, K) {
+  const col = tc(c);
+  magicCircle(f.x, f.z, 1.7 * K, col, 0.75, { follow, spin: 2.6, alpha: 0.55 });
+  magicCircle(f.x, f.z, 1.05 * K, '#ffffff', 0.55, { follow, spin: -4.2, alpha: 0.3 });
+  repeat(16, 0.028, (i) => {
+    const a = i * 0.85, r = 0.9 * K;
+    emit(f.x + Math.cos(a) * r, 0.08, f.z + Math.sin(a) * r, { vx: -Math.sin(a) * 2.2, vy: 2.2 + Math.random() * 1.2, vz: Math.cos(a) * 2.2, color: i % 3 ? col : '#ffffff', size: 0.2, life: 0.75, drag: 1.1 });
+  });
+  for (const t of T) {
+    later(() => {
+      flash(t.x, 1.2, t.z, col, 30, 0.35);
+      burst(t.x, 0.5, t.z, [col, '#ffffff'], 14, 3, { up: 4.5, size: 0.17, life: 0.75, gravity: -1 });
+      shockwave(t.x, t.z, 2.3 * K, col, 0.6);
+      for (let i = 0; i < 8; i++) { const a = i * 0.785; emit(t.x, 1.1, t.z, { vx: Math.cos(a) * 5, vy: 0.4, vz: Math.sin(a) * 5, color: '#ffffff', size: 0.16, life: 0.3, drag: 3 }); }
+    }, 170);
+  }
+}
 function skillBody(sk0, ctx, tier) {
   const K = tier ? MASTERY[tier].k : 1;
   const sk = { ...sk0, radius: (sk0.radius || 3) * K };
@@ -814,6 +857,7 @@ function skillBody(sk0, ctx, tier) {
   const fwd = (d) => ({ x: f.x + Math.sin(face) * d, z: f.z + Math.cos(face) * d });
   const hand = { x: f.x + Math.sin(face) * 0.6, y: 1.3, z: f.z + Math.cos(face) * 0.6 };
   masteryFx(tier, f, follow, c, sk.radius);
+  try { styleLayer(sk, c, f, follow, T, K); } catch (e) { /* süs katmanı hata verirse beceri yine de çalışır */ }
   switch (sk.key) {
     // ----- savaşçı -----
     case 's_ucluk': {  // üç hilal kesik arka arkaya, sonda önde yer yarığı
@@ -990,7 +1034,7 @@ function skillBody(sk0, ctx, tier) {
       break;
     case 'm_simsek': { // şimşek: elinde toplanan ışık, hedeften hedefe dallanan yıldırım, gökten inen ikinci yıldırım
       // imza: hedeflerin üstünde kara bulut, içinden çakan şimşekler
-      if (T.length) thunderCloud(T[0].x, T[0].z, c, 1.3, T);
+      if (T.length) stormShow(T[0].x, T[0].z, c, 2.4, 4);
       charge(follow, { x: hand.x, y: 1.6, z: hand.z }, c, 0.25, 18);
       let prev = { x: hand.x, y: 1.6, z: hand.z };
       T.forEach((t, i) => {

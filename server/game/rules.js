@@ -32,27 +32,42 @@ const skillsOf = (p) => SKILLS[p.class] || [];
 const skillPoints = (p) => Math.max(0, p.level - (SKILL_UNLOCK - 1)) - Object.values(p.skills || {}).reduce((a, b) => a + b, 0);
 
 // ---------- efsunlar ----------
+// Metin2'deki gibi: her ekipman türünün kendi efsun havuzu var, her efsunun 5 kademesi var (yüksek kademe nadir)
+const GRADE_W = [38, 28, 18, 11, 5];                    // kademe şansları (%)
+const FLAT_K = [0.6, 0.8, 1.0, 1.25, 1.5];              // sayı efsunlarında kademe çarpanı
+const flat = (base, per) => (t) => FLAT_K.map((k) => Math.round((base + per * t) * k));
+const pct = (...v) => () => v;                           // yüzde efsunları sabit kademeler
+const CLS_NAMES = { savasci: 'Savaşçılara', ninja: 'Ninjalara', sura: 'Suralara', saman: 'Şamanlara', okcu: 'Okçulara' };
 const BONUS_TYPES = {
-  maxhp:     { name: 'Maks. Can', unit: '', roll: (t) => 40 + t * 35 },
-  maxmp:     { name: 'Maks. Mana', unit: '', roll: (t) => 20 + t * 15 },
-  atk:       { name: 'Saldırı Değeri', unit: '', roll: (t) => 2 + t * 3 },
-  def:       { name: 'Savunma', unit: '', roll: (t) => 2 + t * 3 },
-  crit:      { name: 'Kritik Vuruş Şansı', unit: '%', roll: () => 2 + Math.floor(Math.random() * 7) },
-  atkspeed:  { name: 'Saldırı Hızı', unit: '%', roll: () => 2 + Math.floor(Math.random() * 7) },
-  movespeed: { name: 'Hareket Hızı', unit: '%', roll: () => 2 + Math.floor(Math.random() * 5) },
-  monster:   { name: 'Canavarlara Karşı Güç', unit: '%', roll: () => 2 + Math.floor(Math.random() * 9) },
-  hpsteal:   { name: 'Can Çalma', unit: '%', roll: () => 1 + Math.floor(Math.random() * 4) },
+  maxhp:     { name: 'Maks. Can', unit: '', grades: flat(40, 35), slots: ['armor', 'helmet', 'shoes', 'bracelet', 'earring', 'shield', 'necklace', 'weapon'] },
+  maxmp:     { name: 'Maks. Mana', unit: '', grades: flat(20, 15), slots: ['armor', 'helmet', 'shoes', 'earring', 'necklace'] },
+  atk:       { name: 'Saldırı Değeri', unit: '', grades: flat(2, 3), slots: ['weapon', 'bracelet'] },
+  def:       { name: 'Savunma', unit: '', grades: flat(2, 3), slots: ['armor', 'helmet', 'shoes', 'bracelet', 'shield', 'necklace'] },
+  avgdmg:    { name: 'Ortalama Hasar', unit: '%', grades: pct(3, 6, 9, 12, 15), slots: ['weapon'] },
+  skill:     { name: 'Beceri Hasarı', unit: '%', grades: pct(3, 6, 9, 12, 15), slots: ['weapon', 'earring', 'necklace'] },
+  pierce:    { name: 'Delici Vuruş', unit: '%', grades: pct(2, 4, 6, 8, 10), slots: ['weapon'] },
+  crit:      { name: 'Kritik Vuruş Şansı', unit: '%', grades: pct(2, 4, 6, 8, 10), slots: ['weapon', 'bracelet', 'earring', 'necklace'] },
+  atkspeed:  { name: 'Saldırı Hızı', unit: '%', grades: pct(2, 4, 6, 8, 10), slots: ['weapon', 'earring'] },
+  monster:   { name: 'Canavarlara Karşı Güç', unit: '%', grades: pct(3, 6, 9, 12, 15), slots: ['weapon'] },
+  hpsteal:   { name: 'Can Çalma', unit: '%', grades: pct(1, 2, 3, 4, 5), slots: ['weapon'] },
+  avgdef:    { name: 'Ortalama Hasara Dayanıklılık', unit: '%', grades: pct(2, 4, 6, 8, 10), slots: ['armor', 'helmet', 'shield'] },
+  dodge:     { name: 'Kaçınma', unit: '%', grades: pct(2, 4, 6, 8, 10), slots: ['armor', 'shoes', 'shield'] },
+  hpregen:   { name: 'Can Yenileme', unit: '%', grades: pct(1, 2, 3, 4, 5), slots: ['armor', 'helmet', 'bracelet', 'shield', 'necklace'] },
+  movespeed: { name: 'Hareket Hızı', unit: '%', grades: pct(2, 3, 4, 5, 6), slots: ['shoes'] },
+  exp:       { name: 'Tecrübe Bonusu', unit: '%', grades: pct(3, 5, 8, 10, 12), slots: ['helmet', 'earring', 'necklace'] },
+  yang:      { name: 'Yang Bonusu', unit: '%', grades: pct(5, 10, 15, 20, 25), slots: ['bracelet', 'earring', 'shoes', 'necklace'] },
+  drop:      { name: 'Eşya Düşme Şansı', unit: '%', grades: pct(3, 6, 9, 12, 15), slots: ['shoes', 'earring'] },
 };
-// efsunun alabileceği en yüksek değer (GM eşyaları için)
-const BONUS_MAX = { crit: 8, atkspeed: 8, movespeed: 6, monster: 10, hpsteal: 4 };
-function maxBonus(type, tier) {
-  if (BONUS_MAX[type] != null) return BONUS_MAX[type];
-  return Math.round(BONUS_TYPES[type].roll(tier || 0) * 1.2);
-}
+for (const c of CLASS_KEYS_BONUS()) BONUS_TYPES['vs_' + c] = { name: CLS_NAMES[c] + ' Karşı Güç', unit: '%', grades: pct(3, 6, 9, 12, 15), slots: ['weapon'] };
+function CLASS_KEYS_BONUS() { return Object.keys(CLS_NAMES); }
+// bu ekipman türünde çıkabilecek efsunlar
+function bonusPool(slot) { return Object.keys(BONUS_TYPES).filter((k) => BONUS_TYPES[k].slots.includes(slot)); }
+function maxBonus(type, tier) { const g = BONUS_TYPES[type].grades(tier || 0); return g[g.length - 1]; }
 function rollBonus(type, tier) {
-  const b = BONUS_TYPES[type];
-  const base = b.roll(tier || 0);
-  return b.unit === '%' ? base : Math.round(base * (0.6 + Math.random() * 0.6));
+  const g = BONUS_TYPES[type].grades(tier || 0);
+  let r = Math.random() * 100, k = 0;
+  for (; k < GRADE_W.length - 1; k++) { if (r < GRADE_W[k]) break; r -= GRADE_W[k]; }
+  return g[k];
 }
 
 // ekipman + efsunlar + güçlendirmeler
@@ -117,7 +132,7 @@ function upBonus(def, up) {
 const CLASS_KEYS = ['savasci', 'ninja', 'sura', 'saman', 'okcu'];
 
 function totals(p) {
-  const s = { atk: 0, def: 0, hp: 0, mp: 0, crit: 0, atkspeed: 0, movespeed: 0, monster: 0, hpsteal: 0, skill: 0, pierce: 0, dodge: 0 };
+  const s = { atk: 0, def: 0, hp: 0, mp: 0, crit: 0, atkspeed: 0, movespeed: 0, monster: 0, hpsteal: 0, skill: 0, pierce: 0, dodge: 0, avgdmg: 0, avgdef: 0, hpregen: 0, exp: 0, yang: 0, drop: 0 };
   for (const c of CLASS_KEYS) s['vs_' + c] = 0;
   const sb = statBonus(p);
   for (const k of Object.keys(sb)) s[k] += sb[k];
@@ -168,12 +183,12 @@ function playerDamage(p, targetDef, combo, mult = 1, forceCrit = false, vsClass 
   const base = 40 + p.level * 15 + t.atk * 4 + Math.random() * (20 + p.level * 2);
   if (t.pierce && Math.random() * 100 < t.pierce) targetDef = 0;          // delici vuruş
   const vs = vsClass ? 1 + (t['vs_' + vsClass] || 0) / 100 : 1 + t.monster / 100;
-  let dmg = base * (c.atk || 1) * (combo === 2 ? 1.3 : 1) * mult * vs - targetDef;
+  let dmg = base * (c.atk || 1) * (combo === 2 ? 1.3 : 1) * mult * vs * (1 + (t.avgdmg || 0) / 100) - targetDef;
   dmg = Math.max(1, Math.round(dmg * (crit ? 2 : 1)));
   return { dmg, crit, steal: t.hpsteal };
 }
 function mobDamage(mob, p) {
-  const raw = mob.atk * (0.9 + Math.random() * 0.2) - defense(p);
+  const raw = mob.atk * (0.9 + Math.random() * 0.2) * (1 - Math.min(60, totals(p).avgdef || 0) / 100) - defense(p);
   return Math.max(1, Math.round(raw));
 }
 function expGain(mobLv, playerLv, base) {
@@ -226,6 +241,6 @@ const skillLabel = (lv) => (lv > 17 ? 'M' + (lv - 17) : String(lv));
 
 module.exports = { EXP_GAIN_MUL, LEAF_N, EVOLVE_PEARLS, PEARL_KEYS, START_LEVEL, EVOLVE_CHANCE, EVOLVE_LEAVES, evolveCost, startKit, STONE_TYPES, STONE_SPECIALS, CLASS_KEYS, fixKey, fixItems, fixEquip,
   ITEMS, CLASSES, MOBS, MAPS, SKILLS, MAX_LEVEL, INV_SIZE, invSize, EQUIP_SLOTS, GEAR_SLOTS, BASE_SPEED, MELEE_RANGE, SKILL_UNLOCK, SKILL_MAX,
-  BONUS_TYPES, rollBonus, maxBonus, MAX_UP, LEAVES, leafNeed, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
+  BONUS_TYPES, bonusPool, rollBonus, maxBonus, MAX_UP, LEAVES, leafNeed, UP_CHANCE, STONE_UP_CHANCE, STONE_ADD_CHANCE, SOCKETS, upgradeCost, stoneUpCost, upBonus, expForLevel, STAT_KEYS, STAT_MAX, STAT_PER_LEVEL, BASE_STATS, MAIN_STAT, statValues, statPointsFree, statBonus, skillMul, classOf, skillsOf, skillPoints, totals, maxHp, maxMp, defense, attackPower,
   speedMul, attackCooldown, playerDamage, mobDamage, expGain, skillLabel,
 };

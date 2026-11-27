@@ -371,10 +371,8 @@ MAPS = [
      # köy hayvanları: gerçek boylarında, uysal (sen vurmadan saldırmazlar)
      # 9. alan: {'model': client/models/mobs/<ad>.glb} – kullanıcının eklediği modeller
      # tavuk ve horoz modelleri küçük olduğu için büyütüldü; vuruş menzili boydan bağımsız ('range')
-     'mobs': [('tavuk', 'Tavuk', 1, 'frog', '#f4f1e8', 3.0, 0, 3.4, {'model': 'tavuk', 'range': 2.6}),
-              ('horoz', 'Horoz', 2, 'frog', '#c0392b', 2.8, 0, 3.8, {'model': 'horoz', 'range': 2.8}),
-              ('domuz', 'Domuz', 3, 'boar', '#e8a0a0', 1.0, 0, 4.0, {'model': 'domuz'}),
-              ('inek', 'İnek', 5, 'bear', '#a0522d', 1.0, 0, 3.2, {'model': 'inek'})],
+     # köyde canavar ve metin taşı yok: sadece köy
+     'mobs': [], 'stones': 0,
      # köprünün ötesinde kullanıcının boss modelinden düşük seviyeli boss ('n' tane); her haritada tek tür boss
      # Sv. 70-99 sunucusu: köyde boss doğmaz ('n': 0), verisi korunur
      'bosses': [('kaplanadam', 'Kaplan Adam', 8, 'humanoid', '#e67e22', 1.4, {'model': 'kaplan_adam', 'aura': '#ffb347', 'n': 0})]},

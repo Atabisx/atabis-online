@@ -692,3 +692,9 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 
 ### 6.9 Yüksek seviye düşmanları
 `client/models/mobs/`: lanetli_sovalye, carpik_dev, yozlastirici, solgun_elf, curuk_agac (dokulu, iskeletsiz; T-pozdaki kollar yüklenirken aşağı indirildi, hareket `models.js` içindeki bölge animasyonuyla). Ejder Kalesi (Lanetli Şövalye), Lanetli Harabeler (Çürük Ağaç Ruhu boss), İblis Kulesi (Solgun Elf Suikastçı), Ejder Vadisi (Çarpık Taş Devi boss), Kara Taht (Hiçlik Yozlaştırıcısı).
+
+### 6.10 Efsunlar, köy, seçim ekranı, beceri efektleri
+- **Efsun (Metin2 gibi):** `rules.js` içinde `BONUS_TYPES` 23 efsun; her ekipman türünün kendi havuzu (`bonusPool(slot)`), her efsunun 5 kademesi (yüksek kademe nadir, `GRADE_W`). Yeni etkiler: ortalama hasar, beceri hasarı, delici vuruş, sınıf güçleri, ortalama hasara dayanıklılık, kaçınma, can yenileme, tecrübe/yang/düşme bonusu. Efsun nesnesi ekler (en fazla 5), Efsun Değiştirme hepsini yeniden çeker.
+- **Atabis Köyü:** canavar, boss ve metin taşı yok (`gen_data.py` → mobs/bosses boş, stones 0); Kızılçam Ormanı artık 1. seviyeden girilir.
+- **Şimşek:** `fx.js` `lightning()` kıvrımlı ana hat, dallar, üç katman ve titreme; `stormShow()` şaman fırtınası. Her beceriye `styleLayer` (zemin rün halkaları, kıvılcım sarmalı, hedef parıltısı).
+- **Seçim ekranı:** `lobbyFlourish` sınıfa özel beceri sırasıyla (LOBBY_SKILLS) sürekli tekrarlanır.
