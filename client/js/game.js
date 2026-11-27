@@ -1054,11 +1054,11 @@ const MOVES = {
   u_emme: { dur: 0.8, lean: -0.25, cast: 'push' },
   u_alev: { dur: 0.8, jump: 1.5, jumpAt: [0, 0.62], spin: 1, lunge: 0.5, combos: [[0.25, 1], [0.58, 2]] },
   u_kalkan: { dur: 0.8, cast: 'raise', spin: 1 },
-  m_ejdatis: { dur: 0.8, lean: 0.25, cast: 'push', jump: 0.3, jumpAt: [0, 0.4] },
+  m_ejdatis: { dur: 0.85, lean: 0.3, lunge: 1.2, cast: 'push', jump: 0.35, jumpAt: [0, 0.4] },
   m_kukreme: { dur: 0.95, jump: 0.8, jumpAt: [0, 0.55], lean: 0.35, lunge: 0.4, cast: 'push' },
   m_simsek: { dur: 0.5, cast: 'push', lean: 0.15 },
-  m_cagir: { dur: 1.1, jump: 0.5, jumpAt: [0.1, 0.8], cast: 'raise' },
-  m_pence: { dur: 0.8, lean: 0.3, lunge: 0.6, cast: 'push', spin: 0.5 },
+  m_cagir: { dur: 1.1, lunge: 0.9, jump: 0.5, jumpAt: [0.1, 0.8], cast: 'raise' },
+  m_pence: { dur: 0.8, lean: 0.3, lunge: 1.0, cast: 'push', spin: 0.5 },
   m_enerji: { dur: 0.95, cast: 'raise', jump: 0.4, jumpAt: [0.1, 0.5] },
   m_kutsama: { dur: 1.0, jump: 0.6, jumpAt: [0.1, 0.9], cast: 'raise' },
   m_ejdyar: { dur: 1.0, cast: 'raise', jump: 0.5, jumpAt: [0.1, 0.8] },
@@ -3270,7 +3270,7 @@ export async function lobbyShowChar(c) {
   lobbyFlourish(true);
 }
 // seçilen karakter gösteri yapar (Metin2 gibi): ışık sütununda belirir, selam, vuruşlar, sınıfına özel beceriler; durunca kendi kendine devam eder
-const LOBBY_SKILLS = { savasci: [1, 0, 3], ninja: [2, 0, 1], sura: [2, 0, 3], saman: [1, 3, 2], okcu: [2, 0, 3] };
+const LOBBY_SKILLS = { savasci: [1, 0, 3], ninja: [2, 0, 1], sura: [2, 0, 3], saman: [2, 1, 3], okcu: [2, 0, 3] };
 function lobbyFlourish(appear) {
   const o = lobby.char; if (!o) return;
   const list = SKILLS[o.cls] || [], order = LOBBY_SKILLS[o.cls] || [1, 0];

@@ -714,3 +714,5 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 - Skill çubuğunda 6'dan fazla beceri varsa sağdaki sayfa düğmesiyle 1/2 ve 2/2 arasında geçilir.
 - Seviye arttıkça efektler büyür (ikinci/üçüncü ejderha, daha çok yıldırım); M1 mavi, M2 mor, M3 kırmızı ustalık rengi ve ek katman.
 - Her becerinin kendine ait hareketi (zıplama, yükselen eller, ileri atılma, dönme) ve kodla üretilmiş sesi var.
+
+- **Kam sadeleştirildi (6.14):** diğer karakterler gibi 4 beceri (Ejderha Atışı, Ejderha Kükremesi, Şimşek Çağırma, Yıldırım Pençesi). Menzil 6 metreye indi; karakter hedefe yaklaşıp vuruyor. Kaldırılan becerilere harcanan puanlar otomatik iade edilir.

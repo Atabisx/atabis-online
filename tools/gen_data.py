@@ -669,20 +669,10 @@ SKILLS = {
         sk('u_kalkan', 'Gölge Kalkanı', '60 saniye savunmanı artırır.', 'self', 25, 3, 60, '#5a5e6a', buff={'stat': 'def', 'base': 8, 'perLv': 3, 'dur': 60}),
     ],
     'saman': [
-        # --- saldırı (1. sayfa) ---
-        sk('m_ejdatis', 'Ejderha Atışı', 'Elinden bir ateş ejderhası fırlatır; çarptığı yerde patlar ve 5 saniye yakar.', 'single', 24, 3, 7, '#ff6a2a', range=13, splash=2.5, mult=2.1, multLv=0.16, dot={'mult': 0.3, 'multLv': 0.03, 'sec': 5}, combo=1),
+        sk('m_ejdatis', 'Ejderha Atışı', 'Yaklaşıp asasından bir ateş ejderhası salar; çarptığı yerde patlar ve 5 saniye yakar.', 'single', 24, 3, 7, '#ff6a2a', range=6, splash=2.5, mult=2.1, multLv=0.16, dot={'mult': 0.3, 'multLv': 0.03, 'sec': 5}, combo=1),
         sk('m_kukreme', 'Ejderha Kükremesi', 'Çevrende geniş çaplı ateş patlaması yaratır ve düşmanları sersemletir.', 'aoe', 40, 5, 14, '#ff8a3d', radius=6, mult=1.7, multLv=0.13, stun=0.8, combo=1),
-        sk('m_simsek', 'Şimşek Atma', 'Düşmana doğru hızlı bir yıldırım gönderir.', 'single', 12, 2, 3, '#9fd8ff', range=12, mult=1.4, multLv=0.11, combo=0),
-        sk('m_cagir', 'Şimşek Çağırma', 'Gökyüzünden düşmanın üzerine yıldırım düşürür; çevresine de vurur ve sersemletir.', 'single', 34, 4, 12, '#7ea8ff', range=12, splash=3.2, mult=2.3, multLv=0.17, stun=1.2, combo=1),
-        sk('m_pence', 'Yıldırım Pençesi', 'Elektrik enerjisi düşmandan düşmana zincirleme sıçrar (3 hedef, 10. seviyede 4, M1\'de 5).', 'chain', 28, 3, 9, '#b36bff', range=11, mult=1.5, multLv=0.12, combo=1),
-        sk('m_enerji', 'Enerji Topu', 'Yoğunlaşmış büyülü enerji küresi fırlatır; patlayınca çevresine de hasar verir.', 'single', 30, 4, 10, '#8f7bff', range=14, splash=3.5, mult=2.6, multLv=0.19, combo=1),
-        # --- destek (2. sayfa) ---
-        sk('m_kutsama', 'Kutsama', '90 saniye kendinin ve 10 metre içindeki oyuncuların savunmasını artırır.', 'self', 35, 3, 60, '#ffd23f', buff={'stat': 'def', 'base': 8, 'perLv': 3, 'dur': 90}, radius=10),
-        sk('m_ejdyar', 'Ejderha Yardımı', '60 saniye kendinin ve yakınındakilerin kritik vuruş şansını artırır.', 'self', 32, 3, 50, '#ff5a3d', buff={'stat': 'crit', 'base': 8, 'perLv': 1.5, 'dur': 60}, radius=10),
-        sk('m_yansit', 'Yansıtma', '45 saniye boyunca aldığın hasarın bir kısmını saldırana geri yansıtır (en çok %60).', 'self', 30, 3, 45, '#9fe8ff', buff={'stat': 'reflect', 'base': 15, 'perLv': 2.5, 'dur': 45}),
-        sk('m_hiz', 'Hız', '60 saniye kendinin ve yakınındakilerin hareket ve saldırı hızını artırır.', 'self', 28, 3, 50, '#6fe0ff', buff={'stat': 'movespeed', 'base': 10, 'perLv': 1.5, 'dur': 60, 'extra': {'atkspeed': 12}}, radius=10),
-        sk('m_sifa', 'İyileştirme', 'Kendini ve 8 metre içindeki oyuncuları iyileştirir.', 'heal', 30, 3, 8, '#e8f6ff', heal={'base': 90, 'perLv': 16, 'perLevel': 9}, radius=8),
-        sk('m_guc', 'Saldırı Gücü', '60 saniye kendinin ve yakınındakilerin fiziksel saldırı gücünü artırır.', 'self', 32, 3, 55, '#ff3b3b', buff={'stat': 'atk', 'base': 6, 'perLv': 2, 'dur': 60}, radius=10),
+        sk('m_cagir', 'Şimşek Çağırma', 'Gökten düşmanın üzerine yıldırım düşürür; çevresine de vurur ve sersemletir.', 'single', 34, 4, 12, '#7ea8ff', range=6, splash=3.2, mult=2.3, multLv=0.17, stun=1.2, combo=1),
+        sk('m_pence', 'Yıldırım Pençesi', 'Elektrik pençesi düşmandan düşmana zincirleme sıçrar (3 hedef, 10. seviyede 4, M1\'de 5).', 'chain', 28, 3, 9, '#b36bff', range=6, mult=1.5, multLv=0.12, combo=1),
     ],
     'okcu': [
         sk('o_coklu', 'Üçlü Kılıç Dalgası', 'Kılıcını savurup aynı anda 3 hedefe kılıç dalgası fırlatır.', 'multi', 18, 3, 5, '#f4e2b8', range=12, mult=1.2, multLv=0.1, count=3),

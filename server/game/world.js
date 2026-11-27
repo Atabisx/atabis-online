@@ -73,6 +73,9 @@ function createWorld(io) {
       pierce: t.pierce, dodge: t.dodge, monster: t.monster, hpsteal: t.hpsteal, vs: Object.fromEntries(R.CLASS_KEYS.map((c) => [c, t['vs_' + c] || 0])) });
   }
   function sendSkills(p) {
+    // kaldırılmış becerilere harcanan puanlar iade edilir (kayıttan silinir)
+    const valid = new Set(R.skillsOf(p).map((k) => k.key));
+    for (const k of Object.keys(p.skills || {})) if (!valid.has(k)) delete p.skills[k];
     p.socket.emit('skills', { levels: p.skills, points: R.skillPoints(p), unlock: R.SKILL_UNLOCK });
   }
   function sendBuffs(p) {
