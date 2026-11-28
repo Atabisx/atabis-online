@@ -344,10 +344,37 @@ def build_items():
     items['kutsama'] = {'name': 'Kutsama Kağıdı', 'slot': 'use', 'desc': 'Demircide yükseltme başarısız olursa eşyanın artısı düşmez (kağıt harcanır).',
                         'lv': 1, 'price': 75000, 'rarity': 2, 'color': '#f2e2a0', 'stack': 200}
 
+    # ---- silah dönüşüm zincirleri (kullanıcı belirledi): +9'da demircide sıradaki silaha dönüşür ----
+    # (anahtar, ad, sv, saldırı); ilk basamak metin taşından düşer, diğerleri sadece evrimle elde edilir
+    SW5 = ['savasci', 'sura', 'ninja', 'okcu', 'saman']
+    EVO_WEAPON_CHAINS = [
+        ('sword', SW5, '#c9d1d9', [('gumus_kilic', 'Gümüş Kılıç', 40, 140), ('kivrik_kilic', 'Kıvrık Kılıç', 55, 195), ('alev_kilic', 'Alev Kılıcı', 70, 260), ('kanatli_kilic', 'Kanatlı Kılıç', 85, 335)]),
+        ('sword', ['ninja'], '#8a7dff', [('ayaz_hancer', 'Ayaz Hançeri', 40, 150), ('katana', 'Katana', 55, 205), ('magma_hancer', 'Magma Hançeri', 70, 270), ('lav_kilic', 'Lav Kılıcı', 85, 345)]),
+        ('staff', ['saman'], '#5fd35a', [('kok_asa', 'Kök Asa', 35, 135), ('maymun_asa', 'Efsane Maymun Asası', 50, 185), ('ejderbuz_asa', 'Ejder Buz Asası', 65, 245), ('zumrut_asa', 'Zümrüt Küre Asası', 80, 310), ('magma_asa', 'Magma Asası', 95, 380)]),
+        ('sword', ['savasci', 'sura'], '#e8b54a', [('ayaz_gurz', 'Ayaz Gürzü', 35, 140), ('ayaz_balta', 'Ayaz Baltası', 50, 195), ('buz_balta', 'Buz Baltası', 65, 250), ('magma_gurz', 'Magma Gürzü', 80, 315), ('ejder_cekic', 'Ejderarması Savaş Çekici', 95, 385), ('magma_balta', 'Magma Baltası', 100, 420)]),
+        ('sword', SW5, '#ff8fc0', [('kristal_kilic', 'Kristal Kılıç', 30, 130), ('magma_kilic', 'Magma Kılıcı', 45, 175), ('ayaz_buyukkilic', 'Ayaz Büyük Kılıcı', 60, 230), ('kizil_kilic', 'Kızıl Kılıç', 75, 290), ('mor_kilic', 'Mor Kılıç', 90, 360), ('magma_buyukkilic', 'Magma Büyük Kılıcı', 100, 415)]),
+    ]
+    for wtype, classes, color, steps in EVO_WEAPON_CHAINS:
+        for n, (key, name, lv, atk) in enumerate(steps):
+            it = items.get(key)
+            if it is None:
+                it = items[key] = {'name': name, 'slot': 'weapon', 'type': wtype, 'rarity': 2, 'color': color, 'glow': True, 'model': key,
+                                   'len': 1.55 if wtype == 'staff' else 0.95, 'leaves': 5}
+            it.update({'name': name, 'classes': classes, 'lv': lv, 'atk': atk, 'price': lv * 25000, 'type': wtype})
+            first = n == 0
+            if first: it['stoneDrop'] = [lv, lv + 14]
+            else: it.pop('stoneDrop', None)
+            if n + 1 < len(steps): it['evolve'] = steps[n + 1][0]
+            else: it.pop('evolve', None)
+            if not first: it['evolved'] = True
+            else: it.pop('evolved', None)
+            where = 'Metin taşlarından nadiren düşer.' if first else 'Sadece evrimle elde edilir.'
+            nxt = f" +9'da {steps[n + 1][1]} olur." if n + 1 < len(steps) else ' Zincirin son silahı.'
+            it['desc'] = f"{', '.join(CLS_TR[c] for c in classes)} kullanır. {where}{nxt} Her yükseltme 5'er Mor, Yeşil ve Kırmızı Yaprak ister."
     # evrim zinciri: kademe i (+9) -> kademe i+1 (+0); efsanevi (_L) olanlar efsanevi olana
     for k, v in list(items.items()):
         t = v.get('tier')
-        if t is None or not (EVOLVE_FROM <= t < EVOLVE_TO):
+        if t is None or not (EVOLVE_FROM <= t < EVOLVE_TO) or (v.get('slot') == 'weapon' and v.get('type') in ('sword', 'staff')):
             continue
         base = k[:-2] if k.endswith('_L') else k
         nxt = base[:len(base) - len(str(t))] + str(t + 1) + ('_L' if k.endswith('_L') else '')

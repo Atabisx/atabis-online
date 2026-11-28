@@ -773,3 +773,12 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 - **Kam:** artık diğer sınıfların kılıçlarını kuşanır ve kılıç saldırı animasyonlarını kullanır. Becerileri: Boşluk Mızrağı, Kara Delik, Portal Çöküşü, Ruh Zincirleri (yeni efektler).
 - **Yer sallanması:** alan/atılış/öne vuruş becerilerinde ek kamera sarsıntısı ve toprak parçacıkları; beceri animasyonlarında sıçrama/atılma %30 artırıldı.
 - **Öfke düğmesi** ekranın ortasından sol kenara taşındı.
+
+### 9.10 Silah dönüşüm zincirleri (5 zincir, 25 silah)
+
+Her silah +9'da demircide sıradakine dönüşür (`gen_data.py` → `EVO_WEAPON_CHAINS`). İlk basamak metin taşından düşer, diğerleri sadece evrimle elde edilir; Sv. ve saldırı zincir boyunca artar. Eski genel kademe (9-14) kılıç/asa evrimi kaldırıldı.
+1. Gümüş → Kıvrık → Alev → Kanatlı (kılıç)
+2. Ayaz Hançeri → Katana → Magma Hançeri → Lav Kılıcı (Suikastçı)
+3. Kök → Maymun → Ejder Buz → Zümrüt → Magma Asası (Kam)
+4. Ayaz Gürzü → Ayaz Baltası → Buz Baltası → Magma Gürzü → Ejderarması Çekici → Magma Baltası (Şövalye, Lanetli)
+5. Kristal → Magma Kılıç → Ayaz Büyük → Kızıl → Mor → Magma Büyük Kılıç
