@@ -758,3 +758,10 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 - **Ejder Yavrusu (pet):** gerçekçi ejder, `models/mobs/ejder_yavru.glb`. Doku çok küçük adalardan oluştuğu için sadeleştirmede bozuluyordu; `takiglb.py --vcol` dokuyu köşe rengine pişirir (~80 bin üçgen, 2,3 MB).
 - **Yeni silahlar (metin taşlarından nadir düşer):** Kök Asa (Sv.70, Kam), Kızıl Kılıç (Sv.75), Alev Kılıcı (Sv.95), Ejder Buz Asası (Sv.100, Kam).
 - Kalan: Triumvirate'in sağdaki (koyu kızıl dikenli) figürü yeni sınıf olarak ayrıldı; sol (kırmızı kapüşonlu) figür kullanılmadı.
+
+### 9.8 Yeni karakterler: Boşluk Hükümdarı (Kam) ve Kızıl Ejder Fatihi
+
+- **Kam (şaman):** Void Sovereign (mor portal halkalı, dikenli siyah zırhlı kral). Kılıcı kesildi (`takiglb --cut`), portal halkası karaktere bağlı kaldı. Rig: `tools/rig/saman_void.json`.
+- **Ejder Fatihi (yeni sınıf):** Crimson Dragon Warlord. Yeni sınıf anahtarı açmak yerine kullanılmayan **okcu** (Avcı) yuvası yeniden açıldı: adı "Ejder Fatihi", `retired` kaldırıldı, ses erkek, dönüşüm "Kızıl Ejder". Becerileri uzaktan kılıç dalgalarıdır (çoklu, buz, ateş, hafif adım). Rig: `tools/rig/yeni_ejder_fatihi.json`; modeller `chars*/okcu.glb`.
+- İki model de 2 milyon üçgenlik ve dokusu bozulmasın diye `takiglb.py --vcol` ile köşe rengine pişirildi; `glbrig.py` artık `COLOR_0` taşır (uint8). Telefon ~7-9 MB, PC ~14 MB, düşük ~3 MB.
+- Not: Ejder Fatihi için giyilen zırh modelleri (`worn/*_okcu`) eski Avcı gövdesine göre; yeni gövdede zırh eşyası görünmeyebilir, karakterin kendi zırhı görünür.

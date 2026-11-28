@@ -277,7 +277,7 @@ function setupGuild() {
   $('gLeave').addEventListener('click', () => C.askBox('Loncadan ayrılmak istiyor musun?', (ok) => ok && socket.emit('guildLeave'), 'Ayrıl', 'Vazgeç', true));
   $('gDisband').addEventListener('click', () => C.askBox('Lonca tamamen dağıtılsın mı? Depodaki eşyalar ve kasa sana kalır.', (ok) => ok && socket.emit('guildDisband'), 'Dağıt', 'Vazgeç', true));
 }
-const CLS_NAMES = { savasci: 'Şövalye', ninja: 'Suikastçı', sura: 'Lanetli', saman: 'Büyücü', okcu: 'Avcı' };
+const CLS_NAMES = { savasci: 'Şövalye', ninja: 'Suikastçı', sura: 'Lanetli', saman: 'Büyücü', okcu: 'Ejder Fatihi' };
 function slotHtml(it) {
   const d = C.ITEMS[it.key] || { name: '?', rarity: 0 };
   return `<button class="slot" data-uid="${it.uid}" aria-label="${C.esc(d.name)}" title="${C.esc(d.name + (it.by ? ' · ' + it.by : ''))}">${C.itemIcon(it.key, d)}${it.n > 1 ? `<i class="cnt">${it.n}</i>` : ''}${it.up ? `<i class="upb">+${it.up}</i>` : ''}</button>`;

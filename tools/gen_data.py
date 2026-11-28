@@ -98,7 +98,7 @@ STONES = [
     ('ninja', 'Suikastçı Taşı', 'weapon', 'vs_ninja', [2, 4, 6, 8, 10], '#5a5f73', 'Suikastçılara karşı güç +%{v}.'),
     ('sura', 'Lanetli Taşı', 'weapon', 'vs_sura', [2, 4, 6, 8, 10], '#8e44ad', 'Lanetlilere karşı güç +%{v}.'),
     ('saman', 'Büyücü Taşı', 'weapon', 'vs_saman', [2, 4, 6, 8, 10], '#27ae60', 'Büyücülere karşı güç +%{v}.'),
-    ('okcu', 'Avcı Taşı', 'weapon', 'vs_okcu', [2, 4, 6, 8, 10], '#b8860b', 'Avcılara karşı güç +%{v}.'),
+    ('okcu', 'Fatih Taşı', 'weapon', 'vs_okcu', [2, 4, 6, 8, 10], '#b8860b', 'Fatihlere karşı güç +%{v}.'),
     ('hayat', 'Hayat Taşı', 'armor', 'hp', [80, 150, 250, 350, 500], '#e74c3c', 'Maks. Can +{v}.'),
     ('savunma', 'Savunma Taşı', 'armor', 'def', [8, 15, 22, 30, 40], '#7f8c8d', 'Savunma +{v}.'),
     ('hiz', 'Hız Taşı', 'armor', 'movespeed', [2, 4, 6, 8, 10], '#3498db', 'Hareket hızı +%{v}.'),
@@ -297,7 +297,7 @@ def build_items():
         ('alev_kilic', 'Alev Kılıcı', 'sword', ['savasci', 'sura', 'ninja', 'okcu'], 95, '#ff7a2a', 345),
         ('ejderbuz_asa', 'Ejder Buz Asası', 'staff', ['saman'], 100, '#3fd0ff', 372)]
     SPECIAL_WEAPONS.append(('ejder_cekic', 'Ejderarması Savaş Çekici', 'sword', ['savasci', 'sura'], 100, '#b06bff', 385))
-    CLS_TR = {'savasci': 'Şövalye', 'sura': 'Lanetli', 'ninja': 'Suikastçı', 'okcu': 'Avcı', 'saman': 'Büyücü'}
+    CLS_TR = {'savasci': 'Şövalye', 'sura': 'Lanetli', 'ninja': 'Suikastçı', 'okcu': 'Fatih', 'saman': 'Büyücü'}
     for key, name, wtype, classes, lv, color, atk in SPECIAL_WEAPONS:
         items[key] = {'name': name, 'slot': 'weapon', 'type': wtype, 'classes': classes, 'lv': lv, 'rarity': 2, 'color': color,
                       'atk': atk, 'glow': True, 'price': lv * 25000, 'model': key, 'leaves': 5, 'stoneDrop': [lv, lv + 14],

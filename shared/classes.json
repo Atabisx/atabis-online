@@ -42,15 +42,14 @@
   "startWeapon": "staff0"
  },
  "okcu": {
-  "name": "Avcı",
-  "desc": "Kılıcını savurup uzağa parlak kılıç dalgaları fırlatır. Düşmanı yaklaşmadan indirir.",
+  "name": "Ejder Fatihi",
+  "desc": "Kızıl Ejder Savaş Lordu. Kolundaki ejder başıyla uzaktan kılıç dalgaları ve alevler fırlatır.",
   "hp": 150,
   "mp": 70,
   "atk": 0.95,
   "def": 3,
   "range": 12,
-  "color": "#1e8449",
-  "startWeapon": "sword0",
-  "retired": true
+  "color": "#c0183e",
+  "startWeapon": "sword0"
  }
 }

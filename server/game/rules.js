@@ -37,7 +37,7 @@ const GRADE_W = [38, 28, 18, 11, 5];                    // kademe şansları (%)
 const FLAT_K = [0.6, 0.8, 1.0, 1.25, 1.5];              // sayı efsunlarında kademe çarpanı
 const flat = (base, per) => (t) => FLAT_K.map((k) => Math.round((base + per * t) * k));
 const pct = (...v) => () => v;                           // yüzde efsunları sabit kademeler
-const CLS_NAMES = { savasci: 'Savaşçılara', ninja: 'Ninjalara', sura: 'Suralara', saman: 'Şamanlara', okcu: 'Okçulara' };
+const CLS_NAMES = { savasci: 'Savaşçılara', ninja: 'Ninjalara', sura: 'Suralara', saman: 'Şamanlara', okcu: 'Fatihlere' };
 const BONUS_TYPES = {
   maxhp:     { name: 'Maks. Can', unit: '', grades: flat(40, 35), slots: ['armor', 'helmet', 'shoes', 'bracelet', 'earring', 'shield', 'necklace', 'weapon'] },
   maxmp:     { name: 'Maks. Mana', unit: '', grades: flat(20, 15), slots: ['armor', 'helmet', 'shoes', 'earring', 'necklace'] },
@@ -208,7 +208,7 @@ const WING_STAGES = [
 const wingEvo = (it) => Math.min(WING_STAGES.length - 1, (it && it.wev) || 0);
 const wingMul = (it) => WING_STAGES[wingEvo(it)].mul;
 const TF_LEVEL = 30, TF_RAGE = 100, TF_BASE_SEC = 20;
-const TF_FORMS = { savasci: 'Kızıl Dev', ninja: 'Gölge Hayalet', sura: 'Karanlık Lord', saman: 'Ejder Ruhu', okcu: 'Orman Avcısı' };
+const TF_FORMS = { savasci: 'Kızıl Dev', ninja: 'Gölge Hayalet', sura: 'Karanlık Lord', saman: 'Ejder Ruhu', okcu: 'Kızıl Ejder' };
 const tfOn = (p, now = Date.now()) => !!(p.tf && p.tf.until > now);
 function totals(p) {
   const s = { atk: 0, def: 0, hp: 0, mp: 0, crit: 0, atkspeed: 0, movespeed: 0, monster: 0, hpsteal: 0, skill: 0, pierce: 0, dodge: 0, avgdmg: 0, avgdef: 0, hpregen: 0, exp: 0, yang: 0, drop: 0 };

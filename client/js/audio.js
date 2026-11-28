@@ -221,7 +221,7 @@ const VOICES = {
   sura: { ...MALE, rate: 0.95 },
   ninja: { ...FEMALE, rate: 1.04 },
   saman: { ...FEMALE, rate: 1.05 },
-  okcu: { ...FEMALE, rate: 1.0 },
+  okcu: { ...MALE, rate: 0.93 },
 };
 let lastShout = 0;
 export function shout(cls, kind = 'light', pos = null) {

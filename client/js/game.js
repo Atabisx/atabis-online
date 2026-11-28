@@ -319,7 +319,7 @@ const CHAR_MODELS = {
   ninja: { url: 'models/chars/ninja.glb', k: 1.0 },            // Gölge Kılıcı (kızıl atkılı kadın ninja; at kuyruğu boyu etkilemesin)
   sura: { url: 'models/chars/sura.glb', k: 1.03 },             // Altın Fırtına İmparatoru (siyah-altın zırhlı erkek)
   saman: { url: 'models/chars/saman.glb' },                    // Boşluk Hükümdarı (mor portal halkalı, dikenli siyah zırhlı kral; kılıcı kesildi)
-  okcu: { url: 'models/chars/okcu.glb' },                      // Şafak Şövalyesi (kızıl saçlı, pelerinli kadın şövalye)
+  okcu: { url: 'models/chars/okcu.glb' },                      // Kızıl Ejder Savaş Lordu (beyaz-kızıl zırhlı, kolunda ejder başı; kılıcı kesildi)
 };
 const charModels = {};   // cls -> { scene, calib, clips }
 // karakter kalitesi: bilgisayarda (fare, büyük ekran) 4096 piksel dokulu sürüm (models/chars_hq),
@@ -557,7 +557,7 @@ const CLASS_LOOK = {
   ninja: { bulk: 0.92, tint: '#2c2f3c' },
   sura: { bulk: 1.0, tint: '#3e2c4e' },
   saman: { bulk: 0.97, tint: '#d8cfa8' },
-  okcu: { bulk: 0.93, tint: '#3f6a3a' },
+  okcu: { bulk: 1.0, tint: '#3a2a30' },
 };
 // ---------- ekipman görselleri (metre cinsinden) ----------
 function swordMesh(def) {
@@ -961,7 +961,7 @@ function pickStallAt(cx, cy) {
 // ---------- görünüş: kanat ve evcil hayvan ----------
 const PET_SCALE = [1, 1.2, 1.45, 1.75], PET_COLORS = ['#ffffff', '#6fa8ff', '#b06bff', '#ffd23f'];
 const WING_SCALE = [1, 1.1, 1.22, 1.38], WING_GLOW = ['#ffffff', '#ffd6f0', '#9fd8ff', '#ffd23f'];
-const TF_COLORS = { savasci: '#ff3b2f', ninja: '#7a5cff', sura: '#b01cff', saman: '#3fd0ff', okcu: '#7dff6b' };
+const TF_COLORS = { savasci: '#ff3b2f', ninja: '#7a5cff', sura: '#b01cff', saman: '#3fd0ff', okcu: '#ff3b5c' };
 function applyCosmetics(p) {
   const tf = !!p.look.tf;
   if (!!p.tfOn !== tf) { p.tfOn = tf; p.group.scale.setScalar(tf ? 1.3 : 1); }
