@@ -318,7 +318,7 @@ const CHAR_MODELS = {
   savasci: { url: 'models/chars/savasci.glb' },                // Kızıl Gölge Kılıcı (kızıl pelerinli, maskeli erkek)
   ninja: { url: 'models/chars/ninja.glb', k: 1.0 },            // Gölge Kılıcı (kızıl atkılı kadın ninja; at kuyruğu boyu etkilemesin)
   sura: { url: 'models/chars/sura.glb', k: 1.03 },             // Altın Fırtına İmparatoru (siyah-altın zırhlı erkek)
-  saman: { url: 'models/chars/saman.glb' },                    // Triumvirate (beyaz-mavi kanatlı miğferli zırhlı kadın)
+  saman: { url: 'models/chars/saman.glb' },                    // Boşluk Hükümdarı (mor portal halkalı, dikenli siyah zırhlı kral; kılıcı kesildi)
   okcu: { url: 'models/chars/okcu.glb' },                      // Şafak Şövalyesi (kızıl saçlı, pelerinli kadın şövalye)
 };
 const charModels = {};   // cls -> { scene, calib, clips }

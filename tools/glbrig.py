@@ -32,6 +32,9 @@ for s in ('Left', 'Right'):
                       s + 'UpLeg': s + 'Leg', s + 'Leg': s + 'Foot', s + 'Foot': s + 'ToeBase', s + 'ToeBase': s + 'Toe_End'})
 
 
+VC = None
+
+
 def read_glb(path):
     b = open(path, 'rb').read(); L = struct.unpack('<I', b[12:16])[0]; j = json.loads(b[20:20 + L]); BIN = b[20 + L + 8:]
     def acc(i):
@@ -43,6 +46,7 @@ def read_glb(path):
     P = acc(p['attributes']['POSITION']).astype(np.float64); N = acc(p['attributes']['NORMAL']).astype(np.float64)
     U = acc(p['attributes']['TEXCOORD_0']).astype(np.float64) if 'TEXCOORD_0' in p['attributes'] else None
     T = acc(p['indices']).reshape(-1, 3).astype(np.int64)
+    global VC; VC = acc(p['attributes']['COLOR_0']).astype(np.float32) if 'COLOR_0' in p['attributes'] else None   # köşe rengi (takiglb --vcol)
     img = None
     if j.get('images'):
         bv = j['bufferViews'][j['images'][0]['bufferView']]; img = BIN[bv['byteOffset']:bv['byteOffset'] + bv['byteLength']]
@@ -95,6 +99,8 @@ def main():
     used = np.unique(T); rm = np.full(len(P), -1); rm[used] = np.arange(len(used))
     P, N, T = P[used], N[used], rm[T]
     if U is not None: U = U[used]
+    global VC
+    if VC is not None: VC = VC[used]
     # mixamo düzeni: ayak tabanı y=0'da (kalça ~1 birim yukarıda). Oyunun kalça hareketi aktarımı ve
     # boy ölçümü bu düzene göre; merkezi ortada kalan modeller yere gömülüyordu
     if not a.keep_origin:
@@ -232,6 +238,8 @@ def write(dst, P, N, U, T, img, mat, J, top, TW, deform):
         accs.append(ac); return len(accs) - 1
     attrs = {'POSITION': add(P.astype(np.float32), 34962, minmax=True), 'NORMAL': add(N.astype(np.float32), 34962)}
     if U is not None and img: attrs['TEXCOORD_0'] = add(U.astype(np.float32), 34962, typ='VEC2')
+    if VC is not None:
+        attrs['COLOR_0'] = add(np.concatenate([np.clip(VC[:, :3], 0, 1), np.ones((len(VC), 1), np.float32)], 1).__mul__(255).round().astype(np.uint8), 34962, 5121, 'VEC4'); accs[-1]['normalized'] = True
     attrs['JOINTS_0'] = add(Jt.astype(np.uint8), 34962, 5121, 'VEC4')
     attrs['WEIGHTS_0'] = add(TW.astype(np.float32), 34962, 5126, 'VEC4')
     big = len(P) > 65535
