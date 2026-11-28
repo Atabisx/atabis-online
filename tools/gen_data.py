@@ -290,6 +290,12 @@ def build_items():
             (f'{pre}_hancer', f'{setname} Hançeri', 'sword', ['ninja'], lv, color, atk + 10),
             (f'{pre}_yay', f'{setname} Yayı', 'sword', ['okcu'], lv, color, atk + 10),
             (f'{pre}_asa', f'{setname} Asası', 'staff', ['saman'], lv, color, atk + 10)]
+    # kullanıcının getirdiği 4 yeni silah (metin taşlarından nadiren düşer)
+    SPECIAL_WEAPONS += [
+        ('kok_asa', 'Kök Asa', 'staff', ['saman'], 70, '#7fbf5a', 205),
+        ('kizil_kilic', 'Kızıl Kılıç', 'sword', ['savasci', 'sura', 'ninja', 'okcu'], 75, '#e0453a', 225),
+        ('alev_kilic', 'Alev Kılıcı', 'sword', ['savasci', 'sura', 'ninja', 'okcu'], 95, '#ff7a2a', 345),
+        ('ejderbuz_asa', 'Ejder Buz Asası', 'staff', ['saman'], 100, '#3fd0ff', 372)]
     SPECIAL_WEAPONS.append(('ejder_cekic', 'Ejderarması Savaş Çekici', 'sword', ['savasci', 'sura'], 100, '#b06bff', 385))
     CLS_TR = {'savasci': 'Şövalye', 'sura': 'Lanetli', 'ninja': 'Suikastçı', 'okcu': 'Avcı', 'saman': 'Büyücü'}
     for key, name, wtype, classes, lv, color, atk in SPECIAL_WEAPONS:
@@ -317,7 +323,7 @@ def build_items():
             ('pet_ayi', 'Sekreter Kuşu', 'flyer', '#c9c2b0', {'hp': 600, 'def': 12}, 'Can +600, savunma +12', 'sekreter'),
             ('pet_baykus', 'Kuzgun', 'flyer', '#3a3550', {'atkspeed': 6, 'mp': 300}, 'Saldırı hızı +%6, mana +300', 'kuzgun'),
             ('pet_uzayli', 'Uzaylı Yaratık', 'dog', '#3a4430', {'atk': 25, 'dodge': 4}, 'Saldırı +25, kaçınma +%4', 'uzayli'),
-            ('pet_ejder', 'Ejder Yavrusu', 'dragon', '#5a1a14', {'atk': 40, 'crit': 4, 'hp': 400}, 'Saldırı +40, kritik +%4, can +400', 'ejder'),
+            ('pet_ejder', 'Ejder Yavrusu', 'dragon', '#5a1a14', {'atk': 40, 'crit': 4, 'hp': 400}, 'Saldırı +40, kritik +%4, can +400', 'ejder_yavru'),
             ('pet_horoz', 'Horoz', 'frog', '#c0392b', {'atk': 15, 'crit': 3}, 'Saldırı +15, kritik +%3', 'horoz'),
             ('pet_tavuk', 'Tavuk', 'frog', '#f4f1e8', {'hp': 300, 'mp': 150}, 'Can +300, mana +150', 'tavuk'),
             ('pet_fantazi_tilki', 'Masal Tilkisi', 'dog', '#e07a2a', {'crit': 4, 'dodge': 4, 'mp': 200}, 'Kritik +%4, kaçınma +%4, mana +200', 'masal_tilki')]

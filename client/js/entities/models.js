@@ -35,6 +35,8 @@ export const MOB_MODELS = {
   ates_tukurgec: { kind: 'skel', size: 1.5, clips: { idle: 'Idle', walk: 'Walk', run: 'Run', atk: ['Atk', 'Atk2', 'Bite', 'Spit'], die: 'Die' }, walkRate: 1.2 },
   iblis:       { kind: 'skel', size: 2.3, clips: { idle: 'Idle', walk: 'Walk', run: 'Run', atk: 'Atk', die: 'Death' } },
   ejder:       { kind: 'skel', size: 2.2, clips: { idle: 'All', walk: 'All' } },
+  // evcil Ejder Yavrusu: kullanıcının getirdiği gerçekçi ejder (köşe renkli, ~80 bin üçgen); bacaklar ve kuyruk yürürken sallanır
+  ejder_yavru: { kind: 'quad', size: 1.5, legTop: 0.34, head: 0.2, tail: 0.28, tailFirst: true, freq: 8, amp: 0.38 },
   uzayli:      { kind: 'skel', size: 1.4, clips: { idle: 'Idle', walk: 'Walk', run: 'Run', atk: ['Atk', 'Atk2'], die: 'Die' }, walkRate: 1.2 },
   kuzgun:      { kind: 'skel', size: 1.1, clips: {}, flap: /^(shoulder|Wing)/, flapAxis: [0, 0, 1], hover: 0.9 },
   sekreter:    { kind: 'bird', size: 2.0, legTop: 0.42, armX: 0.12, armMin: 0.45, shoulder: 0.7, headY: 0.82, tail: 0.2, freq: 12, amp: 0.5, graze: 0.6, grazeRate: 1.2 },
@@ -480,6 +482,9 @@ export const ITEM_MODELS = {
   ayaz_gurz: { grip: 0.12, len: 1.05, center: true }, magma_gurz: { grip: 0.12, len: 1.05, center: true },
   ayaz_hancer: { grip: 0.14, len: 0.6, center: true }, magma_hancer: { grip: 0.14, len: 0.6, center: true },
   ayaz_yay: { grip: 0.5, len: 1.25, center: true }, magma_yay: { grip: 0.5, len: 1.25, center: true },
+  // kullanıcının yeni silahları: Kök Asa Sv. 70, Kızıl Kılıç Sv. 75, Alev Kılıcı Sv. 95, Ejder Buz Asası Sv. 100
+  kok_asa: { grip: 0.3, len: 1.5, center: true }, ejderbuz_asa: { grip: 0.3, len: 1.6, center: true },
+  alev_kilic: { grip: 0.1, len: 1.2, center: true }, kizil_kilic: { grip: 0.1, len: 1.15, center: true },
   ayaz_asa: { grip: 0.3, len: 1.45, center: true }, magma_asa: { grip: 0.3, len: 1.45, center: true },
   ejder_cekic: { grip: 0.16, len: 1.35, center: true },
   ayaz_kalkan: { armor: true, height: 0.62, y: 0 }, magma_kalkan: { armor: true, height: 0.62, y: 0 },

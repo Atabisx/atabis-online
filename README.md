@@ -751,3 +751,10 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 
 ### 9.6 Yeni eşya modelleri
 - Efsun Nesnesi (`efsun_nesnesi.glb`), Efsun Değiştirme Nesnesi (`efsun_degistirme.glb`), Kırma/Kritik Taşı (`tas_kritik.glb`), Delme Taşı (`tas_deli.glb`), Hız Taşı (`tas_hiz.glb`): simge, yerdeki eşya ve balık yakalama görünümünde kullanılır. Taş modeli +0..+4 tüm dereceler için ortaktır.
+
+### 9.7 Triumvirate karakteri, gerçekçi Ejder pet, 4 yeni silah
+
+- **Kam (şaman):** modeli Triumvirate'in ortadaki figürü (beyaz-mavi kanatlı miğferli zırh). Rig: `tools/rig/saman_triumvirat.json`, `glbrig.py` ile iskelet; 3 kalite (chars / chars_hq / chars_lq).
+- **Ejder Yavrusu (pet):** gerçekçi ejder, `models/mobs/ejder_yavru.glb`. Doku çok küçük adalardan oluştuğu için sadeleştirmede bozuluyordu; `takiglb.py --vcol` dokuyu köşe rengine pişirir (~80 bin üçgen, 2,3 MB).
+- **Yeni silahlar (metin taşlarından nadir düşer):** Kök Asa (Sv.70, Kam), Kızıl Kılıç (Sv.75), Alev Kılıcı (Sv.95), Ejder Buz Asası (Sv.100, Kam).
+- Kalan: Triumvirate'in sağdaki (koyu kızıl dikenli) figürü yeni sınıf olarak ayrıldı; sol (kırmızı kapüşonlu) figür kullanılmadı.

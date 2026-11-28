@@ -16,7 +16,7 @@ ap = argparse.ArgumentParser(); ap.add_argument('src'); ap.add_argument('dst', n
 ap.add_argument('--cell', type=float, default=0.004); ap.add_argument('--tex', type=int, default=512)
 ap.add_argument('--rx', type=float, default=0); ap.add_argument('--ry', type=float, default=0); ap.add_argument('--rz', type=float, default=0)
 ap.add_argument('--part', default=''); ap.add_argument('--bend', action='store_true'); ap.add_argument('--list', action='store_true')
-ap.add_argument('--bright', type=float, default=1.0); ap.add_argument('--color', default='')
+ap.add_argument('--vcol', action='store_true', help='dokuyu köşe rengine pişir (UV adaları çok küçük taramalı modeller için); doku yazılmaz'); ap.add_argument('--uvscale', type=float, default=1.0, help='KHR_texture_transform ölçeği (UV bu kadar çarpılır)'); ap.add_argument('--bright', type=float, default=1.0); ap.add_argument('--color', default='')
 ap.add_argument('--metal', type=float, default=None); ap.add_argument('--rough', type=float, default=None)
 ap.add_argument('--cut', action='append', default=[], help='x0,x1,y0,y1,z0,z1: bu kutudaki üçgenler silinir (ör. sura kapı açmak)')
 ap.add_argument('--emissive', type=float, default=0, help='modelin ışıma dokusunu bu güçle ekle (fener, pencere ışığı)')
@@ -71,7 +71,7 @@ def walk(ni, M):
     if 'mesh' in n:
         for p in j['meshes'][n['mesh']]['primitives']:
             P = read(p['attributes']['POSITION']); P = P @ M[:3, :3].T + M[:3, 3]
-            U = read(p['attributes']['TEXCOORD_0']) if 'TEXCOORD_0' in p['attributes'] else np.zeros((len(P), 2))
+            U = read(p['attributes']['TEXCOORD_0']) * a.uvscale if 'TEXCOORD_0' in p['attributes'] else np.zeros((len(P), 2))
             if p.get('material') is not None:   # KHR_texture_transform (ölçek + kaydırma) dokuya göre uygulanır
                 tt = j['materials'][p['material']].get('pbrMetallicRoughness', {}).get('baseColorTexture', {}).get('extensions', {}).get('KHR_texture_transform')
                 if tt: U = U * np.array(tt.get('scale', [1, 1])) + np.array(tt.get('offset', [0, 0]))
@@ -125,6 +125,15 @@ for spec in a.cut:
 used = np.unique(T); remap = np.full(len(P), -1); remap[used] = np.arange(len(used))
 P, U, T = P[used], U[used], remap[T]
 
+C = None
+if a.vcol:
+    _tx = mat.get('pbrMetallicRoughness', {}).get('baseColorTexture'); _t = j['textures'][_tx['index']]
+    _src = _t.get('source', _t.get('extensions', {}).get('EXT_texture_webp', {}).get('source'))
+    _raw, _ = view_bytes(j['images'][_src]['bufferView']); _im = np.asarray(Image.open(io.BytesIO(_raw)).convert('RGB'), np.float32)
+    _h, _w = _im.shape[:2]; _u = np.mod(U[:, 0], 1.0); _v = np.mod(U[:, 1], 1.0)
+    C = _im[np.minimum((_v * _h).astype(int), _h - 1), np.minimum((_u * _w).astype(int), _w - 1)] / 255.0
+    print('köşe rengi pişirildi', _w, 'x', _h)
+
 if a.bend:
     # x boyunca uzanan düz parçayı y ekseni etrafında halkaya sar (uçlar birleşir)
     x0, x1 = P[:, 0].min(), P[:, 0].max(); Lx = (x1 - x0) * 1.03; r = Lx / (2 * np.pi)
@@ -139,11 +148,14 @@ if a.cell:
     cavg = np.zeros((len(ccnt), 3)); np.add.at(cavg, cinv, P); cavg /= ccnt[:, None]
     key = np.concatenate([cell, np.floor(U * 64).astype(np.int64)], 1)
     _, first, inv = np.unique(key, axis=0, return_index=True, return_inverse=True); inv = inv.ravel()
+    if C is not None:
+        cs = np.zeros((inv.max() + 1, 3)); cc = np.zeros(inv.max() + 1); np.add.at(cs, inv, C); np.add.at(cc, inv, 1); C = cs / cc[:, None]
     P = cavg[cinv[first]]; U = U[first]; T = inv[T]
     T = T[(T[:, 0] != T[:, 1]) & (T[:, 1] != T[:, 2]) & (T[:, 0] != T[:, 2])]
     _, fi = np.unique(np.sort(T, 1), axis=0, return_index=True); T = T[np.sort(fi)]
     used = np.unique(T); remap = np.full(len(P), -1); remap[used] = np.arange(len(used))
     P, U, T = P[used], U[used], remap[T]
+    if C is not None: C = C[used]
 
 # yumuşak normaller (aynı konumdaki noktalar ortak normal alır)
 fn = np.cross(P[T[:, 1]] - P[T[:, 0]], P[T[:, 2]] - P[T[:, 0]])
@@ -158,7 +170,7 @@ if not a.dst: sys.exit()
 pbr = mat.get('pbrMetallicRoughness', {})
 img_bytes = None
 tex = pbr.get('baseColorTexture')
-if tex:
+if tex and not a.vcol:
     t = j['textures'][tex['index']]
     src = t.get('source', t.get('extensions', {}).get('EXT_texture_webp', {}).get('source'))
     im = j['images'][src]; raw, _ = view_bytes(im['bufferView'])
@@ -191,6 +203,7 @@ def add(arr, target=None, comp=5126, typ='VEC3', minmax=False):
     if minmax: ac['min'] = arr.min(0).tolist(); ac['max'] = arr.max(0).tolist()
     accs.append(ac); return len(accs) - 1
 attrs = {'POSITION': add(P.astype(np.float32), 34962, minmax=True), 'NORMAL': add(N.astype(np.float32), 34962)}
+if C is not None: attrs['COLOR_0'] = add(C.astype(np.float32), 34962)
 if img_bytes: attrs['TEXCOORD_0'] = add(U.astype(np.float32), 34962, typ='VEC2')
 big = len(P) > 65535
 ind = add(T.ravel().astype(np.uint32 if big else np.uint16), 34963, 5125 if big else 5123, 'SCALAR')
