@@ -1729,8 +1729,9 @@ function iconBuilder(key, def) {
   if (s === 'stone') return () => (def.model && ITEM_MODELS[def.model] ? itemModel(def.model, icons.spiritStoneMesh(def.color, def.stone.grade)) : icons.spiritStoneMesh(def.color, def.stone.grade));
   if (s === 'material') return () => icons.leafMesh(def.color);
   if (key === 'kutsama') return () => icons.scrollMesh();
-  if (key === 'efsun') return () => itemModel('efsun_nesnesi', icons.crystalMesh('#c86bff'));
-  if (key === 'efsun_degis') return () => itemModel('efsun_degistirme', icons.crystalMesh('#4fd1c5', true));
+  const tiltScroll = (m) => { const t = new THREE.Group(); m.rotation.set(1.0, 0, -0.35); t.add(m); return t; };   // parşömen simgede yukarıdan görünsün, taşı belli olsun
+  if (key === 'efsun') return () => tiltScroll(itemModel('efsun_nesnesi', icons.crystalMesh('#c86bff')));
+  if (key === 'efsun_degis') return () => tiltScroll(itemModel('efsun_degistirme', icons.crystalMesh('#4fd1c5', true)));
   if (key === 'olta') return () => icons.rodMesh();
   if (key === 'yem') return () => icons.wormMesh();
   if (key === 'istiridye') return () => icons.shellMesh();
