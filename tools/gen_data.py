@@ -21,7 +21,7 @@ TIERS = [
 
 WEAPONS = [  # (tür, ad, sınıflar, uzunluk)
     # sadece 3D modeli olan silahlar: hançer ve yay kaldırıldı, Akıncı ve Avcı da kılıç kullanır
-    ('sword', 'Kılıç', ['savasci', 'sura', 'ninja', 'okcu'], 0.95),
+    ('sword', 'Kılıç', ['savasci', 'sura', 'ninja', 'okcu', 'saman'], 0.95),
     ('staff', 'Asa', ['saman'], 1.55),
 ]
 GEAR = [  # (yuva, ad, fiyat çarpanı)
@@ -36,13 +36,13 @@ EVOLVE_FROM, EVOLVE_TO = 9, 14
 def weapon_model(wtype, i):
     # kullanıcının getirdiği silah modelleri (client/models/items/<ad>.glb)
     if wtype == 'staff':
-        return {11: 'ayaz_asa', 12: 'ayaz_asa', 13: 'magma_asa', 14: 'magma_asa'}.get(i, 'kraliyet_asasi')
+        return {9: 'zumrut_asa', 10: 'kok_asa', 11: 'ayaz_asa', 12: 'maymun_asa', 13: 'magma_asa', 14: 'ejderbuz_asa'}.get(i, 'kraliyet_asasi')
     if wtype != 'sword':
         return None
     # 9-14: Sv. 70-99 evrim zinciri, her basamak farklı ve daha gösterişli (Ayaz -> Magma -> Ejderarması)
     return {0: 'sade_kilic', 1: 'kivrik_kilic', 2: 'katana', 3: 'katana', 4: 'lav_kilic', 5: 'lav_kilic',
-            6: 'gumus_kilic', 7: 'mor_kilic', 8: 'kanatli_kilic', 9: 'kanatli_kilic',
-            10: 'ayaz_kilic', 11: 'ayaz_buyukkilic', 12: 'magma_kilic', 13: 'magma_buyukkilic', 14: 'ejder_cekic'}.get(i, 'buz_balta')
+            6: 'gumus_kilic', 7: 'mor_kilic', 8: 'kanatli_kilic', 9: 'kristal_kilic',
+            10: 'ayaz_kilic', 11: 'kizil_kilic', 12: 'magma_kilic', 13: 'alev_kilic', 14: 'ejder_cekic'}.get(i, 'buz_balta')
 
 
 def helmet_model(i):
@@ -246,7 +246,9 @@ def build_items():
              ('kanat_peri', 'Peri Kanadı', 'model', '#b9a2e8', '#ffd6f0', 35, 700000, 1, {'hp': 250, 'mp': 200, 'def': 6}),
              ('kanat_kugu', 'Kuğu Kanadı', 'model', '#f4f1ea', '#fff8e0', 30, 600000, 1, {'hp': 220, 'def': 7}),
              ('kanat_yarasa', 'Yarasa Kanadı', 'model', '#5a1420', '#ff3b2f', 45, 1300000, 1, {'atk': 16, 'hp': 150}),
-             ('kanat_isik', 'Işık Kanadı', 'model', '#fff6d8', '#ffd27a', 55, 0, 2, {'atk': 22, 'hp': 300, 'mp': 200})]
+             ('kanat_isik', 'Işık Kanadı', 'model', '#fff6d8', '#ffd27a', 55, 0, 2, {'atk': 22, 'hp': 300, 'mp': 200}),
+             ('kanat_ibris', 'Yanardöner Kanat', 'model', '#e8f4ff', '#b8e6ff', 65, 0, 2, {'atk': 28, 'hp': 340, 'mp': 250, 'def': 10}),
+             ('kanat_karanlik', 'Düşmüş Melek Kanadı', 'model', '#2a2a30', '#c0183e', 80, 0, 2, {'atk': 38, 'hp': 420, 'def': 16})]
     for key, name, kind, color, glow, lv, pr, rar, st in WINGS:
         items[key] = {'name': name, 'slot': 'wings', 'lv': lv, 'price': pr or 5000000, 'rarity': rar, 'color': color,
                       'wing': {'kind': kind, 'color': color, 'glow': glow, **({'model': key, 'scale': 1.15} if kind == 'model' else {})}, 'desc': 'Sırtına takılan kanat. ' + ('Sadece boss\'lardan düşer.' if not pr else 'Kostümcüden alınır, boss\'lardan da düşebilir.'), **st}
@@ -283,19 +285,22 @@ def build_items():
     SPECIAL_WEAPONS = []
     for pre, setname, lv, color, atk in [('ayaz', 'Ayaz', 80, '#bfe6ff', 258), ('magma', 'Magma', 90, '#ff5a2a', 312)]:
         SPECIAL_WEAPONS += [
-            (f'{pre}_kilic', f'{setname} Kılıcı', 'sword', ['savasci', 'sura', 'ninja', 'okcu'], lv, color, atk),
-            (f'{pre}_buyukkilic', f'{setname} Büyük Kılıcı', 'sword', ['savasci', 'sura'], lv, color, atk + 12),
+            (f'{pre}_kilic', f'{setname} Kılıcı', 'sword', ['savasci', 'sura', 'ninja', 'okcu', 'saman'], lv, color, atk),
+            (f'{pre}_buyukkilic', f'{setname} Büyük Kılıcı', 'sword', ['savasci', 'sura', 'saman'], lv, color, atk + 12),
             (f'{pre}_balta', f'{setname} Baltası', 'sword', ['savasci'], lv, color, atk + 14),
-            (f'{pre}_gurz', f'{setname} Gürzü', 'sword', ['savasci', 'sura'], lv, color, atk + 8),
+            (f'{pre}_gurz', f'{setname} Gürzü', 'sword', ['savasci', 'sura', 'saman'], lv, color, atk + 8),
             (f'{pre}_hancer', f'{setname} Hançeri', 'sword', ['ninja'], lv, color, atk + 10),
             (f'{pre}_yay', f'{setname} Yayı', 'sword', ['okcu'], lv, color, atk + 10),
             (f'{pre}_asa', f'{setname} Asası', 'staff', ['saman'], lv, color, atk + 10)]
     # kullanıcının getirdiği 4 yeni silah (metin taşlarından nadiren düşer)
     SPECIAL_WEAPONS += [
         ('kok_asa', 'Kök Asa', 'staff', ['saman'], 70, '#7fbf5a', 205),
-        ('kizil_kilic', 'Kızıl Kılıç', 'sword', ['savasci', 'sura', 'ninja', 'okcu'], 75, '#e0453a', 225),
-        ('alev_kilic', 'Alev Kılıcı', 'sword', ['savasci', 'sura', 'ninja', 'okcu'], 95, '#ff7a2a', 345),
-        ('ejderbuz_asa', 'Ejder Buz Asası', 'staff', ['saman'], 100, '#3fd0ff', 372)]
+        ('kizil_kilic', 'Kızıl Kılıç', 'sword', ['savasci', 'sura', 'ninja', 'okcu', 'saman'], 75, '#e0453a', 225),
+        ('alev_kilic', 'Alev Kılıcı', 'sword', ['savasci', 'sura', 'ninja', 'okcu', 'saman'], 95, '#ff7a2a', 345),
+        ('ejderbuz_asa', 'Ejder Buz Asası', 'staff', ['saman'], 100, '#3fd0ff', 372),
+        ('zumrut_asa', 'Zümrüt Küre Asası', 'staff', ['saman'], 60, '#5fd35a', 180),
+        ('maymun_asa', 'Efsane Maymun Asası', 'staff', ['saman'], 85, '#e8c25a', 300),
+        ('kristal_kilic', 'Kristal Kılıç', 'sword', ['savasci', 'sura', 'ninja', 'okcu', 'saman'], 65, '#ff8fc0', 235)]
     SPECIAL_WEAPONS.append(('ejder_cekic', 'Ejderarması Savaş Çekici', 'sword', ['savasci', 'sura'], 100, '#b06bff', 385))
     CLS_TR = {'savasci': 'Şövalye', 'sura': 'Lanetli', 'ninja': 'Suikastçı', 'okcu': 'Fatih', 'saman': 'Büyücü'}
     for key, name, wtype, classes, lv, color, atk in SPECIAL_WEAPONS:
@@ -362,7 +367,7 @@ def build_items():
         v['legacy'] = True
         # eski kılıçlar da kullanıcının modelleriyle görünür
         LEG = {'w_wood': 'sade_kilic', 'w_iron': 'kivrik_kilic', 'w_steel': 'katana', 'w_shadow': 'mor_kilic', 'w_dragon': 'kanatli_kilic'}
-        if k in LEG: v['model'] = LEG[k]; v['classes'] = ['savasci', 'sura', 'ninja', 'okcu']
+        if k in LEG: v['model'] = LEG[k]; v['classes'] = ['savasci', 'sura', 'ninja', 'okcu', 'saman']
         if k.startswith('s_'): v['model'] = 'kraliyet_asasi'
         if k.startswith('h_'): v['model'] = 'kask'
         if k.startswith('a_'): v['model'] = {'a_cloth': 'demir_zirh', 'a_leather': 'yelek', 'a_iron': 'yelek', 'a_crimson': 'gogusluk', 'a_gold': 'celik_zirh'}.get(k, 'yelek')
@@ -564,7 +569,7 @@ def build(items):
             d.update({'name': name, 'shape': shape, 'color': color, 'scale': scale, 'aggro': 0,
                       'speed': 5.2, 'range': min(6.0, 2.6 * scale), 'cd': 2000, 'boss': True, 'respawn': 120,
                       'drops': [[k, 0.28] for k in own] + [[k, 0.12] for k in nxt] + [[k, 0.035] for k in leg]
-                               + [['kanat_isik', 0.003], ['kanat_yarasa', 0.005], ['kanat_kugu', 0.01], ['kanat_peri', 0.006], ['pet_ejder', 0.005], ['pet_kurt', 0.01],
+                               + [['kanat_isik', 0.003], ['kanat_ibris', 0.002], ['kanat_karanlik', 0.0015], ['kanat_yarasa', 0.005], ['kanat_kugu', 0.01], ['kanat_peri', 0.006], ['pet_ejder', 0.005], ['pet_kurt', 0.01],
                                   ['tac_gumus', 0.006], ['tac_kutsal', 0.003]],
                       'potions': [[('p_hp2' if lv < 40 else 'p_hp3' if lv < 75 else 'p_hp4'), 1.0],
                                   [('p_mp2' if lv < 40 else 'p_mp3' if lv < 75 else 'p_mp4'), 1.0],
@@ -688,10 +693,10 @@ SKILLS = {
         sk('u_kalkan', 'Gölge Kalkanı', '60 saniye savunmanı artırır.', 'self', 25, 3, 60, '#5a5e6a', buff={'stat': 'def', 'base': 8, 'perLv': 3, 'dur': 60}),
     ],
     'saman': [
-        sk('m_ejdatis', 'Ejderha Atışı', 'Yaklaşıp asasından bir ateş ejderhası salar; çarptığı yerde patlar ve 5 saniye yakar.', 'single', 24, 3, 7, '#ff6a2a', range=6, splash=2.5, mult=2.1, multLv=0.16, dot={'mult': 0.3, 'multLv': 0.03, 'sec': 5}, combo=1),
-        sk('m_kukreme', 'Ejderha Kükremesi', 'Çevrende geniş çaplı ateş patlaması yaratır ve düşmanları sersemletir.', 'aoe', 40, 5, 14, '#ff8a3d', radius=6, mult=1.7, multLv=0.13, stun=0.8, combo=1),
-        sk('m_cagir', 'Şimşek Çağırma', 'Gökten düşmanın üzerine yıldırım düşürür; çevresine de vurur ve sersemletir.', 'single', 34, 4, 12, '#7ea8ff', range=6, splash=3.2, mult=2.3, multLv=0.17, stun=1.2, combo=1),
-        sk('m_pence', 'Yıldırım Pençesi', 'Elektrik pençesi düşmandan düşmana zincirleme sıçrar (3 hedef, 10. seviyede 4, M1\'de 5).', 'chain', 28, 3, 9, '#b36bff', range=6, mult=1.5, multLv=0.12, combo=1),
+        sk('m_ejdatis', 'Boşluk Mızrağı', 'Gökten kara-mor mızraklar yağdırır; çarptığı yerde yer yarılır, çevresine de vurur ve 6 saniye yakar.', 'single', 24, 3, 7, '#9b4dff', range=6.5, splash=3.0, mult=2.4, multLv=0.17, dot={'mult': 0.35, 'multLv': 0.03, 'sec': 6}, combo=1),
+        sk('m_kukreme', 'Kara Delik', 'Çevrendeki her şeyi içine çeken bir girdap açar, sonra dört halkalı kara patlamayla ezer ve sersemletir.', 'aoe', 42, 5, 14, '#7a2cff', radius=6.5, mult=1.9, multLv=0.14, stun=1.0, combo=1),
+        sk('m_cagir', 'Portal Çöküşü', 'Hedefin üstünde devasa bir boşluk portalı açar; yıldırımlar ve kristal enkaz düşer, çevreyi sarsar ve sersemletir.', 'single', 36, 4, 12, '#b57bff', range=6.5, splash=3.6, mult=2.6, multLv=0.18, stun=1.3, combo=1),
+        sk('m_pence', 'Ruh Zincirleri', 'Mor ruh zincirleri düşmandan düşmana sıçrar (3 hedef, 10. seviyede 4, M1\'de 5); her hedefi pençe izleriyle yırtar.', 'chain', 28, 3, 9, '#d9a8ff', range=6.5, mult=1.6, multLv=0.13, combo=1),
     ],
     'okcu': [
         sk('o_coklu', 'Üçlü Kılıç Dalgası', 'Kılıcını savurup aynı anda 3 hedefe kılıç dalgası fırlatır.', 'multi', 18, 3, 5, '#f4e2b8', range=12, mult=1.2, multLv=0.1, count=3),

@@ -483,6 +483,7 @@ export const ITEM_MODELS = {
   ayaz_hancer: { grip: 0.14, len: 0.6, center: true }, magma_hancer: { grip: 0.14, len: 0.6, center: true },
   ayaz_yay: { grip: 0.5, len: 1.25, center: true }, magma_yay: { grip: 0.5, len: 1.25, center: true },
   // kullanıcının yeni silahları: Kök Asa Sv. 70, Kızıl Kılıç Sv. 75, Alev Kılıcı Sv. 95, Ejder Buz Asası Sv. 100
+  zumrut_asa: { grip: 0.3, len: 1.5, center: true }, maymun_asa: { grip: 0.3, len: 1.55, center: true }, kristal_kilic: { grip: 0.1, len: 1.15, center: true },
   kok_asa: { grip: 0.3, len: 1.5, center: true }, ejderbuz_asa: { grip: 0.3, len: 1.6, center: true },
   alev_kilic: { grip: 0.1, len: 1.2, center: true }, kizil_kilic: { grip: 0.1, len: 1.15, center: true },
   ayaz_asa: { grip: 0.3, len: 1.45, center: true }, magma_asa: { grip: 0.3, len: 1.45, center: true },

@@ -1041,37 +1041,39 @@ function skillBody(sk0, ctx, tier) {
     }
     // ----- şaman -----
     // ===== ŞAMAN: saldırı =====
-    case 'm_ejdatis': { // Ejderha Atışı: ateş ejderhası dalgalanarak uçar, çarptığı yerde patlar (seviye arttıkça ikinci ejderha, M'de üçüncü)
+    case 'm_ejdatis': { // Boşluk Mızrağı: gökten kara-mor mızrak yağar, gölge yılanı hedefe sürünür, yer yarılır
       const t = T[0] || { x: f.x + Math.sin(face) * 8, z: f.z + Math.cos(face) * 8 };
-      const cols = [c, '#ffd23f', '#ff3b2a', '#ffffff'], n = 1 + (Q > 1.5 ? 1 : 0) + (tier >= 2 ? 1 : 0);
-      charge(follow, { x: hand.x, y: 1.4, z: hand.z }, c, 0.3, 22);
-      magicCircle(f.x, f.z, 1.6 * K, c, 0.9, { follow, spin: 3 });
-      later(() => flash(hand.x, 1.4, hand.z, c, 55, 0.5), 200);
-      for (let i = 0; i < n; i++) later(() => serpent({ x: hand.x, y: 1.4, z: hand.z }, { x: t.x, y: 1.1, z: t.z }, cols, { amp: 0.55 + i * 0.25, size: 0.55 * Math.min(1.5, Q), phase: i * 2,
-        onHit: () => {
-          flash(t.x, 1.2, t.z, c, 70, 0.6); burst(t.x, 1, t.z, cols, 60, 8 * K, { size: 0.5, life: 0.8, grow: 1.1, drag: 2 }); shockwave(t.x, t.z, 3.4 * K, c, 0.7);
-          flames(t.x, t.z, [c, '#ffd23f'], 14, { r: 1.4 * K, power: 1.6 }); magicCircle(t.x, t.z, 1.8 * K, c, 1.2, { spin: 3 }); impact(t, c, 1.2);
-        } }), 320 + i * 140);
+      const cols = [c, '#d9a8ff', '#5b21b6', '#ffffff'], n = 1 + (Q > 1.5 ? 1 : 0) + (tier >= 2 ? 1 : 0);
+      charge(follow, { x: hand.x, y: 1.4, z: hand.z }, c, 0.3, 26);
+      magicCircle(f.x, f.z, 1.7 * K, c, 0.9, { follow, spin: 3 });
+      later(() => flash(hand.x, 1.4, hand.z, c, 60, 0.5), 200);
+      for (let i = 0; i < n; i++) later(() => serpent({ x: hand.x, y: 1.4, z: hand.z }, { x: t.x, y: 1.1, z: t.z }, cols, { amp: 0.55 + i * 0.25, size: 0.6 * Math.min(1.5, Q), phase: i * 2, onHit: () => {} }), 260 + i * 120);
+      later(() => {
+        magicCircle(t.x, t.z, 2.6 * K, c, 1.0, { spin: -3 });
+        for (let i = 0; i < 4 + n * 2; i++) later(() => { const ox = rnd(-1.1, 1.1) * K, oz = rnd(-1.1, 1.1) * K; skyBolt(t.x + ox, t.z + oz, i % 2 ? c : '#d9a8ff'); burst(t.x + ox, 0.5, t.z + oz, cols, 14, 6, { flat: true, size: 0.4, life: 0.5, drag: 2.5 }); }, i * 55);
+        flash(t.x, 1.4, t.z, c, 90, 0.7); shockwave(t.x, t.z, 4 * K, c, 0.8); shockwave(t.x, t.z, 2.4 * K, '#ffffff', 0.5);
+        burst(t.x, 1, t.z, cols, 80, 9 * K, { size: 0.5, life: 0.9, grow: 1.1, drag: 2 }); impact(t, c, 1.3);
+        shakeCam(0.55, 0.45, t.x, t.z);
+      }, 560);
       break;
     }
-    case 'm_kukreme': { // Ejderha Kükremesi: kükreyen ejderha başı belirir, çevreye geniş ateş patlaması (üç dalga)
+    case 'm_kukreme': { // Kara Delik: çevredeki ışık içe çekilir, sonra dört halkalı kara patlama
       const R = sk.radius;
-      charge(follow, null, c, 0.3, 30);
+      charge(follow, null, c, 0.35, 36);
       magicCircle(f.x, f.z, R * 0.95, c, 1.3, { follow, spin: 1.2 });
-      magicCircle(f.x, f.z, R * 0.55, '#ffd23f', 1.1, { follow, spin: -2.4, alpha: 0.9 });
-      // ejderha başı: yukarıda büyüyen alev kümesi, ağızdan ateş
-      later(() => {
-        for (let k = 0; k < 24; k++) later(() => { const u = k / 24, a = face + Math.sin(u * 6) * 0.3; emit(f.x + Math.sin(a) * (0.6 + u * 1.6), 2.4 + u * 1.2, f.z + Math.cos(a) * (0.6 + u * 1.6), { color: k % 3 ? c : '#ffd23f', size: 0.5 + u * 0.5, life: 0.35, drag: 2 }); }, k * 12);
-        flash(f.x, 2.6, f.z, c, 80, 0.7);
-      }, 150);
-      [0, 200, 400].forEach((ms, k) => later(() => {
-        shockwave(f.x, f.z, R * (0.5 + 0.28 * k), k === 2 ? '#ffd23f' : c, 0.6);
-        burst(f.x, 0.5, f.z, [c, '#ffd23f', '#b0362b'], 40 + k * 25, 9 + k * 2, { flat: true, size: 0.55, life: 0.6, grow: 1.2, drag: 2.5 });
+      magicCircle(f.x, f.z, R * 0.55, '#d9a8ff', 1.1, { follow, spin: -2.4, alpha: 0.9 });
+      // girdap: dışarıdan içeri sarmal parçacıklar
+      for (let k = 0; k < 40; k++) later(() => { const u = k / 40, a = u * 14, r0 = R * (0.9 - u * 0.75);
+        emit(f.x + Math.cos(a) * r0, 0.3 + u * 2.2, f.z + Math.sin(a) * r0, { color: k % 3 ? c : '#d9a8ff', size: 0.45, life: 0.5, drag: 1.5 }); }, k * 14);
+      later(() => flash(f.x, 2.2, f.z, '#1a0b33', 100, 0.8), 300);
+      [0, 150, 300, 450].forEach((ms, k) => later(() => {
+        shockwave(f.x, f.z, R * (0.4 + 0.2 * k), k % 2 ? '#d9a8ff' : c, 0.6);
+        burst(f.x, 0.5, f.z, [c, '#d9a8ff', '#2e1065'], 40 + k * 25, 10 + k * 2, { flat: true, size: 0.6, life: 0.7, grow: 1.2, drag: 2.5 });
         const nn = Math.round((8 + k * 4) * Math.min(1.4, Q));
-        for (let j = 0; j < nn; j++) { const a = (j / nn) * Math.PI * 2, rr = R * (0.45 + 0.17 * k); flames(f.x + Math.cos(a) * rr, f.z + Math.sin(a) * rr, [c, '#ffd23f'], 4, { r: 0.55, power: 1.5 }); }
-        shakeCam(0.25 + k * 0.1, 0.3, f.x, f.z);
-      }, 250 + ms));
-      later(() => { for (const t of T) impact(t, c, 1.1); }, 350);
+        for (let j = 0; j < nn; j++) { const a = (j / nn) * Math.PI * 2, rr = R * (0.4 + 0.15 * k); flames(f.x + Math.cos(a) * rr, f.z + Math.sin(a) * rr, [c, '#d9a8ff'], 4, { r: 0.55, power: 1.5 }); }
+        shakeCam(0.4 + k * 0.15, 0.4, f.x, f.z);
+      }, 520 + ms));
+      later(() => { for (const t of T) impact(t, c, 1.2); }, 650);
       break;
     }
     case 'm_simsek': { // Şimşek Atma: elde toplanan kıvılcım, ince hızlı yıldırım; seviyede çift dal
@@ -1086,7 +1088,7 @@ function skillBody(sk0, ctx, tier) {
       }, 110);
       break;
     }
-    case 'm_cagir': { // Şimşek Çağırma: yerde uyarı rünü, gökte kara bulut, ardından devasa yıldırım düşer
+    case 'm_cagir': { // Portal Çöküşü: hedefin üstünde devasa boşluk portalı açılır, kara-mor yıldırımlar ve kristal enkaz düşer
       const t = T[0] || { x: f.x + Math.sin(face) * 7, z: f.z + Math.cos(face) * 7 };
       const rr = 2.6 * K, strikes = T.length ? T : [t];
       charge(follow, null, c, 0.3);
@@ -1099,11 +1101,11 @@ function skillBody(sk0, ctx, tier) {
           flash(q.x, 2, q.z, c, 90, 0.6); shockwave(q.x, q.z, rr * 1.25, c, 0.7); shockwave(q.x, q.z, rr * 0.7, '#ffffff', 0.5);
           burst(q.x, 0.6, q.z, [c, '#ffffff'], 70, 10 * K, { flat: true, size: 0.35, life: 0.6, drag: 2.5 }); impact(q, c, 1.3);
         }
-        shakeCam(0.5, 0.4, t.x, t.z);
+        for (let k = 0; k < 3; k++) later(() => shakeCam(0.7 - k * 0.15, 0.4, t.x, t.z), k * 180);
       }, 650);
       break;
     }
-    case 'm_pence': { // Yıldırım Pençesi: elektrik pençesi hedefler arasında zincirler, her hedefte üç çizik
+    case 'm_pence': { // Ruh Zincirleri: mor ruh zincirleri hedefler arasında atlar, her hedefte üç pençe izi ve sarsıntı
       const sc = c;
       charge(follow, { x: hand.x, y: 1.5, z: hand.z }, sc, 0.22, 16);
       let prev = { x: hand.x, y: 1.5, z: hand.z };
@@ -1116,7 +1118,7 @@ function skillBody(sk0, ctx, tier) {
             emit(t.x + ox + (u - 0.5) * 1.1, 1.9 - u * 1.5, t.z + (u - 0.5) * 0.3, { color: k % 2 ? sc : '#ffffff', size: 0.3, life: 0.35, drag: 2.5 });
           }, k * 14 + s2 * 30);
           flash(t.x, 1.2, t.z, sc, 50, 0.4); shockwave(t.x, t.z, 2.1 * K, sc, 0.5); impact(t, sc, 1);
-          if (tier) skyBolt(t.x, t.z, sc);
+          if (tier) skyBolt(t.x, t.z, sc); shakeCam(0.3, 0.25, t.x, t.z);
         }, d0 + 90);
         prev = to;
       });
@@ -1249,6 +1251,11 @@ function skillBody(sk0, ctx, tier) {
       if (sk.target === 'aoe' || sk.target === 'front' || sk.target === 'dash') { shockwave(f.x, f.z, sk.radius || 3, c, 0.6); burst(f.x, 1, f.z, c, 30, 6, { flat: true }); }
       else if (sk.target === 'self' || sk.target === 'heal') { for (const t of T) magicCircle(t.x, t.z, 2, c, 1.0); }
       else for (const t of T) projectile(hand, { x: t.x, y: 1.1, z: t.z }, c, { onHit: () => impact(t, c) });
+  }
+  // yer sallanması: alan/atılış/öne vuruş becerilerinde zemin çatlar ve kamera sarsılır (becerinin kendi sarsıntısına ek)
+  if (sk.target === 'aoe' || sk.target === 'front' || sk.target === 'dash') {
+    const amp = (sk.target === 'aoe' ? 0.32 : 0.22) * Math.min(1.5, K);
+    later(() => { shakeCam(amp, 0.35, f.x, f.z); burst(f.x, 0.2, f.z, ['#3a2a20', '#6b5a44', '#8a7a62'], 18, 5, { up: 3, size: 0.28, life: 0.7, gravity: 12 }); }, 260);
   }
   // buff becerilerinde etki süresince karakterde aura kalır
   if (sk.buff && sk.buff.dur) for (const t of T) if (t.obj) addAura(t.obj, c, sk.buff.dur, sk.key);

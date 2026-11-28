@@ -417,8 +417,8 @@ const modelReady = (async () => {
       const moves = retargetClips(g.scene, sc, g.animations.filter((a) => a.name !== 'TPose'));
       if (cfg.straight) straightenIdle(sc, moves, cfg.straight);
       if (cfg.turn) turnIdle(sc, moves, cfg.turn);
-      if (atk && cls !== 'saman') moves.push(...atkClips(retargetClips(atk.scene, sc, atk.animations)));
-      if (cls !== 'saman') moves.push(...kqClips(sc, kq));
+      if (atk) moves.push(...atkClips(retargetClips(atk.scene, sc, atk.animations)));
+      moves.push(...kqClips(sc, kq));
       for (const k of Object.keys(cc)) if (cc[k] && cc[k].bone) cc[k] = correctFrame(cc[k], moves);
       charModels[cls] = { scene: sc, calib: cc, clips: moves, cfg };
     } catch (e) { console.warn('Karakter modeli hazırlanamadı', cls, e); }
@@ -1104,6 +1104,9 @@ const MOVES = {
   o_ates: { dur: 0.7, jump: 0.9, jumpAt: [0, 0.75], spin: 1, lunge: -0.4, bow: true },
   o_hafif: { dur: 0.6, jump: 0.8, jumpAt: [0, 0.8], spin: 1 },
 };
+// animasyonlar daha vurucu: sıçrama ve atılma %30, eğilme artırıldı
+for (const m of Object.values(MOVES)) { if (m.jump) m.jump *= 1.3; if (m.lunge && m.lunge > 0) m.lunge *= 1.25; if (m.lean) m.lean *= 1.3; if (m.dur) m.dur *= 1.05; }
+
 function startMove(p, sk) {
   const spec = MOVES[sk.key] || (sk.target === 'self' || sk.target === 'heal' ? { dur: 0.8, cast: 'raise' } : { dur: 0.5, combos: [[0, sk.combo || 0]] });
   p.move = { spec, t: 0, fired: 0 };

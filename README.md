@@ -765,3 +765,11 @@ cd ~/atabis/atabis-online && bash scripts/update.sh
 - **Ejder Fatihi (yeni sınıf):** Crimson Dragon Warlord. Yeni sınıf anahtarı açmak yerine kullanılmayan **okcu** (Avcı) yuvası yeniden açıldı: adı "Ejder Fatihi", `retired` kaldırıldı, ses erkek, dönüşüm "Kızıl Ejder". Becerileri uzaktan kılıç dalgalarıdır (çoklu, buz, ateş, hafif adım). Rig: `tools/rig/yeni_ejder_fatihi.json`; modeller `chars*/okcu.glb`.
 - İki model de 2 milyon üçgenlik ve dokusu bozulmasın diye `takiglb.py --vcol` ile köşe rengine pişirildi; `glbrig.py` artık `COLOR_0` taşır (uint8). Telefon ~7-9 MB, PC ~14 MB, düşük ~3 MB.
 - Not: Ejder Fatihi için giyilen zırh modelleri (`worn/*_okcu`) eski Avcı gövdesine göre; yeni gövdede zırh eşyası görünmeyebilir, karakterin kendi zırhı görünür.
+
+### 9.9 Yeni kanatlar, silahlar, Kam becerileri, yer sallanması
+
+- **Kanatlar:** Yanardöner Kanat (Sv.65) ve Düşmüş Melek Kanadı (Sv.80), boss'lardan çok nadir düşer. `tools/wingsplit.py` köşe renkli kanat çiftini `sol`/`sag` düğümlerine böler (çırpma için).
+- **Silahlar:** Zümrüt Küre Asası (Sv.60), Efsane Maymun Asası (Sv.85), Kristal Kılıç (Sv.65). Kılıç ve asa evrim zincirleri artık altı kademenin hepsinde farklı model (kılıç: Kristal→Ayaz→Kızıl→Magma→Alev→Ejderarması; asa: Zümrüt→Kök→Ayaz→Maymun→Magma→Ejder Buz).
+- **Kam:** artık diğer sınıfların kılıçlarını kuşanır ve kılıç saldırı animasyonlarını kullanır. Becerileri: Boşluk Mızrağı, Kara Delik, Portal Çöküşü, Ruh Zincirleri (yeni efektler).
+- **Yer sallanması:** alan/atılış/öne vuruş becerilerinde ek kamera sarsıntısı ve toprak parçacıkları; beceri animasyonlarında sıçrama/atılma %30 artırıldı.
+- **Öfke düğmesi** ekranın ortasından sol kenara taşındı.
