@@ -511,16 +511,17 @@ METIN_MAPS = {  # harita sırası -> (ad, en düşük seviye, taş seviye aralı
 # level atlama haritaları: oyundaki en iyi boss modelleri, çok sayıda, hızlı doğar ve bol tecrübe verir
 LEVEL_MAPS = {
     12: ('Boss Vadisi', 70, 'demon', 11, [
-        ('lb_ejder', 'Ateş Ejderhası', 74, 'dragon', '#c0392b', 1.5, {'model': 'ejder', 'aura': '#ff6a3d', 'breath': '#ff6a3d', 'hitR': 2.4, 'n': 3}),
-        ('lb_sovalye', 'Kara Şövalye Lordu', 77, 'humanoid', '#1a1a1a', 1.6, {'model': 'kara_sovalye', 'aura': '#8a7dff', 'n': 3}),
-        ('lb_agac', 'Çürük Ağaç Ruhu', 80, 'humanoid', '#5a6a2a', 1.6, {'model': 'curuk_agac', 'aura': '#9aff5a', 'hitR': 2.6, 'n': 3}),
+        ('lb_kaplan', 'Kaplan Adam', 74, 'humanoid', '#e67e22', 1.8, {'model': 'kaplan_adam', 'aura': '#ffb347', 'n': 3}),
+        ('lb_cehennem', 'Cehennem Şövalyesi', 77, 'humanoid', '#2a2522', 1.8, {'model': 'cehennem_sovalyesi', 'aura': '#ff6a3d', 'n': 3}),
+        ('lb_buz', 'Buz Devi', 80, 'golem', '#9fd8ff', 2.8, {'model': 'su_elementi', 'aura': '#9fd8ff', 'tint': '#bfe6ff', 'hitR': 2.8, 'n': 3}),
         ('lb_lav', 'Lav Canavarı', 83, 'frog', '#b0362b', 2.1, {'model': 'lav_canavari', 'aura': '#ff3b2f', 'breath': '#ff6a3d', 'n': 3})]),
     13: ('Ejder Boss Vadisi', 85, 'dragon_valley', 13, [
-        ('lb_iblis', 'Mor İblis Lordu', 87, 'humanoid', '#6a3a9a', 1.9, {'model': 'iblis_mor', 'aura': '#b06bff', 'hitR': 2.4, 'n': 3}),
-        ('lb_kaplan', 'Kaplan Adam Kral', 90, 'humanoid', '#e67e22', 1.8, {'model': 'kaplan_adam', 'aura': '#ffb347', 'n': 3}),
-        ('lb_gokejder', 'Gök Ejderi', 94, 'dragon', '#7fb3ff', 1.9, {'model': 'ejder', 'aura': '#7fb3ff', 'tint': '#1f6fff', 'breath': '#7fb3ff', 'hitR': 3.0, 'n': 3}),
-        ('lb_hiclik', 'Hiçlik Ejderi', 98, 'dragon', '#3a1a4a', 2.3, {'model': 'ejder', 'aura': '#8a5aff', 'tint': '#3a1a5a', 'breath': '#b06bff', 'hitR': 3.4, 'n': 3})]),
+        ('lb_sirtlan', 'Sırtlan Reisi Kahkaha', 87, 'wolf', '#c9a36a', 2.6, {'model': 'sirtlan', 'aura': '#ffb347', 'hitR': 2.6, 'n': 3}),
+        ('lb_golem', 'Kadim Taş Golem', 90, 'golem', '#8d8a82', 2.4, {'model': 'golem', 'aura': '#9fff7f', 'hitR': 3.0, 'n': 3}),
+        ('lb_kurbaga', 'Kurbağa Kralı Vırak', 94, 'frog', '#4a6a35', 3.4, {'model': 'kurbaga', 'aura': '#9fff7f', 'hitR': 2.8, 'n': 3}),
+        ('lb_agac', 'Çürük Ağaç Ruhu', 98, 'humanoid', '#5a6a2a', 1.8, {'model': 'curuk_agac', 'aura': '#9aff5a', 'hitR': 2.6, 'n': 3})]),
 }
+KEEP_BOSSES = {'zkralice', 'dunyaboss'}   # olay sistemleri buna bağlı: zindan ve dünya boss'u
 # metin haritalarının dev boss'ları: para ve level kasılır (her harita farklı, 3'er tane, çok büyük)
 GIANT_BOSSES = {
     9: ('dev_golem', 'Dev Kadim Golem', 76, 'golem', '#8d5a42', 4.2, {'model': 'golem', 'aura': '#ff6a3d', 'tint': '#a0522d', 'hitR': 4.2, 'n': 3, 'giant': True}),
@@ -558,12 +559,14 @@ def build(items):
         if i in METIN_MAPS:
             m['name'], m['lv'], m['stoneLv'], m['tier'] = METIN_MAPS[i]
             m['mobCount'], m['stones'] = 0, 28      # sadece metin taşları, haritaya dengeli dağılmış
-            m['bosses'] = [GIANT_BOSSES[i]] + [b[:6] + ({**b[6], 'n': 0},) for b in m['bosses']]   # eski boss'lar doğmaz, yerine dev boss
+            m['bosses'] = []   # metin haritalarında boss yok
         if i in LEVEL_MAPS:
             m['name'], m['lv'], m['theme'], m['tier'], new = LEVEL_MAPS[i]
             # eski boss'lar ve yaratıklar doğmaz ama verileri kalır
-            m['bosses'] = list(new) + [b[:6] + ({**b[6], 'n': 0},) for b in m['bosses']]
+            m['bosses'] = list(new)
             m['mobCount'], m['levelMap'], m['stones'] = 0, True, 0
+        if i not in LEVEL_MAPS:
+            m['bosses'] = [b for b in m['bosses'] if b[0] in KEEP_BOSSES]
         tier = m.get('tier', tier_for_map(i))
         spawns, bosses = [], []
         # evrimle dönüşen eşyalar (10-14. kademe) hiçbir yerden düşmez; onların yerine 9. kademe temel eşyalar düşer
@@ -726,10 +729,12 @@ SKILLS = {
         sk('m_pence', 'Ruh Zincirleri', 'Mor ruh zincirleri düşmandan düşmana sıçrar (3 hedef, 10. seviyede 4, M1\'de 5); her hedefi pençe izleriyle yırtar.', 'chain', 28, 3, 9, '#d9a8ff', range=6.5, mult=1.6, multLv=0.13, combo=1),
     ],
     'okcu': [
-        sk('o_coklu', 'Üçlü Kılıç Dalgası', 'Kılıcını savurup aynı anda 3 hedefe kılıç dalgası fırlatır.', 'multi', 18, 3, 5, '#f4e2b8', range=12, mult=1.2, multLv=0.1, count=3),
-        sk('o_zehirli', 'Buz Dalgası', 'Buzdan bir kılıç dalgası fırlatır; hedefi 2 saniye dondurur.', 'single', 15, 2, 8, '#9fd8ff', range=12, mult=1.3, multLv=0.09, stun=2.0, freeze=True),
-        sk('o_ates', 'Ateş Dalgası', 'Patlayan ateş dalgası: hedefin çevresine de hasar verir.', 'single', 28, 4, 10, '#ff6a3d', range=13, mult=2.2, multLv=0.17, splash=2.8),
-        sk('o_hafif', 'Hafif Adım', '40 saniye hareket ve saldırı hızını artırır.', 'self', 20, 2, 45, '#7be08f', buff={'stat': 'movespeed', 'base': 20, 'perLv': 1.5, 'dur': 40, 'extra': {'atkspeed': 8}}),
+        sk('w_kesik', 'Ejder Kesiği', 'Silahını kaldırıp yere indirir; arkasında kızıl-altın ejder alevi bırakır, geniş alanda hasar verir.', 'front', 16, 3, 5, '#ff5a3c', radius=6.5, mult=1.7, multLv=0.13, combo=1),
+        sk('w_patlama', 'Kızıl Ejder Patlaması', 'Silahını yere saplar; kızıl-siyah enerji sütunları ve dev alev ejder başı çevredekileri yakıp sersemletir.', 'aoe', 28, 4, 11, '#ff3b2f', radius=5.5, mult=2.0, multLv=0.15, stun=1.2, combo=1),
+        sk('w_meteor', 'Ejder Meteoru', 'Gök kararır; alev alev kızıl-altın ejder meteorları yağar, düşenler patlar ve yakar.', 'aoe', 40, 5, 16, '#ffb02e', radius=9, mult=2.3, multLv=0.17, dot={'mult': 0.25, 'multLv': 0.02, 'sec': 4}),
+        sk('w_nefes', 'Cehennem Ejder Nefesi', 'Önüne dev kızıl ejder ateşi püskürtür; düşmanları geri savurur.', 'front', 34, 4, 13, '#ff7a1a', radius=10, mult=2.2, multLv=0.16, knock=4.5, combo=1),
+        sk('w_hayalet', 'Ejder Hayaleti', 'Arkandan dev saydam kızıl bir ejder doğar, ileri uçarak yolundaki düşmanlara saldırır; arkasında alev izi kalır.', 'dash', 38, 4, 15, '#ff4d6d', radius=4, dist=10, mult=2.6, multLv=0.19, combo=2),
+        sk('w_kiyamet', 'Kızıl Kıyamet', 'Ekran kararır, gökte dev kızıl ejder belirir ve düşmanların üstüne dalıp devasa patlama yaratır. Yerde kızıl ejder mührü kalır.', 'aoe', 90, 6, 60, '#d1102e', radius=12, mult=5.2, multLv=0.4, stun=1.8, knock=3, combo=3),
     ],
 }
 

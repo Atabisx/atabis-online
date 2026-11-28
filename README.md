@@ -782,3 +782,7 @@ Her silah +9'da demircide sıradakine dönüşür (`gen_data.py` → `EVO_WEAPON
 3. Kök → Maymun → Ejder Buz → Zümrüt → Magma Asası (Kam)
 4. Ayaz Gürzü → Ayaz Baltası → Buz Baltası → Magma Gürzü → Ejderarması Çekici → Magma Baltası (Şövalye, Lanetli)
 5. Kristal → Magma Kılıç → Ayaz Büyük → Kızıl → Mor → Magma Büyük Kılıç
+
+### 9.11 Boss sadeleştirmesi ve Kızıl Ejder Savaş Lordu becerileri
+- Yalnızca 8 boss kaldı: Kaplan Adam, Cehennem Şövalyesi, Buz Devi, Lav Canavarı (Boss Vadisi) ve Sırtlan Reisi, Kadim Taş Golem, Kurbağa Kralı, Çürük Ağaç Ruhu (Ejder Boss Vadisi). Olay sistemleri için zindan (zkralice) ve dünya boss'u (dunyaboss) korundu.
+- Ejder Fatihi (okcu) 6 yeni beceri: Ejder Kesiği, Kızıl Ejder Patlaması, Ejder Meteoru, Cehennem Ejder Nefesi (geri savurma), Ejder Hayaleti, Kızıl Kıyamet. Anahtarlar `w_*`; efekt fx.js, animasyon game.js MOVES, ses audio.js.

@@ -423,6 +423,10 @@ class Zone {
           t.dots = t.dots.filter((d) => d.key !== sk.key);
           t.dots.push({ key: sk.key, owner: p, per, until: Date.now() + sk.dot.sec * 1000, next: Date.now() + 1000 });
         }
+        if (sk.knock && !t.d.boss && this.mobs.has(t.id)) {
+          const dx = t.x - p.x, dz = t.z - p.z, d = Math.hypot(dx, dz) || 1;
+          t.x = this.clampX(t.x + dx / d * sk.knock); t.z = this.clampX(t.z + dz / d * sk.knock);
+        }
         this.damageMob(t, p, dmg, crit);
       } else this.damageStone(t, p, dmg, crit);
     }

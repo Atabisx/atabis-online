@@ -297,6 +297,24 @@ export function potion() {
 // Şaman becerilerinin kendine özgü sesleri (hepsi kodla üretilir)
 function shamanSound(key, v) {
   switch (key) {
+    // ----- Kızıl Ejder Savaş Lordu: her beceride ejder kükremesi, ateş ve vuruş sesi ayrı -----
+    case 'w_kesik':     // kılıç indirme: hışırtı, ateş çıtırtısı, ağır çarpma
+      noise({ dur: 0.25, vol: 0.3 * v, f0: 800, f1: 3000, q: 1.2 }); noise({ t: 0.2, dur: 0.4, vol: 0.35 * v, type: 'lowpass', f0: 2000, f1: 200 }); tone({ type: 'sine', f0: 110, f1: 40, t: 0.2, dur: 0.4, vol: 0.45 * v }); return true;
+    case 'w_patlama':   // yere saplama + sütun patlamaları + alçak ejder homurtusu
+      tone({ type: 'sine', f0: 140, f1: 35, dur: 0.5, vol: 0.5 * v }); tone({ type: 'sawtooth', f0: 90, f1: 50, t: 0.25, dur: 0.9, vol: 0.3 * v, filter: 600 });
+      [0.15, 0.3, 0.45].forEach((t) => noise({ t, dur: 0.3, vol: 0.3 * v, type: 'lowpass', f0: 1800, f1: 150 })); return true;
+    case 'w_meteor':    // gök gürültüsü, art arda meteor düşüşü
+      tone({ type: 'sawtooth', f0: 70, f1: 45, dur: 1.0, vol: 0.28 * v, filter: 500 });
+      for (let i = 0; i < 7; i++) { const t = 0.35 + i * 0.22; noise({ t, dur: 0.25, vol: 0.25 * v, f0: 3000, f1: 400, q: 1.5 }); tone({ type: 'sine', f0: 120, f1: 32, t: t + 0.18, dur: 0.3, vol: 0.4 * v }); } return true;
+    case 'w_nefes':     // ejder soluğu: uzun ateş püskürtme
+      noise({ dur: 0.9, vol: 0.38 * v, type: 'bandpass', f0: 600, f1: 1800, q: 0.8 }); tone({ type: 'sawtooth', f0: 95, f1: 60, dur: 0.9, vol: 0.28 * v, filter: 800 }); noise({ t: 0.1, dur: 0.7, vol: 0.2 * v, type: 'highpass', f0: 2500 }); return true;
+    case 'w_hayalet':   // ejder kükremesi: yükselip düşen ton + rüzgâr
+      tone({ type: 'sawtooth', f0: 150, f1: 420, dur: 0.3, vol: 0.3 * v, filter: 1200 }); tone({ type: 'sawtooth', f0: 420, f1: 70, t: 0.3, dur: 0.6, vol: 0.34 * v, filter: 1000 });
+      noise({ dur: 0.8, vol: 0.25 * v, type: 'bandpass', f0: 400, f1: 2400, q: 1.0 }); return true;
+    case 'w_kiyamet':   // büyük kükreme + dalış çığlığı + dev patlama
+      tone({ type: 'sawtooth', f0: 60, f1: 130, dur: 0.9, vol: 0.38 * v, filter: 700 }); tone({ type: 'sawtooth', f0: 380, f1: 90, t: 0.5, dur: 1.0, vol: 0.3 * v, filter: 1400 });
+      noise({ t: 0.5, dur: 1.0, vol: 0.28 * v, f0: 800, f1: 3500, q: 1.2 });
+      tone({ type: 'sine', f0: 100, f1: 26, t: 1.6, dur: 1.0, vol: 0.6 * v }); noise({ t: 1.6, dur: 0.9, vol: 0.5 * v, type: 'lowpass', f0: 2200, f1: 100 }); return true;
     case 'm_ejdatis':   // ateş ejderhası: yükselen hışırtı + alçak kükreme + çıtırtı
       noise({ dur: 0.5, vol: 0.3 * v, f0: 500, f1: 3500, q: 1.5 }); tone({ type: 'sawtooth', f0: 110, f1: 55, dur: 0.6, vol: 0.28 * v, filter: 900 });
       noise({ t: 0.35, dur: 0.3, vol: 0.3 * v, type: 'lowpass', f0: 1600, f1: 200 }); return true;

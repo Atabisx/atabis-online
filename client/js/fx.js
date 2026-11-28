@@ -868,6 +868,64 @@ function raiseHands(follow, color) {
   if (!follow) return;
   repeat(14, 0.03, (i) => emit(follow.x + Math.cos(i) * 0.5, 1.6 + i * 0.12, follow.z + Math.sin(i) * 0.5, { vy: 2.5, color: i % 2 ? color : '#ffffff', size: 0.22, life: 0.5, drag: 1 }));
 }
+// ---------- Kızıl Ejder Savaş Lordu yardımcıları ----------
+// ekranı kısa süre karartır (mobilde ucuz: tek CSS katmanı)
+function screenDim(alpha, holdMs, color = '#12000a') {
+  try {
+    const par = renderer && renderer.domElement && renderer.domElement.parentNode; if (!par) return;
+    const d = document.createElement('div');
+    d.style.cssText = `position:fixed;inset:0;pointer-events:none;z-index:6;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 0%,${color} 95%);opacity:0;transition:opacity .35s`;
+    par.appendChild(d);
+    requestAnimationFrame(() => { d.style.opacity = String(alpha); });
+    setTimeout(() => { d.style.transition = 'opacity .6s'; d.style.opacity = '0'; }, holdMs);
+    setTimeout(() => d.remove(), holdMs + 800);
+  } catch (e) { /* karartma süs, beceri yine de çalışır */ }
+}
+// saydam dev ejder: gövde halkaları yoldan akar, kanat çırpar, arkasında alev izi bırakır
+// pathFn(u): u 0..1 arası baş konumu (THREE.Vector3)
+function dragonSpirit(pathFn, color, dur, o = {}) {
+  color = tc(color);
+  const S = o.scale || 1, N = o.n || 13, sp = o.sp || 0.04, base = pathFn(0).clone();
+  const g = new THREE.Group(); g.position.set(base.x, 0, base.z);
+  const bodyM = new THREE.MeshBasicMaterial({ color, ...add() }), coreM = new THREE.MeshBasicMaterial({ color: '#ffd9a0', ...add() });
+  const segs = [];
+  for (let i = 0; i < N; i++) {
+    const r = S * (0.62 - 0.4 * i / N);
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), i % 2 ? bodyM : coreM);
+    segs.push(m); g.add(m);
+  }
+  const head = new THREE.Group();
+  const skull = new THREE.Mesh(new THREE.ConeGeometry(0.55 * S, 1.5 * S, 8), bodyM); skull.rotation.x = Math.PI / 2; head.add(skull);
+  for (const sx of [-1, 1]) {
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.12 * S, 0.9 * S, 5), coreM);
+    horn.position.set(sx * 0.3 * S, 0.45 * S, -0.3 * S); horn.rotation.x = -1.1; horn.rotation.z = -sx * 0.35; head.add(horn);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.09 * S, 6, 5), new THREE.MeshBasicMaterial({ color: '#ffffff', ...add() }));
+    eye.position.set(sx * 0.25 * S, 0.2 * S, 0.25 * S); head.add(eye);
+  }
+  g.add(head);
+  const wg = new THREE.BufferGeometry();
+  wg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0, 1.2, 1.4, -0.5, 2.8, 0.7, -1.6, 2.2, -0.2, -2.4, 0.8, -0.1, -1.8]), 3));
+  wg.setIndex([0, 1, 2, 0, 2, 3, 0, 3, 4]);
+  const wings = [-1, 1].map((sx) => { const w = new THREE.Mesh(wg, bodyM); w.scale.set(sx * S, S, S); g.add(w); return w; });
+  const a = new THREE.Vector3(), b = new THREE.Vector3();
+  addFx(g, dur, (k, dt, e) => {
+    for (let i = 0; i < N; i++) {
+      const u = Math.max(0, k - i * sp);
+      a.copy(pathFn(u)); b.copy(pathFn(Math.min(1, u + 0.015))).sub(a);
+      const hl = Math.hypot(b.x, b.z) || 0.001, lx = -b.z / hl, lz = b.x / hl;
+      const off = Math.sin(e.t * 9 - i * 0.7) * 0.45 * S * (0.3 + i / N);
+      segs[i].position.set(a.x - base.x + lx * off, a.y, a.z - base.z + lz * off);
+      if (i === 0) {
+        head.position.copy(segs[0].position);
+        head.rotation.set(-Math.atan2(b.y, hl), Math.atan2(b.x, b.z), 0, 'YXZ');
+      }
+      if (i === 2) for (const w of wings) { w.position.copy(segs[2].position); w.position.y += 0.2 * S; w.rotation.set(0, head.rotation.y, Math.sin(e.t * 8) * 0.55 * Math.sign(w.scale.x), 'YXZ'); }
+      if (i % 3 === 0 && Math.random() < 0.7) emit(a.x + rnd(-0.3, 0.3), a.y + rnd(-0.2, 0.2), a.z + rnd(-0.3, 0.3), { vy: rnd(0.4, 1.4), color: Math.random() < 0.5 ? color : '#ffb02e', size: 0.34 * S, life: 0.5, gravity: -1 });
+    }
+    const fade = Math.min(1, k * 8) * Math.min(1, (1 - k) * 4);
+    bodyM.opacity = 0.5 * fade; coreM.opacity = 0.42 * fade;
+  });
+}
 function skillBody(sk0, ctx, tier) {
   const K = tier ? MASTERY[tier].k : 1;
   const sk = { ...sk0, radius: (sk0.radius || 3) * K };
@@ -1245,6 +1303,105 @@ function skillBody(sk0, ctx, tier) {
         burst(p.x, 0.3, p.z, ['#3a2a20', '#6b5a44'], 14, 6, { up: 3, size: 0.25, life: 0.7, gravity: 12 });
       } }); }, 220);
       break;
+    // ----- Kızıl Ejder Savaş Lordu (Ejder Fatihi) -----
+    case 'w_kesik': {  // silah kalkar, yere iner: kızıl-altın ejder alev izi, yerde kızıl enerji dalgası
+      charge(follow, hand, c, 0.22, 18);
+      later(() => {
+        for (let i = 0; i < 3; i++) {
+          const p = fwd(1.0 + i * 0.5);
+          slashArc(f.x, 1.7 - i * 0.45, f.z, face, sk.radius * (0.7 + i * 0.12), i === 1 ? '#ffd23f' : c, 0.4, { tilt: 0.7 - i * 0.6, sweep: 2.4, len: 2.6 });
+          burst(p.x, 1.4, p.z, [c, '#ffb02e', '#ffffff'], 16, 7, { size: 0.3, life: 0.45 });
+        }
+        for (let i = 1; i <= 6; i++) later(() => { const p = fwd(i * sk.radius / 6); flames(p.x, p.z, [c, '#ffd23f'], 8, { r: 0.7 }); shockwave(p.x, p.z, 1.4, c, 0.35); }, i * 45);
+        crescentWave(f.x, f.z, face, '#ff3b2f', { r: 2.2, y: 0.5, tilt: 1.35, dist: sk.radius * 1.8, speed: 20 });
+        flash(f.x, 1.5, f.z, c, 50, 0.35);
+        shakeCam(0.3, 0.3, f.x, f.z);
+      }, 200);
+      later(() => { for (const t of T) { impact(t, c, 1.3); burst(t.x, 1.0, t.z, [c, '#ffd23f'], 14, 6, { size: 0.3, life: 0.5 }); } }, 380);
+      break;
+    }
+    case 'w_patlama': {  // silah yere saplanır: kızıl-siyah sütunlar, yükselen dev alev ejder başı
+      charge(follow, hand, c, 0.25, 20);
+      later(() => {
+        magicCircle(f.x, f.z, sk.radius, c, 1.6, { follow, spin: 3 });
+        for (let i = 0; i < 7; i++) {
+          const a = i / 7 * Math.PI * 2, r = sk.radius * 0.7;
+          later(() => { const px = f.x + Math.cos(a) * r, pz = f.z + Math.sin(a) * r; pillar(px, pz, i % 2 ? '#2a0a10' : c, 7, 0.9, { r: 0.7 }); burst(px, 0.3, pz, [c, '#ffb02e'], 10, 6, { up: 4, size: 0.3, life: 0.6 }); }, i * 55);
+        }
+      }, 150);
+      later(() => {
+        dragonSpirit((u) => new THREE.Vector3(f.x, -1 + 7.5 * Math.sin(Math.min(1, u * 1.15) * Math.PI * 0.85), f.z + 1.5 - u * 3), c, 1.3, { scale: 1.5, n: 10, sp: 0.05 });
+        shockwave(f.x, f.z, sk.radius, c, 0.7); shockwave(f.x, f.z, sk.radius * 0.6, '#ffd23f', 0.5);
+        flames(f.x, f.z, [c, '#ffd23f', '#ff7a1a'], 40, { r: sk.radius * 0.6 });
+        flash(f.x, 2, f.z, c, 90, 0.7);
+        shakeCam(0.6, 0.5, f.x, f.z);
+        for (const t of T) impact(t, c, 1.4);
+      }, 450);
+      break;
+    }
+    case 'w_meteor': {  // gök kararır, alev alev ejder meteorları yağar
+      screenDim(0.55, 2400);
+      charge(follow, hand, c, 0.3, 22);
+      magicCircle(f.x, f.z, sk.radius * 0.8, c, 2.4, { follow, spin: -2 });
+      for (let i = 0; i < 12; i++) {
+        later(() => {
+          const a = Math.random() * Math.PI * 2, r = sk.radius * Math.sqrt(Math.random());
+          const tx = f.x + Math.cos(a) * r, tz = f.z + Math.sin(a) * r;
+          projectile({ x: tx - 5, y: 22, z: tz - 3 }, { x: tx, y: 0.3, z: tz }, i % 2 ? '#ffb02e' : c, { speed: 26, r: 0.38, trail: 9, trailLife: 0.5, onHit: (p) => {
+            shockwave(p.x, p.z, 2.8, c, 0.45); burst(p.x, 0.5, p.z, [c, '#ffd23f', '#3a1008'], 22, 8, { up: 4, size: 0.4, life: 0.6, gravity: 8 });
+            flames(p.x, p.z, [c, '#ffd23f'], 10, { r: 0.9 });
+            if (i % 3 === 0) shakeCam(0.35, 0.25, p.x, p.z);
+          } });
+        }, 350 + i * 130);
+      }
+      later(() => { for (const t of T) impact(t, c, 1.2); }, 1000);
+      break;
+    }
+    case 'w_nefes': {  // elle öne: dev kızıl ejder ateş konisi
+      charge(follow, hand, c, 0.2, 14);
+      const dx = Math.sin(face), dz = Math.cos(face);
+      later(() => {
+        flash(hand.x, 1.4, hand.z, c, 70, 0.9);
+        repeat(30, 0.03, (i) => {
+          for (let j = 0; j < 3; j++) {
+            const sp = rnd(-0.42, 0.42), ang = face + sp, v = rnd(9, 15);
+            emit(hand.x, 1.2, hand.z, { vx: Math.sin(ang) * v, vz: Math.cos(ang) * v, vy: rnd(-0.3, 1.2), color: ['#ff3b2f', '#ff7a1a', '#ffd23f', '#fff1b8'][(Math.random() * 4) | 0], size: rnd(0.4, 0.9), life: rnd(0.45, 0.8), grow: 0.9, drag: 0.6 });
+          }
+          const p = fwd(2 + i * sk.radius / 32); if (i % 4 === 0) flames(p.x, p.z, [c, '#ffd23f'], 6, { r: 1.1 });
+        });
+        shockwave(f.x + dx * 3, f.z + dz * 3, sk.radius * 0.5, c, 0.6);
+        shakeCam(0.28, 0.9, f.x, f.z);
+      }, 180);
+      later(() => { for (const t of T) { impact(t, c, 1.3); burst(t.x, 1, t.z, [c, '#ffd23f'], 18, 9, { size: 0.35, life: 0.5, flat: true }); } }, 420);
+      break;
+    }
+    case 'w_hayalet': {  // arkada dev saydam kızıl ejder doğar, ileri uçar, alev izi bırakır
+      const dist = sk.dist || 10, y0 = 2.2, sx = f.x - Math.sin(face) * dist * 0.4, sz = f.z - Math.cos(face) * dist * 0.4, L = dist * 1.3;
+      flash(f.x, 1.5, f.z, c, 60, 0.5);
+      dragonSpirit((u) => new THREE.Vector3(sx + Math.sin(face) * L * u, y0 + Math.sin(u * Math.PI) * 1.2, sz + Math.cos(face) * L * u), c, 0.85, { scale: 1.8, n: 14, sp: 0.035 });
+      for (let i = 0; i <= 8; i++) later(() => { const p = { x: sx + Math.sin(face) * L * i / 8, z: sz + Math.cos(face) * L * i / 8 }; flames(p.x, p.z, [c, '#ffb02e'], 6, { r: 0.8 }); shockwave(p.x, p.z, 1.6, c, 0.35); }, i * 70);
+      later(() => { for (const t of T) { impact(t, c, 1.4); burst(t.x, 1, t.z, [c, '#ffd23f'], 16, 8, { size: 0.35, life: 0.5 }); } }, 300);
+      break;
+    }
+    case 'w_kiyamet': {  // KIZIL KIYAMET: ekran kararır, gökte dev ejder, dalış, dev patlama, yerde ejder mührü
+      screenDim(0.7, 3200);
+      charge(follow, hand, c, 0.5, 30);
+      magicCircle(f.x, f.z, sk.radius, c, 3.4, { follow: null, spin: 1.5 });
+      later(() => magicCircle(f.x, f.z, sk.radius * 0.7, '#ffd23f', 2.8, { spin: -2 }), 300);
+      later(() => magicCircle(f.x, f.z, sk.radius * 0.4, '#ffffff', 2.4, { spin: 3 }), 600);
+      repeat(10, 0.08, () => { const a = Math.random() * Math.PI * 2, r = rnd(2, sk.radius); lightning({ x: f.x + Math.cos(a) * r, y: 22, z: f.z + Math.sin(a) * r }, { x: f.x + Math.cos(a) * r * 0.8, y: 0.3, z: f.z + Math.sin(a) * r * 0.8 }, '#ff3b2f'); });
+      later(() => dragonSpirit((u) => new THREE.Vector3(f.x - 10 + 10 * Math.min(1, u * 1.15), 26 * Math.pow(1 - Math.min(1, u * 1.15), 1.5) + 0.5, f.z - 10 + 10 * Math.min(1, u * 1.15)), c, 1.5, { scale: 3, n: 16, sp: 0.04 }), 500);
+      later(() => {
+        for (let i = 0; i < 4; i++) later(() => shockwave(f.x, f.z, sk.radius * (0.5 + i * 0.28), i % 2 ? '#ffd23f' : c, 0.7), i * 110);
+        burst(f.x, 1.2, f.z, [c, '#ffd23f', '#ffffff', '#3a1008'], 90, 14, { up: 6, size: 0.7, life: 1.0, gravity: 6 });
+        flames(f.x, f.z, [c, '#ffd23f', '#ff7a1a'], 60, { r: sk.radius * 0.7 });
+        for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; pillar(f.x + Math.cos(a) * 4, f.z + Math.sin(a) * 4, c, 12, 1.1, { r: 1.0 }); }
+        flash(f.x, 3, f.z, '#ffffff', 140, 0.9);
+        shakeCam(1.1, 0.9, f.x, f.z);
+        for (const t of T) impact(t, c, 1.8);
+      }, 1650);
+      break;
+    }
     default:
       // bilinmeyen beceri: türüne göre genel görünüm
       charge(follow, null, c, 0.25);
@@ -1264,6 +1421,7 @@ function skillBody(sk0, ctx, tier) {
 // cast: 'raise' iki kol havaya, 'push' sağ kol öne (büyü/şifa), 'bow' yay germe
 export function skillPose(sk) {
   if (sk.key === 's_firtina' || sk.key === 'n_yagmur' || sk.key === 'm_kukreme' || sk.key === 'u_alev') return { spin: sk.key === 's_firtina' ? 0.9 : 0.5 };
+  if (sk.key.startsWith('w_')) return {};
   if (sk.target === 'dash') return { lunge: 0.35 };
   if (sk.key.startsWith('o_') && sk.target !== 'self') return { bow: true };
   if (sk.target === 'self') return { jump: 0.5, cast: 'raise' };
