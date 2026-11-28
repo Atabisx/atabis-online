@@ -28,7 +28,8 @@ function init() {
 const SAMPLE_NAMES = ['swing_sword0', 'swing_sword1', 'swing_sword2', 'swing_heavy0', 'swing_heavy1', 'swing_dagger0', 'swing_dagger1', 'swing_staff',
   'bow_shot', 'hit_flesh0', 'hit_flesh1', 'hit_flesh2', 'hit_crit', 'hit_stone', 'hit_armor', 'hit_arrow',
   ...['hya0', 'hya2', 'hya3', 'hya4', 'hya5', 'hya7', 'sharp1', 'myst0'].map((n) => 'voice_' + n),   // kadın sesleri
-  ...['ha0', 'ha1', 'ha2', 'ha3', 'ha4', 'ha6', 'ha7', 'ha8', 'hya1', 'hya6', 'sharp0', 'myst1'].map((n) => 'voice_' + n)];   // erkek sesleri (Alp, Yalaz)
+  ...['ha0', 'ha1', 'ha2', 'ha3', 'ha4', 'ha6', 'ha7', 'ha8', 'hya1', 'hya6', 'sharp0', 'myst1'].map((n) => 'voice_' + n),
+  ...['x_graa', 'x_ryaaah', 'x_huuh', 'x_kyaa', 'x_hak', 'x_hyyaa'].map((n) => 'voice_' + n)];   // Kam ve Ejder Fatihi'nin kendi sesleri   // erkek sesleri (Alp, Yalaz)
 const samples = {};
 function loadSamples() {
   for (const n of SAMPLE_NAMES) {
@@ -220,8 +221,8 @@ const VOICES = {
   savasci: { ...MALE, rate: 0.97 },
   sura: { ...MALE, rate: 0.95 },
   ninja: { ...FEMALE, rate: 1.04 },
-  saman: { ...FEMALE, rate: 1.05 },
-  okcu: { ...MALE, rate: 0.93 },
+  saman: { light: ['x_huuh', 'x_hak', 'x_kyaa'], strong: ['x_ryaaah', 'x_hyyaa', 'x_kyaa'], magic: ['x_graa', 'x_ryaaah', 'x_hyyaa'], rate: 1.0 },
+  okcu: { light: ['x_hak', 'x_huuh', 'x_kyaa'], strong: ['x_ryaaah', 'x_hyyaa', 'x_kyaa'], magic: ['x_graa', 'x_ryaaah', 'x_hyyaa'], rate: 0.95 },
 };
 let lastShout = 0;
 export function shout(cls, kind = 'light', pos = null) {
